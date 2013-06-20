@@ -1,20 +1,35 @@
 #!/usr/bin/env python
 
+import argparse
 import bottle
 import collections
 import datetime
 import json
-import cv
+#import cv
 import os
 import PIL.Image
 import sqlite3
 import subprocess
 import sys
 
+FLAGS = argparse.ArgumentParser()
+
+FLAGS.add_argument('--host', default='localhost',
+                   help='run server on this hostname')
+FLAGS.add_argument('--db', default='photo.db',
+                   help='run server on this hostname')
+FLAGS.add_argument('--port', type=int, default=5555, metavar='N',
+                   help='run server on port N')
+FLAGS.add_argument('--reload', action='store_true',
+                   help='reload server whenever modules change')
+
+FLAGS.add_argument('sources', metavar='DIR', nargs=argparse.REMAINDER,
+                   help='import photos from subtree at DIR')
+
 
 class connect(object):
     def __enter__(self):
-        self.db = sqlite3.connect('photos.db', isolation_level=None)
+        self.db = sqlite3.connect(DB, isolation_level=None)
         return self.db
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -255,22 +270,23 @@ def post_photo(id):
 
 
 if __name__ == '__main__':
-    with connect() as db:
-        try:
-            db.execute('SELECT COUNT(*) FROM photo')
-        except:
-            db.execute("CREATE TABLE photo ("
-                       "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                       "path VARCHAR UNIQUE NOT NULL DEFAULT '', "
-                       "tags VARCHAR NOT NULL DEFAULT '||', "
-                       "meta TEXT NOT NULL DEFAULT '{}', "
-                       "exif TEXT NOT NULL DEFAULT '{}', "
-                       "stamp DATETIME)")
+    args = FLAGS.parse_args()
 
-    if len(sys.argv) > 1:
-        for p in sys.argv[1:]:
+    global DB
+    DB = args.db
+
+    with connect() as db:
+        db.execute("CREATE TABLE IF NOT EXISTS photo ("
+                   "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                   "path VARCHAR UNIQUE NOT NULL DEFAULT '', "
+                   "tags VARCHAR NOT NULL DEFAULT '||', "
+                   "meta TEXT NOT NULL DEFAULT '{}', "
+                   "exif TEXT NOT NULL DEFAULT '{}', "
+                   "stamp DATETIME)")
+
+    if args.sources:
+        for p in args.sources:
             import_all(p)
 
     else:
-        bottle.run(host='localhost', port=5555)
-
+        bottle.run(host=args.host, port=args.port, reloader=args.reload)

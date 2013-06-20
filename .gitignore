@@ -40,5 +40,5 @@ node_modules
 *.js
 
 # photos and database
-photo.db
+*.db
 img
