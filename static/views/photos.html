@@ -1,0 +1,66 @@
+<ul id="nav" class="unstyled tags">
+ <li class="pull-left"
+     ng-click="go(tag.name)"
+     ng-repeat="tag in tags | filter:filter | orderBy:'name'"
+     ng-class="{ selected: tagged.indexOf(tag.name) >= 0 }">
+  <small title="{{ tag.count }}x">{{ tag.name }}</small>
+ <li style="clear:left;border:none"></li>
+</ul>
+
+<div id="thumbs" tabindex="0" lmj-keypress="
+{ 'j right': 'nextPhoto()'
+, 'k left': 'prevPhoto()'
+, down: 'nextPage()'
+, up: 'prevPage()'
+, enter: 'editPhoto()'
+, '[': 'rotatePhoto(-90)'
+, ']': 'rotatePhoto(90)'
+, '{': 'rotatePhoto(-1)'
+, '}': 'rotatePhoto(1)'
+, s: 'starPhoto()'
+, x: 'selectPhoto()'
+}">
+<ul class="unstyled"
+    lmj-scroll="loadPhotos()"
+    lmj-scroll-disabled="loading"
+    lmj-scroll-exhausted="exhausted">
+ <li class="thumb pull-left"
+     ng-class="{ select: selected.indexOf(p.id) >= 0 }"
+     ng-repeat="p in photos">
+  <img id="photo-{{ p.id }}"
+       class="img-rounded"
+       ng-click="selectPhoto(p.id)"
+       ng-dblclick="editPhoto(p.id)"
+       ng-src="static/img/tiny/{{ p.thumb }}">
+  <i class="icon-chevron-right icon-2x" ng-show="p.id == cursorId"></i>
+  <i class="icon-star icon-2x"
+     ng-class="{ starred: p.meta.user_tags.indexOf('★') >= 0 }"
+     ng-click="starPhoto(p.id)"></i>
+</ul>
+</div>
+
+<div modal="editing" close="editing = false">
+<div class="modal-header">
+ <i class="icon-2x pull-left icon-adjust"></i>
+ <i class="icon-2x pull-left icon-bar-chart"></i>
+ <i class="icon-2x pull-left icon-magic"></i>
+ <i class="icon-2x pull-left icon-camera"></i>
+ <i class="icon-2x pull-left icon-eye-open"></i>
+ <i class="icon-2x pull-left icon-eye-close"></i>
+ <i class="icon-2x pull-left icon-picture"></i>
+ <i class="icon-2x pull-left icon-crop"></i>
+ <i class="icon-2x pull-left icon-smile"></i>
+ <i class="icon-2x pull-left icon-wrench"></i>
+ <span class="clearfix"></span>
+</div>
+
+<div class="modal-body">
+ <img id="image" class="img-rounded" ng-src="static/img/thumb/{{ photo.thumb }}">
+</div>
+
+<div id="inputs" class="modal-footer">
+ <input class="pull-left" type="text" ng-model="photo.meta.user_tags" />
+ <input class="pull-left" type="text" ng-model="photo.stamp"/>
+ <button class="btn btn-primary" ng-click="editing = false">Done</button>
+</div>
+</div>
