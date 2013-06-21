@@ -98,7 +98,7 @@ def import_one(path):
         img = img.rotate(-270)
 
     for name, size in (('thumb', 800), ('tiny', 120)):
-        path = os.path.join(os.getcwd(), 'static', name, photo.thumb_path)
+        path = os.path.join(os.getcwd(), 'static', 'img', name, photo.thumb_path)
         dirname = os.path.dirname(path)
         try: os.makedirs(dirname)
         except: pass
