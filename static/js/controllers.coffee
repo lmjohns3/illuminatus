@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-STAR = '★'
-
-
 IndexCtrl = ($scope, $location, $http) ->
   $scope.tags = []
 
@@ -25,12 +22,12 @@ PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
   $scope.cursorId = -1
   $scope.loading = false
   $scope.exhausted = false
-  $scope.editing = false
+  $scope.tagging = false
   $scope.tagged = _.select $routeParams.tags.split('|'), (t) -> t.length > 0
   $scope.selected = []
   $scope.tags = []
 
-  $scope.go = (tag) ->
+  $scope.view = (tag) ->
     i = _.indexOf $scope.tagged, tag
     if i >= 0
       $scope.tagged.splice i, 1
@@ -43,7 +40,8 @@ PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
     return if $scope.loading
     $scope.loading = true
     q = offset: $scope.photos.length, limit: n, tags: $scope.tagged.join '|'
-    photos = Photo.query q, ->
+    photos = Photo().query q, ->
+      console.log photos
       for p in photos
         $scope.photos.push p
       if $scope.cursorIndex < 0
@@ -54,30 +52,50 @@ PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
         $scope.exhausted = true
       $scope.loading = false
 
-  $scope.starPhoto = (id) ->
-    p = $scope.getPhoto(id)
-    i = _.indexOf p.meta.user_tags, STAR
-    if i >= 0
-      p.meta.user_tags.splice i, 1
+  # GROUP PHOTO OPERATIONS
+
+  $scope.contrastBrightnessSelected = (gamma, alpha) ->
+    for id in $scope.selected
+      $scope.getPhoto(id).contrastBrightness gamma: gamma, alpha: alpha
+
+  $scope.tagSelected = (add: [], remove: []) ->
+    # get a set of ids to work with.
+    ids = [].concat $scope.selected
+    if ids.length is 0
+      ids.push $scope.cursorId
+
+    for id in ids
+      p = $scope.getPhoto id
+      p.setTag(t) for t in add
+      p.clearTag(t) for t in remove
+
+  # INDIVIDUAL PHOTO OPERATIONS
+
+  $scope.rotatePhoto = (degrees) ->
+    $scope.getPhoto().rotate rotate: degrees
+
+  $scope.cropPhoto = (x1, y1, x2, y2) ->
+    $scope.getPhoto().crop x1: x1, y1: y1, x2: x2, y2: y2
+
+  # EVENT HANDLING
+
+  $scope.handleClick = (id, $event) ->
+    if $event.ctrlKey or $event.metaKey or $event.altKey
+      $scope.togglePhoto id
+    else if $event.shiftKey
+      # TODO
     else
-      p.meta.user_tags.push STAR
-    p.$save id: p.id
+      $scope.selected = [id]
+      $scope.focusPhoto id
+    return true
 
-  $scope.rotatePhoto = (degrees, id) ->
-    editPhoto(id)
-    $scope.getPhoto(id).$rotate rotate: degrees
-
-  $scope.selectPhoto = (id) ->
+  $scope.togglePhoto = (id) ->
     id = $scope.getPhoto(id).id
     i = _.indexOf $scope.selected, id
     if i >= 0
       $scope.selected.splice i, 1
     else
       $scope.selected.push id
-
-  $scope.editPhoto = (id) ->
-    $scope.focusPhoto id
-    $scope.editing = true
 
   $scope.focusPhoto = (id) ->
     for p, i in $scope.photos
