@@ -2,17 +2,14 @@ import contextlib
 import cv2
 import datetime
 import json
-import lmj.cli
 import os
 import PIL.Image
 import sqlite3
 import subprocess
 
-lmj.cli.add_arg('--db', default='photo.db', help='connect to this database')
-
 DB = None
-
 DEFAULT_SIZES = (('full', 1000), ('thumb', 200))
+
 
 @contextlib.contextmanager
 def connect():
@@ -63,47 +60,6 @@ def find_many(offset=0, limit=10, tags=()):
     with connect() as db:
         for id, path, meta, exif, ops in db.execute(sql % where, args):
             yield Photo(id, path, parse(meta), parse(exif), parse(ops))
-
-
-def exists(path):
-    with connect() as db:
-        sql = 'SELECT COUNT(path) FROM photo WHERE path = ?'
-        c, = db.execute(sql, (path, )).fetchone()
-        return c > 0
-
-
-def import_(path):
-    exif, = parse(subprocess.check_output(['exiftool', '-json', path]))
-
-    stamp = datetime.datetime.now()
-    for key in 'DateTimeOriginal CreateDate ModifyDate FileModifyDate'.split():
-        stamp = exif.get(key)
-        if stamp:
-            stamp = datetime.datetime.strptime(stamp[:19], '%Y:%m:%d %H:%M:%S')
-            break
-
-    meta = dict(stamp=stamp, user_tags=[])
-
-    photo = None
-    with connect() as db:
-        db.execute('INSERT INTO photo (path) VALUES (?)', (path, ))
-        sql = 'SELECT id, path, meta, exif, ops FROM photo WHERE path = ?'
-        photo = Photo(*db.execute(sql, (path, )).fetchone())
-        photo.meta = meta
-        photo.exif = exif
-
-    photo.make_thumbnails(os.path.join(os.getcwd(), 'static', 'img'))
-    photo.meta['thumb'] = photo.thumb_path
-
-    # update the database with correct metadata.
-    sql = 'UPDATE photo SET tags = ?, meta = ?, exif = ?, stamp = ? where id = ?'
-    data = ('|%s|' % '|'.join(photo.tag_set),
-            stringify(meta),
-            stringify(exif),
-            photo.stamp,
-            photo.id)
-    with connect() as db:
-        db.execute(sql, data)
 
 
 class Photo(object):
