@@ -29,7 +29,7 @@
   <img id="photo-{{ p.id }}"
        class="img-rounded"
        ng-click="handleClick(p.id, $event)"
-       ng-src="static/img/tiny/{{ p.thumb }}">
+       ng-src="thumbs/{{ p.thumb }}">
   <i class="icon-chevron-right icon-2x" ng-show="p.id == cursorId"></i>
 </ul>
 </div>
@@ -53,7 +53,7 @@
   <span class="clearfix"></span>
  </div>
  <div class="modal-body">
-  <img id="image" class="img-rounded" ng-src="static/img/thumb/{{ photo.thumb }}">
+  <img id="image" class="img-rounded" ng-src="thumbs/{{ photo.thumb }}">
  </div>
  <div id="inputs" class="modal-footer">
   <input class="pull-left" type="text" ng-model="photo.meta.user_tags" />
