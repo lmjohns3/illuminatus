@@ -1,35 +1,9 @@
-import contextlib
 import cv2
 import datetime
 import json
 import os
 import PIL.Image
-import sqlite3
 import subprocess
-
-DB = None
-DEFAULT_SIZES = (('full', 1000), ('thumb', 200))
-
-
-@contextlib.contextmanager
-def connect():
-    db = sqlite3.connect(DB, isolation_level=None)
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-def init():
-    with connect() as db:
-        db.execute("CREATE TABLE IF NOT EXISTS photo ("
-                   "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                   "path VARCHAR UNIQUE NOT NULL DEFAULT '', "
-                   "tags VARCHAR NOT NULL DEFAULT '||', "
-                   "meta TEXT NOT NULL DEFAULT '{}', "
-                   "exif TEXT NOT NULL DEFAULT '{}', "
-                   "ops TEXT NOT NULL DEFAULT '[]', "
-                   "stamp DATETIME)")
 
 
 def parse(x):
@@ -38,28 +12,6 @@ def parse(x):
 def stringify(x):
     h = lambda z: z.isoformat() if isinstance(z, datetime.datetime) else None
     return json.dumps(x, default=h)
-
-
-def find_one(id):
-    sql = 'SELECT path, meta, exif, ops FROM photo WHERE id = ?'
-    with connect() as db:
-        path, meta, exif, ops = db.execute(sql, (id, )).fetchone()
-        return Photo(id, path, parse(meta), parse(exif), parse(ops))
-
-
-def find_many(offset=0, limit=10, tags=()):
-    sql = ('SELECT id, path, meta, exif, ops FROM photo '
-           'WHERE 1=1%s ORDER BY stamp DESC LIMIT ? OFFSET ?')
-
-    args = (limit, offset)
-    where = ''
-    if tags:
-        args = tuple('%%|%s|%%' % t for t in tags) + args
-        where = ''.join(' AND tags LIKE ?' for t in tags)
-
-    with connect() as db:
-        for id, path, meta, exif, ops in db.execute(sql % where, args):
-            yield Photo(id, path, parse(meta), parse(exif), parse(ops))
 
 
 class Photo(object):
@@ -161,13 +113,13 @@ class Photo(object):
 
         return img
 
-    def make_thumbnails(self, path, sizes=DEFAULT_SIZES, replace=False):
+    def make_thumbnails(self, sizes=(('full', 1000), ('thumb', 200)), replace=False):
         img = self.get_image()
         for name, size in sorted(sizes, key=lambda x: -x[1]):
-            p = os.path.join(path, name, self.thumb_path)
+            p = os.path.join(os.path.dirname(DB), name, self.thumb_path)
+            dirname = os.path.dirname(p)
+            try: os.makedirs(dirname)
+            except: pass
             if replace or not os.path.exists(p):
-                dirname = os.path.dirname(p)
-                try: os.makedirs(dirname)
-                except: pass
                 img.thumbnail((size, size), PIL.Image.ANTIALIAS)
                 img.save(p)
