@@ -16,12 +16,12 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     requires=['PIL', 'lmj.cli', 'cv2', 'bottle'],
     scripts=['scripts/lmj-photos'],
-    data_files=[('share/lmj-photos/web', [
-        'web/photos.js',
-        'web/photos.css',
-        'web/main.html',
-        'web/index.html',
-        'web/photos.html',
+    data_files=[('share/lmj-photos/static', [
+        'static/photos.js',
+        'static/photos.css',
+        'static/views/main.html',
+        'static/views/index.html',
+        'static/views/photos.html',
         ]),
     ],
     author='Leif Johnson',
