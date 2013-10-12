@@ -3,7 +3,6 @@ import datetime
 import json
 import os
 import PIL.Image
-import subprocess
 
 
 def parse(x):
