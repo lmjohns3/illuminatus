@@ -1,8 +1,8 @@
 <ul id="tag-list" class="list-unstyled pull-left">
  <li class="pull-left"
-     ng-click="view(tag.name)"
-     ng-repeat="tag in tags | orderBy:'name'"
-     ng-class="{ selected: tagged.indexOf(tag.name) >= 0 }">
+     ng-click="goto(tag.name)"
+     ng-repeat="tag in availableTags | orderBy:'name'"
+     ng-class="{ selected: activeTags.indexOf(tag.name) >= 0 }">
   <small title="{{ tag.count }}x">{{ tag.name }}</small>
  <li style="clear:left;border:none"></li>
 </ul>
@@ -12,30 +12,46 @@
 , 'k left': 'prevPhoto()'
 , down: 'nextPage()'
 , up: 'prevPage()'
-, '[': 'rotatePhoto(-90)'
-, ']': 'rotatePhoto(90)'
-, '{': 'rotatePhoto(-1)'
-, '}': 'rotatePhoto(1)'
+, '[': 'getPhoto().rotate(-90)'
+, ']': 'getPhoto().rotate(90)'
+, '{': 'getPhoto().rotate(-1)'
+, '}': 'getPhoto().rotate(1)'
 , x: 'togglePhoto()'
-, t: 'toggleTagger()'
+, t: '$(\'#modal-tagger\').modal()'
 }">
 <ul class="list-unstyled"
     lmj-scroll="loadPhotos()"
     lmj-scroll-disabled="loading"
     lmj-scroll-exhausted="exhausted">
  <li class="thumb pull-left"
-     ng-class="{ select: selected.indexOf(p.id) >= 0 }"
+     ng-class="{ select: selectedIds[p.id] }"
      ng-repeat="p in photos">
   <img id="photo-{{ p.id }}"
        class="img-rounded"
-       ng-click="handleClick(p.id, $event)"
-       ng-src="thumbs/{{ p.thumb }}">
-  <i class="icon-chevron-right icon-2x" ng-show="p.id == cursorId"></i>
+       ng-click="handleClick(p.id, $index, $event)"
+       ng-src="static/img/{{ p.thumb }}">
+  <i class="icon-chevron-right icon-2x" ng-show="$index == cursor"></i>
 </ul>
 </div>
 
-<div modal="tagging" close="tagging = false">
-<input type="text" name="name">
+<div class="modal" id="modal-tagger">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-body">
+<h4>Tags</h4>
+<ul class="list-unstyled">
+ <li class="tag pull-left" ng-repeat="t in selectedPhotoTags">
+  <h4><span class="label" ng-click="smartTag(t, $index)" ng-class="{
+'label-success': t.c == t.n,
+'label-warning': 0 < t.count && t.count < t.limit,
+'label-default': t.count == 0 }">{{ t.name }} ({{ t.count }})</span></h4>
+</ul>
+<div class="clearfix"></div>
+<h4>Add a tag</h4>
+<input type="text" id="tag-input">
+</div>
+</div>
+</div>
 </div>
 
 <div modal="editing" close="editing = false">
