@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
 import lmj.cli
+import lmj.photos
 import lmj.photos.commands
-import os
 
 lmj.cli.add_arg('--db', default='photo.db', help='connect to this database')
 
 
 def main(args):
+    lmj.photos.init(args.db)
     args.mod.main(args)
 
 

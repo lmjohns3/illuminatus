@@ -4,8 +4,6 @@ import sqlite3
 
 from .photos import Photo, parse, stringify
 
-DB = 'photos.db'
-
 
 @contextlib.contextmanager
 def connect():
@@ -15,6 +13,8 @@ def connect():
     finally:
         db.close()
 
+
+DB = 'photos.db'
 
 def init(path):
     global DB
@@ -34,8 +34,7 @@ def find_one(id):
     '''Find a single photo by its id.'''
     sql = 'SELECT path, meta, exif, ops FROM photo WHERE id = ?'
     with connect() as db:
-        path, meta, exif, ops = db.execute(sql, (id, )).fetchone()
-        return Photo(id, path, parse(meta), parse(exif), parse(ops))
+        return Photo(id, *db.execute(sql, (id, )).fetchone())
 
 
 def find_many(offset=0, limit=10, tags=()):
@@ -48,8 +47,8 @@ def find_many(offset=0, limit=10, tags=()):
         args = tuple('%%|%s|%%' % t for t in tags) + args
         where = ''.join(' AND tags LIKE ?' for t in tags)
     with connect() as db:
-        for id, path, meta, exif, ops in db.execute(sql % where, args):
-            yield Photo(id, path, parse(meta), parse(exif), parse(ops))
+        for row in db.execute(sql % where, args):
+            yield Photo(*row)
 
 
 def exists(path):
@@ -70,10 +69,13 @@ def insert(path):
 
 def update(photo):
     '''Update the database with correct metadata.'''
-    sql = 'UPDATE photo SET tags = ?, meta = ?, exif = ?, stamp = ? where id = ?'
+    sql = ('UPDATE photo '
+           'SET tags = ?, meta = ?, exif = ?, ops = ?, stamp = ? '
+           'WHERE id = ?')
     data = ('|%s|' % '|'.join(photo.tag_set),
             stringify(photo.meta),
             stringify(photo.exif),
+            stringify(photo.ops),
             photo.stamp,
             photo.id)
     with connect() as db:

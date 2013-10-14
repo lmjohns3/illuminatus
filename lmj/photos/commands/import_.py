@@ -2,24 +2,18 @@ import datetime
 import lmj.cli
 import lmj.photos
 import os
+import subprocess
 import sys
 
 cmd = lmj.cli.add_command('import')
-cmd.add_argument('--thumbs', default=os.curdir, metavar='DIR',
-                 help='store image thumbnails under DIR')
 cmd.add_argument('source', nargs='+', metavar='PATH',
                  help='import photos from these PATHs')
 cmd.set_defaults(mod=sys.modules[__name__])
 
-
-def exists(path):
-    with lmj.photos.connect() as db:
-        sql = 'SELECT COUNT(path) FROM photo WHERE path = ?'
-        c, = db.execute(sql, (path, )).fetchone()
-        return c > 0
+logging = lmj.cli.get_logger(__name__)
 
 
-def import_one(path, thumbs):
+def import_one(path):
     exif, = lmj.photos.parse(subprocess.check_output(['exiftool', '-json', path]))
 
     stamp = datetime.datetime.now()
@@ -29,32 +23,15 @@ def import_one(path, thumbs):
             stamp = datetime.datetime.strptime(stamp[:19], '%Y:%m:%d %H:%M:%S')
             break
 
-    meta = dict(stamp=stamp, user_tags=[])
+    photo = lmj.photos.insert(path)
+    photo.exif = exif
+    photo.meta = dict(stamp=stamp, user_tags=[], thumb=photo.thumb_path)
+    photo.make_thumbnails(sizes=[('img', 700)])
 
-    photo = None
-    with lmj.photos.connect() as db:
-        db.execute('INSERT INTO photo (path) VALUES (?)', (path, ))
-        sql = 'SELECT id, path, meta, exif, ops FROM photo WHERE path = ?'
-        photo = lmj.photos.Photo(*db.execute(sql, (path, )).fetchone())
-        photo.meta = meta
-        photo.exif = exif
-
-    photo.make_thumbnails(thumbs)
-    photo.meta['thumb'] = photo.thumb_path
-
-    # update the database with correct metadata.
-    sql = 'UPDATE photo SET tags = ?, meta = ?, exif = ?, stamp = ? where id = ?'
-    data = ('|%s|' % '|'.join(photo.tag_set),
-            lmj.photos.stringify(meta),
-            lmj.photos.stringify(exif),
-            photo.stamp,
-            photo.id)
-    with lmj.photos.connect() as db:
-        db.execute(sql, data)
+    lmj.photos.update(photo)
 
 
 def main(args):
-    lmj.photos.DB = args.db
     for src in args.source:
         for base, dirs, files in os.walk(src):
             dots = [n for n in dirs if n.startswith('.')]
@@ -65,8 +42,8 @@ def main(args):
                 _, ext = os.path.splitext(name)
                 if ext.lower()[1:] in 'gif jpg jpeg png tif tiff':
                     path = os.path.join(base, name)
-                    if exists(path):
-                        print '=', path
+                    if lmj.photos.exists(path):
+                        logging.info('= %s', path)
                     else:
-                        import_one(path, args.thumbs)
-                        print '+', path
+                        import_one(path)
+                        logging.info('+ %s', path)

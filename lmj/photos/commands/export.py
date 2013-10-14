@@ -111,6 +111,5 @@ def export(args, tag):
 
 
 def main(args):
-    lmj.photos.DB = args.db
     for tag in args.tag:
         export(args, tag)
