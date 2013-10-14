@@ -1,154 +1,180 @@
 # -*- coding: utf-8 -*-
 
 IndexCtrl = ($scope, $location, $http) ->
-  $scope.tags = []
-
-  $scope.byCountDesc = (g) -> -g.count
+  $scope.availableTags = []
 
   $http.get('tags').then (res) ->
-    $scope.tags = res.data
+    $scope.availableTags = res.data
     return true
 
-  $scope.go = (tag) ->
-    $location.path '/' + tag
-
-  $scope.random = -> Math.random()
+  $scope.byCountDesc = (g) -> -g.count
+  $scope.goto = (tag) -> $location.path '/' + tag
 
 
 PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
-  $scope.photo = null
   $scope.photos = []
-  $scope.cursorIndex = -1
-  $scope.cursorId = -1
+  $scope.photoIds = {}
   $scope.loading = false
   $scope.exhausted = false
-  $scope.tagging = false
-  $scope.tagged = _.select $routeParams.tags.split('|'), (t) -> t.length > 0
-  $scope.selected = []
-  $scope.tags = []
 
-  $scope.view = (tag) ->
-    i = _.indexOf $scope.tagged, tag
+  $scope.cursor = -1
+  $scope.selectedIds = {}
+  $scope.selectedPhotoTags = []
+
+  $scope.activeTags = _.select $routeParams.tags.split('|'), (t) -> t.length > 0
+  $scope.availableTags = []
+
+  # REQUESTING DATA
+
+  $scope.goto = (tag) ->
+    i = _.indexOf $scope.activeTags, tag
     if i >= 0
-      $scope.tagged.splice i, 1
+      $scope.activeTags.splice i, 1
     else
-      $scope.tagged.push tag
-    $location.path '/' + $scope.tagged.join '|'
+      $scope.activeTags.push tag
+    $location.path '/' + $scope.activeTags.join '|'
 
   $scope.loadPhotos = (n = 32) ->
     return if $scope.exhausted
     return if $scope.loading
     $scope.loading = true
-    q = offset: $scope.photos.length, limit: n, tags: $scope.tagged.join '|'
-    photos = Photo().query q, ->
-      console.log photos
+    q = offset: $scope.photos.length, limit: n, tags: $scope.activeTags.join '|'
+    Photo().query q, (photos) ->
       for p in photos
+        $scope.photoIds[p.id] = $scope.photos.length
         $scope.photos.push p
-      if $scope.cursorIndex < 0
-        $scope.cursorIndex = 0
-        $scope.photo = $scope.photos[0]
-        $scope.cursorId = $scope.photo.id
-      if photos.length < n
-        $scope.exhausted = true
+      if $scope.cursor < 0
+        $scope.cursor = 0
+        recomputeSelected()
+      $scope.exhausted = photos.length < n
       $scope.loading = false
 
-  # GROUP PHOTO OPERATIONS
+  # TAGGING OPERATIONS
 
-  $scope.contrastBrightnessSelected = (gamma, alpha) ->
-    for id in $scope.selected
-      $scope.getPhoto(id).contrastBrightness gamma: gamma, alpha: alpha
+  $('#modal-tagger').on 'shown.bs.modal', ->
+    $('#tag-input').val ''
+    $('#tag-input').focus()
+  $('#modal-tagger').on 'hide.bs.modal', -> $('#thumbs').focus()
+  $('#modal-tagger').on 'hidden.bs.modal', -> $('#tag-input').val ''
 
-  $scope.tagSelected = (add: [], remove: []) ->
-    # get a set of ids to work with.
-    ids = [].concat $scope.selected
-    if ids.length is 0
-      ids.push $scope.cursorId
+  $('#tag-input').on 'change', ->
+    tag = $('#tag-input').val()
+    for id of activeIds()
+      $scope.getPhoto(id).setTag tag
+    $('#tag-input').val('')
+    recomputeSelected()
 
-    for id in ids
-      p = $scope.getPhoto id
-      p.setTag(t) for t in add
-      p.clearTag(t) for t in remove
+  $scope.smartTag = (tag, index) ->
+    tag = $scope.selectedPhotoTags[index]
+    if tag.count is tag.limit
+      op = 'clearTag'
+      tag.count = 0
+    else
+      op = 'setTag'
+      tag.count = tag.limit
+    for id of activeIds()
+      $scope.getPhoto(id)[op] tag.name
 
   # INDIVIDUAL PHOTO OPERATIONS
 
-  $scope.rotatePhoto = (degrees) ->
-    $scope.getPhoto().rotate rotate: degrees
+  $scope.contrastBrightnessPhoto = (gamma, alpha) ->
+    $scope.getPhoto().contrastBrightness gamma: gamma, alpha: alpha
 
   $scope.cropPhoto = (x1, y1, x2, y2) ->
     $scope.getPhoto().crop x1: x1, y1: y1, x2: x2, y2: y2
 
   # EVENT HANDLING
 
-  $scope.handleClick = (id, $event) ->
+  $scope.handleClick = (id, index, $event) ->
+    # CTRL/META/ALT -- toggle selected state of clicked photo.
     if $event.ctrlKey or $event.metaKey or $event.altKey
       $scope.togglePhoto id
-    else if $event.shiftKey
-      # TODO
-    else
-      $scope.selected = [id]
-      $scope.focusPhoto id
+      return true
+
+    # SHIFT -- select all photos between current cursor and clicked photo.
+    if $event.shiftKey
+      i = $scope.cursor
+      [i, index] = [index, i] if i > index
+      while i != index
+        $scope.selectedIds[$scope.photos[i].id] = true
+        i++
+      $scope.selectedIds[id] = true
+      return true
+
+    # NO MODIFIER -- select clicked photo.
+    $scope.selectedIds = {}
+    $scope.selectedIds[id] = true
+    $scope.cursor = index
+
+    recomputeSelected()
+
     return true
 
   $scope.togglePhoto = (id) ->
     id = $scope.getPhoto(id).id
-    i = _.indexOf $scope.selected, id
-    if i >= 0
-      $scope.selected.splice i, 1
+    if $scope.selectedIds[id]
+      delete $scope.selectedIds[id]
     else
-      $scope.selected.push id
-
-  $scope.focusPhoto = (id) ->
-    for p, i in $scope.photos
-      if p.id is id
-        $scope.cursorIndex = i
-        $scope.cursorId = id
-        $scope.photo = $scope.getPhoto()
-        break
+      $scope.selectedIds[id] = true
+    recomputeSelected()
 
   $scope.prevPhoto = ->
-    return if $scope.cursorIndex <= 0
-    $scope.cursorIndex--
+    return if $scope.cursor <= 0
+    $scope.cursor--
     $scope.scroll()
 
   $scope.prevPage = ->
-    return if $scope.cursorIndex <= 0
-    $scope.cursorIndex = Math.max 0, $scope.cursorIndex - 16
+    return if $scope.cursor <= 0
+    $scope.cursor = Math.max 0, $scope.cursor - 16
     $scope.scroll()
 
   $scope.nextPhoto = ->
-    return if $scope.cursorIndex >= $scope.photos.length - 1
-    $scope.cursorIndex++
+    return if $scope.cursor >= $scope.photos.length - 1
+    $scope.cursor++
     $scope.scroll()
 
   $scope.nextPage = ->
     L = $scope.photos.length - 1
-    return if $scope.cursorIndex >= L
-    $scope.cursorIndex = Math.min L, $scope.cursorIndex + 16
+    return if $scope.cursor >= L
+    $scope.cursor = Math.min L, $scope.cursor + 16
     $scope.scroll()
 
   $scope.getPhoto = (id) ->
     if typeof id is 'undefined' or id is null
-      return $scope.photos[$scope.cursorIndex]
-    for p in $scope.photos
-      if p.id is id
-        return p
-    null
+      return $scope.photos[$scope.cursor]
+    $scope.photos[$scope.photoIds[id]]
 
   $scope.scroll = ->
-    $scope.photo = $scope.getPhoto()
-    $scope.cursorId = $scope.photo.id
-    y = $("#photo-#{$scope.cursorId}").offset().top - 16
+    y = $("#photo-#{$scope.getPhoto().id}").offset().top - 16
     top = $(window).scrollTop()
     unless top < y < top + $(window).height() - 100
       $('html, body').animate scrollTop: y
 
-  $http.get("tags?tags=#{$scope.tagged.join '|'}").then (res) ->
-    $scope.tags = res.data
+  activeIds = ->
+    ids = _.extend {}, $scope.selectedIds
+    if 0 is _.size ids
+      ids[$scope.photos[$scope.cursor].id] = true
+    return ids
+
+  recomputeSelected = ->
+    ids = activeIds()
+    counts = {}
+    for id of ids
+        for t in $scope.getPhoto(id).tags
+          counts[t] = 0 unless counts[t]
+          counts[t]++
+    n = _.size ids
+    $scope.selectedPhotoTags = _.sortBy (
+      {name: t, count: c, limit: n} for t, c of counts
+    ), (x) -> -x.count
+
+  $http.get("tags?tags=#{$scope.activeTags.join '|'}").then (res) ->
+    $scope.availableTags = res.data
     return true
 
   $('#thumbs').focus()
 
-  $scope.loadPhotos 100
+  $scope.loadPhotos 200
 
 
 angular.module('app.controllers', ['app.services'])
