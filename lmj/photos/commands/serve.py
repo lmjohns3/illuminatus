@@ -1,8 +1,10 @@
 import bottle
 import collections
+import hashlib
 import lmj.cli
 import lmj.photos
 import os
+import random
 import sys
 
 cmd = lmj.cli.add_command('serve')
@@ -12,25 +14,22 @@ cmd.add_argument('--port', type=int, default=5555, metavar='N',
                  help='run server on port N')
 cmd.add_argument('--reload', action='store_true',
                  help='reload server whenever modules change')
-cmd.add_argument('--thumbs', default=os.curdir, metavar='DIR',
-                 help='load thumbnails from DIR')
 cmd.set_defaults(mod=sys.modules[__name__])
 
 
-WEB = os.path.join(sys.prefix, 'share', 'lmj-photos', 'web')
-THUMBS = os.curdir
+STATIC = os.path.join(sys.prefix, 'share', 'lmj-photos', 'static')
 
 
 @bottle.get('/')
 def main():
-    return bottle.static_file('main.html', WEB)
+    return static(os.path.join('views', 'main.html'))
 
 
 @bottle.get('/static/<path:path>')
 def static(path):
-    if os.path.isfile(os.path.join(WEB, path)):
-        return bottle.static_file(path, WEB)
-    return bottle.static_file(path, THUMBS)
+    for root in (os.path.dirname(lmj.photos.DB), os.curdir, 'static', STATIC):
+        if os.path.isfile(os.path.join(root, path)):
+            return bottle.static_file(path, root)
 
 
 @bottle.get('/tags')
@@ -55,7 +54,8 @@ def tags():
 
     result = []
     for tag, ids in groups.iteritems():
-        photos = [dict(id=id, meta=metas[id]) for _, id in zip(range(4), ids)]
+        photos = [dict(id=id, meta=metas[id], degrees=20 * random.random() - 10)
+                  for _, id in zip(range(4), ids)]
         result.append(dict(name=tag, count=len(ids), photos=photos))
     return lmj.photos.stringify(result)
 
@@ -76,29 +76,40 @@ def post_photo(id):
     f = lmj.photos.parse(list(bottle.request.forms)[0])
     if 'meta' in f:
         p.meta = f['meta']
-    sql = 'UPDATE photo SET tags = ?, meta = ?, stamp = ? where id = ?'
-    data = '|%s|' % '|'.join(p.tag_set), lmj.photos.stringify(p.meta), p.stamp, id
-    with lmj.photos.connect() as db:
-        db.execute(sql, data)
-        return lmj.photos.stringify(p.to_dict())
+        lmj.photos.update(p)
+    return lmj.photos.stringify(p.to_dict())
 
-@bottle.post('/photo/<id:int>/rotate')
+
+@bottle.post('/photo/<id:int>/ro')
 def rotate_photo(id):
-    post = lambda k: bottle.request.forms.get(k)
-    p = lmj.photos.find_one(id)
-    p.rotate(float(post('degrees')))
+    lmj.photos.find_one(id).add_op(
+        'ro', degrees=float(bottle.request.forms.get('degrees')))
     return 'ok'
 
-@bottle.post('/photo/<id:int>/contrast-brightness')
+@bottle.post('/photo/<id:int>/cb')
 def contrast_brightness_photo(id):
-    post = lambda k: bottle.request.forms.get(k)
-    p = lmj.photos.find_one(id)
-    p.contrast_brightness(float(post('gamma')), float(post('alpha')))
+    post = lambda k: float(bottle.request.forms.get(k))
+    lmj.photos.find_one(id).add_op(
+        'cb', gamma=post('gamma'), alpha=post('alpha'))
     return 'ok'
+
+@bottle.post('/photo/<id:int>/cr')
+def crop_photo(id):
+    post = lambda k: float(bottle.request.forms.get(k))
+    lmj.photos.find_one(id).add_op(
+        'cr', box=[post(k) for k in 'x1 y1 x2 y2'.split()])
+    return 'ok'
+
+@bottle.post('/photo/<id:int>/eq')
+def equalize_photo(id):
+    lmj.photos.find_one(id).add_op('eq')
+    return 'ok'
+
+
+@bottle.delete('/photo/<id:int>')
+def delete_photo(id):
+    pass
 
 
 def main(args):
-    global THUMBS
-    THUMBS = args.thumbs
-    lmj.photos.DB = args.db
     bottle.run(host=args.host, port=args.port, reloader=args.reload)
