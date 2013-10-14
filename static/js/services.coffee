@@ -44,16 +44,27 @@ PhotoFactory = ($http) ->
           @tags = res.data.tags
 
       contrastBrightness: (data) ->
-        $http(method: 'POST', url: "/photo/#{id}/contrast-brightness", data: data).then (res) =>
+        $http(method: 'POST', url: "/photo/#{id}/cb", data: data).then (res) =>
           console.log 'contrast/brightness', id, data, res
 
       rotate: (data) ->
-        $http(method: 'POST', url: "/photo/#{id}/rotate", data: data).then (res) =>
+        $http(method: 'POST', url: "/photo/#{id}/ro", data: data).then (res) =>
           console.log 'rorate', id, data, res
+
+      crop: (data) ->
+        $http(method: 'POST', url: "/photo/#{id}/cr", data: data).then (res) =>
+          console.log 'crop', id, data, res
 
     Photo.query = (query, callback) ->
       value = []
-      $http.get('/photo').then (res) ->
+      url = '/photo?'
+      if query.tags.length > 0
+        url += "tags=#{query.tags}&"
+      if query.offset > 0
+        url += "offset=#{query.offset}&"
+      if query.limit > 0
+        url += "limit=#{query.limit}&"
+      $http.get(url).then (res) ->
         for p in res.data
           value.push new Photo(p)
         callback value
@@ -62,5 +73,5 @@ PhotoFactory = ($http) ->
     return Photo
 
 
-angular.module('app.services', ['ngResource'])
+angular.module('app.services', [])
   .factory('Photo', PhotoFactory)
