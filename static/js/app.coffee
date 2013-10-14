@@ -3,7 +3,6 @@ angular.module('app', [
   'app.directives'
   'app.filters'
   'app.services'
-  'ui.bootstrap'
 ]).config ($routeProvider, $locationProvider) ->
   $routeProvider
     .when('/', templateUrl: 'static/views/index.html', controller: 'IndexCtrl')
