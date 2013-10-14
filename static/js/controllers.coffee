@@ -54,11 +54,16 @@ PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
   $('#modal-tagger').on 'shown.bs.modal', ->
     $('#tag-input').val ''
     $('#tag-input').focus()
-  $('#modal-tagger').on 'hide.bs.modal', -> $('#thumbs').focus()
-  $('#modal-tagger').on 'hidden.bs.modal', -> $('#tag-input').val ''
+  $('#modal-tagger').on 'hidden.bs.modal', ->
+    $('#tag-input').val ''
+
+  $scope.showTagger = -> $('#modal-tagger').modal()
+  $scope.toggleViewer = -> $('#modal-viewer').toggle()
+
+  $scope.imageWidth = -> 62 + $('#modal-viewer img').width()
 
   $('#tag-input').on 'change', ->
-    tag = $('#tag-input').val()
+    tag = $('#tag-input').val().toLowerCase()
     for id of activeIds()
       $scope.getPhoto(id).setTag tag
     $('#tag-input').val('')
@@ -172,6 +177,7 @@ PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
     $scope.availableTags = res.data
     return true
 
+  $('.modal').on 'hide.bs.modal', -> $('#thumbs').focus()
   $('#thumbs').focus()
 
   $scope.loadPhotos 200
