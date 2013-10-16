@@ -16,8 +16,9 @@
 , ']': 'getPhoto().rotate(90)'
 , '{': 'getPhoto().rotate(-1)'
 , '}': 'getPhoto().rotate(1)'
-, 'x': 'togglePhoto()'
 , 't': 'showTagger()'
+, 'x': 'togglePhoto()'
+, 'y': 'deleteSelected($event)'
 , 'v space': 'toggleViewer()'
 }">
 <ul class="list-unstyled"
@@ -40,13 +41,15 @@
 <div class="modal-content">
 <div class="modal-body">
 <ul class="list-unstyled">
- <li class="tag pull-left" ng-repeat="t in selectedPhotoTags">
-  <h4><span class="label" ng-click="smartTag(t, $index)" ng-class="{
+ <li class="tag pull-left label"
+     ng-repeat="t in selectedPhotoTags"
+     ng-click="smartTag(t, $index)"
+     ng-class="{
 'label-success': t.c == t.n,
 'label-warning': 0 < t.count && t.count < t.limit,
-'label-default': t.count == 0 }">{{ t.name }} ({{ t.count }})</span></h4>
+'label-default': t.count == 0 }">{{ t.name }} ({{ t.count }})
 </ul>
-<input type="text" id="tag-input">
+<input type="text" class="tag-input input-sm">
 </div>
 </div>
 </div>
@@ -55,7 +58,15 @@
 <div class="modal" id="modal-viewer">
 <div class="modal-dialog" style="width:{{ imageWidth() }}px">
 <div class="modal-content">
-<div class="modal-header">
+<div class="modal-body">
+ <h5>{{ dirnameBasename(photos[cursor].path) }}</h5>
+ <ul class="list-unstyled">
+  <li ng-repeat="tag in photos[cursor].tags | orderBy:'toString()'"
+      class="tag label label-default pull-left">{{ tag }}
+  <li><input type="text" class="tag-input input-sm" size="10">
+ </ul>
+ <span class="clearfix"></span>
+ <img class="img-rounded" ng-src="static/img/{{ photos[cursor].thumb }}">
  <i class="pull-left icon-adjust"></i>
  <i class="pull-left icon-bar-chart"></i>
  <i class="pull-left icon-magic"></i>
@@ -67,9 +78,6 @@
  <i class="pull-left icon-smile"></i>
  <i class="pull-left icon-wrench"></i>
  <span class="clearfix"></span>
-</div>
-<div class="modal-body">
- <img class="img-rounded" ng-src="static/img/{{ photos[cursor].thumb }}">
 </div>
 </div>
 </div>
