@@ -7,6 +7,8 @@ import sys
 import traceback
 
 cmd = lmj.cli.add_command('import')
+cmd.add_argument('--tag', default=[], nargs='+', metavar='TAG',
+                 help='apply these TAGs to all imported photos')
 cmd.add_argument('source', nargs='+', metavar='PATH',
                  help='import photos from these PATHs')
 cmd.set_defaults(mod=sys.modules[__name__])
@@ -14,7 +16,7 @@ cmd.set_defaults(mod=sys.modules[__name__])
 logging = lmj.cli.get_logger(__name__)
 
 
-def import_one(path):
+def import_one(path, tags):
     exif, = lmj.photos.parse(subprocess.check_output(['exiftool', '-json', path]))
 
     stamp = datetime.datetime.now()
@@ -24,12 +26,12 @@ def import_one(path):
             stamp = datetime.datetime.strptime(stamp[:19], '%Y:%m:%d %H:%M:%S')
             break
 
-    photo = lmj.photos.insert(path)
-    photo.exif = exif
-    photo.meta = dict(stamp=stamp, user_tags=[], thumb=photo.thumb_path)
-    photo.make_thumbnails(sizes=[('img', 700)])
+    p = lmj.photos.insert(path)
+    p.exif = exif
+    p.meta = dict(stamp=stamp, user_tags=list(tags), thumb=p.thumb_path)
+    p.make_thumbnails(sizes=[('img', 700)])
 
-    lmj.photos.update(photo)
+    lmj.photos.update(p)
 
 
 def main(args):
@@ -48,7 +50,7 @@ def main(args):
                         logging.info('= %s', path)
                         continue
                     try:
-                        import_one(path)
+                        import_one(path, args.tag)
                         logging.warn('+ %s', path)
                     except:
                         _, exc, tb = sys.exc_info()
