@@ -43,17 +43,25 @@ PhotoFactory = ($http) ->
           @stamp = res.data.stamp
           @tags = res.data.tags
 
-      contrastBrightness: (data) ->
-        $http(method: 'POST', url: "/photo/#{id}/cb", data: data).then (res) =>
-          console.log 'contrast/brightness', id, data, res
+      contrast: (data) ->
+        id = @id
+        $http(method: 'POST', url: "/photo/#{id}/contrast", data: data).then (res) ->
+          console.log 'contrast', id, data, res
 
       rotate: (data) ->
-        $http(method: 'POST', url: "/photo/#{id}/ro", data: data).then (res) =>
+        id = @id
+        $http(method: 'POST', url: "/photo/#{id}/rotate", data: data).then (res) ->
           console.log 'rorate', id, data, res
 
       crop: (data) ->
-        $http(method: 'POST', url: "/photo/#{id}/cr", data: data).then (res) =>
+        id = @id
+        $http(method: 'POST', url: "/photo/#{id}/crop", data: data).then (res) ->
           console.log 'crop', id, data, res
+
+      remove: (force) ->
+        id = @id
+        $http(method: 'DELETE', url: "/photo/#{id}/#{@path}").then (res) ->
+          console.log 'deleted', id
 
     Photo.query = (query, callback) ->
       value = []
