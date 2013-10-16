@@ -51,23 +51,34 @@ PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
 
   # TAGGING OPERATIONS
 
+  $scope.showTagger = ->
+    if $scope.viewerVisible
+      $('#modal-viewer .tag-input').focus()
+    else
+      $('#modal-tagger').modal('show')
+
   $('#modal-tagger').on 'shown.bs.modal', ->
-    $('#tag-input').val ''
-    $('#tag-input').focus()
+    $('#modal-tagger .tag-input').val ''
+    $('#modal-tagger .tag-input').focus()
+
   $('#modal-tagger').on 'hidden.bs.modal', ->
-    $('#tag-input').val ''
+    $('#modal-tagger .tag-input').val ''
 
-  $scope.showTagger = -> $('#modal-tagger').modal()
-  $scope.toggleViewer = -> $('#modal-viewer').toggle()
-
-  $scope.imageWidth = -> 62 + $('#modal-viewer img').width()
-
-  $('#tag-input').on 'change', ->
-    tag = $('#tag-input').val().toLowerCase()
+  $('.tag-input').on 'change', (e) ->
+    el = $(e.target)
+    tag = el.val().toLowerCase()
     for id of activeIds()
       $scope.getPhoto(id).setTag tag
-    $('#tag-input').val('')
+    el.val ''
     recomputeSelected()
+
+  $scope.dirnameBasename = (s) ->
+    return s unless s
+    i = s.lastIndexOf '/'
+    return s if i < 0
+    j = s[0...i].lastIndexOf '/'
+    return s if j <= 0
+    return "...#{s.substring j}"
 
   $scope.smartTag = (tag, index) ->
     tag = $scope.selectedPhotoTags[index]
@@ -80,13 +91,32 @@ PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
     for id of activeIds()
       $scope.getPhoto(id)[op] tag.name
 
+  # GROUP PHOTO OPERATIONS
+
+  $scope.deleteSelected = ($event) ->
+    return unless confirm 'Really delete?'
+    # if CTRL/META/ALT is pressed while deleting, also delete original photos.
+    force = $event.ctrlKey or $event.metaKey or $event.altKey
+    for id of activeIds()
+      $scope.getPhoto(id).remove force
+
   # INDIVIDUAL PHOTO OPERATIONS
 
-  $scope.contrastBrightnessPhoto = (gamma, alpha) ->
-    $scope.getPhoto().contrastBrightness gamma: gamma, alpha: alpha
+  $scope.toggleViewer = ->
+    modal = $('#modal-viewer').modal('toggle').first()
+    $scope.viewerVisible = 'none' isnt modal.css 'display'
+
+  $scope.imageWidth = ->
+    62 + $('#modal-viewer img').width()
+
+  $scope.contrastPhoto = (gamma, alpha) ->
+    $scope.getPhoto().contrast gamma: gamma, alpha: alpha
+    #image.src = "/static/img/#{p.thumb_path}##{new Date().getTime()}"
 
   $scope.cropPhoto = (x1, y1, x2, y2) ->
-    $scope.getPhoto().crop x1: x1, y1: y1, x2: x2, y2: y2
+    p = $scope.getPhoto()
+    p.crop x1: x1, y1: y1, x2: x2, y2: y2
+    #image.src = "/static/img/#{p.thumb_path}##{new Date().getTime()}"
 
   # EVENT HANDLING
 
@@ -177,8 +207,9 @@ PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
     $scope.availableTags = res.data
     return true
 
-  $('.modal').on 'hide.bs.modal', -> $('#thumbs').focus()
   $('#thumbs').focus()
+  $('.modal').on 'hide.bs.modal', -> $('#thumbs').focus()
+  $('#modal-viewer').on 'blur', '.tag-input', -> $('#thumbs').focus()
 
   $scope.loadPhotos 200
 
