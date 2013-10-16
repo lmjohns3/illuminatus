@@ -80,27 +80,27 @@ def post_photo(id):
     return lmj.photos.stringify(p.to_dict())
 
 
-@bottle.post('/photo/<id:int>/ro')
+@bottle.post('/photo/<id:int>/rotate')
 def rotate_photo(id):
     lmj.photos.find_one(id).add_op(
         'ro', degrees=float(bottle.request.forms.get('degrees')))
     return 'ok'
 
-@bottle.post('/photo/<id:int>/cb')
-def contrast_brightness_photo(id):
+@bottle.post('/photo/<id:int>/contrast')
+def contrast_photo(id):
     post = lambda k: float(bottle.request.forms.get(k))
     lmj.photos.find_one(id).add_op(
         'cb', gamma=post('gamma'), alpha=post('alpha'))
     return 'ok'
 
-@bottle.post('/photo/<id:int>/cr')
+@bottle.post('/photo/<id:int>/crop')
 def crop_photo(id):
     post = lambda k: float(bottle.request.forms.get(k))
     lmj.photos.find_one(id).add_op(
         'cr', box=[post(k) for k in 'x1 y1 x2 y2'.split()])
     return 'ok'
 
-@bottle.post('/photo/<id:int>/eq')
+@bottle.post('/photo/<id:int>/equalize')
 def equalize_photo(id):
     lmj.photos.find_one(id).add_op('eq')
     return 'ok'
@@ -108,7 +108,11 @@ def equalize_photo(id):
 
 @bottle.delete('/photo/<id:int>')
 def delete_photo(id):
-    pass
+    p = lmj.photos.find_one(id)
+    key = None
+    if bottle.request.forms.get('force'):
+        key = hashlib.md5(p.path).digest()
+    lmj.photos.delete(p.path, key)
 
 
 def main(args):
