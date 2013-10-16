@@ -4,6 +4,7 @@ import lmj.photos
 import os
 import subprocess
 import sys
+import traceback
 
 cmd = lmj.cli.add_command('import')
 cmd.add_argument('source', nargs='+', metavar='PATH',
@@ -32,6 +33,7 @@ def import_one(path):
 
 
 def main(args):
+    errors = []
     for src in args.source:
         for base, dirs, files in os.walk(src):
             dots = [n for n in dirs if n.startswith('.')]
@@ -44,6 +46,12 @@ def main(args):
                     path = os.path.join(base, name)
                     if lmj.photos.exists(path):
                         logging.info('= %s', path)
-                    else:
+                        continue
+                    try:
                         import_one(path)
-                        logging.info('+ %s', path)
+                        logging.warn('+ %s', path)
+                    except:
+                        _, exc, tb = sys.exc_info()
+                        errors.append((path, exc, traceback.format_tb(tb)))
+    for path, exc, tb in errors:
+        logging.error('! %s %s', path, exc)#, ''.join(tb))
