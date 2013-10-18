@@ -2,6 +2,8 @@ import contextlib
 import hashlib
 import sqlite3
 
+from . import colorspace
+
 from .photos import Photo, parse, stringify
 
 
