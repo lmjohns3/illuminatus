@@ -3,6 +3,7 @@ import datetime
 import json
 import os
 import PIL.Image
+import PIL.ImageOps
 
 
 def parse(x):
@@ -105,7 +106,7 @@ class Photo(object):
             key = op['key']
             if key == 'eq':
                 # http://opencvpython.blogspot.com/2013/03/histograms-2-histogram-equalization.html
-                img = cv2.equalizeHist(img)
+                img = PIL.ImageOps.autocontrast(img.convert('L'))
                 continue
             if key == 'cr':
                 x1, y1, x2, y2 = op['box']
@@ -126,8 +127,12 @@ class Photo(object):
 
         return img
 
+    def apply_op_to_thumbnail(self, op):
+        pass
+
     def add_op(self, key, **op):
         import lmj.photos
         op['key'] = key
         self.ops.append(op)
+        self.apply_op_to_thumbnail(op)
         lmj.photos.update(self)
