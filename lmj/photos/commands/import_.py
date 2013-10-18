@@ -2,7 +2,6 @@ import datetime
 import lmj.cli
 import lmj.photos
 import os
-import subprocess
 import sys
 import traceback
 
@@ -16,21 +15,31 @@ cmd.set_defaults(mod=sys.modules[__name__])
 logging = lmj.cli.get_logger(__name__)
 
 
+def compute_timestamp_from(exif, key):
+    raw = exif.get(key)
+    if not raw:
+        return None
+    for fmt in ('%Y:%m:%d %H:%M:%S', '%Y:%m:%d %H:%M+%S'):
+        try:
+            return datetime.datetime.strptime(raw[:19], fmt)
+        except:
+            pass
+    return None
+
+
 def import_one(path, tags):
-    exif, = lmj.photos.parse(subprocess.check_output(['exiftool', '-json', path]))
-
-    stamp = datetime.datetime.now()
-    for key in 'DateTimeOriginal CreateDate ModifyDate FileModifyDate'.split():
-        stamp = exif.get(key)
-        if stamp:
-            stamp = datetime.datetime.strptime(stamp[:19], '%Y:%m:%d %H:%M:%S')
-            break
-
     p = lmj.photos.insert(path)
-    p.exif = exif
+
+    stamp = None
+    for key in ('DateTimeOriginal', 'CreateDate', 'ModifyDate', 'FileModifyDate'):
+        stamp = compute_timestamp_from(p.exif, key)
+        if stamp:
+             break
+    if stamp is None:
+        stamp = datetime.datetime.now()
+
     p.meta = dict(stamp=stamp, user_tags=list(tags), thumb=p.thumb_path)
     p.make_thumbnails(sizes=[('img', 700)])
-
     lmj.photos.update(p)
 
 

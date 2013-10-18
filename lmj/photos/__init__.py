@@ -27,21 +27,20 @@ def init(path):
                    "path VARCHAR UNIQUE NOT NULL DEFAULT '', "
                    "tags VARCHAR NOT NULL DEFAULT '||', "
                    "meta TEXT NOT NULL DEFAULT '{}', "
-                   "exif TEXT NOT NULL DEFAULT '{}', "
                    "ops TEXT NOT NULL DEFAULT '[]', "
                    "stamp DATETIME)")
 
 
 def find_one(id):
     '''Find a single photo by its id.'''
-    sql = 'SELECT path, meta, exif, ops FROM photo WHERE id = ?'
+    sql = 'SELECT path, meta, ops FROM photo WHERE id = ?'
     with connect() as db:
         return Photo(id, *db.execute(sql, (id, )).fetchone())
 
 
 def find_many(offset=0, limit=10, tags=()):
     '''Find photos matching a particular tag set.'''
-    sql = ('SELECT id, path, meta, exif, ops FROM photo '
+    sql = ('SELECT id, path, meta, ops FROM photo '
            'WHERE 1=1%s ORDER BY stamp DESC LIMIT ? OFFSET ?')
     args = (limit, offset)
     where = ''
@@ -65,18 +64,17 @@ def insert(path):
     '''Add a new photo to the database.'''
     with connect() as db:
         db.execute('INSERT INTO photo (path) VALUES (?)', (path, ))
-        sql = 'SELECT id, path, meta, exif, ops FROM photo WHERE path = ?'
+        sql = 'SELECT id, path, meta, ops FROM photo WHERE path = ?'
         return Photo(*db.execute(sql, (path, )).fetchone())
 
 
 def update(photo):
     '''Update the database with correct metadata.'''
     sql = ('UPDATE photo '
-           'SET tags = ?, meta = ?, exif = ?, ops = ?, stamp = ? '
+           'SET tags = ?, meta = ?, ops = ?, stamp = ? '
            'WHERE id = ?')
     data = ('|%s|' % '|'.join(photo.tag_set),
             stringify(photo.meta),
-            stringify(photo.exif),
             stringify(photo.ops),
             photo.stamp,
             photo.id)

@@ -4,6 +4,7 @@ import json
 import os
 import PIL.Image
 import PIL.ImageOps
+import subprocess
 
 
 def parse(x):
@@ -15,12 +16,19 @@ def stringify(x):
 
 
 class Photo(object):
-    def __init__(self, id=-1, path='', meta=None, exif=None, ops=None):
+    def __init__(self, id=-1, path='', meta=None, ops=None):
         self.id = id
         self.path = path
         self.meta = parse(meta or '{}')
-        self.exif = parse(exif or '{}')
+        self._exif = None
         self.ops = parse(ops or '[]')
+
+    @property
+    def exif(self):
+        if self._exif is None:
+            self._exif, = parse(subprocess.check_output(
+                    ['exiftool', '-json', self.path]))
+        return self._exif
 
     @property
     def tag_set(self):
@@ -31,7 +39,7 @@ class Photo(object):
 
     @property
     def user_tag_set(self):
-        return set(self.meta.get('user_tags', []))
+        return set([t.lower() for t in self.meta.get('user_tags', [])])
 
     @property
     def geo_tag_set(self):
@@ -56,7 +64,16 @@ class Photo(object):
 
     @property
     def exif_tag_set(self):
-        return set()
+        tags = set()
+        if 'FNumber' in self.exif:
+            tags.add('f{}'.format(self.exif['FNumber']).lower())
+        if 'ShutterSpeed' in self.exif:
+            tags.add('{}sec'.format(self.exif['ShutterSpeed']).lower())
+        if 'FocalLength' in self.exif:
+            tags.add(self.exif['FocalLength'].replace(' ', '').lower())
+        if 'Model' in self.exif:
+            tags.add(self.exif['Model'].lower())
+        return tags
 
     @property
     def stamp(self):
@@ -70,7 +87,7 @@ class Photo(object):
     @property
     def thumb_path(self):
         id = '%08x' % self.id
-        return os.path.join(id[:-3], '%s.jpg' % id[-3:])
+        return os.path.join(id[:-3], '%s.jpg' % id)
 
     def to_dict(self):
         return dict(id=self.id,
@@ -95,11 +112,12 @@ class Photo(object):
 
     def get_image(self):
         img = PIL.Image.open(self.path)
-        if self.exif.get('Orientation') == 'Rotate 90 CW':
+        orient = self.exif.get('Orientation')
+        if orient == 'Rotate 90 CW':
             img = img.rotate(-90)
-        if self.exif.get('Orientation') == 'Rotate 180':
+        if orient == 'Rotate 180':
             img = img.rotate(-180)
-        if self.exif.get('Orientation') == 'Rotate 270 CW':
+        if orient == 'Rotate 270 CW':
             img = img.rotate(-270)
 
         for op in self.ops:
