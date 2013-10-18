@@ -32,18 +32,11 @@ class Photo(object):
 
     @property
     def tag_set(self):
-        return (self.datetime_tag_set |
-                self.user_tag_set |
-                self.geo_tag_set |
-                self.exif_tag_set)
+        return self.datetime_tag_set | self.user_tag_set
 
     @property
     def user_tag_set(self):
         return set([t.lower() for t in self.meta.get('user_tags', [])])
-
-    @property
-    def geo_tag_set(self):
-        return set()
 
     @property
     def datetime_tag_set(self):
@@ -61,19 +54,6 @@ class Photo(object):
                     ordinal(int(self.stamp.strftime('%d'))),
                     self.stamp.strftime('%I%p').lower().strip('0'),
                     ])
-
-    @property
-    def exif_tag_set(self):
-        tags = set()
-        if 'FNumber' in self.exif:
-            tags.add('f{}'.format(self.exif['FNumber']).lower())
-        if 'ShutterSpeed' in self.exif:
-            tags.add('{}sec'.format(self.exif['ShutterSpeed']).lower())
-        if 'FocalLength' in self.exif:
-            tags.add(self.exif['FocalLength'].replace(' ', '').lower())
-        if 'Model' in self.exif:
-            tags.add(self.exif['Model'].lower())
-        return tags
 
     @property
     def stamp(self):
