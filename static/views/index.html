@@ -1,11 +1,11 @@
 <ul class="list-unstyled" id="groups">
  <li class="pull-left"
-     ng-click="goto(tag.name)"
-     ng-repeat="tag in availableTags | filter:filter | orderBy:byCountDesc">
-  <h3>{{ tag.name }} <small>({{ tag.count }})</small></h3>
+     ng-click="goto(group.name)"
+     ng-repeat="group in groups | filter:filter | orderBy:byCountDesc">
+  <h3>{{ group.name }} <small>({{ group.count }})</small></h3>
   <div class="thumbs">
-   <div class="frame" style="-webkit-transform:rotate({{ p.degrees }}deg)" ng-repeat="p in tag.photos">
-   <img class="img-rounded" src="static/img/{{ p.meta.thumb }}">
+   <div class="frame" style="-webkit-transform:rotate({{ p.degrees }}deg)" ng-repeat="p in group.photos">
+   <img class="img-rounded" src="static/img/{{ p.thumb }}">
    </div>
   </div>
 </ul>

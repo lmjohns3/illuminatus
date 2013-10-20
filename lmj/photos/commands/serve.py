@@ -1,6 +1,5 @@
 import bottle
 import collections
-import hashlib
 import lmj.cli
 import lmj.photos
 import os
@@ -32,42 +31,67 @@ def static(path):
             return bottle.static_file(path, root)
 
 
+@bottle.get('/groups')
+def groups():
+    # build up some in-memory mappings from the database.
+    tags = {}
+    ids = collections.defaultdict(set)
+    with lmj.photos.connect() as db:
+        tags = dict(db.execute('SELECT id, name FROM tag'))
+        for tid, pid in db.execute('SELECT tag_id, photo_id FROM photo_tag'):
+            ids[tid].add(pid)
+
+    # select a sample of photos from each tag group.
+    selected = {}
+    union = set()
+    for tid, pids in ids.iteritems():
+        s = random.sample(pids, 4) if len(pids) > 4 else list(pids)
+        selected[tid] = s
+        union |= set(s)
+    union = tuple(union)
+
+    # get metadata from the db for all selected photos.
+    metas = {}
+    with lmj.photos.connect() as db:
+        for a in xrange(0, len(union), 512):
+            unio = union[a:a+512]
+            sql = ('SELECT id, meta FROM photo WHERE id IN (%s)' %
+                   ','.join('?' for _ in unio))
+            metas.update(dict(db.execute(sql, unio)))
+
+    # assemble data for each group and send it over the wire.
+    groups = []
+    for tid, pids in ids.iteritems():
+        groups.append(dict(
+            name=tags[tid],
+            count=len(pids),
+            photos=[dict(thumb=lmj.photos.parse(metas[i])['thumb'],
+                         degrees=20 * random.random() - 10)
+                    for i in selected[tid]]))
+    return lmj.photos.stringify(groups)
+
+
 @bottle.get('/tags')
 def tags():
     req = bottle.request
-
-    groups = collections.defaultdict(set)
-    metas = {}
-
-    sql = 'SELECT id, meta, tags FROM photo WHERE 1=1'
-    args = tuple(t.strip() for t in req.query.tags.split('|') if t.strip())
-    if args:
-        sql += ''.join(' AND tags LIKE ?' for t in args)
-        args = tuple('%%|%s|%%' % t for t in args)
-
-    with lmj.photos.connect() as db:
-        for id, meta, tags in db.execute(sql, args):
-            for t in tags.split('|'):
-                if t.strip():
-                    groups[t].add(id)
-                    metas[id] = lmj.photos.parse(meta)
-
-    result = []
-    for tag, ids in groups.iteritems():
-        photos = [dict(id=id, meta=metas[id], degrees=20 * random.random() - 10)
-                  for _, id in zip(range(4), ids)]
-        result.append(dict(name=tag, count=len(ids), photos=photos))
-    return lmj.photos.stringify(result)
+    tags = (t.strip() for t in req.query.tags.split('|') if t.strip())
+    counts = collections.defaultdict(int)
+    for p in lmj.photos.find_tagged(tuple(tags)):
+        for t in p.tag_set:
+            counts[t] += 1
+    return lmj.photos.stringify(
+        [dict(name=t, count=c) for t, c in counts.iteritems()])
 
 
 @bottle.get('/photo')
 def photos():
     req = bottle.request
     tags = (t.strip() for t in req.query.tags.split('|') if t.strip())
-    query = lmj.photos.find_many(offset=int(req.query.offset or 0),
-                             limit=int(req.query.limit or 10),
-                             tags=list(tags))
-    return lmj.photos.stringify([p.to_dict() for p in query])
+    return lmj.photos.stringify(
+        [p.to_dict() for p in lmj.photos.find_tagged(
+            tuple(tags),
+            offset=int(req.query.offset or 0),
+            limit=int(req.query.limit or 10))])
 
 
 @bottle.post('/photo/<id:int>')
@@ -111,8 +135,8 @@ def delete_photo(id):
     p = lmj.photos.find_one(id)
     key = None
     if bottle.request.forms.get('force'):
-        key = hashlib.md5(p.path).digest()
-    lmj.photos.delete(p.path, key)
+        key = p.path
+    lmj.photos.delete(p.id, key)
 
 
 def main(args):

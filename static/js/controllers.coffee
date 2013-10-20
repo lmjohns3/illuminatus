@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
 IndexCtrl = ($scope, $location, $http) ->
-  $scope.availableTags = []
+  $scope.groups = []
 
-  $http.get('tags').then (res) ->
-    $scope.availableTags = res.data
+  $http.get('groups').then (res) ->
+    $scope.groups = res.data
     return true
 
   $scope.byCountDesc = (g) -> -g.count
-  $scope.goto = (tag) -> $location.path '/' + tag
+  $scope.goto = (tag) -> $location.path '/' + encodeURIComponent tag
 
 
 PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
@@ -21,8 +21,10 @@ PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
   $scope.selectedIds = {}
   $scope.selectedPhotoTags = []
 
-  $scope.activeTags = _.select $routeParams.tags.split('|'), (t) -> t.length > 0
   $scope.availableTags = []
+  $scope.activeTags = _.select (
+    decodeURIComponent(x) for x in $routeParams.tags.split('|')),
+    (t) -> t.length > 0
 
   # REQUESTING DATA
 
@@ -32,7 +34,7 @@ PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
       $scope.activeTags.splice i, 1
     else
       $scope.activeTags.push tag
-    $location.path '/' + $scope.activeTags.join '|'
+    $location.path '/' + (encodeURIComponent(x) for x in $scope.activeTags).join '|'
 
   $scope.loadPhotos = (n = 32) ->
     return if $scope.exhausted
@@ -209,7 +211,7 @@ PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
 
   $('#thumbs').focus()
   $('.modal').on 'hide.bs.modal', -> $('#thumbs').focus()
-  $('#modal-viewer').on 'blur', '.tag-input', -> $('#thumbs').focus()
+  $('#modal-viewer .tag-input').on 'blur', -> $('#thumbs').focus()
 
   $scope.loadPhotos 200
 
