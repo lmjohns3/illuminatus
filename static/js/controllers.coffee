@@ -95,13 +95,6 @@ PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
 
   # GROUP PHOTO OPERATIONS
 
-  $scope.deleteSelected = ($event) ->
-    return unless confirm 'Really delete?'
-    # if CTRL/META/ALT is pressed while deleting, also delete original photos.
-    force = $event.ctrlKey or $event.metaKey or $event.altKey
-    for id of activeIds()
-      $scope.getPhoto(id).remove force
-
   # INDIVIDUAL PHOTO OPERATIONS
 
   $scope.toggleViewer = ->
@@ -119,6 +112,15 @@ PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
     p = $scope.getPhoto()
     p.crop x1: x1, y1: y1, x2: x2, y2: y2
     #image.src = "/static/img/#{p.thumb_path}##{new Date().getTime()}"
+
+  $scope.deletePhoto = ->
+    return unless confirm 'Really delete?'
+    $scope.getPhoto().remove (id) ->
+      i = _.indexOf _.pluck($scope.photos, 'id'), id
+      if i >= 0
+        if cursor is $scope.photos.length - 1
+          cursor--
+        $scope.photos.splice i, 1
 
   # EVENT HANDLING
 

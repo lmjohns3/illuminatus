@@ -12,26 +12,26 @@ PhotoFactory = ($http) ->
       toggleTag: (tag) ->
         i = @tagIndex tag
         if i >= 0
-          @meta.user_tags.splice i, 1
+          @meta.tags.splice i, 1
         else
-          @meta.user_tags.push tag
+          @meta.tags.push tag
         @save()
 
       tagIndex: (tag) ->
-        _.indexOf @meta.user_tags, tag
+        _.indexOf @meta.tags, tag
 
       hasTag: (tag) ->
         0 <= @tagIndex tag
 
       setTag: (tag) ->
         unless @hasTag tag
-          @meta.user_tags.push tag
+          @meta.tags.push tag
           @save()
 
       clearTag: (tag) ->
         i = @tagIndex tag
         if i >= 0
-          @meta.user_tags.splice i, 1
+          @meta.tags.splice i, 1
           @save()
 
       save: ->
@@ -58,10 +58,12 @@ PhotoFactory = ($http) ->
         $http(method: 'POST', url: "/photo/#{id}/crop", data: data).then (res) ->
           console.log 'crop', id, data, res
 
-      remove: (force) ->
+      remove: (callback) ->
         id = @id
-        $http(method: 'DELETE', url: "/photo/#{id}/#{@path}").then (res) ->
+        data = path: @path
+        $http(method: 'DELETE', url: "/photo/#{id}", data: data).then (res) ->
           console.log 'deleted', id
+          callback id
 
     Photo.query = (query, callback) ->
       value = []
