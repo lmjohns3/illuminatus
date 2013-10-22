@@ -59,19 +59,19 @@ class Photo(object):
 
     @property
     def exif_tag_set(self):
-        def highest(n):
-            return n - n % (10 ** (len(str(n)) - 1))
+        def highest(n, digits=1):
+            n = float(n)
+            if n < 10 ** digits:
+                return int(n)
+            shift = 10 ** (len(str(int(n))) - digits)
+            return int(shift * round(n / shift))
 
         if 'FNumber' in self.exif:
             yield 'f/{}'.format(int(float(self.exif['FNumber'])))
 
         if 'ISO' in self.exif:
             iso = int(self.exif['ISO'])
-            if iso < 1000:
-                iso = highest(iso)
-            else:
-                iso -= iso % (10 ** (len(str(n)) - 2))
-            yield 'iso:{}'.format(iso)
+            yield 'iso:{}'.format(highest(iso, 1 + int(iso > 1000)))
 
         if 'ShutterSpeed' in self.exif:
             s = self.exif['ShutterSpeed']
@@ -85,8 +85,7 @@ class Photo(object):
             yield '{}ms'.format(max(1, highest(n)))
 
         if 'FocalLength' in self.exif:
-            n = int(float(self.exif['FocalLength'][:-2]))
-            yield '{}mm'.format(highest(n))
+            yield '{}mm'.format(highest(self.exif['FocalLength'][:-2]))
 
         if 'Model' in self.exif:
             t = self.exif['Model'].lower()
