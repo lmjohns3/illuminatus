@@ -66,12 +66,14 @@ class Photo(object):
             shift = 10 ** (len(str(int(n))) - digits)
             return int(shift * round(n / shift))
 
+        tags = set()
+
         if 'FNumber' in self.exif:
-            yield 'f/{}'.format(int(float(self.exif['FNumber'])))
+            tags.add('f/{}'.format(round(float(self.exif['FNumber']), 1)))
 
         if 'ISO' in self.exif:
             iso = int(self.exif['ISO'])
-            yield 'iso:{}'.format(highest(iso, 1 + int(iso > 1000)))
+            tags.add('iso:{}'.format(highest(iso, 1 + int(iso > 1000))))
 
         if 'ShutterSpeed' in self.exif:
             s = self.exif['ShutterSpeed']
@@ -82,16 +84,18 @@ class Photo(object):
                 n = int(1000. / float(s[2:]))
             else:
                 raise ValueError('cannot parse ShutterSpeed "{}"'.format(s))
-            yield '{}ms'.format(max(1, highest(n)))
+            tags.add('{}ms'.format(max(1, highest(n))))
 
         if 'FocalLength' in self.exif:
-            yield '{}mm'.format(highest(self.exif['FocalLength'][:-2]))
+            tags.add('{}mm'.format(highest(self.exif['FocalLength'][:-2])))
 
-        if 'Model' in self.exif:
+        if 'Model' in self.exif and self.exif['Model'].strip():
             t = self.exif['Model'].lower()
             for make in ('canon', 'nikon', 'kodak', 'digital camera'):
                 t = t.replace(make, '').strip()
-            yield 'kit:{}'.format(t)
+            tags.add('kit:{}'.format(t))
+
+        return tags
 
     @property
     def stamp(self):
