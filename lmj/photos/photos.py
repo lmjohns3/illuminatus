@@ -36,7 +36,9 @@ class Photo(object):
 
     @property
     def user_tag_set(self):
-        return set([t.lower() for t in self.meta.get('user_tags', [])])
+        return set([t.strip().lower()
+                    for t in self.meta.get('tags', [])
+                    if t.strip()])
 
     @property
     def datetime_tag_set(self):
@@ -54,6 +56,43 @@ class Photo(object):
                     ordinal(int(self.stamp.strftime('%d'))),
                     self.stamp.strftime('%I%p').lower().strip('0'),
                     ])
+
+    @property
+    def exif_tag_set(self):
+        def highest(n):
+            return n - n % (10 ** (len(str(n)) - 1))
+
+        if 'FNumber' in self.exif:
+            yield 'f/{}'.format(int(float(self.exif['FNumber'])))
+
+        if 'ISO' in self.exif:
+            iso = int(self.exif['ISO'])
+            if iso < 1000:
+                iso = highest(iso)
+            else:
+                iso -= iso % (10 ** (len(str(n)) - 2))
+            yield 'iso:{}'.format(iso)
+
+        if 'ShutterSpeed' in self.exif:
+            s = self.exif['ShutterSpeed']
+            n = -1
+            if isinstance(s, (float, int)):
+                n = int(1000 * s)
+            elif s.startswith('1/'):
+                n = int(1000. / float(s[2:]))
+            else:
+                raise ValueError('cannot parse ShutterSpeed "{}"'.format(s))
+            yield '{}ms'.format(max(1, highest(n)))
+
+        if 'FocalLength' in self.exif:
+            n = int(float(self.exif['FocalLength'][:-2]))
+            yield '{}mm'.format(highest(n))
+
+        if 'Model' in self.exif:
+            t = self.exif['Model'].lower()
+            for make in ('canon', 'nikon', 'kodak', 'digital camera'):
+                t = t.replace(make, '').strip()
+            yield 'kit:{}'.format(t)
 
     @property
     def stamp(self):

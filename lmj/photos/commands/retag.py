@@ -21,40 +21,10 @@ def main(args):
     photos = list(lmj.photos.find_tagged(args.tag))
     for p in photos:
         tags = list(args.add)
-
+        tags.append(os.path.basename(os.path.dirname(p.path)))
+        tags.extend(p.exif_tag_set)
         if not args.replace:
             tags.extend(p.user_tag_set)
-
-        tags.append(os.path.basename(os.path.dirname(p.path)))
-
-        if 'FNumber' in p.exif:
-            tags.append('f/{}'.format(int(float(p.exif['FNumber']))))
-
-        if 'ISO' in p.exif:
-            tags.append('iso{}'.format(p.exif['ISO']))
-
-        if 'ShutterSpeed' in p.exif:
-            s = p.exif['ShutterSpeed']
-            n = -1
-            if isinstance(s, (float, int)):
-                n = int(1000 * s)
-            elif s.startswith('1/'):
-                n = int(1000. / float(s[2:]))
-            else:
-                raise ValueError('cannot parse ShutterSpeed "{}"'.format(s))
-            n -= n % (10 ** (len(str(n)) - 1))
-            tags.append('{}ms'.format(max(1, n)))
-
-        if 'FocalLength' in p.exif:
-            n = int(float(p.exif['FocalLength'][:-2]))
-            n -= n % (10 ** (len(str(n)) - 1))
-            tags.append('{}mm'.format(n))
-
-        if 'Model' in p.exif:
-            t = p.exif['Model'].lower()
-            for make in ('canon', 'nikon', 'kodak', 'digital camera'):
-                t = t.replace(make, '').strip()
-            tags.append(t)
 
         p.meta['tags'] = sorted(
             set([t.strip().lower() for t in tags if t.strip()]))
