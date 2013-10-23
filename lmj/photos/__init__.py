@@ -1,9 +1,12 @@
 import contextlib
+import lmj.cli
 import sqlite3
 
 from . import colorspace
 
 from .photos import Photo, parse, stringify
+
+logging = lmj.cli.get_logger('lmj.photos')
 
 
 @contextlib.contextmanager
@@ -18,10 +21,12 @@ def connect():
 
 
 DB = 'photos.db'
+ENABLE_DELETE_ORIGINAL = False
 
-def init(path):
-    global DB
+def init(path, enable_delete_original=False):
+    global DB, ENABLE_DELETE_ORIGINAL
     DB = path
+    ENABLE_DELETE_ORIGINAL = enable_delete_original
     with connect() as db:
         db.execute('CREATE TABLE IF NOT EXISTS photo '
                    '( id INTEGER PRIMARY KEY AUTOINCREMENT'
@@ -125,14 +130,30 @@ def delete(id, remove_if_path_matches=None):
     '''Remove a photo.
 
     WARNING: Also removes the original source file from disk, if
-    remove_if_path_matches contains the path for the photo.
+    remove_if_path_matches contains the path for the photo, and the module-level
+    flag ENABLE_DELETE_ORIGINAL has been set.
     '''
     photo = find_one(id)
+
+    # remove thumbnails of this photo.
+    base = os.path.dirname(DB)
+    for size in os.listdir(base):
+        try:
+            os.unlink(os.path.join(base, size, photo.thumb_path))
+        except:
+            pass
+
+    # if desired, remove the original file referenced by this photo.
+    if remove_if_path_matches == photo.path and ENABLE_DELETE_ORIGINAL:
+        try:
+            os.unlink(photo.path)
+        except:
+            logging.exception('%s: error removing photo', photo.path)
+
+    # remove photo from the database.
     with connect() as db:
         db.execute('DELETE FROM photo_tag WHERE photo_id = ?', (id, ))
         db.execute('DELETE FROM photo WHERE id = ?', (id, ))
-    if remove_if_path_matches == photo.path:
-        os.unlink(photo.path)
 
 
 def clean(path):

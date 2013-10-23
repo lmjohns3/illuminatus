@@ -5,10 +5,12 @@ import lmj.photos
 import lmj.photos.commands
 
 lmj.cli.add_arg('--db', default='photo.db', help='connect to this database')
+lmj.cli.add_arg('--enable-delete-original', action='store_true',
+                help='allow web interface to delete original photos')
 
 
 def main(args):
-    lmj.photos.init(args.db)
+    lmj.photos.init(args.db, args.enable_delete_original)
     args.mod.main(args)
 
 
