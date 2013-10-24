@@ -32,12 +32,18 @@ class Photo(object):
 
     @property
     def tag_set(self):
-        return self.datetime_tag_set | self.user_tag_set
+        return self.datetime_tag_set | self.user_tag_set | self.exif_tag_set
 
     @property
     def user_tag_set(self):
         return set([t.strip().lower()
-                    for t in self.meta.get('tags', [])
+                    for t in self.meta.get('user_tags', [])
+                    if t.strip()])
+
+    @property
+    def exif_tag_set(self):
+        return set([t.strip().lower()
+                    for t in self.meta.get('exif_tags', [])
                     if t.strip()])
 
     @property
@@ -56,46 +62,6 @@ class Photo(object):
                     ordinal(int(self.stamp.strftime('%d'))),
                     self.stamp.strftime('%I%p').lower().strip('0'),
                     ])
-
-    @property
-    def exif_tag_set(self):
-        def highest(n, digits=1):
-            n = float(n)
-            if n < 10 ** digits:
-                return int(n)
-            shift = 10 ** (len(str(int(n))) - digits)
-            return int(shift * round(n / shift))
-
-        tags = set()
-
-        if 'FNumber' in self.exif:
-            tags.add('f/{}'.format(round(float(self.exif['FNumber']), 1)))
-
-        if 'ISO' in self.exif:
-            iso = int(self.exif['ISO'])
-            tags.add('iso:{}'.format(highest(iso, 1 + int(iso > 1000))))
-
-        if 'ShutterSpeed' in self.exif:
-            s = self.exif['ShutterSpeed']
-            n = -1
-            if isinstance(s, (float, int)):
-                n = int(1000 * s)
-            elif s.startswith('1/'):
-                n = int(1000. / float(s[2:]))
-            else:
-                raise ValueError('cannot parse ShutterSpeed "{}"'.format(s))
-            tags.add('{}ms'.format(max(1, highest(n))))
-
-        if 'FocalLength' in self.exif:
-            tags.add('{}mm'.format(highest(self.exif['FocalLength'][:-2])))
-
-        if 'Model' in self.exif and self.exif['Model'].strip():
-            t = self.exif['Model'].lower()
-            for make in ('canon', 'nikon', 'kodak', 'digital camera'):
-                t = t.replace(make, '').strip()
-            tags.add('kit:{}'.format(t))
-
-        return tags
 
     @property
     def stamp(self):

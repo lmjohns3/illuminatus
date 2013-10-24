@@ -41,14 +41,22 @@ def import_one(path, tags, add_path_tag=False):
         stamp = datetime.datetime.now()
 
     tags = list(tags)
-    tags.extend(p.exif_tag_set)
     if add_path_tag:
         tags.append(os.path.basename(os.path.dirname(path)))
     tags = [t.strip().lower() for t in tags if t.strip()]
 
-    p.meta = dict(stamp=stamp, thumb=p.thumb_path, tags=sorted(set(tags)))
+    p.meta = dict(
+        stamp=stamp,
+        thumb=p.thumb_path,
+        user_tags=sorted(set(tags)),
+        exif_tags=lmj.photos.tags_from_exif(p.exif))
+
+    logging.info('user: %s; exif: %s',
+                 ', '.join(p.meta['user_tags']),
+                 ', '.join(p.meta['exif_tags']),
+                 )
+
     p.make_thumbnails(sizes=[('img', 700)])
-    logging.info('initial tags: %s', ', '.join(p.meta['tags']))
 
     lmj.photos.update(p)
 

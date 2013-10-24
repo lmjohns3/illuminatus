@@ -12,26 +12,26 @@ PhotoFactory = ($http) ->
       toggleTag: (tag) ->
         i = @tagIndex tag
         if i >= 0
-          @meta.tags.splice i, 1
+          @meta.user_tags.splice i, 1
         else
-          @meta.tags.push tag
+          @meta.user_tags.push tag
         @save()
 
       tagIndex: (tag) ->
-        _.indexOf @meta.tags, tag
+        _.indexOf @meta.user_tags, tag
 
       hasTag: (tag) ->
         0 <= @tagIndex tag
 
       setTag: (tag) ->
         unless @hasTag tag
-          @meta.tags.push tag
+          @meta.user_tags.push tag
           @save()
 
       clearTag: (tag) ->
         i = @tagIndex tag
         if i >= 0
-          @meta.tags.splice i, 1
+          @meta.user_tags.splice i, 1
           @save()
 
       save: ->
