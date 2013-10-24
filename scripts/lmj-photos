@@ -10,7 +10,7 @@ lmj.cli.add_arg('--enable-delete-original', action='store_true',
 
 
 def main(args):
-    lmj.photos.init(args.db, args.enable_delete_original)
+    lmj.photos.db.init(args.db, args.enable_delete_original)
     args.mod.main(args)
 
 

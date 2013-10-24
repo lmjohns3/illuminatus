@@ -29,11 +29,10 @@ def main(args):
             tags.append(os.path.basename(os.path.dirname(p.path)))
         if not args.replace:
             tags.extend(p.user_tag_set)
-        tags = [t.strip().lower() for t in tags if t.strip()]
 
-        p.meta['user_tags'] = sorted(set(tags))
+        p.meta['user_tags'] = sorted(lmj.photos.normalized_tag_set(tags))
         if args.exif:
-            p.meta['exif_tags'] = lmj.photos.tags_from_exif(p.exif)
+            p.meta['exif_tags'] = sorted(lmj.photos.tags_from_exif(p.exif))
 
         logging.info('%s: user: %s; exif: %s',
                      os.path.basename(p.path),

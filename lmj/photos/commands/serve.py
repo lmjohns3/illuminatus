@@ -36,7 +36,7 @@ def groups():
     # build up some in-memory mappings from the database.
     tags = {}
     ids = collections.defaultdict(set)
-    with lmj.photos.connect() as db:
+    with lmj.photos.db.connect() as db:
         tags = dict(db.execute('SELECT id, name FROM tag'))
         for tid, pid in db.execute('SELECT tag_id, photo_id FROM photo_tag'):
             ids[tid].add(pid)
@@ -45,14 +45,14 @@ def groups():
     selected = {}
     union = set()
     for tid, pids in ids.iteritems():
-        s = random.sample(pids, 4) if len(pids) > 4 else list(pids)
+        s = random.sample(pids, 3) if len(pids) > 3 else list(pids)
         selected[tid] = s
         union |= set(s)
     union = tuple(union)
 
     # get metadata from the db for all selected photos.
     metas = {}
-    with lmj.photos.connect() as db:
+    with lmj.photos.db.connect() as db:
         for a in xrange(0, len(union), 512):
             unio = union[a:a+512]
             sql = ('SELECT id, meta FROM photo WHERE id IN (%s)' %

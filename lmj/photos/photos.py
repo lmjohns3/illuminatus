@@ -1,32 +1,25 @@
 import cv2
 import datetime
-import json
 import os
 import PIL.Image
 import PIL.ImageOps
 import subprocess
 
-
-def parse(x):
-    return json.loads(x)
-
-def stringify(x):
-    h = lambda z: z.isoformat() if isinstance(z, datetime.datetime) else None
-    return json.dumps(x, default=h)
+from . import util
 
 
 class Photo(object):
     def __init__(self, id=-1, path='', meta=None, ops=None):
         self.id = id
         self.path = path
-        self.meta = parse(meta or '{}')
+        self.meta = util.parse(meta or '{}')
         self._exif = None
-        self.ops = parse(ops or '[]')
+        self.ops = util.parse(ops or '[]')
 
     @property
     def exif(self):
         if self._exif is None:
-            self._exif, = parse(subprocess.check_output(
+            self._exif, = util.parse(subprocess.check_output(
                     ['exiftool', '-json', self.path]))
         return self._exif
 
@@ -36,15 +29,11 @@ class Photo(object):
 
     @property
     def user_tag_set(self):
-        return set([t.strip().lower()
-                    for t in self.meta.get('user_tags', [])
-                    if t.strip()])
+        return util.normalized_tag_set(self.meta('user_tags'))
 
     @property
     def exif_tag_set(self):
-        return set([t.strip().lower()
-                    for t in self.meta.get('exif_tags', [])
-                    if t.strip()])
+        return util.normalized_tag_set(self.meta('exif_tags'))
 
     @property
     def datetime_tag_set(self):
@@ -56,12 +45,13 @@ class Photo(object):
             if 10 < n < 20: s = 'th'
             return '%d%s' % (n, s)
 
-        return set([self.stamp.strftime('%Y'),
-                    self.stamp.strftime('%B').lower(),
-                    self.stamp.strftime('%A').lower(),
-                    ordinal(int(self.stamp.strftime('%d'))),
-                    self.stamp.strftime('%I%p').lower().strip('0'),
-                    ])
+        return util.normalized_tag_set(
+            [self.stamp.strftime('%Y'),
+             self.stamp.strftime('%B'),
+             self.stamp.strftime('%A'),
+             ordinal(int(self.stamp.strftime('%d'))),
+             self.stamp.strftime('%I%p').strip('0'),
+             ])
 
     @property
     def stamp(self):
