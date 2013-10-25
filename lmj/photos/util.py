@@ -14,7 +14,7 @@ def stringify(x):
 def normalized_tag_set(seq, sep=None):
     '''Return a normalized set of tags from the given sequence.'''
     if not seq:
-        return []
+        return set()
     if isinstance(seq, str):
         seq = seq.split(sep)
     return set(t.lower().strip() for t in seq if t.strip())
