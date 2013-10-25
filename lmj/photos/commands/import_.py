@@ -47,8 +47,8 @@ def import_one(path, tags, add_path_tag=False):
     p.meta = dict(
         stamp=stamp,
         thumb=p.thumb_path,
-        user_tags=sorted(lmj.photos.normalized_tag_set(tags)),
-        exif_tags=sorted(lmj.photos.tags_from_exif(p.exif)))
+        user_tags=sorted(lmj.photos.util.normalized_tag_set(tags)),
+        exif_tags=sorted(lmj.photos.util.tags_from_exif(p.exif)))
 
     logging.info('user: %s; exif: %s',
                  ', '.join(p.meta['user_tags']),
@@ -57,7 +57,7 @@ def import_one(path, tags, add_path_tag=False):
 
     p.make_thumbnails(sizes=[('img', 700)])
 
-    lmj.photos.update(p)
+    lmj.photos.db.update(p)
 
 
 def main(args):

@@ -3,19 +3,24 @@ import collections
 import lmj.cli
 import lmj.photos
 import os
+import re
 import sys
 
 cmd = lmj.cli.add_command('export')
 cmd.add_argument('--target', default=os.curdir, metavar='DIR',
                  help='export photos to pages rooted at DIR')
-cmd.add_argument('--require-tag', default=[], nargs='+', metavar='TAG',
-                 help='only export photos with this tag')
+cmd.add_argument('--require', default=[], nargs='+', metavar='TAG',
+                 help='only export photos with TAG')
+cmd.add_argument('--exclude', default=[], nargs='+', metavar='TAG',
+                 help='do not export photos with TAG')
+cmd.add_argument('--hide', default=[], nargs='+', metavar='TAG',
+                 help='do not export TAG with exported photos')
 cmd.add_argument('--replace', action='store_true',
                  help='replace existing exported photos')
 cmd.add_argument('--preserve-omnipresent-tags', action='store_true',
                  help='do not remove tags that are present in all photos')
-cmd.add_argument('tag', nargs=argparse.REMAINDER,
-                 help='export photos with these tags')
+cmd.add_argument('tag', nargs=argparse.REMAINDER, metavar='TAG',
+                 help='export photos with these TAGs')
 cmd.set_defaults(mod=sys.modules[__name__])
 
 
@@ -76,7 +81,7 @@ IMAGE = u'''\
 
 def export(args, tag):
     # pull matching photos from the database.
-    images = list(lmj.photos.find_tagged([tag] + args.require_tag))
+    images = list(lmj.photos.db.find_tagged([tag] + args.require_tag))
 
     # count tag usage for this set of photos.
     tag_counts = collections.defaultdict(int)

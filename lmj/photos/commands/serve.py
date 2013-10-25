@@ -26,7 +26,7 @@ def main():
 
 @bottle.get('/static/<path:path>')
 def static(path):
-    for root in (os.path.dirname(lmj.photos.DB), os.curdir, 'static', STATIC):
+    for root in (os.path.dirname(lmj.photos.db.DB), os.curdir, 'static', STATIC):
         if os.path.isfile(os.path.join(root, path)):
             return bottle.static_file(path, root)
 
@@ -65,10 +65,10 @@ def groups():
         groups.append(dict(
             name=tags[tid],
             count=len(pids),
-            photos=[dict(thumb=lmj.photos.parse(metas[i])['thumb'],
+            photos=[dict(thumb=lmj.photos.util.parse(metas[i])['thumb'],
                          degrees=20 * random.random() - 10)
                     for i in selected[tid]]))
-    return lmj.photos.stringify(groups)
+    return lmj.photos.util.stringify(groups)
 
 
 @bottle.get('/tags')
@@ -76,10 +76,10 @@ def tags():
     req = bottle.request
     tags = (t.strip() for t in req.query.tags.split('|') if t.strip())
     counts = collections.defaultdict(int)
-    for p in lmj.photos.find_tagged(tuple(tags)):
+    for p in lmj.photos.db.find_tagged(tuple(tags)):
         for t in p.tag_set:
             counts[t] += 1
-    return lmj.photos.stringify(
+    return lmj.photos.util.stringify(
         [dict(name=t, count=c) for t, c in counts.iteritems()])
 
 
@@ -87,8 +87,8 @@ def tags():
 def photos():
     req = bottle.request
     tags = (t.strip() for t in req.query.tags.split('|') if t.strip())
-    return lmj.photos.stringify(
-        [p.to_dict() for p in lmj.photos.find_tagged(
+    return lmj.photos.util.stringify(
+        [p.to_dict() for p in lmj.photos.db.find_tagged(
             tuple(tags),
             offset=int(req.query.offset or 0),
             limit=int(req.query.limit or 10))])
@@ -96,43 +96,43 @@ def photos():
 
 @bottle.post('/photo/<id:int>')
 def post_photo(id):
-    p = lmj.photos.find_one(id)
-    f = lmj.photos.parse(list(bottle.request.forms)[0])
+    p = lmj.photos.db.find_one(id)
+    f = lmj.photos.util.parse(list(bottle.request.forms)[0])
     if 'meta' in f:
         p.meta = f['meta']
         lmj.photos.update(p)
-    return lmj.photos.stringify(p.to_dict())
+    return lmj.photos.util.stringify(p.to_dict())
 
 
 @bottle.post('/photo/<id:int>/rotate')
 def rotate_photo(id):
-    lmj.photos.find_one(id).add_op(
+    lmj.photos.db.find_one(id).add_op(
         'ro', degrees=float(bottle.request.forms.get('degrees')))
     return 'ok'
 
 @bottle.post('/photo/<id:int>/contrast')
 def contrast_photo(id):
     post = lambda k: float(bottle.request.forms.get(k))
-    lmj.photos.find_one(id).add_op(
+    lmj.photos.db.find_one(id).add_op(
         'cb', gamma=post('gamma'), alpha=post('alpha'))
     return 'ok'
 
 @bottle.post('/photo/<id:int>/crop')
 def crop_photo(id):
     post = lambda k: float(bottle.request.forms.get(k))
-    lmj.photos.find_one(id).add_op(
+    lmj.photos.db.find_one(id).add_op(
         'cr', box=[post(k) for k in 'x1 y1 x2 y2'.split()])
     return 'ok'
 
 @bottle.post('/photo/<id:int>/equalize')
 def equalize_photo(id):
-    lmj.photos.find_one(id).add_op('eq')
+    lmj.photos.db.find_one(id).add_op('eq')
     return 'ok'
 
 
 @bottle.delete('/photo/<id:int>')
 def delete_photo(id):
-    p = lmj.photos.find_one(id)
+    p = lmj.photos.db.find_one(id)
     key = None
     if bottle.request.forms.get('force'):
         key = p.path

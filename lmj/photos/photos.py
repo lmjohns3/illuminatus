@@ -29,11 +29,11 @@ class Photo(object):
 
     @property
     def user_tag_set(self):
-        return util.normalized_tag_set(self.meta('user_tags'))
+        return util.normalized_tag_set(self.meta.get('user_tags'))
 
     @property
     def exif_tag_set(self):
-        return util.normalized_tag_set(self.meta('exif_tags'))
+        return util.normalized_tag_set(self.meta.get('exif_tags'))
 
     @property
     def datetime_tag_set(self):
@@ -77,7 +77,7 @@ class Photo(object):
 
     def make_thumbnails(self, sizes=(('full', 1000), ('thumb', 200)), replace=False):
         import lmj.photos
-        base = os.path.dirname(lmj.photos.DB)
+        base = os.path.dirname(lmj.photos.db.DB)
         img = self.get_image()
         for name, size in sorted(sizes, key=lambda x: -x[1]):
             p = os.path.join(base, name, self.thumb_path)
@@ -131,4 +131,4 @@ class Photo(object):
         op['key'] = key
         self.ops.append(op)
         self.apply_op_to_thumbnail(op)
-        lmj.photos.update(self)
+        lmj.photos.db.update(self)
