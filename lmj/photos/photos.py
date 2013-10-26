@@ -75,7 +75,7 @@ class Photo(object):
                     thumb=self.thumb_path,
                     tags=list(self.tag_set))
 
-    def make_thumbnails(self, sizes=(('full', 1000), ('thumb', 200)), replace=False):
+    def make_thumbnails(self, sizes=(('full', 1000), ('thumb', 100)), replace=False):
         import lmj.photos
         base = os.path.dirname(lmj.photos.db.DB)
         img = self.get_image()
@@ -85,7 +85,9 @@ class Photo(object):
             try: os.makedirs(dirname)
             except: pass
             if replace or not os.path.exists(p):
-                img.thumbnail((size, size), PIL.Image.ANTIALIAS)
+                if isinstance(size, int):
+                    size = (2 * size, size)
+                img.thumbnail(size, PIL.Image.ANTIALIAS)
                 img.save(p)
 
     def get_image(self):
