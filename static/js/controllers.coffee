@@ -140,9 +140,8 @@ PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
       $scope.selectedIds[id] = true
       return true
 
-    # NO MODIFIER -- select clicked photo.
+    # NO MODIFIER -- just activate clicked photo.
     $scope.selectedIds = {}
-    $scope.selectedIds[id] = true
     $scope.cursor = index
 
     recomputeSelected()
