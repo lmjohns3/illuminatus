@@ -133,10 +133,7 @@ def equalize_photo(id):
 @bottle.delete('/photo/<id:int>')
 def delete_photo(id):
     p = lmj.photos.db.find_one(id)
-    key = None
-    if bottle.request.forms.get('force'):
-        key = p.path
-    lmj.photos.delete(p.id, key)
+    lmj.photos.db.delete(p.id, p.path)
 
 
 def main(args):
