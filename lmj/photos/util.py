@@ -36,7 +36,8 @@ def tags_from_exif(exif):
     tags = set()
 
     if 'FNumber' in exif:
-        tags.add('f/{}'.format(round(2 * float(exif['FNumber'])) / 2))
+        t = 'f/{}'.format(round(2 * float(exif['FNumber'])) / 2)
+        tags.add(t.replace('.0', ''))
 
     if 'ISO' in exif:
         iso = int(exif['ISO'])
