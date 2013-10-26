@@ -12,13 +12,22 @@ keypress = ($parse) ->
     for ks, v of scope.$eval attrs.lmjKeypress
       action = $parse v
       for k in "#{ks}".split ' '
-        routes[KEYS[k] or parseInt k, 10] = action
+        shiftKey = ctrlKey = metaKey = false
+        if k.match /^[CSM]-/
+          mod = k[0]
+          k = k[2...]
+          ctrlKey = true if mod is 'C'
+          metaKey = true if mod is 'M'
+          shiftKey = true if mod is 'S'
+        k = KEYS[k] or parseInt k, 10
+        routes[[k, ctrlKey, metaKey, shiftKey]] = action
 
     handler = (e) ->
       console.log e
-      fn = routes[e.keyCode]
+      fn = routes[[e.keyCode, e.ctrlKey, e.metaKey, e.shiftKey]]
       if fn
         scope.$apply -> fn scope
+        e.preventDefault()
         return false
 
     elem.on 'keydown', handler
