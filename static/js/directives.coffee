@@ -23,7 +23,6 @@ keypress = ($parse) ->
         routes[[k, ctrlKey, metaKey, shiftKey]] = action
 
     handler = (e) ->
-      console.log e
       fn = routes[[e.keyCode, e.ctrlKey, e.metaKey, e.shiftKey]]
       if fn
         scope.$apply -> fn scope
