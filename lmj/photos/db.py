@@ -142,11 +142,19 @@ def delete(id, remove_if_path_matches=None):
             pass
 
     # if desired, remove the original file referenced by this photo.
-    if remove_if_path_matches == photo.path and ENABLE_DELETE_ORIGINAL:
-        try:
-            os.unlink(photo.path)
-        except:
-            logging.exception('%s: error removing photo', photo.path)
+    if remove_if_path_matches == photo.path:
+        if ENABLE_DELETE_ORIGINAL:
+            try:
+                os.unlink(photo.path)
+            except:
+                logging.exception('%s: error removing photo', photo.path)
+        else:
+            dirname = os.path.dirname(photo.path)
+            basename = os.path.basename(photo.path)
+            try:
+                os.rename(photo.path, os.path.join(dirname, '.lmj-removed-' + basename))
+            except:
+                logging.exception('%s: error renaming photo', photo.path)
 
     # remove photo from the database.
     with connect() as db:
