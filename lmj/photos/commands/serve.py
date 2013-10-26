@@ -100,7 +100,7 @@ def post_photo(id):
     f = lmj.photos.util.parse(list(bottle.request.forms)[0])
     if 'meta' in f:
         p.meta = f['meta']
-        lmj.photos.update(p)
+        lmj.photos.db.update(p)
     return lmj.photos.util.stringify(p.to_dict())
 
 
