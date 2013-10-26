@@ -163,7 +163,7 @@ def delete(id, remove_if_path_matches=None):
         db.execute('DELETE FROM photo WHERE id = ?', (id, ))
 
 
-def clean(path):
+def remove_path(path):
     '''Remove a photo by path.'''
     with connect() as db:
         db.execute('DELETE FROM photo WHERE path = ?', (path, ))
