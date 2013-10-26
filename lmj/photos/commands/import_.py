@@ -30,7 +30,7 @@ def compute_timestamp_from(exif, key):
 
 
 def import_one(path, tags, add_path_tag=False):
-    p = lmj.photos.insert(path)
+    p = lmj.photos.db.insert(path)
 
     stamp = None
     for key in ('DateTimeOriginal', 'CreateDate', 'ModifyDate', 'FileModifyDate'):
@@ -55,7 +55,7 @@ def import_one(path, tags, add_path_tag=False):
                  ', '.join(p.meta['exif_tags']),
                  )
 
-    p.make_thumbnails(sizes=[('img', 700)])
+    p.make_thumbnails()
 
     lmj.photos.db.update(p)
 
@@ -72,19 +72,19 @@ def main(args):
                 _, ext = os.path.splitext(name)
                 if ext.lower()[1:] in 'gif jpg jpeg png tif tiff':
                     path = os.path.join(base, name)
-                    if lmj.photos.exists(path):
+                    if lmj.photos.db.exists(path):
                         logging.info('= %s', path)
                         continue
                     try:
                         import_one(path, args.tag, args.add_path_tag)
                         logging.warn('+ %s', path)
                     except KeyboardInterrupt:
-                        lmj.photos.clean(path)
+                        lmj.photos.db.remove_path(path)
                         break
                     except:
                         _, exc, tb = sys.exc_info()
                         errors.append((path, exc, traceback.format_tb(tb)))
-                        lmj.photos.clean(path)
+                        lmj.photos.db.remove_path(path)
 
     for path, exc, tb in errors:
         logging.error('! %s %s', path, exc)#, ''.join(tb))
