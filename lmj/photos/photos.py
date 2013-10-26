@@ -60,7 +60,7 @@ class Photo(object):
             return None
         if isinstance(stamp, datetime.datetime):
             return stamp
-        return datetime.datetime.strptime(stamp, '%Y-%m-%dT%H:%M:%S')
+        return datetime.datetime.strptime(stamp[:19], '%Y-%m-%dT%H:%M:%S')
 
     @property
     def thumb_path(self):
