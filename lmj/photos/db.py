@@ -9,7 +9,6 @@ from .util import stringify
 logging = lmj.cli.get_logger('lmj.photos')
 
 DB = 'photos.db'
-ENABLE_DELETE_ORIGINAL = False
 
 @contextlib.contextmanager
 def connect():
@@ -22,10 +21,9 @@ def connect():
         db.close()
 
 
-def init(path, enable_delete_original=False):
-    global DB, ENABLE_DELETE_ORIGINAL
+def init(path):
+    global DB
     DB = path
-    ENABLE_DELETE_ORIGINAL = enable_delete_original
     with connect() as db:
         db.execute('CREATE TABLE IF NOT EXISTS photo '
                    '( id INTEGER PRIMARY KEY AUTOINCREMENT'
@@ -125,12 +123,11 @@ def update(photo):
         db.execute(sql, tuple(data))
 
 
-def delete(id, remove_if_path_matches=None):
+def delete(id, hide_original_if_path_matches=None):
     '''Remove a photo.
 
-    WARNING: Also removes the original source file from disk, if
-    remove_if_path_matches contains the path for the photo, and the module-level
-    flag ENABLE_DELETE_ORIGINAL has been set.
+    WARNING: If hide_original_if_path_matches contains the path for the photo,
+    the original file will be renamed with a hidden (dot) prefix.
     '''
     photo = find_one(id)
 
@@ -142,20 +139,14 @@ def delete(id, remove_if_path_matches=None):
         except:
             pass
 
-    # if desired, remove the original file referenced by this photo.
-    if remove_if_path_matches == photo.path:
-        if ENABLE_DELETE_ORIGINAL:
-            try:
-                os.unlink(photo.path)
-            except:
-                logging.exception('%s: error removing photo', photo.path)
-        else:
-            dirname = os.path.dirname(photo.path)
-            basename = os.path.basename(photo.path)
-            try:
-                os.rename(photo.path, os.path.join(dirname, '.lmj-removed-' + basename))
-            except:
-                logging.exception('%s: error renaming photo', photo.path)
+    # if desired, hide the original file referenced by this photo.
+    if hide_original_if_path_matches == photo.path:
+        dirname = os.path.dirname(photo.path)
+        basename = os.path.basename(photo.path)
+        try:
+            os.rename(photo.path, os.path.join(dirname, '.lmj-removed-' + basename))
+        except:
+            logging.exception('%s: error renaming photo', photo.path)
 
     # remove photo from the database.
     with connect() as db:
