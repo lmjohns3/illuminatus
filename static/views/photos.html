@@ -7,19 +7,25 @@
  <li style="clear:left;border:none"></li>
 </ul>
 
-<div id="thumbs" tabindex="0" lmj-keypress="
-{ 'j right': 'nextPhoto()'
-, 'k left': 'prevPhoto()'
-, 'down': 'nextPage()'
-, 'up': 'prevPage()'
-, '[': 'getPhoto().rotate(-90)'
-, ']': 'getPhoto().rotate(90)'
-, '{': 'getPhoto().rotate(-1)'
-, '}': 'getPhoto().rotate(1)'
-, 't': 'showTagger()'
+<div id="thumbs" tabindex="1" lmj-keypress="
+{ 'j right': 'nextPhoto(1)'
+, 'k left': 'prevPhoto(1)'
+, 'down': 'nextPhoto(16)'
+, 'up': 'prevPhoto(16)'
+, 'l t': 'showTagger()'
 , 'x': 'togglePhoto()'
-, 'y': 'deletePhoto()'
-, 'v space': 'toggleViewer()'
+, 'enter': 'toggleViewer()'
+, '[':   'rotatePhoto(-90)'
+, ']':   'rotatePhoto(90)'
+, '{':   'rotatePhoto(-1)'
+, '}':   'rotatePhoto(1)'
+, 'p':   'incPhotoYear(true)'
+, 'S-p': 'incPhotoYear(false)'
+, 'o':   'incPhotoMonth(true)'
+, 'S-o': 'incPhotoMonth(false)'
+, 'i':   'incPhotoDay(true)'
+, 'S-i': 'incPhotoDay(false)'
+, 'backspace delete': 'deletePhoto()'
 }">
 <ul class="list-unstyled"
     lmj-scroll="loadPhotos()"
@@ -31,7 +37,8 @@
   <img id="photo-{{ p.id }}"
        class="img-rounded"
        ng-click="handleClick(p.id, $index, $event)"
-       ng-src="static/img/{{ p.thumb }}">
+       ng-dblclick="toggleViewer()"
+       ng-src="static/thumb/{{ p.img }}">
   <i class="icon-chevron-right icon-2x" ng-show="$index == cursor"></i>
 </ul>
 </div>
@@ -49,24 +56,26 @@
 'label-warning': 0 < t.count && t.count < t.limit,
 'label-default': t.count == 0 }">{{ t.name }} ({{ t.count }})
 </ul>
-<input type="text" class="tag-input input-sm">
+<form class="tag-form"><input type="text" class="tag-input input-sm"></form>
 </div>
 </div>
 </div>
 </div>
 
 <div class="modal" id="modal-viewer">
-<div class="modal-dialog" style="width:{{ imageWidth() }}px">
+<div class="modal-dialog">
 <div class="modal-content">
 <div class="modal-body">
- <h5>{{ dirnameBasename(photos[cursor].path) }}</h5>
+ <p>{{ dirnameBasename(photos[cursor].path) }}
+ <span class="pull-right">{{ photos[cursor].when.format('YYYY MMM D HH:mm') }}</span></p>
  <ul class="list-unstyled">
   <li ng-repeat="tag in photos[cursor].tags | orderBy:'toString()'"
+      ng-click="photos[cursor].clearTag(tag)"
       class="tag label label-default pull-left">{{ tag }}
-  <li><input type="text" class="tag-input input-sm" size="10">
+  <li><form class="tag-form"><input type="text" ng-blur="blurInput($event)" class="tag-input input-sm" size="10"></form>
  </ul>
  <span class="clearfix"></span>
- <img class="img-rounded" ng-src="static/img/{{ photos[cursor].thumb }}">
+ <div class="img"><img class="img-rounded" ng-src="static/full/{{ photos[cursor].img }}"></div>
 </div>
 </div>
 </div>

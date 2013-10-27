@@ -84,8 +84,15 @@ body
 #modal-viewer
   overflow-y: hidden
 
-  .modal-dialog { transition: 0.2s }
-  .modal-body img { max-height: 75% }
+  .modal-dialog { width: 75% }
+
+  .modal-body
+    .img
+      text-align: center
+      img
+        max-height: 75%
+        margin: 0 auto
+
   .tag-input
     height: 20px
     border-width: 1px
