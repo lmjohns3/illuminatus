@@ -8,6 +8,8 @@ PhotoFactory = ($http) ->
     class Photo
       constructor: (value) ->
         angular.copy parse(value or {}), @
+        @when = moment @stamp
+        @img = "#{@thumb}#"
 
       toggleTag: (tag) ->
         i = @tagIndex tag
@@ -34,36 +36,43 @@ PhotoFactory = ($http) ->
           @meta.user_tags.splice i, 1
           @save()
 
+      incrementDate: (field, add) ->
+        if add
+          @when.add field, 1
+        else
+          @when.subtract field, 1
+        @meta.stamp = @when.format()
+        @save()
+
       save: ->
-        id = @id
         data = meta: @meta
-        $http(method: 'POST', url: "/photo/#{id}", data: data).then (res) =>
-          console.log 'saved', id, res
+        $http(method: 'POST', url: "/photo/#{@id}", data: data).then (res) =>
+          console.log 'saved', @id, res
           @meta = res.data.meta
           @stamp = res.data.stamp
           @tags = res.data.tags
+          @when = moment @stamp
 
-      contrast: (data) ->
-        id = @id
-        $http(method: 'POST', url: "/photo/#{id}/contrast", data: data).then (res) ->
-          console.log 'contrast', id, data, res
+      contrast: (gamma, alpha) ->
+        data = gamma: gamma, alpha: alpha
+        $http(method: 'POST', url: "/photo/#{@id}/contrast", data: data).then (res) =>
+          console.log 'contrast', @id, data, res
+          @img = "#{@thumb}##{new Date().getTime()}"
 
-      rotate: (data) ->
-        id = @id
-        $http(method: 'POST', url: "/photo/#{id}/rotate", data: data).then (res) ->
-          console.log 'rorate', id, data, res
+      rotate: (degrees) ->
+        data = degrees: degrees
+        $http(method: 'POST', url: "/photo/#{@id}/rotate", data: data).then (res) =>
+          console.log 'rotate', @id, data, res
+          @img = "#{@thumb}##{new Date().getTime()}"
 
-      crop: (data) ->
-        id = @id
-        $http(method: 'POST', url: "/photo/#{id}/crop", data: data).then (res) ->
-          console.log 'crop', id, data, res
+      crop: (x1, y1, x2, y2) ->
+        data = x1: x1, y1: y1, x2: x2, y2: y2
+        $http(method: 'POST', url: "/photo/#{@id}/crop", data: data).then (res) =>
+          console.log 'crop', @id, data, res
+          @img = "#{@thumb}##{new Date().getTime()}"
 
-      remove: (callback) ->
-        id = @id
-        data = path: @path
-        $http(method: 'DELETE', url: "/photo/#{id}", data: data).then (res) ->
-          console.log 'deleted', id
-          callback id
+      delete_: (callback) ->
+        $http(method: 'DELETE', url: "/photo/#{@id}").then (res) => callback @id
 
     Photo.query = (query, callback) ->
       value = []

@@ -13,7 +13,6 @@ IndexCtrl = ($scope, $location, $http) ->
 
 PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
   $scope.photos = []
-  $scope.photoIds = {}
   $scope.loading = false
   $scope.exhausted = false
 
@@ -43,7 +42,6 @@ PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
     q = offset: $scope.photos.length, limit: n, tags: $scope.activeTags.join '|'
     Photo().query q, (photos) ->
       for p in photos
-        $scope.photoIds[p.id] = $scope.photos.length
         $scope.photos.push p
       if $scope.cursor < 0
         $scope.cursor = 0
@@ -60,15 +58,15 @@ PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
       $('#modal-tagger').modal('show')
 
   $('#modal-tagger').on 'shown.bs.modal', ->
-    $('#modal-tagger .tag-input').val ''
     $('#modal-tagger .tag-input').focus()
 
   $('#modal-tagger').on 'hidden.bs.modal', ->
     $('#modal-tagger .tag-input').val ''
 
-  $('.tag-input').on 'change', (e) ->
-    el = $(e.target)
-    tag = el.val().toLowerCase()
+  $('.tag-form').on 'submit', (e) ->
+    el = $(e.target).find('.tag-input').first()
+    tag = el.val().toLowerCase().replace /^\s+|\s+$/, ''
+    return unless tag.length > 0
     for id of activeIds()
       $scope.getPhoto(id).setTag tag
     el.val ''
@@ -92,8 +90,7 @@ PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
       tag.count = tag.limit
     for id of activeIds()
       $scope.getPhoto(id)[op] tag.name
-
-  # GROUP PHOTO OPERATIONS
+    recomputeSelected()
 
   # INDIVIDUAL PHOTO OPERATIONS
 
@@ -101,25 +98,37 @@ PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
     modal = $('#modal-viewer').modal('toggle').first()
     $scope.viewerVisible = 'none' isnt modal.css 'display'
 
-  $scope.imageWidth = ->
-    62 + $('#modal-viewer img').width()
-
   $scope.contrastPhoto = (gamma, alpha) ->
-    $scope.getPhoto().contrast gamma: gamma, alpha: alpha
-    #image.src = "/static/img/#{p.thumb_path}##{new Date().getTime()}"
+    return unless $scope.viewerVisible
+    $scope.getPhoto().contrast gamma, alpha
 
   $scope.cropPhoto = (x1, y1, x2, y2) ->
-    p = $scope.getPhoto()
-    p.crop x1: x1, y1: y1, x2: x2, y2: y2
-    #image.src = "/static/img/#{p.thumb_path}##{new Date().getTime()}"
+    return unless $scope.viewerVisible
+    $scope.getPhoto().crop x1, y1, x2, y2
+
+  $scope.rotatePhoto = (degrees) ->
+    return unless $scope.viewerVisible
+    $scope.getPhoto().rotate degrees
+
+  $scope.incPhotoYear = (add) ->
+    return unless $scope.viewerVisible
+    $scope.getPhoto().incrementDate 'year', add
+
+  $scope.incPhotoMonth = (add) ->
+    return unless $scope.viewerVisible
+    $scope.getPhoto().incrementDate 'month', add
+
+  $scope.incPhotoDay = (add) ->
+    return unless $scope.viewerVisible
+    $scope.getPhoto().incrementDate 'day', add
 
   $scope.deletePhoto = ->
+    return unless $scope.viewerVisible
     return unless confirm 'Really delete?'
-    $scope.getPhoto().remove (id) ->
+    $scope.getPhoto().delete_ (id) ->
       i = _.indexOf _.pluck($scope.photos, 'id'), id
       if i >= 0
-        if cursor is $scope.photos.length - 1
-          cursor--
+        $scope.cursor-- if $scope.cursor is $scope.photos.length - 1
         $scope.photos.splice i, 1
 
   # EVENT HANDLING
@@ -156,31 +165,26 @@ PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
       $scope.selectedIds[id] = true
     recomputeSelected()
 
-  $scope.prevPhoto = ->
+  $scope.prevPhoto = (n) ->
     return if $scope.cursor <= 0
-    $scope.cursor--
+    $scope.cursor = Math.max 0, $scope.cursor - n
     $scope.scroll()
 
-  $scope.prevPage = ->
-    return if $scope.cursor <= 0
-    $scope.cursor = Math.max 0, $scope.cursor - 16
-    $scope.scroll()
-
-  $scope.nextPhoto = ->
-    return if $scope.cursor >= $scope.photos.length - 1
-    $scope.cursor++
-    $scope.scroll()
-
-  $scope.nextPage = ->
+  $scope.nextPhoto = (n) ->
     L = $scope.photos.length - 1
     return if $scope.cursor >= L
-    $scope.cursor = Math.min L, $scope.cursor + 16
+    $scope.cursor = Math.min L, $scope.cursor + n
     $scope.scroll()
 
   $scope.getPhoto = (id) ->
     if typeof id is 'undefined' or id is null
       return $scope.photos[$scope.cursor]
-    $scope.photos[$scope.photoIds[id]]
+    if typeof id is 'string'
+      id = parseInt id
+    for p in $scope.photos
+      if id is p.id
+        return p
+    null
 
   $scope.scroll = ->
     y = $("#photo-#{$scope.getPhoto().id}").offset().top - 16
@@ -192,16 +196,17 @@ PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
     ids = _.extend {}, $scope.selectedIds
     if 0 is _.size ids
       ids[$scope.photos[$scope.cursor].id] = true
+    console.log 'active ids', ids
     return ids
 
   recomputeSelected = ->
     ids = activeIds()
+    n = _.size ids
     counts = {}
     for id of ids
-        for t in $scope.getPhoto(id).tags
-          counts[t] = 0 unless counts[t]
-          counts[t]++
-    n = _.size ids
+      for t in $scope.getPhoto(id).tags
+        counts[t] = 0 unless counts[t]
+        counts[t]++
     $scope.selectedPhotoTags = _.sortBy (
       {name: t, count: c, limit: n} for t, c of counts
     ), (x) -> -x.count
@@ -211,8 +216,23 @@ PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
     return true
 
   $('#thumbs').focus()
-  $('.modal').on 'hide.bs.modal', -> $('#thumbs').focus()
-  $('#modal-viewer .tag-input').on 'blur', -> $('#thumbs').focus()
+
+  $('.modal').on 'hide.bs.modal', ->
+    $('#thumbs').focus()
+
+  # this is an absurd workaround for the fact that tabbing away from an input
+  # element does not allow the standard blur handler to return focus to #thumbs
+  # (for correct processing of future keydown events). we capture <tab> keydowns
+  # and convert them to blur firings manually.
+  $('#modal-viewer .tag-input').on 'keydown', (e) ->
+    if e.keyCode is 9  # tab
+      $(e.target).blur()
+      return false
+    true
+
+  $('#modal-viewer .tag-input').on 'blur', (e) ->
+    $(e.target).val ''
+    setTimeout (-> $('#thumbs').focus()), 0
 
   $scope.loadPhotos 200
 
