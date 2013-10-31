@@ -1,6 +1,6 @@
 import datetime
 import lmj.cli
-import lmj.photos
+import lmj.media
 import os
 import sys
 import traceback
@@ -30,7 +30,7 @@ def compute_timestamp_from(exif, key):
 
 
 def import_one(path, tags, add_path_tag=False):
-    p = lmj.photos.db.insert(path)
+    p = lmj.media.db.insert(path)
 
     stamp = None
     for key in ('DateTimeOriginal', 'CreateDate', 'ModifyDate', 'FileModifyDate'):
@@ -47,8 +47,8 @@ def import_one(path, tags, add_path_tag=False):
     p.meta = dict(
         stamp=stamp,
         thumb=p.thumb_path,
-        user_tags=sorted(lmj.photos.util.normalized_tag_set(tags)),
-        exif_tags=sorted(lmj.photos.util.tags_from_exif(p.exif)))
+        user_tags=sorted(lmj.media.util.normalized_tag_set(tags)),
+        exif_tags=sorted(lmj.media.util.tags_from_exif(p.exif)))
 
     logging.info('user: %s; exif: %s',
                  ', '.join(p.meta['user_tags']),
@@ -57,7 +57,7 @@ def import_one(path, tags, add_path_tag=False):
 
     p.make_thumbnails()
 
-    lmj.photos.db.update(p)
+    lmj.media.db.update(p)
 
 
 def main(args):
@@ -72,19 +72,19 @@ def main(args):
                 _, ext = os.path.splitext(name)
                 if ext.lower()[1:] in 'gif jpg jpeg png tif tiff':
                     path = os.path.join(base, name)
-                    if lmj.photos.db.exists(path):
+                    if lmj.media.db.exists(path):
                         logging.info('= %s', path)
                         continue
                     try:
                         import_one(path, args.tag, args.add_path_tag)
                         logging.warn('+ %s', path)
                     except KeyboardInterrupt:
-                        lmj.photos.db.remove_path(path)
+                        lmj.media.db.remove_path(path)
                         break
                     except:
                         _, exc, tb = sys.exc_info()
                         errors.append((path, exc, traceback.format_tb(tb)))
-                        lmj.photos.db.remove_path(path)
+                        lmj.media.db.remove_path(path)
 
     for path, exc, tb in errors:
         logging.error('! %s %s', path, exc)#, ''.join(tb))

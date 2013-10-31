@@ -76,8 +76,8 @@ class Photo(object):
                     tags=list(self.tag_set))
 
     def make_thumbnails(self, sizes=(('full', 1000), ('thumb', 100)), replace=False):
-        import lmj.photos
-        base = os.path.dirname(lmj.photos.db.DB)
+        import lmj.media
+        base = os.path.dirname(lmj.media.db.DB)
         img = self.get_image()
         for name, size in sorted(sizes, key=lambda x: -x[1]):
             p = os.path.join(base, name, self.thumb_path)
@@ -129,8 +129,8 @@ class Photo(object):
         pass
 
     def add_op(self, key, **op):
-        import lmj.photos
+        import lmj.media
         op['key'] = key
         self.ops.append(op)
         self.apply_op_to_thumbnail(op)
-        lmj.photos.db.update(self)
+        lmj.media.db.update(self)

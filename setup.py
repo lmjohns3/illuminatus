@@ -10,15 +10,15 @@ except (OSError, IOError):
     pass
 
 setuptools.setup(
-    name='lmj.photos',
+    name='lmj.media',
     version='0.0.1',
     namespace_packages=['lmj'],
     packages=setuptools.find_packages(),
     requires=['PIL', 'lmj.cli', 'cv2', 'bottle'],
-    scripts=['scripts/lmj-photos'],
-    data_files=[('share/lmj-photos/static', [
-        'static/photos.js',
-        'static/photos.css',
+    scripts=['scripts/lmj-media'],
+    data_files=[('share/lmj-media/static', [
+        'static/media.js',
+        'static/media.css',
         'static/views/main.html',
         'static/views/index.html',
         'static/views/photos.html',
@@ -26,11 +26,11 @@ setuptools.setup(
     ],
     author='Leif Johnson',
     author_email='leif@leifjohnson.net',
-    description='A local, web-based tool for managing photos',
+    description='A browser tool for managing photos and videos',
     long_description=readme,
     license='MIT',
-    keywords='photo image web',
-    url='http://github.com/lmjohns3/py-photos/',
+    keywords='photo image video web',
+    url='http://github.com/lmjohns3/py-media/',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Environment :: Console',

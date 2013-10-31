@@ -6,7 +6,7 @@ import sqlite3
 from .photos import Photo
 from .util import stringify
 
-logging = lmj.cli.get_logger('lmj.photos')
+logging = lmj.cli.get_logger('lmj.media')
 
 DB = 'photos.db'
 

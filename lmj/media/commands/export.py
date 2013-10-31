@@ -1,7 +1,7 @@
 import argparse
 import collections
 import lmj.cli
-import lmj.photos
+import lmj.media
 import os
 import re
 import sys
@@ -81,7 +81,7 @@ IMAGE = u'''\
 
 def export(args, tag):
     # pull matching photos from the database.
-    images = list(lmj.photos.db.find_tagged([tag] + args.require_tag))
+    images = list(lmj.media.db.find_tagged([tag] + args.require_tag))
 
     # count tag usage for this set of photos.
     tag_counts = collections.defaultdict(int)

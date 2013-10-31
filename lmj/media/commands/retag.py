@@ -1,6 +1,6 @@
 import datetime
 import lmj.cli
-import lmj.photos
+import lmj.media
 import os
 import sys
 import traceback
@@ -22,7 +22,7 @@ logging = lmj.cli.get_logger(__name__)
 
 
 def main(args):
-    photos = list(lmj.photos.db.find_tagged(args.tag))
+    photos = list(lmj.media.db.find_tagged(args.tag))
     for p in photos:
         tags = list(args.add)
         if args.add_path_tag:
@@ -30,9 +30,9 @@ def main(args):
         if not args.replace:
             tags.extend(p.user_tag_set)
 
-        p.meta['user_tags'] = sorted(lmj.photos.util.normalized_tag_set(tags))
+        p.meta['user_tags'] = sorted(lmj.media.util.normalized_tag_set(tags))
         if args.exif:
-            p.meta['exif_tags'] = sorted(lmj.photos.util.tags_from_exif(p.exif))
+            p.meta['exif_tags'] = sorted(lmj.media.util.tags_from_exif(p.exif))
 
         logging.info('%s: user: %s; exif: %s',
                      os.path.basename(p.path),
@@ -40,4 +40,4 @@ def main(args):
                      ', '.join(p.meta['exif_tags']),
                      )
 
-        lmj.photos.db.update(p)
+        lmj.media.db.update(p)
