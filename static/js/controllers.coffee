@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-IndexCtrl = ($scope, $location, $http) ->
+GroupsCtrl = ($scope, $location, $http) ->
   $scope.groups = []
 
   $http.get('groups').then (res) ->
@@ -11,7 +11,7 @@ IndexCtrl = ($scope, $location, $http) ->
   $scope.goto = (tag) -> $location.path '/' + encodeURIComponent tag
 
 
-PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
+MediaCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
   $scope.photos = []
   $scope.loading = false
   $scope.exhausted = false
@@ -238,6 +238,5 @@ PhotosCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
 
 
 angular.module('app.controllers', ['app.services'])
-  .controller('IndexCtrl', IndexCtrl)
-  .controller('PhotosCtrl', PhotosCtrl)
-
+  .controller('GroupsCtrl', GroupsCtrl)
+  .controller('MediaCtrl', MediaCtrl)

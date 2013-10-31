@@ -5,8 +5,8 @@ angular.module('app', [
   'app.services'
 ]).config ($routeProvider, $locationProvider) ->
   $routeProvider
-    .when('/', templateUrl: 'static/views/index.html', controller: 'IndexCtrl')
-    .when('/:tags', templateUrl: 'static/views/photos.html', controller: 'PhotosCtrl')
+    .when('/', templateUrl: 'static/views/groups.html', controller: 'GroupsCtrl')
+    .when('/:tags', templateUrl: 'static/views/media.html', controller: 'MediaCtrl')
     .otherwise(redirectTo: '/')
   $locationProvider.html5Mode false
 
