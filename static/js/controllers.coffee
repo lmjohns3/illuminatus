@@ -80,6 +80,11 @@ MediaCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
     return s if j <= 0
     return "...#{s.substring j}"
 
+  $scope.addAndTag = (tag) ->
+    for id of activeIds()
+      $scope.getPhoto(id).setTag tag
+    $scope.showTagger()
+
   $scope.smartTag = (tag, index) ->
     tag = $scope.selectedPhotoTags[index]
     if tag.count is tag.limit
