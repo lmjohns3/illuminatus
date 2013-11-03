@@ -1,7 +1,8 @@
-import datetime
 import lmj.cli
 import lmj.media
+import mimetypes
 import os
+import re
 import sys
 import traceback
 
@@ -14,50 +15,36 @@ cmd.add_argument('source', nargs='+', metavar='PATH',
                  help='import photos from these PATHs')
 cmd.set_defaults(mod=sys.modules[__name__])
 
-logging = lmj.cli.get_logger(__name__)
+logging = lmj.cli.get_logger('lmj.media.import')
 
 
-def compute_timestamp_from(exif, key):
-    raw = exif.get(key)
-    if not raw:
-        return None
-    for fmt in ('%Y:%m:%d %H:%M:%S', '%Y:%m:%d %H:%M+%S'):
-        try:
-            return datetime.datetime.strptime(raw[:19], fmt)
-        except:
-            pass
-    return None
+def find_class_for(mime):
+    if mime:
+        for cls in (Photo, ):
+            for template in cls.MIME_TYPES:
+                if re.match(template, mime):
+                    return cls
 
 
-def import_one(path, tags, add_path_tag=False):
-    p = lmj.media.db.insert(path)
-
-    stamp = None
-    for key in ('DateTimeOriginal', 'CreateDate', 'ModifyDate', 'FileModifyDate'):
-        stamp = compute_timestamp_from(p.exif, key)
-        if stamp:
-             break
-    if stamp is None:
-        stamp = datetime.datetime.now()
-
-    tags = list(tags)
-    if add_path_tag:
-        tags.append(os.path.basename(os.path.dirname(path)))
-
-    p.meta = dict(
-        stamp=stamp,
-        thumb=p.thumb_path,
-        user_tags=sorted(lmj.media.util.normalized_tag_set(tags)),
-        exif_tags=sorted(lmj.media.util.tags_from_exif(p.exif)))
-
-    logging.info('user: %s; exif: %s',
-                 ', '.join(p.meta['user_tags']),
-                 ', '.join(p.meta['exif_tags']),
-                 )
-
-    p.make_thumbnails()
-
-    lmj.media.db.update(p)
+def maybe_import(args, path):
+    mime, _ = mimetypes.guess_type(path)
+    cls = find_class_for(mime)
+    if cls is None:
+        logging.info('? %s %s', mime, path)
+        return
+    if lmj.media.db.exists(path):
+        logging.info('= %s', path)
+        return
+    try:
+        cls.create(path, args.tag, args.add_path_tag)
+        logging.warn('+ %s', path)
+    except KeyboardInterrupt:
+        lmj.media.db.remove_path(path)
+        return
+    except:
+        lmj.media.db.remove_path(path)
+        _, exc, tb = sys.exc_info()
+        return path, exc, traceback.format_tb(tb)
 
 
 def main(args):
@@ -69,22 +56,8 @@ def main(args):
             for name in files:
                 if name.startswith('.'):
                     continue
-                _, ext = os.path.splitext(name)
-                if ext.lower()[1:] in 'gif jpg jpeg png tif tiff':
-                    path = os.path.join(base, name)
-                    if lmj.media.db.exists(path):
-                        logging.info('= %s', path)
-                        continue
-                    try:
-                        import_one(path, args.tag, args.add_path_tag)
-                        logging.warn('+ %s', path)
-                    except KeyboardInterrupt:
-                        lmj.media.db.remove_path(path)
-                        break
-                    except:
-                        _, exc, tb = sys.exc_info()
-                        errors.append((path, exc, traceback.format_tb(tb)))
-                        lmj.media.db.remove_path(path)
-
+                err = maybe_import(args, os.path.join(base, name))
+                if err:
+                    errors.append(err)
     for path, exc, tb in errors:
         logging.error('! %s %s', path, exc)#, ''.join(tb))

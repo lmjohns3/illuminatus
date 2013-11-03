@@ -1,20 +1,30 @@
 import cv2
 import datetime
+import lmj.cli
 import os
 import PIL.Image
 import PIL.ImageOps
 import subprocess
 
+from . import db
 from . import util
+
+logging = lmj.cli.get_logger(__name__)
 
 
 class Photo(object):
-    def __init__(self, id=-1, path='', meta=None, ops=None):
+    MEDIUM = 1
+    MIME_TYPES = ('image/.*', )
+
+    def __init__(self, id=-1, path='', meta=None):
         self.id = id
         self.path = path
         self.meta = util.parse(meta or '{}')
         self._exif = None
-        self.ops = util.parse(ops or '[]')
+
+    @property
+    def ops(self):
+        return self.meta.get('ops', [])
 
     @property
     def exif(self):
@@ -75,9 +85,54 @@ class Photo(object):
                     thumb=self.thumb_path,
                     tags=list(self.tag_set))
 
+    def read_exif_tags(self):
+        '''Given an exif data structure, extract a set of tags.'''
+        if not self.exif:
+            return []
+
+        def highest(n, digits=1):
+            '''Return n rounded to the top `digits` digits.'''
+            n = float(n)
+            if n < 10 ** digits:
+                return int(n)
+            shift = 10 ** (len(str(int(n))) - digits)
+            return int(shift * round(n / shift))
+
+        tags = set()
+
+        if 'FNumber' in self.exif:
+            t = 'f/{}'.format(round(2 * float(self.exif['FNumber'])) / 2)
+            tags.add(t.replace('.0', ''))
+
+        if 'ISO' in self.exif:
+            iso = int(self.exif['ISO'])
+            tags.add('iso:{}'.format(highest(iso, 1 + int(iso > 1000))))
+
+        if 'ShutterSpeed' in self.exif:
+            s = self.exif['ShutterSpeed']
+            n = -1
+            if isinstance(s, (float, int)):
+                n = int(1000 * s)
+            elif s.startswith('1/'):
+                n = int(1000. / float(s[2:]))
+            else:
+                raise ValueError('cannot parse ShutterSpeed "{}"'.format(s))
+            tags.add('{}ms'.format(max(1, highest(n))))
+
+        if 'FocalLength' in self.exif:
+            tags.add('{}mm'.format(highest(self.exif['FocalLength'][:-2])))
+
+        if 'Model' in self.exif:
+            t = self.exif['Model'].lower()
+            for s in 'canon nikon kodak digital camera super ed is'.split():
+                t = t.replace(s, '').strip()
+            if t:
+                tags.add('kit:{}'.format(t))
+
+        return util.normalized_tag_set(tags)
+
     def make_thumbnails(self, sizes=(('full', 1000), ('thumb', 100)), replace=False):
-        import lmj.media
-        base = os.path.dirname(lmj.media.db.DB)
+        base = os.path.dirname(db.DB)
         img = self.get_image()
         for name, size in sorted(sizes, key=lambda x: -x[1]):
             p = os.path.join(base, name, self.thumb_path)
@@ -102,11 +157,11 @@ class Photo(object):
 
         for op in self.ops:
             key = op['key']
-            if key == 'eq':
+            if key == 'normalize':
                 # http://opencvpython.blogspot.com/2013/03/histograms-2-histogram-equalization.html
-                img = PIL.ImageOps.autocontrast(img.convert('L'))
+                img = PIL.ImageOps.autocontrast(img.convert('L'), op.get('cutoff', 0.5))
                 continue
-            if key == 'cr':
+            if key == 'crop':
                 x1, y1, x2, y2 = op['box']
                 width, height = img.size
                 x1 = int(width * x1)
@@ -115,22 +170,68 @@ class Photo(object):
                 y2 = int(height * y2)
                 img = img.crop([x1, y1, x2, y2])
                 continue
-            if key == 'ro':
+            if key == 'rotate':
                 img = img.rotate(op['degrees'])
                 continue
-            if key == 'cb':
+            if key == 'contrast':
                 img = img.point(op['gamma'], op['alpha'])
                 continue
             # TODO: apply more image transforms
 
         return img
 
-    def apply_op_to_thumbnail(self, op):
-        pass
-
     def add_op(self, key, **op):
-        import lmj.media
         op['key'] = key
         self.ops.append(op)
-        self.apply_op_to_thumbnail(op)
-        lmj.media.db.update(self)
+        db.update(self)
+
+    @staticmethod
+    def create(path, tags, add_path_tag=False):
+        def compute_timestamp_from(exif, key):
+            raw = exif.get(key)
+            if not raw:
+                return None
+            for fmt in ('%Y:%m:%d %H:%M:%S', '%Y:%m:%d %H:%M+%S'):
+                try:
+                    return datetime.datetime.strptime(raw[:19], fmt)
+                except:
+                    pass
+            return None
+
+        p = db.insert(path, Photo.MEDIUM)
+
+        stamp = None
+        for key in ('DateTimeOriginal', 'CreateDate', 'ModifyDate', 'FileModifyDate'):
+            stamp = compute_timestamp_from(p.exif, key)
+            if stamp:
+                 break
+        if stamp is None:
+            stamp = datetime.datetime.now()
+
+        tags = list(tags)
+        if add_path_tag:
+            tags.append(os.path.basename(os.path.dirname(path)))
+
+        p.meta = dict(
+            stamp=stamp,
+            thumb=p.thumb_path,
+            user_tags=sorted(util.normalized_tag_set(tags)),
+            exif_tags=sorted(p.read_exif_tags()))
+
+        logging.info('user: %s; exif: %s',
+                     ', '.join(p.meta['user_tags']),
+                     ', '.join(p.meta['exif_tags']),
+                     )
+
+        p.make_thumbnails()
+
+        db.update(p)
+
+    def cleanup(self):
+        '''Remove thumbnails of this photo.'''
+        base = os.path.dirname(db.DB)
+        for size in os.listdir(base):
+            try:
+                os.unlink(os.path.join(base, size, self.thumb_path))
+            except:
+                pass
