@@ -47,13 +47,20 @@
 #modal-viewer
   overflow-y: hidden
 
-  .modal-dialog { width: 75% }
+  .modal-dialog
+    padding: 5px 0 0 5px
+    width: 85%
 
   .modal-body
+    padding: 10px
+
+    p, ul { margin-bottom: 5px }
+
     .img
       text-align: center
+
       img
-        max-height: 75%
+        max-height: 85%
         margin: 0 auto
 
   .tag-input
