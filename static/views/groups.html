@@ -4,7 +4,7 @@
      ng-repeat="group in groups | filter:filter | orderBy:byCountDesc">
   <h3>{{ group.name }} <small>({{ group.count }})</small></h3>
   <div class="thumbs">
-   <div class="frame" style="-webkit-transform:rotate({{ p.degrees }}deg)" ng-repeat="p in group.photos">
+   <div class="frame" style="-webkit-transform:rotate({{ p.degrees }}deg)" ng-repeat="p in group.pieces">
    <img class="img-rounded" src="static/thumb/{{ p.thumb }}">
    </div>
   </div>

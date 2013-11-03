@@ -38,10 +38,10 @@ def groups():
     ids = collections.defaultdict(set)
     with lmj.media.db.connect() as db:
         tags = dict(db.execute('SELECT id, name FROM tag'))
-        for tid, pid in db.execute('SELECT tag_id, photo_id FROM photo_tag'):
+        for tid, pid in db.execute('SELECT tag_id, media_id FROM media_tag'):
             ids[tid].add(pid)
 
-    # select a sample of photos from each tag group.
+    # select a sample of pieces from each tag group.
     selected = {}
     union = set()
     for tid, pids in ids.iteritems():
@@ -50,12 +50,12 @@ def groups():
         union |= set(s)
     union = tuple(union)
 
-    # get metadata from the db for all selected photos.
+    # get metadata from the db for all selected pieces.
     metas = {}
     with lmj.media.db.connect() as db:
         for a in xrange(0, len(union), 512):
             unio = union[a:a+512]
-            sql = ('SELECT id, meta FROM photo WHERE id IN (%s)' %
+            sql = ('SELECT id, meta FROM media WHERE id IN (%s)' %
                    ','.join('?' for _ in unio))
             metas.update(dict(db.execute(sql, unio)))
 
@@ -65,7 +65,7 @@ def groups():
         groups.append(dict(
             name=tags[tid],
             count=len(pids),
-            photos=[dict(thumb=lmj.media.util.parse(metas[i])['thumb'],
+            pieces=[dict(thumb=lmj.media.util.parse(metas[i])['thumb'],
                          degrees=20 * random.random() - 10)
                     for i in selected[tid]]))
     return lmj.media.util.stringify(groups)
