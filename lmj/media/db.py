@@ -6,9 +6,9 @@ import sqlite3
 from .photos import Photo
 from .util import stringify
 
-logging = lmj.cli.get_logger('lmj.media')
+logging = lmj.cli.get_logger('lmj.media.db')
 
-DB = 'photos.db'
+DB = 'media.db'
 
 @contextlib.contextmanager
 def connect():
@@ -25,82 +25,92 @@ def init(path):
     global DB
     DB = path
     with connect() as db:
-        db.execute('CREATE TABLE IF NOT EXISTS photo '
+        db.execute('CREATE TABLE IF NOT EXISTS media '
                    '( id INTEGER PRIMARY KEY AUTOINCREMENT'
+                   ', medium INTEGER NOT NULL DEFAULT 0'
                    ", path VARCHAR UNIQUE NOT NULL DEFAULT ''"
                    ", meta TEXT NOT NULL DEFAULT '{}'"
-                   ", ops TEXT NOT NULL DEFAULT '[]'"
                    ', stamp DATETIME'
                    ')')
         db.execute('CREATE TABLE IF NOT EXISTS tag '
                    '( id INTEGER PRIMARY KEY AUTOINCREMENT'
                    ", name VARCHAR UNIQUE NOT NULL DEFAULT ''"
                    ')')
-        db.execute('CREATE TABLE IF NOT EXISTS photo_tag'
-                   '( photo_id INTEGER NOT NULL DEFAULT 0'
+        db.execute('CREATE TABLE IF NOT EXISTS media_tag'
+                   '( media_id INTEGER NOT NULL DEFAULT 0'
                    ', tag_id INTEGER NOT NULL DEFAULT 0'
-                   ', FOREIGN KEY(photo_id) REFERENCES photo(id)'
+                   ', FOREIGN KEY(media_id) REFERENCES media(id)'
                    ', FOREIGN KEY(tag_id) REFERENCES tag(id)'
                    ')')
-        db.execute('CREATE UNIQUE INDEX IF NOT EXISTS pt_photo_tag '
-                   'ON photo_tag(photo_id, tag_id)')
-        db.execute('CREATE INDEX IF NOT EXISTS pt_photo '
-                   'ON photo_tag(photo_id)')
+        db.execute('CREATE UNIQUE INDEX IF NOT EXISTS mt_media_tag '
+                   'ON media_tag(media_id, tag_id)')
+        db.execute('CREATE INDEX IF NOT EXISTS pt_media '
+                   'ON media_tag(media_id)')
         db.execute('CREATE INDEX IF NOT EXISTS pt_tag '
-                   'ON photo_tag(tag_id)')
+                   'ON media_tag(tag_id)')
+
+
+def build_media(id, medium, path, meta=None):
+    '''Build an object of the appropriate class given the medium and data.'''
+    for cls in (Photo, ):
+        if medium == cls.MEDIUM:
+            return cls(id, path, meta)
+    raise ValueError('unknown medium {}'.format(medium))
 
 
 def find_one(id):
-    '''Find a single photo by its id.'''
-    sql = 'SELECT path, meta, ops FROM photo WHERE id = ?'
+    '''Find a single media piece by its id.'''
+    sql = 'SELECT medium, path, meta FROM media WHERE id = ?'
     with connect() as db:
-        return Photo(id, *db.execute(sql, (id, )).fetchone())
+        medium, path, meta = db.execute(sql, (id, )).fetchone()
+        return build_media(id, medium, path, meta)
 
 
-def find_tagged(tags, offset=0, limit=999999999):
-    '''Find photos matching all given tags.'''
+def find_tagged(tags, offset=0, limit=1 << 31):
+    '''Find media pieces matching all given tags.'''
     if not tags:
         return
-    sql = ('SELECT p.id, p.path, p.meta, p.ops FROM %s WHERE %s '
+    sql = ('SELECT m.id, m.medium, m.path, m.meta FROM %s WHERE %s '
            'ORDER BY stamp DESC LIMIT ? OFFSET ?')
-    tables = ['photo AS p']
+    tables = ['media AS m']
     wheres = []
     for i, t in enumerate(tags):
-        tables.extend(['photo_tag AS pt%d' % i, 'tag AS t%d' % i])
-        wheres.extend(['p.id = pt%d.photo_id' % i,
-                       't%d.id = pt%d.tag_id' % (i, i),
+        tables.extend(['media_tag AS mt%d' % i, 'tag AS t%d' % i])
+        wheres.extend(['m.id = mt%d.media_id' % i,
+                       't%d.id = mt%d.tag_id' % (i, i),
                        't%d.name = ?' % i])
     with connect() as db:
         sql = sql % (', '.join(tables), ' AND '.join(wheres))
         for row in db.execute(sql, tuple(tags) + (limit, offset)):
-            yield Photo(*row)
+            yield build_media(*row)
 
 
 def exists(path):
-    '''Check whether a given photo exists in the database.'''
+    '''Check whether a given piece exists in the database.'''
     with connect() as db:
-        sql = 'SELECT COUNT(path) FROM photo WHERE path = ?'
+        sql = 'SELECT COUNT(path) FROM media WHERE path = ?'
         c, = db.execute(sql, (path, )).fetchone()
         return c > 0
 
 
-def insert(path):
-    '''Add a new photo to the database.'''
+def insert(path, medium):
+    '''Add a new piece to the database.'''
     with connect() as db:
-        db.execute('INSERT INTO photo (path) VALUES (?)', (path, ))
-        sql = 'SELECT id, path FROM photo WHERE path = ?'
-        return Photo(*db.execute(sql, (path, )).fetchone())
+        sql = 'INSERT INTO media (path, medium) VALUES (?, ?)'
+        db.execute(sql, (path, medium))
+        sql = 'SELECT id, medium, path FROM media WHERE path = ?'
+        return build_media(*db.execute(sql, (path, )).fetchone())
 
 
-def update(photo):
-    '''Update the database with new photo metadata.'''
+def update(piece):
+    '''Update the database with new metadata.'''
     with connect() as db:
-        # update photo information in database.
-        db.execute('UPDATE photo SET meta = ?, ops = ?, stamp = ? WHERE id = ?', (
-            stringify(photo.meta), stringify(photo.ops), photo.stamp, photo.id))
+        # update metadata in database.
+        db.execute('UPDATE media SET meta = ?, stamp = ? WHERE id = ?', (
+            stringify(piece.meta), piece.stamp, piece.id))
 
-        # get current tags for photo.
-        tag_tuple = tuple(photo.tag_set)
+        # get current tags for piece.
+        tag_tuple = tuple(piece.tag_set)
         jc = lambda x, n=len(tag_tuple): ('{},'.format(x) * n)[:-1]
 
         # of the current tags, find the ones that already exist in the database,
@@ -113,13 +123,13 @@ def update(photo):
         ids = tuple(i for _, i in db.execute(sql, tag_tuple))
 
         # remove existing tag associations.
-        db.execute('DELETE FROM photo_tag WHERE photo_id = ?', (photo.id, ))
+        db.execute('DELETE FROM media_tag WHERE media_id = ?', (piece.id, ))
 
         # re-insert tag associations for current tags.
-        sql = 'INSERT INTO photo_tag (photo_id, tag_id) VALUES %s' % jc('(?,?)')
+        sql = 'INSERT INTO media_tag (media_id, tag_id) VALUES %s' % jc('(?,?)')
         data = []
         for i in ids:
-            data.extend((photo.id, i))
+            data.extend((piece.id, i))
         db.execute(sql, tuple(data))
 
 
@@ -129,32 +139,25 @@ def delete(id, hide_original_if_path_matches=None):
     WARNING: If hide_original_if_path_matches contains the path for the photo,
     the original file will be renamed with a hidden (dot) prefix.
     '''
-    photo = find_one(id)
-
-    # remove thumbnails of this photo.
-    base = os.path.dirname(DB)
-    for size in os.listdir(base):
-        try:
-            os.unlink(os.path.join(base, size, photo.thumb_path))
-        except:
-            pass
+    piece = find_one(id)
+    piece.cleanup()
 
     # if desired, hide the original file referenced by this photo.
-    if hide_original_if_path_matches == photo.path:
-        dirname = os.path.dirname(photo.path)
-        basename = os.path.basename(photo.path)
+    if hide_original_if_path_matches == piece.path:
+        dirname = os.path.dirname(piece.path)
+        basename = os.path.basename(piece.path)
         try:
             os.rename(photo.path, os.path.join(dirname, '.lmj-removed-' + basename))
         except:
-            logging.exception('%s: error renaming photo', photo.path)
+            logging.exception('%s: error renaming source', piece.path)
 
     # remove photo from the database.
     with connect() as db:
-        db.execute('DELETE FROM photo_tag WHERE photo_id = ?', (id, ))
-        db.execute('DELETE FROM photo WHERE id = ?', (id, ))
+        db.execute('DELETE FROM media_tag WHERE media_id = ?', (id, ))
+        db.execute('DELETE FROM media WHERE id = ?', (id, ))
 
 
 def remove_path(path):
-    '''Remove a photo by path.'''
+    '''Remove a media piece by path.'''
     with connect() as db:
-        db.execute('DELETE FROM photo WHERE path = ?', (path, ))
+        db.execute('DELETE FROM media WHERE path = ?', (path, ))
