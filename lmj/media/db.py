@@ -147,7 +147,7 @@ def delete(id, hide_original_if_path_matches=None):
         dirname = os.path.dirname(piece.path)
         basename = os.path.basename(piece.path)
         try:
-            os.rename(photo.path, os.path.join(dirname, '.lmj-removed-' + basename))
+            os.rename(piece.path, os.path.join(dirname, '.lmj-removed-' + basename))
         except:
             logging.exception('%s: error renaming source', piece.path)
 
