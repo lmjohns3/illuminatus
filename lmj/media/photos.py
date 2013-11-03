@@ -4,6 +4,7 @@ import lmj.cli
 import os
 import PIL.Image
 import PIL.ImageOps
+import re
 import subprocess
 
 from . import db
@@ -124,8 +125,8 @@ class Photo(object):
 
         if 'Model' in self.exif:
             t = self.exif['Model'].lower()
-            for s in 'canon nikon kodak digital camera super ed is'.split():
-                t = t.replace(s, '').strip()
+            for s in 'canon nikon kodak digital camera super powershot ed$ is$'.split():
+                t = re.sub(s, '', t).strip()
             if t:
                 tags.add('kit:{}'.format(t))
 
