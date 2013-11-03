@@ -183,10 +183,15 @@ class Photo(object):
     def add_op(self, key, **op):
         op['key'] = key
         self.ops.append(op)
+        self.update_thumbnail()
         db.update(self)
+
+    def update_thumbnail(self):
+        raise NotImplementedError
 
     @staticmethod
     def create(path, tags, add_path_tag=False):
+        '''Create a new Photo from the file at the given path.'''
         def compute_timestamp_from(exif, key):
             raw = exif.get(key)
             if not raw:

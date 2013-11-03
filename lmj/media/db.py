@@ -3,7 +3,6 @@ import lmj.cli
 import os
 import sqlite3
 
-from .photos import Photo
 from .util import stringify
 
 logging = lmj.cli.get_logger('lmj.media.db')
@@ -52,6 +51,7 @@ def init(path):
 
 def build_media(id, medium, path, meta=None):
     '''Build an object of the appropriate class given the medium and data.'''
+    from .photos import Photo
     for cls in (Photo, ):
         if medium == cls.MEDIUM:
             return cls(id, path, meta)

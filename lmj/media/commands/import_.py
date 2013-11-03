@@ -19,28 +19,31 @@ logging = lmj.cli.get_logger('lmj.media.import')
 
 
 def find_class_for(mime):
+    '''Find a media class for the given mime type.'''
     if mime:
-        for cls in (Photo, ):
+        for cls in (lmj.media.Photo, ):
             for template in cls.MIME_TYPES:
                 if re.match(template, mime):
                     return cls
+    return None
 
 
 def maybe_import(args, path):
+    '''Given a path, try to import it.'''
     mime, _ = mimetypes.guess_type(path)
     cls = find_class_for(mime)
     if cls is None:
         logging.info('? %s %s', mime, path)
-        return
+        return None
     if lmj.media.db.exists(path):
-        logging.info('= %s', path)
-        return
+        logging.info('= %s %s', mime, path)
+        return None
     try:
         cls.create(path, args.tag, args.add_path_tag)
-        logging.warn('+ %s', path)
+        logging.warn('+ %s %s', mime, path)
     except KeyboardInterrupt:
         lmj.media.db.remove_path(path)
-        return
+        return None
     except:
         lmj.media.db.remove_path(path)
         _, exc, tb = sys.exc_info()
