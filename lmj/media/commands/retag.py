@@ -18,7 +18,7 @@ cmd.add_argument('tag', nargs='+', metavar='TAG',
                  help='retag only photos with these TAGs')
 cmd.set_defaults(mod=sys.modules[__name__])
 
-logging = lmj.cli.get_logger(__name__)
+logging = lmj.cli.get_logger('lmj.media.retag')
 
 
 def main(args):
@@ -32,7 +32,7 @@ def main(args):
 
         p.meta['user_tags'] = sorted(lmj.media.util.normalized_tag_set(tags))
         if args.exif:
-            p.meta['exif_tags'] = sorted(lmj.media.util.tags_from_exif(p.exif))
+            p.meta['exif_tags'] = sorted(p.read_exif_tags())
 
         logging.info('%s: user: %s; exif: %s',
                      os.path.basename(p.path),
