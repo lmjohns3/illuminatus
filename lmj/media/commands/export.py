@@ -154,7 +154,7 @@ def export(args, tag):
             hide_pattern += t + '$'
 
     # export the individual media pieces.
-    for p in []:#pieces:
+    for p in pieces:
         logging.info('%s: exporting', p.thumb_path)
         p.export(args.target, replace=args.replace)
 
