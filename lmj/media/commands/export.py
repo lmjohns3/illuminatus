@@ -10,18 +10,20 @@ cmd = lmj.cli.add_command('export')
 cmd.add_argument('--target', default=os.curdir, metavar='DIR',
                  help='export photos to pages rooted at DIR')
 cmd.add_argument('--require', default=[], nargs='+', metavar='TAG',
-                 help='only export photos with TAG')
-cmd.add_argument('--exclude', default=[], nargs='+', metavar='TAG',
-                 help='do not export photos with TAG')
-cmd.add_argument('--hide', default=[], nargs='+', metavar='TAG',
-                 help='do not export TAG with exported photos')
-cmd.add_argument('--replace', action='store_true',
-                 help='replace existing exported photos')
-cmd.add_argument('--preserve-omnipresent-tags', action='store_true',
-                 help='do not remove tags that are present in all photos')
+                 help='only export media tagged with TAG')
+cmd.add_argument('--exclude', default=[], nargs='+', metavar='PATTERN',
+                 help='do not export media tagged with PATTERN')
+cmd.add_argument('--hide', default=[], nargs='+', metavar='PATTERN',
+                 help='do not export info for tags matching PATTERN')
+cmd.add_argument('--replace', default=False, action='store_true',
+                 help='replace existing exported thumbnails, etc.')
+cmd.add_argument('--preserve-omnipresent-tags', default=False, action='store_true',
+                 help='do not remove tags that are present in all media')
 cmd.add_argument('tag', nargs=argparse.REMAINDER, metavar='TAG',
-                 help='export photos with these TAGs')
+                 help='generate index page for this TAG')
 cmd.set_defaults(mod=sys.modules[__name__])
+
+logging = lmj.cli.get_logger('lmj.media.export')
 
 
 PAGE = u'''\
@@ -30,91 +32,146 @@ PAGE = u'''\
 <head>
 <meta charset="utf-8">
 <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet">
-<link href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.min.css" rel="stylesheet">
 <link href="//cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.5/jquery.fancybox.css" rel="stylesheet">
+<link href="//fonts.googleapis.com/css?family=Source+Sans+Pro" rel="stylesheet">
 <style>
-body {{ background: #333; }}
+body {{ background: #fff; }}
 #tags {{ margin: 10px 0; }}
-.thumbnail {{ background: #111; border-color: #222; margin-bottom: 10px; }}
-.tag {{ color: #ccc; border: solid 1px #ccc; padding: 2px 5px; }}
-.tag.alive {{ background: #ccc; color: #111; border-color: #111; }}
+.tag {{ color: #333; margin: 1px; padding: 2px 5px; cursor: pointer; }}
+.tag:hover {{ background: #ddd; }}
+.tag.alive {{ background: #bdf; }}
+.thumb {{ margin: 10px 10px 0 0; text-align: center; max-width: 100%; }}
 </style>
 <title>Photos: {tag}</title>
 <body>
 <div class="container">
-<div class="row"><div id="tags" class="col-xs-12">{tags}</div></div>
-<div class="row">{images}</div>
+<div class="row"><ul id="tags" class="col-xs-12 list-unstyled">{tags}</ul></div>
+<div class="row"><ul class="list-unstyled">{pieces}</ul></div>
 </div>
-<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.0/jquery.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.5/jquery.fancybox.pack.js"></script>
 <script>
 toggles = {{}};
 
+function oz($elem, hide) {{
+  var css = {{ left: 0, position: 'relative' }};
+  var gallery = 'gallery';
+  if (hide) {{
+    css.left = -10000;
+    css.position = 'absolute';
+    gallery = 'hidden';
+  }}
+  $elem.closest('li').css(css);
+  $elem.attr('data-fancybox-group', gallery);
+}};
+
 $(function() {{
-  $('.thumbnail').fancybox();
+  $('.fancybox').fancybox();
 
   $('#tags').on('click', '.tag', function(e) {{
-    var elem = $(e.target);
-    name = elem.html();
+    var $elem = $(e.target);
+    var name = $elem.html();
     if (toggles[name]) {{
       delete toggles[name];
-      elem.removeClass('alive');
+      $elem.removeClass('alive');
     }} else {{
       toggles[name] = true;
-      elem.addClass('alive');
+      $elem.addClass('alive');
+    }}
+
+    if (Object.keys(toggles).length === 0) {{
+      $('.fancybox').each(function() {{ oz($(this), false); }});
+    }} else {{
+      var visible = '';
+      for (name in toggles) {{
+        if (visible !== '') visible += '|';
+        visible += name;
+      }}
+      $('.fancybox').each(function() {{
+        oz($(this), !!!$(this).attr('title').match(visible));
+      }});
     }}
   }});
-}})</script>
+}});</script>
 </body>
 </html>
 '''
 
-TAG = u'<a href="#" class="img-rounded tag">{name}</a> '
+TAG = u'<li class="img-rounded tag pull-left">{name}</li> '
 
-IMAGE = u'''\
-<div class="col-md-2 col-sm-3 col-xs-4">\
-<a class="thumbnail" data-fancybox-group="gallery" data-tags="{tags}" href="{image}">\
+PHOTO = u'''\
+<li class="thumb pull-left">\
+<a class="fancybox" data-fancybox-group="gallery" title="{tags}" href="{image}">\
 <img class="img-rounded" src="{thumbnail}"></a>\
-</div>
+</li>
 '''
 
 
-def export(args, tag):
-    # pull matching photos from the database.
-    images = list(lmj.media.db.find_tagged([tag] + args.require_tag))
-
-    # count tag usage for this set of photos.
-    tag_counts = collections.defaultdict(int)
-    for p in images:
+def filter_excluded(pieces, pattern):
+    '''Omit pieces tagged with anything that matches the given pattern.'''
+    logging.info('filtering out pieces matching %s', pattern)
+    exclude = set()
+    for p in pieces:
         for t in p.tag_set:
+            if re.match(pattern, t):
+                exclude.add(p.id)
+                break
+    return [p for p in pieces if p.id not in exclude]
+
+
+def export(args, tag):
+    logging.info('exporting %s ...', tag)
+
+    # pull matching media pieces from the database.
+    pieces = filter_excluded(
+        list(lmj.media.db.find_tagged([tag] + args.require)),
+        '^{}$'.format('|'.join(args.exclude)))
+
+    logging.info('exporting %d pieces', len(pieces))
+
+    # set up a function to hide tags.
+    hide_pattern = '^{}$'.format('|'.join(args.hide))
+    logging.info('hiding tags matching %s', hide_pattern)
+    def filter_hide(ts):
+        return (t for t in ts if not re.match(hide_pattern, t))
+
+    # count tag usage for this set of media.
+    tag_counts = collections.defaultdict(int)
+    for p in pieces:
+        for t in filter_hide(p.tag_set):
             tag_counts[t] += 1
 
+    logging.info('%d unique tags', len(tag_counts))
+
     if not args.preserve_omnipresent_tags:
-        # remove tags from the union that are applied to all photos in this set.
-        omnipresent = [t for t, c in tag_counts.iteritems() if c == len(images)]
+        # remove tags that are applied to all media pieces.
+        omnipresent = [t for t, c in tag_counts.iteritems() if c == len(pieces)]
         for t in omnipresent:
             del tag_counts[t]
+            hide_pattern = hide_pattern[:-1]
+            if hide_pattern != '^':
+                hide_pattern += '|'
+            hide_pattern += t + '$'
 
-    # export the individual photo images.
-    for p in images:
-        p.make_thumbnails(args.target, replace=args.replace)
+    # export the individual media pieces.
+    for p in []:#pieces:
+        logging.info('%s: exporting', p.thumb_path)
+        p.export(args.target, replace=args.replace)
 
-    # write out some html to show the photos.
+    # write out some html to show the pieces.
     with open(os.path.join(args.target, tag + '.html'), 'w') as out:
-        out.write(
-            PAGE.format(
-                tag=tag,
-                tags=u''.join(
-                    TAG.format(name=t)
-                    for t in sorted(tag_counts)),
-                images=u''.join(
-                    IMAGE.format(
-                        tags=u' '.join(p.tag_set),
-                        image='full/' + p.thumb_path,
-                        thumbnail='thumb/' + p.thumb_path)
-                    for p in images)).encode('utf-8'))
+        out.write(PAGE.format(
+            tag=tag,
+            tags=u''.join(TAG.format(name=t) for t in sorted(tag_counts)),
+            pieces=u''.join(PHOTO.format(
+                tags=u' '.join(sorted(filter_hide(p.tag_set))),
+                image='full/' + p.thumb_path,
+                thumbnail='thumb/' + p.thumb_path)
+                for p in pieces)).encode('utf-8'))
 
 
 def main(args):
+    if not os.path.isdir(args.target):
+        os.makedirs(args.target)
     for tag in args.tag:
         export(args, tag)
