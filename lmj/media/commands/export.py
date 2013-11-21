@@ -7,18 +7,22 @@ import re
 import sys
 
 cmd = lmj.cli.add_command('export')
-cmd.add_argument('--target', default=os.curdir, metavar='DIR',
-                 help='export photos to pages rooted at DIR')
-cmd.add_argument('--require', default=[], nargs='+', metavar='TAG',
-                 help='only export media tagged with TAG')
 cmd.add_argument('--exclude', default=[], nargs='+', metavar='PATTERN',
                  help='do not export media tagged with PATTERN')
 cmd.add_argument('--hide', default=[], nargs='+', metavar='PATTERN',
                  help='do not export info for tags matching PATTERN')
 cmd.add_argument('--replace', default=False, action='store_true',
                  help='replace existing exported thumbnails, etc.')
-cmd.add_argument('--preserve-omnipresent-tags', default=False, action='store_true',
+cmd.add_argument('--require', default=[], nargs='+', metavar='TAG',
+                 help='only export media tagged with TAG')
+cmd.add_argument('--show-datetime-tags', default=False, action='store_true',
+                 help='include tags related to date data')
+cmd.add_argument('--show-exif-tags', default=False, action='store_true',
+                 help='include tags related to EXIF data')
+cmd.add_argument('--show-omnipresent-tags', default=False, action='store_true',
                  help='do not remove tags that are present in all media')
+cmd.add_argument('--target', default=os.curdir, metavar='DIR',
+                 help='export photos to pages rooted at DIR')
 cmd.add_argument('tag', nargs=argparse.REMAINDER, metavar='TAG',
                  help='generate index page for this TAG')
 cmd.set_defaults(mod=sys.modules[__name__])
@@ -101,7 +105,7 @@ TAG = u'<li class="img-rounded tag pull-left">{name}</li> '
 
 PHOTO = u'''\
 <li class="thumb pull-left">\
-<a class="fancybox" data-fancybox-group="gallery" title="{tags}" href="{image}">\
+<a class="fancybox" data-fancybox-group="gallery" title="{title}" href="{image}">\
 <img class="img-rounded" src="{thumbnail}"></a>\
 </li>
 '''
@@ -129,21 +133,24 @@ def export(args, tag):
 
     logging.info('exporting %d pieces', len(pieces))
 
-    # set up a function to hide tags.
+    # set up a function to get visible tags for a piece.
     hide_pattern = '^{}$'.format('|'.join(args.hide))
     logging.info('hiding tags matching %s', hide_pattern)
-    def filter_hide(ts):
+    def visible_tags(piece):
+        ts = piece.user_tag_set
+        if args.show_exif_tags:
+            ts |= piece.exif_tag_set
+        if args.show_datetime_tags:
+            ts |= piece.datetime_tag_set
         return (t for t in ts if not re.match(hide_pattern, t))
 
     # count tag usage for this set of media.
     tag_counts = collections.defaultdict(int)
     for p in pieces:
-        for t in filter_hide(p.tag_set):
+        for t in visible_tags(p):
             tag_counts[t] += 1
 
-    logging.info('%d unique tags', len(tag_counts))
-
-    if not args.preserve_omnipresent_tags:
+    if not args.show_omnipresent_tags:
         # remove tags that are applied to all media pieces.
         omnipresent = [t for t, c in tag_counts.iteritems() if c == len(pieces)]
         for t in omnipresent:
@@ -153,6 +160,8 @@ def export(args, tag):
                 hide_pattern += '|'
             hide_pattern += t + '$'
 
+    logging.info('%d unique tags', len(tag_counts))
+
     # export the individual media pieces.
     for p in pieces:
         logging.info('%s: exporting', p.thumb_path)
@@ -160,14 +169,20 @@ def export(args, tag):
 
     # write out some html to show the pieces.
     with open(os.path.join(args.target, tag + '.html'), 'w') as out:
+        def title(p):
+            stamp = p.stamp.strftime('%d %b %Y, %I:%M%p').replace(' 0', ' ')
+            tags = u', '.join(sorted(visible_tags(p)))
+            if tags:
+                return u'{} &mdash; {}'.format(stamp, tags)
+            return stamp
+        photo = lambda p: PHOTO.format(
+            title=title(p),
+            image='full/' + p.thumb_path,
+            thumbnail='thumb/' + p.thumb_path)
         out.write(PAGE.format(
             tag=tag,
             tags=u''.join(TAG.format(name=t) for t in sorted(tag_counts)),
-            pieces=u''.join(PHOTO.format(
-                tags=u' '.join(sorted(filter_hide(p.tag_set))),
-                image='full/' + p.thumb_path,
-                thumbnail='thumb/' + p.thumb_path)
-                for p in pieces)).encode('utf-8'))
+            pieces=u''.join(photo(p) for p in pieces)).encode('utf-8'))
 
 
 def main(args):
