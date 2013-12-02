@@ -49,6 +49,7 @@ body {{ background: #fff; }}
 <title>Photos: {tag}</title>
 <body>
 <div class="container">
+<div class="row"><h1 class="col-xs-12">{tag}</h1></div>
 <div class="row"><ul id="tags" class="col-xs-12 list-unstyled">{tags}</ul></div>
 <div class="row"><ul class="list-unstyled">{pieces}</ul></div>
 </div>
@@ -92,7 +93,7 @@ $(function() {{
         visible += name;
       }}
       $('.fancybox').each(function() {{
-        oz($(this), !!!$(this).attr('title').match(visible));
+        oz($(this), !$(this).attr('title').match(visible));
       }});
     }}
   }});
