@@ -74,7 +74,11 @@ def groups():
 @bottle.get('/tags')
 def tags():
     req = bottle.request
-    tags = (t.strip() for t in req.query.tags.split('|') if t.strip())
+    tags = tuple(t.strip() for t in req.query.tags.split('|') if t.strip())
+    if not tags:
+        with lmj.media.db.connect() as db:
+            return lmj.media.util.stringify(
+                [t for _, t in db.execute('SELECT id, name FROM tag')])
     counts = collections.defaultdict(int)
     for p in lmj.media.db.find_tagged(tuple(tags)):
         for t in p.tag_set:
