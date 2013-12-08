@@ -48,6 +48,14 @@ def init(path):
         db.execute('CREATE INDEX IF NOT EXISTS pt_tag '
                    'ON media_tag(tag_id)')
 
+    # clean up unused tags.
+    with connect() as db:
+        ids = tuple(i for i, in db.execute('SELECT DISTINCT tag_id FROM media_tag'))
+        if ids:
+            logging.info('cleaning up unused tags')
+            db.execute('DELETE FROM tag WHERE id NOT IN (%s)' %
+                       ','.join('?' for _ in ids), ids)
+
 
 def build_media(id, medium, path, meta=None):
     '''Build an object of the appropriate class given the medium and data.'''
