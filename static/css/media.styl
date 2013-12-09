@@ -1,20 +1,40 @@
 #tag-list
   width: 100%
   background: #222
-  padding: 0 0 5px
-  margin: 0 0 5px 0
-  position: relative
-  top: -10px
+  padding: 3px 0 0
+  margin: 0 0 5px
 
-  li
-    color: #888
-    border: solid 1px #444
-    margin: 5px 0 0 5px
-    padding: 1px 3px
-    border-radius: 3px
-    cursor: pointer
+  .tag
+    margin-bottom: 3px
+    opacity: 0.3
 
-    &.selected { background: #999; color: #444 }
+    &:hover { opacity: 0.7 }
+    &.select { opacity: 1.0 }
+
+#modal-tagger
+ .tag
+   margin-bottom: 3px
+
+   &:hover { opacity: 1.0 }
+   &.all { opacity: 1.0 }
+   &.some { opacity: 0.5 }
+   &.none { opacity: 0.3 }
+
+.tag
+  color: #eee
+  cursor: pointer
+  margin-right: 3px
+  padding: 0 4px
+  border-radius: 3px
+
+  &.exif { background: #292 }
+  &.date { background: #936 }
+  &.user { background: #49f }
+
+.tag-input
+  height: 22px
+  border-width: 1px
+  padding: 1px 2px
 
 #thumbs
   padding-right: 10px
@@ -37,12 +57,9 @@
       position: absolute
       top: 12px
       left: -12px
-      color: #fd9
+      color: #f63
 
     &.select img { border-color: #ff6 }
-
-.modal-body .tag { margin-right: 3px }
-#modal-tagger .modal-body .tag { cursor: pointer }
 
 #modal-viewer
   overflow-y: hidden
@@ -62,12 +79,5 @@
       img
         max-height: 85%
         margin: 0 auto
-
-  .tag-input
-    height: 20px
-    border-width: 1px
-    padding: 1px 2px
-    position: relative
-    top: -2px
 
 .grayscale { -webkit-filter: grayscale(100%) }
