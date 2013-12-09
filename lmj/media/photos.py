@@ -141,10 +141,10 @@ class Photo(object):
         img = self.get_image()
         for name, size in sorted(sizes, key=lambda x: -x[1]):
             p = os.path.join(base, name, self.thumb_path)
-            dirname = os.path.dirname(p)
-            try: os.makedirs(dirname)
-            except: pass
             if replace or not os.path.exists(p):
+                dirname = os.path.dirname(p)
+                if not os.path.exists(dirname):
+                    os.makedirs(dirname)
                 if isinstance(size, int):
                     size = (2 * size, size)
                 img.thumbnail(size, PIL.Image.ANTIALIAS)
