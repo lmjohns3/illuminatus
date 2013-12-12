@@ -134,10 +134,11 @@ class Photo(object):
         return util.normalized_tag_set(tags)
 
     def make_thumbnails(self,
-                        base=os.path.dirname(db.DB),
+                        base=None,
                         sizes=(('full', 1000), ('thumb', 100)),
                         replace=False):
         '''Create thumbnails of this photo and save them to disk.'''
+        base = base or os.path.dirname(db.DB)
         img = self.get_image()
         for name, size in sorted(sizes, key=lambda x: -x[1]):
             p = os.path.join(base, name, self.thumb_path)
