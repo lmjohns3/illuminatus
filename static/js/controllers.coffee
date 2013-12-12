@@ -18,14 +18,47 @@ MediaCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
 
   $scope.cursor = -1
   $scope.selectedIds = {}
-  $scope.selectedPhotoTags = []
+  $scope.selectedMediaTags = []
 
   $scope.availableTags = []
   $scope.activeTags = _.select (
     decodeURIComponent(x) for x in $routeParams.tags.split('|')),
     (t) -> t.length > 0
 
+  MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
+  DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+
+  $scope.EXIF_TAG_RE = /^(f\/[\d\.]+|\d+mm|\d+ms|iso:\d+|kit:.*)$/
+  $scope.DATE_TAG_RE = /^([12]\d{3}|\d+(st|nd|rd|th)|\d+[ap]m|[adefhimnorstuw]+day|(jan|febr)uary|march|april|may|june|july|august|(sept|nov|dec)ember|october)$/
+  $scope.tagSort = (tag) ->
+    tag = tag.name if tag.name
+    s = t = 0
+    k = 2
+    if tag.match $scope.EXIF_TAG_RE
+      k = 1
+    if tag.match $scope.DATE_TAG_RE
+      k = 0
+      s = 5
+      t = _.indexOf MONTHS, tag
+      t = "0#{t}" if 0 <= t <= 9
+      if tag.match /^\d+[ap]m$/
+        s = if tag.match /am$/ then 1 else 2
+        t = if tag.match /^12/ then 0 else 1
+        tag = "0#{tag}" if tag.match /^\d[ap]m$/
+      if tag.match /^[adefhimnorstuw]+day$/
+        s = 3
+        t = _.indexOf DAYS, tag
+      if tag.match /^\d+(st|nd|rd|th)$/
+        s = 4
+        tag = "0#{tag}" if tag.match /^\d\D/
+      s = 6 if tag.match /^[12]\d{3}$/
+    "#{k}:#{s}:#{t}:#{tag}"
+
   # REQUESTING DATA
+
+  $http.get("tags?tags=#{$scope.activeTags.join '|'}").then (res) ->
+    $scope.availableTags = res.data
+    return true
 
   $scope.goto = (tag) ->
     i = _.indexOf $scope.activeTags, tag
@@ -51,19 +84,43 @@ MediaCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
 
   # TAGGING OPERATIONS
 
+  $('.modal').on 'hide.bs.modal', -> $('#thumbs').focus()
+
   $scope.showTagger = ->
     if $scope.viewerVisible
       $('#modal-viewer .tag-input').focus()
     else
       $('#modal-tagger').modal('show')
 
-  $('#modal-tagger').on 'shown.bs.modal', ->
-    $('#modal-tagger .tag-input').focus()
+  $('#modal-tagger').on 'shown.bs.modal', -> $('#modal-tagger .tag-input').focus()
+  $('#modal-tagger').on 'hidden.bs.modal', -> $('#modal-tagger .tag-input').val ''
 
-  $('#modal-tagger').on 'hidden.bs.modal', ->
-    $('#modal-tagger .tag-input').val ''
+  $scope.toggleViewer = ->
+    $('#modal-viewer').modal('toggle')
+
+  $('#modal-viewer').on 'shown.bs.modal', -> $scope.viewerVisible = true
+  $('#modal-viewer').on 'hidden.bs.modal', -> $scope.viewerVisible = false
+
+  # this is an absurd workaround for the fact that tabbing away from an input
+  # element does not allow the standard blur handler to return focus to #thumbs
+  # (for correct processing of future keydown events). we capture <tab> keydowns
+  # and convert them to blur firings manually.
+  $('#modal-viewer .tag-input').on 'keydown', (e) ->
+    if e.keyCode is 9  # tab
+      $(e.target).blur()
+      return false
+    true
+
+  $('#modal-viewer .tag-input').on 'blur', (e) ->
+    $(e.target).val ''
+    setTimeout (-> $('#thumbs').focus()), 0
+
+  $('.tag-input')
+    .typeahead(name: 'tags', prefetch: '/tags?tags=')
+    .on 'typeahead:selected', -> $(@).closest('.tag-form').submit()
 
   $('.tag-form').on 'submit', (e) ->
+    e.preventDefault()
     el = $(e.target).find('.tag-input').first()
     tag = el.val().toLowerCase().replace /^\s+|\s+$/, ''
     return unless tag.length > 0
@@ -86,7 +143,7 @@ MediaCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
     $scope.showTagger()
 
   $scope.smartTag = (tag, index) ->
-    tag = $scope.selectedPhotoTags[index]
+    tag = $scope.selectedMediaTags[index]
     if tag.count is tag.limit
       op = 'clearTag'
       tag.count = 0
@@ -98,10 +155,6 @@ MediaCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
     recomputeSelected()
 
   # INDIVIDUAL PHOTO OPERATIONS
-
-  $scope.toggleViewer = ->
-    modal = $('#modal-viewer').modal('toggle').first()
-    $scope.viewerVisible = 'none' isnt modal.css 'display'
 
   $scope.contrastPhoto = (gamma, alpha) ->
     return unless $scope.viewerVisible
@@ -201,7 +254,6 @@ MediaCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
     ids = _.extend {}, $scope.selectedIds
     if 0 is _.size ids
       ids[$scope.photos[$scope.cursor].id] = true
-    console.log 'active ids', ids
     return ids
 
   recomputeSelected = ->
@@ -212,32 +264,11 @@ MediaCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
       for t in $scope.getPhoto(id).tags
         counts[t] = 0 unless counts[t]
         counts[t]++
-    $scope.selectedPhotoTags = _.sortBy (
+    $scope.selectedMediaTags = _.sortBy (
       {name: t, count: c, limit: n} for t, c of counts
     ), (x) -> -x.count
 
-  $http.get("tags?tags=#{$scope.activeTags.join '|'}").then (res) ->
-    $scope.availableTags = res.data
-    return true
-
   $('#thumbs').focus()
-
-  $('.modal').on 'hide.bs.modal', ->
-    $('#thumbs').focus()
-
-  # this is an absurd workaround for the fact that tabbing away from an input
-  # element does not allow the standard blur handler to return focus to #thumbs
-  # (for correct processing of future keydown events). we capture <tab> keydowns
-  # and convert them to blur firings manually.
-  $('#modal-viewer .tag-input').on 'keydown', (e) ->
-    if e.keyCode is 9  # tab
-      $(e.target).blur()
-      return false
-    true
-
-  $('#modal-viewer .tag-input').on 'blur', (e) ->
-    $(e.target).val ''
-    setTimeout (-> $('#thumbs').focus()), 0
 
   $scope.loadPhotos 200
 

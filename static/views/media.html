@@ -1,10 +1,15 @@
-<ul id="tag-list" class="list-unstyled pull-left">
- <li class="pull-left"
+<ul id="tag-list" class="list-unstyled">
+ <li class="pull-left tag"
      ng-click="goto(tag.name)"
-     ng-repeat="tag in availableTags | orderBy:'name'"
-     ng-class="{ selected: activeTags.indexOf(tag.name) >= 0 }">
-  <small title="{{ tag.count }}x">{{ tag.name }}</small>
- <li style="clear:left;border:none"></li>
+     ng-repeat="tag in availableTags | orderBy:tagSort"
+     ng-class="{
+select: activeTags.indexOf(tag.name) >= 0,
+exif: tag.name.match(EXIF_TAG_RE),
+date: tag.name.match(DATE_TAG_RE),
+user: !tag.name.match(EXIF_TAG_RE) && !tag.name.match(DATE_TAG_RE)
+}">
+  <span title="{{ tag.count }}x">{{ tag.name }}</span>
+ <li class="clearfix"></li>
 </ul>
 
 <div id="thumbs" tabindex="1" lmj-keypress="
@@ -48,15 +53,19 @@
 <div class="modal-content">
 <div class="modal-body">
 <ul class="list-unstyled">
- <li class="tag pull-left label"
-     ng-repeat="t in selectedPhotoTags"
-     ng-click="smartTag(t, $index)"
+ <li class="tag pull-left"
+     ng-repeat="tag in selectedMediaTags | orderBy:tagSort"
+     ng-click="smartTag(tag, $index)"
      ng-class="{
-'label-success': t.c == t.n,
-'label-warning': 0 < t.count && t.count < t.limit,
-'label-default': t.count == 0 }">{{ t.name }} ({{ t.count }})
+exif: tag.name.match(EXIF_TAG_RE),
+date: tag.name.match(DATE_TAG_RE),
+user: !tag.name.match(EXIF_TAG_RE) && !tag.name.match(DATE_TAG_RE),
+all: tag.count == tag.limit,
+some: tag.count != 0 && tag.count != tag.limit,
+none: tag.count == 0
+}"><span title="{{ tag.count }}x">{{ tag.name }}</span>
 </ul>
-<form class="tag-form"><input type="text" class="tag-input input-sm"></form>
+<form class="tag-form"><input type="text" class="tag-input input-sm"><input type="submit"></form>
 </div>
 </div>
 </div>
@@ -69,10 +78,15 @@
  <p>{{ dirnameBasename(photos[cursor].path) }}
  <span class="pull-right">{{ photos[cursor].when.format('YYYY MMM D HH:mm') }}</span></p>
  <ul class="list-unstyled">
-  <li ng-repeat="tag in photos[cursor].tags | orderBy:'toString()'"
+  <li class="tag pull-left"
+      ng-repeat="tag in photos[cursor].tags | orderBy:tagSort"
       ng-click="photos[cursor].clearTag(tag)"
-      class="tag label label-default pull-left">{{ tag }}
-  <li><form class="tag-form"><input type="text" ng-blur="blurInput($event)" class="tag-input input-sm" size="10"></form>
+      ng-class="{
+exif: tag.match(EXIF_TAG_RE),
+date: tag.match(DATE_TAG_RE),
+user: !tag.match(EXIF_TAG_RE) && !tag.match(DATE_TAG_RE)
+}">{{ tag }}
+  <li><form class="tag-form"><input type="text" ng-blur="blurInput($event)" class="tag-input input-sm"><input type="submit"></form>
  </ul>
  <span class="clearfix"></span>
  <div class="img"><img class="img-rounded" ng-src="static/full/{{ photos[cursor].img }}"></div>
