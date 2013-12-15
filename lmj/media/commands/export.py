@@ -41,9 +41,12 @@ PAGE = u'''\
 <style>
 body {{ background: #fff; }}
 #tags {{ margin: 10px 0; }}
-.tag {{ color: #333; margin: 1px; padding: 2px 5px; cursor: pointer; }}
-.tag:hover {{ background: #ddd; }}
-.tag.alive {{ background: #bdf; }}
+.tag {{ color: #fff; margin: 1px; padding: 2px 5px; cursor: pointer; opacity: 0.3; }}
+.tag:hover {{ opacity: 0.7; }}
+.tag.alive {{ opacity: 1.0; }}
+.tag.date {{ background: #36c; }}
+.tag.exif {{ background: #c33; }}
+.tag.user {{ background: #393; }}
 .thumb {{ margin: 10px 10px 0 0; text-align: center; max-width: 100%; }}
 </style>
 <title>Photos: {tag}</title>
@@ -51,7 +54,7 @@ body {{ background: #fff; }}
 <div class="container">
 <div class="row"><h1 class="col-xs-12">{tag}</h1></div>
 <div class="row"><ul id="tags" class="col-xs-12 list-unstyled">{tags}</ul></div>
-<div class="row"><ul class="list-unstyled">{pieces}</ul></div>
+<div class="row"><ul class="col-xs-12 list-unstyled">{pieces}</ul></div>
 </div>
 <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.5/jquery.fancybox.pack.js"></script>
@@ -102,7 +105,7 @@ $(function() {{
 </html>
 '''
 
-TAG = u'<li class="img-rounded tag pull-left">{name}</li> '
+TAG = u'<li class="img-rounded tag pull-left {class_}">{name}</li> '
 
 PHOTO = u'''\
 <li class="thumb pull-left">\
@@ -122,6 +125,45 @@ def filter_excluded(pieces, pattern):
                 exclude.add(p.id)
                 break
     return [p for p in pieces if p.id not in exclude]
+
+
+MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
+DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+EXIF_TAG_RE = re.compile(r'^(f/[\d\.]+|\d+mm|\d+ms|iso:\d+|kit:.*)$')
+DATE_TAG_RE = re.compile('^([12]\d{3}|\d+(st|nd|rd|th)|\d+[ap]m|[adefhimnorstuw]+day|(jan|febr)uary|march|april|may|june|july|august|(sept|nov|dec)ember|october)$')
+
+def tag_class(tag):
+    if DATE_TAG_RE.match(tag):
+        return 'date'
+    if EXIF_TAG_RE.match(tag):
+        return 'exif'
+    return 'user'
+
+def tag_sort_key(tag):
+    subgroup = ordinal = 0
+    group = 2
+    if EXIF_TAG_RE.match(tag):
+        group = 1
+    if DATE_TAG_RE.match(tag):
+        group = 0
+        if re.match(r'^\d+[ap]m$', tag):
+            subgroup = 1 if tag.endswith('am') else 2
+            ordinal = 0 if tag.startswith('12') else 1
+            if re.match(r'^\d[ap]m$', tag):
+                tag = '0' + tag
+        elif re.match(r'^[adefhimnorstuw]+day$', tag):
+            subgroup = 3
+            ordinal = DAYS.index(tag)
+        elif re.match(r'^\d+(st|nd|rd|th)$', tag):
+            subgroup = 4
+            if re.match('^\d\D', tag):
+                tag = '0' + tag
+        elif re.match(r'^[12]\d{3}$', tag):
+            subgroup = 6
+        else:
+            subgroup = 5
+            ordinal = '{:02d}'.format(MONTHS.index(tag))
+    return '{}:{}:{}:{}'.format(group, subgroup, ordinal, tag)
 
 
 def export(args, tag):
@@ -166,23 +208,20 @@ def export(args, tag):
     # export the individual media pieces.
     for p in pieces:
         logging.info('%s: exporting', p.thumb_path)
-        p.export(args.target, replace=args.replace)
+        #p.export(args.target, replace=args.replace)
 
     # write out some html to show the pieces.
     with open(os.path.join(args.target, tag + '.html'), 'w') as out:
         def title(p):
-            stamp = p.stamp.strftime('%d %b %Y, %I:%M%p').replace(' 0', ' ')
-            tags = u', '.join(sorted(visible_tags(p)))
-            if tags:
-                return u'{} &mdash; {}'.format(stamp, tags)
-            return stamp
+            return u', '.join(sorted(visible_tags(p), key=tag_sort_key))
         photo = lambda p: PHOTO.format(
             title=title(p),
             image='full/' + p.thumb_path,
             thumbnail='thumb/' + p.thumb_path)
         out.write(PAGE.format(
             tag=tag,
-            tags=u''.join(TAG.format(name=t) for t in sorted(tag_counts)),
+            tags=u''.join(TAG.format(name=t, class_=tag_class(t))
+                          for t in sorted(tag_counts, key=tag_sort_key)),
             pieces=u''.join(photo(p) for p in pieces)).encode('utf-8'))
 
 
