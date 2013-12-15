@@ -32,27 +32,27 @@ MediaCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
   $scope.DATE_TAG_RE = /^([12]\d{3}|\d+(st|nd|rd|th)|\d+[ap]m|[adefhimnorstuw]+day|(jan|febr)uary|march|april|may|june|july|august|(sept|nov|dec)ember|october)$/
   $scope.tagSort = (tag) ->
     tag = tag.name if tag.name
-    s = t = 0
-    k = 2
+    subgroup = ordinal = 0
+    group = 2
     if tag.match $scope.EXIF_TAG_RE
-      k = 1
+      group = 1
     if tag.match $scope.DATE_TAG_RE
-      k = 0
-      s = 5
-      t = _.indexOf MONTHS, tag
-      t = "0#{t}" if 0 <= t <= 9
+      group = 0
+      subgroup = 5
+      ordinal = _.indexOf MONTHS, tag
+      ordinal = "0#{t}" if 0 <= t <= 9
       if tag.match /^\d+[ap]m$/
-        s = if tag.match /am$/ then 1 else 2
-        t = if tag.match /^12/ then 0 else 1
+        subgroup = if tag.match /am$/ then 1 else 2
+        ordinal = if tag.match /^12/ then 0 else 1
         tag = "0#{tag}" if tag.match /^\d[ap]m$/
       if tag.match /^[adefhimnorstuw]+day$/
-        s = 3
-        t = _.indexOf DAYS, tag
+        subgroup = 3
+        ordinal = _.indexOf DAYS, tag
       if tag.match /^\d+(st|nd|rd|th)$/
-        s = 4
+        subgroup = 4
         tag = "0#{tag}" if tag.match /^\d\D/
-      s = 6 if tag.match /^[12]\d{3}$/
-    "#{k}:#{s}:#{t}:#{tag}"
+      subgroup = 6 if tag.match /^[12]\d{3}$/
+    "#{group}:#{subgroup}:#{ordinal}:#{tag}"
 
   # REQUESTING DATA
 
