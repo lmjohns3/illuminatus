@@ -40,10 +40,10 @@ MediaCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
       group = 0
       subgroup = 5
       ordinal = _.indexOf MONTHS, tag
-      ordinal = "0#{t}" if 0 <= t <= 9
+      ordinal = "0#{tag}" if 0 <= tag <= 9
       if tag.match /^\d+[ap]m$/
         subgroup = if tag.match /am$/ then 1 else 2
-        ordinal = if tag.match /^12/ then 0 else 1
+        ordinal = if tag.match /^12/ then 1 else 2
         tag = "0#{tag}" if tag.match /^\d[ap]m$/
       if tag.match /^[adefhimnorstuw]+day$/
         subgroup = 3
@@ -51,7 +51,8 @@ MediaCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
       if tag.match /^\d+(st|nd|rd|th)$/
         subgroup = 4
         tag = "0#{tag}" if tag.match /^\d\D/
-      subgroup = 6 if tag.match /^[12]\d{3}$/
+      if tag.match /^[12]\d{3}$/
+        subgroup = 6
     "#{group}:#{subgroup}:#{ordinal}:#{tag}"
 
   # REQUESTING DATA
@@ -117,7 +118,8 @@ MediaCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
 
   $('.tag-input')
     .typeahead(name: 'tags', prefetch: '/tags?tags=')
-    .on 'typeahead:selected', -> $(@).closest('.tag-form').submit()
+    .on('typeahead:selected', -> $(@).closest('.tag-form').submit())
+    .on('typeahead:closed', -> $(@).val(''))
 
   $('.tag-form').on 'submit', (e) ->
     e.preventDefault()
@@ -261,7 +263,7 @@ MediaCtrl = ($scope, $location, $http, $routeParams, $window, Photo) ->
     n = _.size ids
     counts = {}
     for id of ids
-      for t in $scope.getPhoto(id).tags
+      for t in $scope.getPhoto(id).meta.user_tags
         counts[t] = 0 unless counts[t]
         counts[t]++
     $scope.selectedMediaTags = _.sortBy (
