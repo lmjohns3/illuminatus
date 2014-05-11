@@ -50,11 +50,13 @@ def init(path):
 
     # clean up unused tags.
     with connect() as db:
-        ids = tuple(i for i, in db.execute('SELECT DISTINCT tag_id FROM media_tag'))
-        if ids:
-            logging.info('cleaning up unused tags')
-            db.execute('DELETE FROM tag WHERE id NOT IN (%s)' %
-                       ','.join('?' for _ in ids), ids)
+        used_ids = set(i for i, in db.execute('SELECT DISTINCT tag_id FROM media_tag'))
+        all_ids = set(i for i, in db.execute('SELECT id FROM tag'))
+        unused_ids = tuple(all_ids - used_ids)
+        if unused_ids:
+            logging.info('cleaning up %d unused tags', len(unused_ids))
+            db.execute('DELETE FROM tag WHERE id IN (%s)' %
+                       ','.join('?' for _ in unused_ids), unused_ids)
 
 
 def build_media(id, medium, path, meta=None):
