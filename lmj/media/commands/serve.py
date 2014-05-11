@@ -1,12 +1,12 @@
 import bottle
+import climate
 import collections
-import lmj.cli
 import lmj.media
 import os
 import random
 import sys
 
-cmd = lmj.cli.add_command('serve')
+cmd = climate.add_command('serve')
 cmd.add_argument('--host', default='localhost',
                  help='run server on this hostname')
 cmd.add_argument('--port', type=int, default=5555, metavar='N',

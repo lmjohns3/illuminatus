@@ -1,12 +1,12 @@
 import argparse
+import climate
 import collections
-import lmj.cli
 import lmj.media
 import os
 import re
 import sys
 
-cmd = lmj.cli.add_command('export')
+cmd = climate.add_command('export')
 cmd.add_argument('--exclude', default=[], nargs='+', metavar='PATTERN',
                  help='do not export media tagged with PATTERN')
 cmd.add_argument('--hide', default=[], nargs='+', metavar='PATTERN',
@@ -27,7 +27,7 @@ cmd.add_argument('tag', nargs=argparse.REMAINDER, metavar='TAG',
                  help='generate index page for this TAG')
 cmd.set_defaults(mod=sys.modules[__name__])
 
-logging = lmj.cli.get_logger('lmj.media.export')
+logging = climate.get_logger('lmj.media.export')
 
 
 PAGE = u'''\

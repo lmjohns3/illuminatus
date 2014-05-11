@@ -3,12 +3,12 @@
 Based on explanations at http://en.wikipedia.org/wiki/HSL_and_HSV
 '''
 
-import lmj.cli
+import climate
 import numpy as np
 import PIL.Image
 import PIL.ImageOps
 
-logging = lmj.cli.get_logger(__name__)
+logging = climate.get_logger(__name__)
 
 
 def f2i(x):

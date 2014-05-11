@@ -1,11 +1,11 @@
+import climate
 import datetime
-import lmj.cli
 import lmj.media
 import os
 import sys
 import traceback
 
-cmd = lmj.cli.add_command('retag')
+cmd = climate.add_command('retag')
 cmd.add_argument('--replace', action='store_true',
                  help='replace existing tags')
 cmd.add_argument('--exif', action='store_true',
@@ -18,7 +18,7 @@ cmd.add_argument('tag', nargs='+', metavar='TAG',
                  help='retag only photos with these TAGs')
 cmd.set_defaults(mod=sys.modules[__name__])
 
-logging = lmj.cli.get_logger('lmj.media.retag')
+logging = climate.get_logger('lmj.media.retag')
 
 
 def main(args):

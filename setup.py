@@ -14,7 +14,7 @@ setuptools.setup(
     version='0.0.1',
     namespace_packages=['lmj'],
     packages=setuptools.find_packages(),
-    requires=['PIL', 'lmj.cli', 'cv2', 'bottle'],
+    requires=['PIL', 'climate', 'cv2', 'bottle'],
     scripts=['scripts/lmj-media'],
     data_files=[('share/lmj-media/static', [
         'static/media.js',
