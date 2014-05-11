@@ -62,7 +62,8 @@ def init(path):
 def build_media(id, medium, path, meta=None):
     '''Build an object of the appropriate class given the medium and data.'''
     from .photos import Photo
-    for cls in (Photo, ):
+    from .videos import Video
+    for cls in (Photo, Video):
         if medium == cls.MEDIUM:
             return cls(id, path, meta)
     raise ValueError('unknown medium {}'.format(medium))
