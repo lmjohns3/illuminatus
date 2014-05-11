@@ -1,4 +1,4 @@
-import lmj.cli
+import climate
 import lmj.media
 import mimetypes
 import os
@@ -6,7 +6,7 @@ import re
 import sys
 import traceback
 
-cmd = lmj.cli.add_command('import')
+cmd = climate.add_command('import')
 cmd.add_argument('--tag', default=[], nargs='+', metavar='TAG',
                  help='apply these TAGs to all imported photos')
 cmd.add_argument('--add-path-tag', action='store_true',
@@ -15,7 +15,7 @@ cmd.add_argument('source', nargs='+', metavar='PATH',
                  help='import photos from these PATHs')
 cmd.set_defaults(mod=sys.modules[__name__])
 
-logging = lmj.cli.get_logger('lmj.media.import')
+logging = climate.get_logger('lmj.media.import')
 
 
 def find_class_for(mime):
