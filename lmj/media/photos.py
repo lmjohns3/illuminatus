@@ -1,7 +1,7 @@
+import climate
 import cv2
 import cv2.cv
 import datetime
-import lmj.cli
 import os
 import PIL.Image
 import PIL.ImageOps
@@ -11,7 +11,7 @@ import subprocess
 from . import db
 from . import util
 
-logging = lmj.cli.get_logger(__name__)
+logging = climate.get_logger(__name__)
 
 
 class Photo(object):

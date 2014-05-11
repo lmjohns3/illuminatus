@@ -1,11 +1,11 @@
+import climate
 import contextlib
-import lmj.cli
 import os
 import sqlite3
 
 from .util import stringify
 
-logging = lmj.cli.get_logger('lmj.media.db')
+logging = climate.get_logger('lmj.media.db')
 
 DB = 'media.db'
 
