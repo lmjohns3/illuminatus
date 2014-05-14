@@ -1,8 +1,8 @@
 import climate
+import fnmatch
 import lmj.media
 import mimetypes
 import os
-import re
 import sys
 import traceback
 
@@ -22,8 +22,8 @@ def find_class_for(mime):
     '''Find a media class for the given mime type.'''
     if mime:
         for cls in (lmj.media.Photo, ):
-            for template in cls.MIME_TYPES:
-                if re.match(template, mime):
+            for pattern in cls.MIME_TYPES:
+                if fnmatch.fnmatch(mime, pattern):
                     return cls
     return None
 

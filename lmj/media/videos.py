@@ -9,7 +9,7 @@ logging = climate.get_logger(__name__)
 
 class Video(object):
     MEDIUM = 2
-    MIME_TYPES = ('video/.*', )
+    MIME_TYPES = ('video/*', )
 
     @property
     def stamp(self):

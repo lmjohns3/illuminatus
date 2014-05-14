@@ -16,7 +16,7 @@ logging = climate.get_logger(__name__)
 
 class Photo(object):
     MEDIUM = 1
-    MIME_TYPES = ('image/.*', )
+    MIME_TYPES = ('image/*', )
 
     def __init__(self, id=-1, path='', meta=None):
         self.id = id
