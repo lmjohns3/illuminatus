@@ -127,45 +127,6 @@ def filter_excluded(pieces, pattern):
     return [p for p in pieces if p.id not in exclude]
 
 
-MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
-DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-EXIF_TAG_RE = re.compile(r'^(f/[\d\.]+|\d+mm|\d+ms|iso:\d+|kit:.*)$')
-DATE_TAG_RE = re.compile('^([12]\d{3}|\d+(st|nd|rd|th)|\d+[ap]m|[adefhimnorstuw]+day|(jan|febr)uary|march|april|may|june|july|august|(sept|nov|dec)ember|october)$')
-
-def tag_class(tag):
-    if DATE_TAG_RE.match(tag):
-        return 'date'
-    if EXIF_TAG_RE.match(tag):
-        return 'exif'
-    return 'user'
-
-def tag_sort_key(tag):
-    subgroup = ordinal = 0
-    group = 2
-    if EXIF_TAG_RE.match(tag):
-        group = 1
-    if DATE_TAG_RE.match(tag):
-        group = 0
-        if re.match(r'^\d+[ap]m$', tag):
-            subgroup = 1 if tag.endswith('am') else 2
-            ordinal = 0 if tag.startswith('12') else 1
-            if re.match(r'^\d[ap]m$', tag):
-                tag = '0' + tag
-        elif re.match(r'^[adefhimnorstuw]+day$', tag):
-            subgroup = 3
-            ordinal = DAYS.index(tag)
-        elif re.match(r'^\d+(st|nd|rd|th)$', tag):
-            subgroup = 4
-            if re.match('^\d\D', tag):
-                tag = '0' + tag
-        elif re.match(r'^[12]\d{3}$', tag):
-            subgroup = 6
-        else:
-            subgroup = 5
-            ordinal = '{:02d}'.format(MONTHS.index(tag))
-    return '{}:{}:{}:{}'.format(group, subgroup, ordinal, tag)
-
-
 def export(args, tag):
     logging.info('exporting %s ...', tag)
 
@@ -213,7 +174,7 @@ def export(args, tag):
     # write out some html to show the pieces.
     with open(os.path.join(args.target, tag + '.html'), 'w') as out:
         def title(p):
-            return u', '.join(sorted(visible_tags(p), key=tag_sort_key))
+            return u', '.join(lmj.media.util.sort_tags(visible_tags(p)))
         photo = lambda p: PHOTO.format(
             title=title(p),
             image='full/' + p.thumb_path,
@@ -221,7 +182,7 @@ def export(args, tag):
         out.write(PAGE.format(
             tag=tag,
             tags=u''.join(TAG.format(name=t, class_=tag_class(t))
-                          for t in sorted(tag_counts, key=tag_sort_key)),
+                          for t in lmj.media.util.sort_tags(tag_counts)),
             pieces=u''.join(photo(p) for p in pieces)).encode('utf-8'))
 
 
