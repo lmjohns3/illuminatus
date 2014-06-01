@@ -1,6 +1,4 @@
 import climate
-import cv2
-import cv2.cv
 import datetime
 import os
 import PIL.Image
@@ -151,21 +149,6 @@ class Photo(object):
                 img.thumbnail(size, PIL.Image.ANTIALIAS)
                 img.save(p)
 
-    # from https://gist.github.com/npinto/3632388
-    def detect_faces(self,
-                     cascade='haarcascades/haarcascade_frontalface_alt.xml',
-                     scale=1.3,
-                     min_neighbors=4,
-                     min_size=(20, 20),
-                     flags=cv2.cv.CV_HAAR_SCALE_IMAGE):
-        rects = cv2.CascadeClassifier(cascade).detectMultiScale(
-            self.get_image().convert('L'),
-            scaleFactor=scale_factor,
-            minNeighbors=min_neighbors,
-            minSize=min_size,
-            flags=flags)
-        return rects[:, 2:] + rects[:, :2] if rects else []
-
     def get_image(self):
         img = PIL.Image.open(self.path)
         orient = self.exif.get('Orientation')
@@ -262,8 +245,6 @@ class Photo(object):
             except:
                 pass
 
-    def export(self, target, replace=False):
+    def export(self, target, sizes=(('full', 1000), ('thumb', 100)), replace=False):
         '''Export this photo by saving thumbnails of specific sizes.'''
-        self.make_thumbnails(target,
-                             sizes=(('full', 1000), ('thumb', 100)),
-                             replace=replace)
+        self.make_thumbnails(target, sizes=sizes, replace=replace)
