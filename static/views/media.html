@@ -80,7 +80,7 @@ none: tag.count == 0
  <ul class="list-unstyled">
   <li class="tag pull-left"
       ng-repeat="tag in photos[cursor].tags | orderBy:tagSort"
-      ng-click="photos[cursor].clearTag(tag)"
+      ng-click="photos[cursor].clearTag(tag);$('#thumbs').focus();"
       ng-class="{
 exif: tag.match(EXIF_TAG_RE),
 date: tag.match(DATE_TAG_RE),
