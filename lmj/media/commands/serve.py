@@ -16,19 +16,13 @@ cmd.add_argument('--reload', action='store_true',
 cmd.set_defaults(mod=sys.modules[__name__])
 
 
-STATIC = os.path.join(sys.prefix, 'share', 'lmj-media', 'static')
-
-
 @bottle.get('/')
 def main():
-    return static(os.path.join('views', 'main.html'))
-
+    return bottle.static_file('index.html', os.curdir)
 
 @bottle.get('/static/<path:path>')
 def static(path):
-    for root in (os.path.dirname(lmj.media.db.DB), os.curdir, 'static', STATIC):
-        if os.path.isfile(os.path.join(root, path)):
-            return bottle.static_file(path, root)
+    return bottle.static_file(path, os.curdir)
 
 
 @bottle.get('/groups')
