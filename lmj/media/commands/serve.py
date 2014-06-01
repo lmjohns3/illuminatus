@@ -44,7 +44,7 @@ def groups():
     # select a sample of pieces from each tag group.
     selected = {}
     union = set()
-    for tid, pids in ids.iteritems():
+    for tid, pids in ids.items():
         s = random.sample(pids, 3) if len(pids) > 3 else list(pids)
         selected[tid] = s
         union |= set(s)
@@ -53,7 +53,7 @@ def groups():
     # get metadata from the db for all selected pieces.
     metas = {}
     with lmj.media.db.connect() as db:
-        for a in xrange(0, len(union), 512):
+        for a in range(0, len(union), 512):
             unio = union[a:a+512]
             sql = ('SELECT id, meta FROM media WHERE id IN (%s)' %
                    ','.join('?' for _ in unio))
@@ -61,7 +61,7 @@ def groups():
 
     # assemble data for each group and send it over the wire.
     groups = []
-    for tid, pids in ids.iteritems():
+    for tid, pids in ids.items():
         groups.append(dict(
             name=tags[tid],
             count=len(pids),
@@ -84,7 +84,7 @@ def tags():
         for t in p.tag_set:
             counts[t] += 1
     return lmj.media.util.stringify(
-        [dict(name=t, count=c) for t, c in counts.iteritems()])
+        [dict(name=t, count=c) for t, c in counts.items()])
 
 
 @bottle.get('/photo')

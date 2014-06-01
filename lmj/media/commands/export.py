@@ -195,7 +195,7 @@ def export(args, tag):
 
     if not args.show_omnipresent_tags:
         # remove tags that are applied to all media pieces.
-        omnipresent = [t for t, c in tag_counts.iteritems() if c == len(pieces)]
+        omnipresent = [t for t, c in tag_counts.items() if c == len(pieces)]
         for t in omnipresent:
             del tag_counts[t]
             hide_pattern = hide_pattern[:-1]

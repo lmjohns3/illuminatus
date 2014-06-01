@@ -30,7 +30,8 @@ class Photo(object):
     def exif(self):
         if self._exif is None:
             self._exif, = util.parse(subprocess.check_output(
-                    ['exiftool', '-json', self.path]))
+                    ['exiftool', '-charset', 'UTF8', '-json', self.path]
+            ).decode('utf-8'))
         return self._exif
 
     @property
