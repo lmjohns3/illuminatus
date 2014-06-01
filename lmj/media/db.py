@@ -28,7 +28,7 @@ def init(path):
                    '( id INTEGER PRIMARY KEY AUTOINCREMENT'
                    ', medium INTEGER NOT NULL DEFAULT 0'
                    ", path VARCHAR UNIQUE NOT NULL DEFAULT ''"
-                   ", meta TEXT NOT NULL DEFAULT '{}'"
+                   ", meta BLOB NOT NULL DEFAULT '{}'"
                    ', stamp DATETIME'
                    ')')
         db.execute('CREATE TABLE IF NOT EXISTS tag '
@@ -59,11 +59,15 @@ def init(path):
                        ','.join('?' for _ in unused_ids), unused_ids)
 
 
-def build_media(id, medium, path, meta=None):
-    '''Build an object of the appropriate class given the medium and data.'''
+def media_classes():
     from .photos import Photo
     from .videos import Video
-    for cls in (Photo, Video):
+    return (Photo, Video)
+
+
+def build_media(id, medium, path, meta=None):
+    '''Build an object of the appropriate class given the medium and data.'''
+    for cls in media_classes():
         if medium == cls.MEDIUM:
             return cls(id, path, meta)
     raise ValueError('unknown medium {}'.format(medium))
@@ -127,11 +131,11 @@ def update(piece):
         # of the current tags, find the ones that already exist in the database,
         # and insert any that are missing. get the ids for matching tags.
         sql = 'SELECT name, id FROM tag WHERE name IN (%s)' % jc('?')
-        existing = set([t for t, _ in db.execute(sql, tag_tuple)])
+        existing = set(t for t, _ in db.execute(sql, tag_tuple))
         m = tuple(set(tag_tuple) - existing)
         if m:
             db.execute('INSERT INTO tag (name) VALUES %s' % jc('(?)', len(m)), m)
-        ids = tuple(i for _, i in db.execute(sql, tag_tuple))
+        ids = set(i for _, i in db.execute(sql, tag_tuple))
 
         # remove existing tag associations.
         db.execute('DELETE FROM media_tag WHERE media_id = ?', (piece.id, ))
@@ -145,7 +149,7 @@ def update(piece):
 
 
 def delete(id, hide_original_if_path_matches=None):
-    '''Remove a photo.
+    '''Remove a piece of media.
 
     WARNING: If hide_original_if_path_matches contains the path for the photo,
     the original file will be renamed with a hidden (dot) prefix.
