@@ -80,11 +80,13 @@ class Photo(object):
 
     def to_dict(self):
         return dict(id=self.id,
+                    medium=self.MEDIUM,
                     path=self.path,
                     stamp=self.stamp,
-                    meta=self.meta,
                     thumb=self.thumb_path,
-                    tags=list(self.tag_set))
+                    tags=list(self.tag_set),
+                    user_tags=list(self.user_tag_set),
+        )
 
     def read_exif_tags(self):
         '''Given an exif data structure, extract a set of tags.'''
