@@ -1,6 +1,7 @@
 import climate
 import contextlib
 import os
+import re
 import sqlite3
 
 from .util import stringify
@@ -73,6 +74,12 @@ def build_media(id, medium, path, meta=None):
     raise ValueError('unknown medium {}'.format(medium))
 
 
+def tag_names():
+    '''Get a list of all tag names in the database.'''
+    with connect() as db:
+        return (t for t, in db.execute('SELECT name FROM tag'))
+
+
 def find_one(id):
     '''Find a single media piece by its id.'''
     sql = 'SELECT medium, path, meta FROM media WHERE id = ?'
@@ -81,22 +88,34 @@ def find_one(id):
         return build_media(id, medium, path, meta)
 
 
-def find_tagged(tags, offset=0, limit=1 << 31):
-    '''Find media pieces matching all given tags.'''
-    if not tags:
-        return
-    sql = ('SELECT m.id, m.medium, m.path, m.meta FROM %s WHERE %s '
+def find(path='', tags=(), before=None, after=None, offset=0, limit=1 << 31):
+    '''Find multiple media pieces.'''
+    sql = ('SELECT m.id, m.medium, m.path, m.meta '
+           'FROM {tables} WHERE {wheres} '
            'ORDER BY stamp DESC LIMIT ? OFFSET ?')
+    args = []
     tables = ['media AS m']
-    wheres = []
+    wheres = ['1 = 1']
+    if before:
+        wheres.append('STAMP < ?')
+        args.append(before)
+    if after:
+        wheres.append('STAMP > ?')
+        args.append(after)
+    if path:
+        wheres.append('PATH LIKE ?')
+        args.append(re.sub(r'\*|\[[^\]]+\]', '%', path))
     for i, t in enumerate(tags):
-        tables.extend(['media_tag AS mt%d' % i, 'tag AS t%d' % i])
-        wheres.extend(['m.id = mt%d.media_id' % i,
-                       't%d.id = mt%d.tag_id' % (i, i),
-                       't%d.name = ?' % i])
+        tables.extend(['media_tag AS mt{}'.format(i), 'tag AS t{}'.format(i)])
+        wheres.extend([
+            'm.id = mt{}.media_id'.format(i),
+            't{}.id = mt{}.tag_id'.format(i, i),
+            't{}.name LIKE ?'.format(i),
+        ])
+        args.append(re.sub(r'\*|\[[^\]]+\]', '%', t))
+    sql = sql.format(tables=', '.join(tables), wheres=' AND '.join(wheres))
     with connect() as db:
-        sql = sql % (', '.join(tables), ' AND '.join(wheres))
-        for row in db.execute(sql, tuple(tags) + (limit, offset)):
+        for row in db.execute(sql, tuple(args) + (limit, offset)):
             yield build_media(*row)
 
 
@@ -104,8 +123,8 @@ def exists(path):
     '''Check whether a given piece exists in the database.'''
     with connect() as db:
         sql = 'SELECT COUNT(path) FROM media WHERE path = ?'
-        c, = db.execute(sql, (path, )).fetchone()
-        return c > 0
+        for c, in db.execute(sql, (path, )):
+            return c > 0
 
 
 def insert(path, medium):
