@@ -28,7 +28,7 @@ def main(args):
             after=args.after,
             before=args.before,
             path=args.path,
-            tags=args.tag,
+            tags=args.tag or (),
         ),
         key=lambda p: p.path)
     if args.json:
