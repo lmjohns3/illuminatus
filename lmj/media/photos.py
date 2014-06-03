@@ -40,11 +40,11 @@ class Photo(object):
 
     @property
     def user_tag_set(self):
-        return util.normalized_tag_set(self.meta.get('user_tags'))
+        return util.normalized_tag_set(self.meta.get('userTags'))
 
     @property
     def exif_tag_set(self):
-        return util.normalized_tag_set(self.meta.get('exif_tags'))
+        return util.normalized_tag_set(self.meta.get('exifTags'))
 
     @property
     def datetime_tag_set(self):
@@ -85,7 +85,8 @@ class Photo(object):
                     stamp=self.stamp,
                     thumb=self.thumb_path,
                     tags=list(self.tag_set),
-                    user_tags=list(self.user_tag_set),
+                    userTags=list(self.user_tag_set),
+                    exifTags=list(self.exif_tag_set),
         )
 
     def read_exif_tags(self):
@@ -227,12 +228,12 @@ class Photo(object):
         p.meta = dict(
             stamp=stamp,
             thumb=p.thumb_path,
-            user_tags=sorted(util.normalized_tag_set(tags)),
-            exif_tags=sorted(p.read_exif_tags()))
+            userTags=sorted(util.normalized_tag_set(tags)),
+            exifTags=sorted(p.read_exif_tags()))
 
         logging.info('user: %s; exif: %s',
-                     ', '.join(p.meta['user_tags']),
-                     ', '.join(p.meta['exif_tags']),
+                     ', '.join(p.meta['userTags']),
+                     ', '.join(p.meta['exifTags']),
                      )
 
         p.make_thumbnails()

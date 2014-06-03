@@ -71,8 +71,8 @@ def update_media(id):
     if 'stamp' in f:
         m.meta['stamp'] = f['stamp']
         modified = True
-    if 'user_tags' in f:
-        m.meta['user_tags'] = f['user_tags']
+    if 'userTags' in f:
+        m.meta['userTags'] = f['userTags']
         modified = True
     if modified:
         db.update(m)
