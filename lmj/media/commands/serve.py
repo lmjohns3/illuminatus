@@ -6,7 +6,7 @@ import random
 import sys
 
 from lmj.media import db
-from lmj.media.util import parse, stringify, tag_sort_key
+from lmj.media.util import parse, stringify, tag_sort_key, tag_class
 
 cmd = climate.add_command('serve')
 cmd.add_argument('--host', default='localhost',
@@ -26,6 +26,10 @@ def main():
 def static(path):
     return bottle.static_file(path, os.curdir)
 
+@bottle.get('/img/<path:path>')
+def image(path):
+    return bottle.static_file(path, os.path.dirname(db.DB))
+
 
 @bottle.get('/tag-names')
 def tag_names():
@@ -40,7 +44,9 @@ def tags():
     for m in db.find(tags=tags):
         for t in m.tag_set:
             counts[t] += 1
-    return stringify([dict(name=t, count=c) for t, c in counts.items()])
+    return stringify(
+        [dict(name=t, count=c, key=tag_sort_key(t), meta=tag_class(t))
+         for t, c in counts.items()])
 
 
 @bottle.get('/media')
@@ -61,8 +67,14 @@ def read_media(id):
 def update_media(id):
     m = db.find_one(id)
     f = parse(list(bottle.request.forms)[0])
-    if 'meta' in f:
-        m.meta = f['meta']
+    modified = False
+    if 'stamp' in f:
+        m.meta['stamp'] = f['stamp']
+        modified = True
+    if 'user_tags' in f:
+        m.meta['user_tags'] = f['user_tags']
+        modified = True
+    if modified:
         db.update(m)
     return stringify(m.to_dict())
 
