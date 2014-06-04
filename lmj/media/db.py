@@ -77,7 +77,7 @@ def build_media(id, medium, path, meta=None):
 def tag_names():
     '''Get a list of all tag names in the database.'''
     with connect() as db:
-        return (t for t, in db.execute('SELECT name FROM tag'))
+        return [t for t, in db.execute('SELECT name FROM tag')]
 
 
 def find_one(id):
