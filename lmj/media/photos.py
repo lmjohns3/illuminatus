@@ -79,14 +79,15 @@ class Photo(object):
         return os.path.join(id[:-3], '%s.jpg' % id)
 
     def to_dict(self):
-        return dict(id=self.id,
-                    medium=self.MEDIUM,
-                    path=self.path,
-                    stamp=self.stamp,
-                    thumb=self.thumb_path,
-                    tags=list(self.tag_set),
-                    userTags=list(self.user_tag_set),
-                    exifTags=list(self.exif_tag_set),
+        return dict(
+            id=self.id,
+            medium=self.MEDIUM,
+            path=self.path,
+            stamp=self.stamp,
+            thumb=self.thumb_path,
+            dateTags=list(self.datetime_tag_set),
+            userTags=list(self.user_tag_set),
+            exifTags=list(self.exif_tag_set),
         )
 
     def read_exif_tags(self):
