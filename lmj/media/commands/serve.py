@@ -31,22 +31,10 @@ def image(path):
     return bottle.static_file(path, os.path.dirname(db.DB))
 
 
-@bottle.get('/tag-names')
-def tag_names():
-    return stringify([dict(name=t, key=tag_sort_key(t)) for t in db.tag_names()])
-
-
 @bottle.get('/tags')
 def tags():
-    req = bottle.request
-    tags = tuple(t.strip() for t in req.query.tags.split('|') if t.strip())
-    counts = collections.defaultdict(int)
-    for m in db.find(tags=tags):
-        for t in m.tag_set:
-            counts[t] += 1
-    return stringify(
-        [dict(name=t, count=c, key=tag_sort_key(t), meta=tag_class(t))
-         for t, c in counts.items()])
+    return stringify([dict(name=t, key=tag_sort_key(t), meta=tag_class(t))
+                      for t in db.tag_names()])
 
 
 @bottle.get('/media')
