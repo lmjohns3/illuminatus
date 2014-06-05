@@ -199,7 +199,7 @@ class Photo(object):
         raise NotImplementedError
 
     @staticmethod
-    def create(path, tags, add_path_tag=False):
+    def create(path, tags, add_path_tags=0):
         '''Create a new Photo from the file at the given path.'''
         def compute_timestamp_from(exif, key):
             raw = exif.get(key)
@@ -223,8 +223,12 @@ class Photo(object):
             stamp = datetime.datetime.now()
 
         tags = list(tags)
-        if add_path_tag:
-            tags.append(os.path.basename(os.path.dirname(path)))
+        if add_path_tags > 0:
+            for i, p in enumerate(reversed(os.path.dirname(path).split(os.sep))):
+                if i == add_path_tags:
+                    break
+                if p.strip():
+                    tags.append(p.strip())
 
         p.meta = dict(
             stamp=stamp,

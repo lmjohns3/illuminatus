@@ -9,8 +9,8 @@ import traceback
 cmd = climate.add_command('import')
 cmd.add_argument('--tag', default=[], nargs='+', metavar='TAG',
                  help='apply these TAGs to all imported photos')
-cmd.add_argument('--add-path-tag', action='store_true',
-                 help='use the parent DIR as a tag for each import')
+cmd.add_argument('--add-path-tags', default=0, type=int, metavar='N',
+                 help='use N parent DIRs as tags for each imported item')
 cmd.add_argument('source', nargs='+', metavar='PATH',
                  help='import photos from these PATHs')
 cmd.set_defaults(mod=sys.modules[__name__])
@@ -39,7 +39,7 @@ def maybe_import(args, path):
         logging.info('= %s %s', mime, path)
         return None
     try:
-        cls.create(path, args.tag, args.add_path_tag)
+        cls.create(path, args.tag, args.add_path_tags)
         logging.warn('+ %s %s', mime, path)
     except KeyboardInterrupt:
         lmj.media.db.remove_path(path)
