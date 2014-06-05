@@ -212,11 +212,11 @@ class Photo(object):
                     pass
             return None
 
-        p = db.insert(path, Photo.MEDIUM)
+        photo = db.insert(path, Photo.MEDIUM)
 
         stamp = None
         for key in ('DateTimeOriginal', 'CreateDate', 'ModifyDate', 'FileModifyDate'):
-            stamp = compute_timestamp_from(p.exif, key)
+            stamp = compute_timestamp_from(photo.exif, key)
             if stamp:
                  break
         if stamp is None:
@@ -224,26 +224,26 @@ class Photo(object):
 
         tags = list(tags)
         if add_path_tags > 0:
-            for i, p in enumerate(reversed(os.path.dirname(path).split(os.sep))):
+            for i, t in enumerate(reversed(os.path.dirname(path).split(os.sep))):
                 if i == add_path_tags:
                     break
-                if p.strip():
-                    tags.append(p.strip())
+                if t.strip():
+                    tags.append(t.strip())
 
-        p.meta = dict(
+        photo.meta = dict(
             stamp=stamp,
-            thumb=p.thumb_path,
+            thumb=photo.thumb_path,
             userTags=sorted(util.normalized_tag_set(tags)),
-            exifTags=sorted(p.read_exif_tags()))
+            exifTags=sorted(photo.read_exif_tags()))
+
+        photo.make_thumbnails()
+
+        db.update(photo)
 
         logging.info('user: %s; exif: %s',
-                     ', '.join(p.meta['userTags']),
-                     ', '.join(p.meta['exifTags']),
+                     ', '.join(photo.meta['userTags']),
+                     ', '.join(photo.meta['exifTags']),
                      )
-
-        p.make_thumbnails()
-
-        db.update(p)
 
     def cleanup(self):
         '''Remove thumbnails of this photo.'''
