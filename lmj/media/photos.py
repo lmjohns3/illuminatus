@@ -56,12 +56,16 @@ class Photo(object):
             if 10 < n < 20: s = 'th'
             return '%d%s' % (n, s)
 
+        # for computing the hour tag, we set the hour boundary at 48-past, so
+        # that any time from, e.g., 10:48 to 11:47 gets tagged as "11am"
+        hour = self.stamp + datetime.timedelta(minutes=12)
+
         return util.normalized_tag_set(
-            [self.stamp.strftime('%Y'),
-             self.stamp.strftime('%B'),
-             self.stamp.strftime('%A'),
-             ordinal(int(self.stamp.strftime('%d'))),
-             self.stamp.strftime('%I%p').strip('0'),
+            [self.stamp.strftime('%Y'),                # 2009
+             self.stamp.strftime('%B'),                # january
+             self.stamp.strftime('%A'),                # monday
+             ordinal(int(self.stamp.strftime('%d'))),  # 22nd
+             hour.strftime('%I%p').strip('0'),         # 4pm
              ])
 
     @property
