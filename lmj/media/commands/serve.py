@@ -19,7 +19,7 @@ cmd.set_defaults(mod=sys.modules[__name__])
 
 
 @bottle.get('/')
-def main():
+def index():
     return bottle.static_file('index.html', os.curdir)
 
 @bottle.get('/static/<path:path>')
@@ -94,6 +94,11 @@ def crop_photo(id):
 def equalize_photo(id):
     db.find_one(id).add_op('eq')
     return 'ok'
+
+
+@bottle.get('/<path:path>')
+def catchall(path):
+    return bottle.static_file('index.html', os.curdir)
 
 
 def main(args):
