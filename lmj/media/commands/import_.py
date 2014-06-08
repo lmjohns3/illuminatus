@@ -2,6 +2,7 @@ import climate
 import fnmatch
 import lmj.media
 import mimetypes
+import multiprocessing as mp
 import os
 import sys
 import traceback
@@ -11,6 +12,8 @@ cmd.add_argument('--tag', default=[], nargs='+', metavar='TAG',
                  help='apply these TAGs to all imported photos')
 cmd.add_argument('--add-path-tags', default=0, type=int, metavar='N',
                  help='use N parent DIRs as tags for each imported item')
+cmd.add_argument('--workers', default=mp.cpu_count(), type=int, metavar='N',
+                 help='use N worker processes for importing')
 cmd.add_argument('source', nargs='+', metavar='PATH',
                  help='import photos from these PATHs')
 cmd.set_defaults(mod=sys.modules[__name__])
@@ -47,20 +50,33 @@ def maybe_import(args, path):
     except:
         lmj.media.db.remove_path(path)
         _, exc, tb = sys.exc_info()
-        return path, exc, traceback.format_tb(tb)
+        return exc, traceback.format_tb(tb)
+
+
+def process(args, queue):
+    '''Process paths from a workqueue until there is no more work.'''
+    while True:
+        path = queue.get()
+        if path is None:
+            break
+        err = maybe_import(args, path)
+        if err:
+            exc, tb = err
+            logging.error('! %s %s', path, exc)#, ''.join(tb))
 
 
 def main(args):
     errors = []
+    queue = mp.Queue()
+    workers = [mp.Process(target=process, args=(args, queue))
+               for _ in range(args.workers)]
+    [w.start() for w in workers]
     for src in args.source:
         for base, dirs, files in os.walk(src):
             dots = [n for n in dirs if n.startswith('.')]
             [dirs.remove(d) for d in dots]
             for name in files:
-                if name.startswith('.'):
-                    continue
-                err = maybe_import(args, os.path.join(base, name))
-                if err:
-                    errors.append(err)
-    for path, exc, tb in errors:
-        logging.error('! %s %s', path, exc)#, ''.join(tb))
+                if not name.startswith('.'):
+                    queue.put(os.path.join(base, name))
+    [queue.put(None) for _ in workers]
+    [w.join() for w in workers]
