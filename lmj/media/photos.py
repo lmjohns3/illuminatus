@@ -16,6 +16,12 @@ class Photo(object):
     MEDIUM = 1
     MIME_TYPES = ('image/*', )
 
+    class Ops:
+        Autocontrast = 'autocontrast'
+        Crop = 'crop'
+        Rotate = 'rotate'
+        Contrast = 'contrast'
+
     def __init__(self, id=-1, path='', meta=None):
         self.id = id
         self.path = path
@@ -24,7 +30,7 @@ class Photo(object):
 
     @property
     def ops(self):
-        return self.meta.get('ops', [])
+        return self.meta.setdefault('ops', [])
 
     @property
     def exif(self):
@@ -167,40 +173,52 @@ class Photo(object):
             img = img.rotate(-180)
         if orient == 'Rotate 270 CW':
             img = img.rotate(-270)
-
         for op in self.ops:
-            key = op['key']
-            if key == 'normalize':
-                # http://opencvpython.blogspot.com/2013/03/histograms-2-histogram-equalization.html
-                img = PIL.ImageOps.autocontrast(img.convert('L'), op.get('cutoff', 0.5))
-                continue
-            if key == 'crop':
-                x1, y1, x2, y2 = op['box']
-                width, height = img.size
-                x1 = int(width * x1)
-                y1 = int(height * y1)
-                x2 = int(width * x2)
-                y2 = int(height * y2)
-                img = img.crop([x1, y1, x2, y2])
-                continue
-            if key == 'rotate':
-                img = img.rotate(op['degrees'])
-                continue
-            if key == 'contrast':
-                img = img.point(op['gamma'], op['alpha'])
-                continue
-            # TODO: apply more image transforms
-
+            img = self._apply_op(img, op)
         return img
 
-    def add_op(self, key, **op):
+    def rotate(self, degrees):
+        if self.ops and self.ops[-1]['key'] == Photo.Ops.Rotate:
+            op = self.ops.pop()
+            degrees += op['degrees']
+        self._add_op(Photo.Ops.Rotate, degrees=degrees % 360)
+
+    def contrast(self, gamma, alpha):
+        self._add_op(Photo.Ops.Contrast, gamma=gamma, alpha=alpha)
+
+    def crop(self, box):
+        self._add_op(Photo.Ops.Crop, box=box)
+
+    def autocontrast(self):
+        self._add_op(Photo.Ops.Autocontrast)
+
+    def _add_op(self, key, **op):
         op['key'] = key
         self.ops.append(op)
-        self.update_thumbnail()
+        self.make_thumbnails(replace=True)
         db.update(self)
 
-    def update_thumbnail(self):
-        raise NotImplementedError
+    def _apply_op(self, img, op):
+        logging.info('%s: applying op %r', self.path, op)
+        key = op['key']
+        if key == self.Ops.Autocontrast:
+            # http://opencvpython.blogspot.com/2013/03/histograms-2-histogram-equalization.html
+            return PIL.ImageOps.autocontrast(img.convert('L'), op.get('cutoff', 0.5))
+        if key == self.Ops.Crop:
+            x1, y1, x2, y2 = op['box']
+            width, height = img.size
+            x1 = int(width * x1)
+            y1 = int(height * y1)
+            x2 = int(width * x2)
+            y2 = int(height * y2)
+            return img.crop([x1, y1, x2, y2])
+        if key == self.Ops.Rotate:
+            return img.rotate(op['degrees'], filter=PIL.Image.BICUBIC, expand=1)
+        if key == self.Ops.Contrast:
+            return img.point(op['gamma'], op['alpha'])
+        logging.info('%s: unknown image op %r', self.path, op)
+        return img
+        # TODO: apply more image transforms
 
     @staticmethod
     def create(path, tags, add_path_tags=0):
