@@ -75,24 +75,24 @@ def delete_media(id):
 @bottle.post('/photos/<id:int>/rotate')
 def rotate_photo(id):
     post = lambda k: float(bottle.request.forms.get(k))
-    db.find_one(id).add_op('ro', degrees=post('degrees'))
+    db.find_one(id).rotate(degrees=post('degrees'))
     return 'ok'
 
 @bottle.post('/photos/<id:int>/contrast')
 def contrast_photo(id):
     post = lambda k: float(bottle.request.forms.get(k))
-    db.find_one(id).add_op('cb', gamma=post('gamma'), alpha=post('alpha'))
+    db.find_one(id).contrast(gamma=post('gamma'), alpha=post('alpha'))
     return 'ok'
 
 @bottle.post('/photos/<id:int>/crop')
 def crop_photo(id):
     post = lambda k: float(bottle.request.forms.get(k))
-    db.find_one(id).add_op('cr', box=[post(k) for k in 'x1 y1 x2 y2'.split()])
+    db.find_one(id).crop(box=[post(k) for k in 'x1 y1 x2 y2'.split()])
     return 'ok'
 
-@bottle.post('/photos/<id:int>/equalize')
-def equalize_photo(id):
-    db.find_one(id).add_op('eq')
+@bottle.post('/photos/<id:int>/autocontrast')
+def autocontrast_photo(id):
+    db.find_one(id).autocontrast()
     return 'ok'
 
 
