@@ -1,5 +1,6 @@
 import climate
 import datetime
+import math
 import os
 import PIL.Image
 import PIL.ImageOps
@@ -213,12 +214,51 @@ class Photo(object):
             y2 = int(height * y2)
             return img.crop([x1, y1, x2, y2])
         if key == self.Ops.Rotate:
-            return img.rotate(op['degrees'], filter=PIL.Image.BICUBIC, expand=1)
+            size = img.size
+            angle = op['degrees']
+            img = img.rotate(angle, resample=PIL.Image.BICUBIC, expand=1)
+            return img.crop(Photo._crop_after_rotate(img.size[0], img.size[1], math.radians(angle)))
         if key == self.Ops.Contrast:
             return img.point(op['gamma'], op['alpha'])
         logging.info('%s: unknown image op %r', self.path, op)
         return img
         # TODO: apply more image transforms
+
+    @staticmethod
+    def _crop_after_rotate(width, height, angle):
+        '''Get the crop box that removes black triangles from a rotated photo.
+
+            W: w * cos(t) + h * sin(t)
+            H: w * sin(t) + h * cos(t)
+
+            A: (h * sin(t), 0)
+            B: (0, h * cos(t))
+            C: (W - h * sin(t), H)
+            D: (W, H - h * cos(t))
+
+            AB:  y = h * cos(t) - x * cos(t) / sin(t)
+            DA:  y = (x - h * sin(t)) * (H - h * cos(t)) / (W - h * sin(t))
+
+        I used sympy to solve the equations for lines AB (evaluated at point
+        (a, b) on that line) and DA (evaluated at point (W - a, b)):
+
+            b = h * cos(t) - a * cos(t) / sin(t)
+            b = (W - a - h * sin(t)) * (H - h * cos(t)) / (W - h * sin(t))
+
+        The solution is given as:
+
+            a = f * (w * sin(t) - h * cos(t))
+            b = f * (h * sin(t) - w * cos(t))
+            f = sin(t) * cos(t) / (sin(t)**2 - cos(t)**2)
+        '''
+        C = abs(math.cos(angle))
+        S = abs(math.sin(angle))
+        W = width * C + height * S
+        H = width * S + height * C
+        f = C * S / (S * S - C * C)
+        a = f * (width * S - height * C)
+        b = f * (height * S - width * C)
+        return [int(a), int(b), int(W - a), int(H - b)]
 
     @staticmethod
     def create(path, tags, add_path_tags=0):
