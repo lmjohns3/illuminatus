@@ -214,10 +214,10 @@ class Photo(object):
             y2 = int(height * y2)
             return img.crop([x1, y1, x2, y2])
         if key == self.Ops.Rotate:
-            size = img.size
-            angle = op['degrees']
-            img = img.rotate(angle, resample=PIL.Image.BICUBIC, expand=1)
-            return img.crop(Photo._crop_after_rotate(img.size[0], img.size[1], math.radians(angle)))
+            w, h = img.size
+            t = op['degrees']
+            img = img.rotate(t, resample=PIL.Image.BICUBIC, expand=1)
+            return img.crop(Photo._crop_after_rotate(w, h, math.radians(t)))
         if key == self.Ops.Contrast:
             return img.point(op['gamma'], op['alpha'])
         logging.info('%s: unknown image op %r', self.path, op)
