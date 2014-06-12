@@ -19,9 +19,10 @@ class Photo(object):
 
     class Ops:
         Autocontrast = 'autocontrast'
+        Brightness = 'brightness'
+        Contrast = 'contrast'
         Crop = 'crop'
         Rotate = 'rotate'
-        Contrast = 'contrast'
 
     def __init__(self, id=-1, path='', meta=None):
         self.id = id
@@ -205,6 +206,10 @@ class Photo(object):
         if key == self.Ops.Autocontrast:
             # http://opencvpython.blogspot.com/2013/03/histograms-2-histogram-equalization.html
             return PIL.ImageOps.autocontrast(img, op.get('cutoff', 0.5))
+        if key == self.Ops.Brightness:
+            return PIL.ImageOps.brightness(img).enhance(op['level'])
+        if key == self.Ops.Contrast:
+            return PIL.ImageOps.contrast(img).enhance(op['level'])
         if key == self.Ops.Crop:
             x1, y1, x2, y2 = op['box']
             width, height = img.size
@@ -218,8 +223,6 @@ class Photo(object):
             t = op['degrees']
             img = img.rotate(t, resample=PIL.Image.BICUBIC, expand=1)
             return img.crop(Photo._crop_after_rotate(w, h, math.radians(t)))
-        if key == self.Ops.Contrast:
-            return img.point(op['gamma'], op['alpha'])
         logging.info('%s: unknown image op %r', self.path, op)
         return img
         # TODO: apply more image transforms
