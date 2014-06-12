@@ -204,7 +204,7 @@ class Photo(object):
         key = op['key']
         if key == self.Ops.Autocontrast:
             # http://opencvpython.blogspot.com/2013/03/histograms-2-histogram-equalization.html
-            return PIL.ImageOps.autocontrast(img.convert('L'), op.get('cutoff', 0.5))
+            return PIL.ImageOps.autocontrast(img, op.get('cutoff', 0.5))
         if key == self.Ops.Crop:
             x1, y1, x2, y2 = op['box']
             width, height = img.size
