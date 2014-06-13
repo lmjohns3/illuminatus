@@ -98,6 +98,7 @@ class Photo(object):
             path=self.path,
             stamp=self.stamp,
             thumb=self.thumb_path,
+            ops=self.ops,
             dateTags=list(self.datetime_tag_set),
             userTags=list(self.user_tag_set),
             exifTags=list(self.exif_tag_set),
