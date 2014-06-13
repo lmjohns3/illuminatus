@@ -154,10 +154,10 @@ class Photo(object):
                         base=None,
                         sizes=(('full', 1000), ('thumb', 100)),
                         replace=False,
-                        ):
+                        fast=False):
         '''Create thumbnails of this photo and save them to disk.'''
         base = base or os.path.dirname(db.DB)
-        img = self.get_image()
+        img = self.get_image(fast)
         for name, size in sorted(sizes, key=lambda x: -x[1]):
             p = os.path.join(base, name, self.thumb_path)
             if replace or not os.path.exists(p):
@@ -169,8 +169,13 @@ class Photo(object):
                 img.thumbnail(size, PIL.Image.ANTIALIAS)
                 img.save(p)
 
-    def get_image(self):
+    def get_image(self, fast=False):
         img = PIL.Image.open(self.path)
+        if fast:
+            factor = 1000 / max(img.size)
+            img = img.resize(
+                (int(img.size[0] * factor), int(img.size[1] * factor)),
+                resample=PIL.Image.BILINEAR)
         orient = self.exif.get('Orientation')
         if orient == 'Rotate 90 CW':
             img = img.rotate(-90)
@@ -206,7 +211,7 @@ class Photo(object):
     def _add_op(self, key, **op):
         op['key'] = key
         self.ops.append(op)
-        self.make_thumbnails(replace=True)
+        self.make_thumbnails(replace=True, fast=True)
         db.update(self)
 
     def _apply_op(self, img, op):
