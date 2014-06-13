@@ -23,6 +23,7 @@ class Photo(object):
         Contrast = 'contrast'
         Crop = 'crop'
         Rotate = 'rotate'
+        Saturation = 'saturation'
 
     def __init__(self, id=-1, path='', meta=None):
         self.id = id
@@ -151,7 +152,8 @@ class Photo(object):
     def make_thumbnails(self,
                         base=None,
                         sizes=(('full', 1000), ('thumb', 100)),
-                        replace=False):
+                        replace=False,
+                        ):
         '''Create thumbnails of this photo and save them to disk.'''
         base = base or os.path.dirname(db.DB)
         img = self.get_image()
@@ -185,8 +187,14 @@ class Photo(object):
             degrees += op['degrees']
         self._add_op(Photo.Ops.Rotate, degrees=degrees % 360)
 
-    def contrast(self, gamma, alpha):
-        self._add_op(Photo.Ops.Contrast, gamma=gamma, alpha=alpha)
+    def saturation(self, level):
+        self._add_op(Photo.Ops.Saturation, level=level)
+
+    def contrast(self, level):
+        self._add_op(Photo.Ops.Contrast, level=level)
+
+    def brightness(self, level):
+        self._add_op(Photo.Ops.Brightness, level=level)
 
     def crop(self, box):
         self._add_op(Photo.Ops.Crop, box=box)
@@ -210,6 +218,8 @@ class Photo(object):
             return PIL.ImageOps.brightness(img).enhance(op['level'])
         if key == self.Ops.Contrast:
             return PIL.ImageOps.contrast(img).enhance(op['level'])
+        if key == self.Ops.Saturation:
+            return PIL.ImageOps.color(img).enhance(op['level'])
         if key == self.Ops.Crop:
             x1, y1, x2, y2 = op['box']
             width, height = img.size
