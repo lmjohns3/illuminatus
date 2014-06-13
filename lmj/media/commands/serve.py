@@ -78,10 +78,16 @@ def rotate_photo(id):
     db.find_one(id).rotate(degrees=post('degrees'))
     return 'ok'
 
+@bottle.post('/photos/<id:int>/brightness')
+def brightness_photo(id):
+    post = lambda k: float(bottle.request.forms.get(k))
+    db.find_one(id).brightness(level=post('level'))
+    return 'ok'
+
 @bottle.post('/photos/<id:int>/contrast')
 def contrast_photo(id):
     post = lambda k: float(bottle.request.forms.get(k))
-    db.find_one(id).contrast(gamma=post('gamma'), alpha=post('alpha'))
+    db.find_one(id).contrast(level=post('level'))
     return 'ok'
 
 @bottle.post('/photos/<id:int>/crop')
