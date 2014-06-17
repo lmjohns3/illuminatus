@@ -55,6 +55,7 @@ def maybe_import(args, path):
 
 def process(args, queue):
     '''Process paths from a workqueue until there is no more work.'''
+    err = None
     while True:
         path = queue.get()
         if path is None:
@@ -71,12 +72,20 @@ def main(args):
     workers = [mp.Process(target=process, args=(args, queue))
                for _ in range(args.workers)]
     [w.start() for w in workers]
-    for src in args.source:
-        for base, dirs, files in os.walk(src):
-            dots = [n for n in dirs if n.startswith('.')]
-            [dirs.remove(d) for d in dots]
-            for name in files:
-                if not name.startswith('.'):
-                    queue.put(os.path.join(base, name))
-    [queue.put(None) for _ in workers]
-    [w.join() for w in workers]
+    def cleanup():
+        [queue.put(None) for _ in workers]
+        [w.join() for w in workers]
+    try:
+        for src in args.source:
+            for base, dirs, files in os.walk(src):
+                dots = [n for n in dirs if n.startswith('.')]
+                [dirs.remove(d) for d in dots]
+                for name in files:
+                    if not name.startswith('.'):
+                        queue.put(os.path.join(base, name))
+        cleanup()
+    except KeyboardInterrupt:
+        # empty the queue to force workers to halt.
+        while not queue.empty():
+            queue.get(False)
+    cleanup()
