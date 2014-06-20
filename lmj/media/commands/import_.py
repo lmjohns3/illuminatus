@@ -42,7 +42,7 @@ def maybe_import(args, path):
         logging.info('= %s %s', mime, path)
         return None
     try:
-        cls.create(path, args.tag, args.add_path_tags)
+        lmj.media.create(cls.MEDIUM, path, args.tag, args.add_path_tags)
         logging.warn('+ %s %s', mime, path)
     except KeyboardInterrupt:
         lmj.media.db.remove_path(path)

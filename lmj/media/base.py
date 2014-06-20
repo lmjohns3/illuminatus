@@ -130,6 +130,25 @@ class Media:
         self.make_thumbnails(replace=True, fast=True)
         db.update(self)
 
+    def make_thumbnails(self,
+                        base=None,
+                        sizes=(('full', 1000), ('thumb', 100)),
+                        replace=False,
+                        fast=False):
+        '''Create thumbnails of this photo and save them to disk.'''
+        base = base or os.path.dirname(db.DB)
+        data = self.get_data(fast)
+        for name, size in sorted(sizes, key=lambda x: -x[1]):
+            p = os.path.join(base, name, self.thumb_path)
+            if replace or not os.path.exists(p):
+                dirname = os.path.dirname(p)
+                if not os.path.exists(dirname):
+                    os.makedirs(dirname)
+                if isinstance(size, int):
+                    size = (2 * size, size)
+                data.thumbnail(size)
+                data.save(p)
+
     def cleanup(self):
         '''Remove thumbnails of this media item.'''
         base = os.path.dirname(db.DB)
@@ -142,3 +161,26 @@ class Media:
     def export(self, target, sizes=(('full', 1000), ('thumb', 100)), replace=False):
         '''Export this media item by saving thumbnails of specific sizes.'''
         self.make_thumbnails(target, sizes=sizes, replace=replace)
+
+
+def create(medium, path, tags, add_path_tags=0):
+    '''Create a new Photo from the file at the given path.'''
+    m = db.insert(path, medium)
+
+    stamp = util.compute_timestamp_from_exif(m.exif)
+    tags = set(tags) + set(util.get_path_tags(path, add_path_tags))
+
+    m.meta = dict(
+        stamp=stamp,
+        thumb=m.thumb_path,
+        userTags=list(sorted(util.normalized_tag_set(tags))),
+        exifTags=list(sorted(m.read_exif_tags())))
+
+    m.make_thumbnails()
+
+    db.update(m)
+
+    logging.info('user: %s; exif: %s',
+                 ', '.join(m.meta['userTags']),
+                 ', '.join(m.meta['exifTags']),
+                 )
