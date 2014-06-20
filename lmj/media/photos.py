@@ -1,90 +1,19 @@
 import climate
-import datetime
 import math
 import os
 import PIL.Image
 import PIL.ImageOps
-import re
-import subprocess
 
+from . import base
 from . import db
 from . import util
 
 logging = climate.get_logger(__name__)
 
 
-class Photo(object):
+class Photo(base.Media):
     MEDIUM = 1
     MIME_TYPES = ('image/*', )
-
-    class Ops:
-        Autocontrast = 'autocontrast'
-        Brightness = 'brightness'
-        Contrast = 'contrast'
-        Crop = 'crop'
-        Rotate = 'rotate'
-        Saturation = 'saturation'
-
-    def __init__(self, id=-1, path='', meta=None):
-        self.id = id
-        self.path = path
-        self.meta = util.parse(meta or '{}')
-        self._exif = None
-
-    @property
-    def ops(self):
-        return self.meta.setdefault('ops', [])
-
-    @property
-    def exif(self):
-        if self._exif is None:
-            self._exif, = util.parse(subprocess.check_output(
-                    ['exiftool', '-charset', 'UTF8', '-json', self.path]
-            ).decode('utf-8'))
-        return self._exif
-
-    @property
-    def tag_set(self):
-        return self.datetime_tag_set | self.user_tag_set | self.exif_tag_set
-
-    @property
-    def user_tag_set(self):
-        return util.normalized_tag_set(self.meta.get('userTags'))
-
-    @property
-    def exif_tag_set(self):
-        return util.normalized_tag_set(self.meta.get('exifTags'))
-
-    @property
-    def datetime_tag_set(self):
-        if not self.stamp:
-            return set()
-
-        def ordinal(n):
-            s = {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')
-            if 10 < n < 20: s = 'th'
-            return '%d%s' % (n, s)
-
-        # for computing the hour tag, we set the hour boundary at 48-past, so
-        # that any time from, e.g., 10:48 to 11:47 gets tagged as "11am"
-        hour = self.stamp + datetime.timedelta(minutes=12)
-
-        return util.normalized_tag_set(
-            [self.stamp.strftime('%Y'),                # 2009
-             self.stamp.strftime('%B'),                # january
-             self.stamp.strftime('%A'),                # monday
-             ordinal(int(self.stamp.strftime('%d'))),  # 22nd
-             hour.strftime('%I%p').strip('0'),         # 4pm
-             ])
-
-    @property
-    def stamp(self):
-        stamp = self.meta.get('stamp')
-        if not stamp:
-            return None
-        if isinstance(stamp, datetime.datetime):
-            return stamp
-        return datetime.datetime.strptime(stamp[:19], '%Y-%m-%dT%H:%M:%S')
 
     @property
     def thumb_path(self):
@@ -107,17 +36,10 @@ class Photo(object):
     def read_exif_tags(self):
         '''Given an exif data structure, extract a set of tags.'''
         if not self.exif:
-            return []
+            return set()
 
-        def highest(n, digits=1):
-            '''Return n rounded to the top `digits` digits.'''
-            n = float(n)
-            if n < 10 ** digits:
-                return int(n)
-            shift = 10 ** (len(str(int(n))) - digits)
-            return int(shift * round(n / shift))
-
-        tags = set()
+        highest = util.round_to_highest_digits
+        tags = super().read_exif_tags()
 
         if 'FNumber' in self.exif:
             t = 'f/{}'.format(round(2 * float(self.exif['FNumber'])) / 2)
@@ -140,13 +62,6 @@ class Photo(object):
 
         if 'FocalLength' in self.exif:
             tags.add('{}mm'.format(highest(self.exif['FocalLength'][:-2])))
-
-        if 'Model' in self.exif:
-            t = self.exif['Model'].lower()
-            for s in 'canon nikon kodak digital camera super powershot ed$ is$'.split():
-                t = re.sub(s, '', t).strip()
-            if t:
-                tags.add('kit:{}'.format(t))
 
         return util.normalized_tag_set(tags)
 
@@ -188,25 +103,25 @@ class Photo(object):
         return img
 
     def rotate(self, degrees):
-        if self.ops and self.ops[-1]['key'] == Photo.Ops.Rotate:
+        if self.ops and self.ops[-1]['key'] == self.Ops.Rotate:
             op = self.ops.pop()
             degrees += op['degrees']
-        self._add_op(Photo.Ops.Rotate, degrees=degrees % 360)
+        self._add_op(self.Ops.Rotate, degrees=degrees % 360)
 
     def saturation(self, level):
-        self._add_op(Photo.Ops.Saturation, level=level)
+        self._add_op(self.Ops.Saturation, level=level)
 
     def contrast(self, level):
-        self._add_op(Photo.Ops.Contrast, level=level)
+        self._add_op(self.Ops.Contrast, level=level)
 
     def brightness(self, level):
-        self._add_op(Photo.Ops.Brightness, level=level)
+        self._add_op(self.Ops.Brightness, level=level)
 
     def crop(self, box):
-        self._add_op(Photo.Ops.Crop, box=box)
+        self._add_op(self.Ops.Crop, box=box)
 
     def autocontrast(self):
-        self._add_op(Photo.Ops.Autocontrast)
+        self._add_op(self.Ops.Autocontrast)
 
     def _add_op(self, key, **op):
         op['key'] = key
@@ -282,40 +197,16 @@ class Photo(object):
     @staticmethod
     def create(path, tags, add_path_tags=0):
         '''Create a new Photo from the file at the given path.'''
-        def compute_timestamp_from(exif, key):
-            raw = exif.get(key)
-            if not raw:
-                return None
-            for fmt in ('%Y:%m:%d %H:%M:%S', '%Y:%m:%d %H:%M+%S'):
-                try:
-                    return datetime.datetime.strptime(raw[:19], fmt)
-                except:
-                    pass
-            return None
-
         photo = db.insert(path, Photo.MEDIUM)
 
-        stamp = None
-        for key in ('DateTimeOriginal', 'CreateDate', 'ModifyDate', 'FileModifyDate'):
-            stamp = compute_timestamp_from(photo.exif, key)
-            if stamp:
-                 break
-        if stamp is None:
-            stamp = datetime.datetime.now()
-
-        tags = list(tags)
-        if add_path_tags > 0:
-            for i, t in enumerate(reversed(os.path.dirname(path).split(os.sep))):
-                if i == add_path_tags:
-                    break
-                if t.strip():
-                    tags.append(t.strip())
+        stamp = util.compute_timestamp_from_exif(photo.exif)
+        tags = set(tags) + set(util.get_path_tags(path, add_path_tags))
 
         photo.meta = dict(
             stamp=stamp,
             thumb=photo.thumb_path,
-            userTags=sorted(util.normalized_tag_set(tags)),
-            exifTags=sorted(photo.read_exif_tags()))
+            userTags=list(sorted(util.normalized_tag_set(tags))),
+            exifTags=list(sorted(photo.read_exif_tags())))
 
         photo.make_thumbnails()
 

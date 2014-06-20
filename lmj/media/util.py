@@ -1,5 +1,6 @@
 import datetime
 import json
+import os
 import re
 
 
@@ -10,6 +11,36 @@ def parse(x):
 def stringify(x):
     h = lambda z: z.isoformat() if isinstance(z, datetime.datetime) else None
     return json.dumps(x, default=h)
+
+
+def round_to_highest_digits(n, digits=1):
+    '''Return n rounded to the top `digits` digits.'''
+    n = float(n)
+    if n < 10 ** digits:
+        return int(n)
+    shift = 10 ** (len(str(int(n))) - digits)
+    return int(shift * round(n / shift))
+
+
+def get_path_tags(path, add_path_tags):
+    for i, t in enumerate(reversed(os.path.dirname(path).split(os.sep))):
+        if i == add_path_tags:
+            break
+        if t.strip():
+            yield t.strip()
+
+
+def compute_timestamp_from_exif(exif, key):
+    for key in ('DateTimeOriginal', 'CreateDate', 'ModifyDate', 'FileModifyDate'):
+        raw = exif.get(key)
+        if not raw:
+            continue
+        for fmt in ('%Y:%m:%d %H:%M:%S', '%Y:%m:%d %H:%M+%S'):
+            try:
+                return datetime.datetime.strptime(raw[:19], fmt)
+            except:
+                pass
+    return datetime.datetime.now()
 
 
 def normalized_tag_set(seq, sep=None):
