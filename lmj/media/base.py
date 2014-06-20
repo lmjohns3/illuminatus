@@ -1,5 +1,6 @@
 import climate
 import datetime
+import os
 import re
 import subprocess
 
@@ -78,6 +79,24 @@ class Media:
             return stamp
         return datetime.datetime.strptime(stamp[:19], '%Y-%m-%dT%H:%M:%S')
 
+    @property
+    def thumb_path(self):
+        id = '{:08x}'.format(self.id)
+        return os.path.join(id[:-3], '{}.{}'.format(id, self.EXTENSION))
+
+    def to_dict(self):
+        return dict(
+            id=self.id,
+            medium=self.MEDIUM,
+            path=self.path,
+            stamp=self.stamp,
+            thumb=self.thumb_path,
+            ops=self.ops,
+            dateTags=list(self.datetime_tag_set),
+            userTags=list(self.user_tag_set),
+            exifTags=list(self.exif_tag_set),
+        )
+
     def read_exif_tags(self):
         if not self.exif:
             return set()
@@ -92,3 +111,34 @@ class Media:
                 tags.add('kit:{}'.format(t))
 
         return tags
+
+    def rotate(self, degrees):
+        if self.ops and self.ops[-1]['key'] == self.Ops.Rotate:
+            op = self.ops.pop()
+            degrees += op['degrees']
+        self._add_op(self.Ops.Rotate, degrees=degrees % 360)
+
+    def saturation(self, level):
+        self._add_op(self.Ops.Saturation, level=level)
+
+    def crop(self, box):
+        self._add_op(self.Ops.Crop, box=box)
+
+    def _add_op(self, key, **op):
+        op['key'] = key
+        self.ops.append(op)
+        self.make_thumbnails(replace=True, fast=True)
+        db.update(self)
+
+    def cleanup(self):
+        '''Remove thumbnails of this media item.'''
+        base = os.path.dirname(db.DB)
+        for size in os.listdir(base):
+            try:
+                os.unlink(os.path.join(base, size, self.thumb_path))
+            except:
+                pass
+
+    def export(self, target, sizes=(('full', 1000), ('thumb', 100)), replace=False):
+        '''Export this media item by saving thumbnails of specific sizes.'''
+        self.make_thumbnails(target, sizes=sizes, replace=replace)

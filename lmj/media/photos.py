@@ -13,25 +13,8 @@ logging = climate.get_logger(__name__)
 
 class Photo(base.Media):
     MEDIUM = 1
+    EXTENSION = 'jpg'
     MIME_TYPES = ('image/*', )
-
-    @property
-    def thumb_path(self):
-        id = '%08x' % self.id
-        return os.path.join(id[:-3], '%s.jpg' % id)
-
-    def to_dict(self):
-        return dict(
-            id=self.id,
-            medium=self.MEDIUM,
-            path=self.path,
-            stamp=self.stamp,
-            thumb=self.thumb_path,
-            ops=self.ops,
-            dateTags=list(self.datetime_tag_set),
-            userTags=list(self.user_tag_set),
-            exifTags=list(self.exif_tag_set),
-        )
 
     def read_exif_tags(self):
         '''Given an exif data structure, extract a set of tags.'''
@@ -102,32 +85,14 @@ class Photo(base.Media):
             img = self._apply_op(img, op)
         return img
 
-    def rotate(self, degrees):
-        if self.ops and self.ops[-1]['key'] == self.Ops.Rotate:
-            op = self.ops.pop()
-            degrees += op['degrees']
-        self._add_op(self.Ops.Rotate, degrees=degrees % 360)
-
-    def saturation(self, level):
-        self._add_op(self.Ops.Saturation, level=level)
-
     def contrast(self, level):
         self._add_op(self.Ops.Contrast, level=level)
 
     def brightness(self, level):
         self._add_op(self.Ops.Brightness, level=level)
 
-    def crop(self, box):
-        self._add_op(self.Ops.Crop, box=box)
-
     def autocontrast(self):
         self._add_op(self.Ops.Autocontrast)
-
-    def _add_op(self, key, **op):
-        op['key'] = key
-        self.ops.append(op)
-        self.make_thumbnails(replace=True, fast=True)
-        db.update(self)
 
     def _apply_op(self, img, op):
         logging.info('%s: applying op %r', self.path, op)
@@ -216,16 +181,3 @@ class Photo(base.Media):
                      ', '.join(photo.meta['userTags']),
                      ', '.join(photo.meta['exifTags']),
                      )
-
-    def cleanup(self):
-        '''Remove thumbnails of this photo.'''
-        base = os.path.dirname(db.DB)
-        for size in os.listdir(base):
-            try:
-                os.unlink(os.path.join(base, size, self.thumb_path))
-            except:
-                pass
-
-    def export(self, target, sizes=(('full', 1000), ('thumb', 100)), replace=False):
-        '''Export this photo by saving thumbnails of specific sizes.'''
-        self.make_thumbnails(target, sizes=sizes, replace=replace)
