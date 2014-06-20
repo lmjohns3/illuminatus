@@ -81,6 +81,20 @@ class Video(base.Media):
     EXTENSION = 'mp4'
     MIME_TYPES = ('video/*', )
 
+    @property
+    def frame_size(self):
+        def ints(args):
+            return map(int, args)
+        def keys(k):
+            return self.exif[k + 'Height'], self.exif[k + 'Width']
+        try: return ints(keys('Image'))
+        except: pass
+        try: return ints(keys('SourceImage'))
+        except: pass
+        try: return ints(self.exif['ImageSize'].split('x'))
+        except: pass
+        return -1, -1
+
     def read_exif_tags(self):
         '''Given an exif data structure, extract a set of tags.'''
         if not self.exif:
@@ -92,7 +106,7 @@ class Video(base.Media):
         return util.normalized_tag_set(tags)
 
     def get_thumbnailer(self, fast=False):
-        nailer = Thumbnailer(self.path, fast=fast)
+        nailer = Thumbnailer(self.path, size=self.frame_size, fast=fast)
         for op in self.ops:
             nailer.apply_op(op)
         return nailer
