@@ -11,6 +11,15 @@ from . import util
 logging = climate.get_logger(__name__)
 
 
+class Thumbnailer:
+    def __init__(self, img):
+        self.img = img
+
+    def save_thumbnail(self, size, path):
+        self.img.thumbnail(size, PIL.Image.ANTIALIAS)
+        self.img.save(path)
+
+
 class Photo(base.Media):
     MEDIUM = 1
     EXTENSION = 'jpg'
@@ -48,26 +57,7 @@ class Photo(base.Media):
 
         return util.normalized_tag_set(tags)
 
-    def make_thumbnails(self,
-                        base=None,
-                        sizes=(('full', 1000), ('thumb', 100)),
-                        replace=False,
-                        fast=False):
-        '''Create thumbnails of this photo and save them to disk.'''
-        base = base or os.path.dirname(db.DB)
-        img = self.get_image(fast)
-        for name, size in sorted(sizes, key=lambda x: -x[1]):
-            p = os.path.join(base, name, self.thumb_path)
-            if replace or not os.path.exists(p):
-                dirname = os.path.dirname(p)
-                if not os.path.exists(dirname):
-                    os.makedirs(dirname)
-                if isinstance(size, int):
-                    size = (2 * size, size)
-                img.thumbnail(size, PIL.Image.ANTIALIAS)
-                img.save(p)
-
-    def get_image(self, fast=False):
+    def get_thumbnailer(self, fast=False):
         img = PIL.Image.open(self.path)
         if fast:
             factor = 1000 / max(img.size)
@@ -83,7 +73,7 @@ class Photo(base.Media):
             img = img.rotate(-270)
         for op in self.ops:
             img = self._apply_op(img, op)
-        return img
+        return Thumbnailer(img)
 
     def contrast(self, level):
         self._add_op(self.Ops.Contrast, level=level)
@@ -158,26 +148,3 @@ class Photo(base.Media):
         a = f * (width * S - height * C)
         b = f * (height * S - width * C)
         return [int(a), int(b), int(W - a), int(H - b)]
-
-    @staticmethod
-    def create(path, tags, add_path_tags=0):
-        '''Create a new Photo from the file at the given path.'''
-        photo = db.insert(path, Photo.MEDIUM)
-
-        stamp = util.compute_timestamp_from_exif(photo.exif)
-        tags = set(tags) + set(util.get_path_tags(path, add_path_tags))
-
-        photo.meta = dict(
-            stamp=stamp,
-            thumb=photo.thumb_path,
-            userTags=list(sorted(util.normalized_tag_set(tags))),
-            exifTags=list(sorted(photo.read_exif_tags())))
-
-        photo.make_thumbnails()
-
-        db.update(photo)
-
-        logging.info('user: %s; exif: %s',
-                     ', '.join(photo.meta['userTags']),
-                     ', '.join(photo.meta['exifTags']),
-                     )
