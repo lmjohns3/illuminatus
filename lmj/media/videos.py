@@ -19,6 +19,10 @@ class Thumbnailer:
         if fast:
             self.scale(300 / max(size))
 
+    def __del__(self):
+        if os.path.exists(self.working_path):
+            os.unlink(self.working_path)
+
     def _filter(self, filter, output=None):
         cleanup = False
         if output is None:
