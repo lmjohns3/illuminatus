@@ -90,6 +90,12 @@ def contrast_photo(id):
     db.find_one(id).contrast(level=post('level'))
     return 'ok'
 
+@bottle.post('/photos/<id:int>/saturation')
+def saturation_photo(id):
+    post = lambda k: float(bottle.request.forms.get(k))
+    db.find_one(id).saturation(level=post('level'))
+    return 'ok'
+
 @bottle.post('/photos/<id:int>/crop')
 def crop_photo(id):
     post = lambda k: float(bottle.request.forms.get(k))
