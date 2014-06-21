@@ -4,6 +4,7 @@ import os
 import re
 import subprocess
 
+from . import db
 from . import util
 
 logging = climate.get_logger(__name__)
@@ -87,7 +88,7 @@ class Media:
     def to_dict(self):
         return dict(
             id=self.id,
-            medium=self.MEDIUM,
+            medium=self.__class__.__name__.lower(),
             path=self.path,
             stamp=self.stamp,
             thumb=self.thumb_path,
@@ -132,7 +133,7 @@ class Media:
 
     def make_thumbnails(self,
                         base=None,
-                        sizes=(('full', 1000), ('thumb', 100)),
+                        sizes=(('full', 600), ('thumb', 100)),
                         replace=False,
                         fast=False):
         '''Create thumbnails of this photo and save them to disk.'''
@@ -146,7 +147,7 @@ class Media:
                     os.makedirs(dirname)
                 if isinstance(size, int):
                     size = (2 * size, size)
-                nailer.save_thumbnail(size, path)
+                nailer.save_thumbnail(size, p)
 
     def cleanup(self):
         '''Remove thumbnails of this media item.'''
@@ -159,7 +160,7 @@ class Media:
 
     def export(self, target, sizes=(('full', 1000), ('thumb', 100)), replace=False):
         '''Export this media item by saving thumbnails of specific sizes.'''
-        self.make_thumbnails(target, sizes=sizes, replace=replace)
+        self.make_thumbnails(target, sizes=sizes, replace=replace, fast=False)
 
 
 def create(medium, path, tags, add_path_tags=0):
@@ -167,7 +168,7 @@ def create(medium, path, tags, add_path_tags=0):
     m = db.insert(path, medium)
 
     stamp = util.compute_timestamp_from_exif(m.exif)
-    tags = set(tags) + set(util.get_path_tags(path, add_path_tags))
+    tags = set(tags) | set(util.get_path_tags(path, add_path_tags))
 
     m.meta = dict(
         stamp=stamp,
@@ -175,7 +176,7 @@ def create(medium, path, tags, add_path_tags=0):
         userTags=list(sorted(util.normalized_tag_set(tags))),
         exifTags=list(sorted(m.read_exif_tags())))
 
-    m.make_thumbnails()
+    m.make_thumbnails(fast=True)
 
     db.update(m)
 
