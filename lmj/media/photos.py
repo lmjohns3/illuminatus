@@ -5,7 +5,6 @@ import PIL.Image
 import PIL.ImageOps
 
 from . import base
-from . import db
 from . import util
 
 logging = climate.get_logger(__name__)
@@ -60,7 +59,7 @@ class Photo(base.Media):
     def get_thumbnailer(self, fast=False):
         img = PIL.Image.open(self.path)
         if fast:
-            factor = 1000 / max(img.size)
+            factor = 600 / max(img.size)
             img = img.resize(
                 (int(img.size[0] * factor), int(img.size[1] * factor)),
                 resample=PIL.Image.BILINEAR)
