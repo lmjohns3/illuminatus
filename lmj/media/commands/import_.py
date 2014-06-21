@@ -24,7 +24,7 @@ logging = climate.get_logger('lmj.media.import')
 def find_class_for(mime):
     '''Find a media class for the given mime type.'''
     if mime:
-        for cls in (lmj.media.Photo, ):
+        for cls in (lmj.media.Photo, lmj.media.Video):
             for pattern in cls.MIME_TYPES:
                 if fnmatch.fnmatch(mime, pattern):
                     return cls
