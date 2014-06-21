@@ -30,7 +30,7 @@ def get_path_tags(path, add_path_tags):
             yield t.strip()
 
 
-def compute_timestamp_from_exif(exif, key):
+def compute_timestamp_from_exif(exif):
     for key in ('DateTimeOriginal', 'CreateDate', 'ModifyDate', 'FileModifyDate'):
         raw = exif.get(key)
         if not raw:
