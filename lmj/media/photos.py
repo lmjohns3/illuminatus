@@ -10,15 +10,6 @@ from . import util
 logging = climate.get_logger(__name__)
 
 
-class Thumbnailer:
-    def __init__(self, img):
-        self.img = img
-
-    def save_thumbnail(self, size, path):
-        self.img.thumbnail(size, PIL.Image.ANTIALIAS)
-        self.img.save(path)
-
-
 class Photo(base.Media):
     MEDIUM = 1
     EXTENSION = 'jpg'
@@ -56,13 +47,20 @@ class Photo(base.Media):
 
         return util.normalized_tag_set(tags)
 
-    def get_thumbnailer(self, fast=False):
+    def make_thumbnails(self,
+                        base=None,
+                        sizes=(('full', 600), ('thumb', 100)),
+                        replace=False,
+                        fast=False):
+        '''Create thumbnails of this photo and save them to disk.'''
+        base = base or os.path.dirname(db.DB)
         img = PIL.Image.open(self.path)
+        resample = PIL.Image.ANTIALIAS
         if fast:
-            factor = 600 / max(img.size)
-            img = img.resize(
-                (int(img.size[0] * factor), int(img.size[1] * factor)),
-                resample=PIL.Image.BILINEAR)
+            resample = PIL.Image.BILINEAR
+            w, h = img.size
+            if h > 600:
+                img = img.resize((int(600 * w / h), 600), resample=PIL.Image.NEAREST)
         orient = self.exif.get('Orientation')
         if orient == 'Rotate 90 CW':
             img = img.rotate(-90)
@@ -72,7 +70,16 @@ class Photo(base.Media):
             img = img.rotate(-270)
         for op in self.ops:
             img = self._apply_op(img, op)
-        return Thumbnailer(img)
+        for name, size in sorted(sizes, key=lambda x: -x[1]):
+            p = os.path.join(base, name, self.thumb_path)
+            if replace or not os.path.exists(p):
+                dirname = os.path.dirname(p)
+                if not os.path.exists(dirname):
+                    os.makedirs(dirname)
+                if isinstance(size, int):
+                    size = (2 * size, size)
+                img.thumbnail(size, resample=resample)
+                img.save(path)
 
     def contrast(self, level):
         self._add_op(self.Ops.Contrast, level=level)

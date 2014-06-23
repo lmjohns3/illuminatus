@@ -131,24 +131,6 @@ class Media:
         self.make_thumbnails(replace=True, fast=True)
         db.update(self)
 
-    def make_thumbnails(self,
-                        base=None,
-                        sizes=(('full', 600), ('thumb', 100)),
-                        replace=False,
-                        fast=False):
-        '''Create thumbnails of this photo and save them to disk.'''
-        base = base or os.path.dirname(db.DB)
-        nailer = self.get_thumbnailer(fast)
-        for name, size in sorted(sizes, key=lambda x: -x[1]):
-            p = os.path.join(base, name, self.thumb_path)
-            if replace or not os.path.exists(p):
-                dirname = os.path.dirname(p)
-                if not os.path.exists(dirname):
-                    os.makedirs(dirname)
-                if isinstance(size, int):
-                    size = (2 * size, size)
-                nailer.save_thumbnail(size, p)
-
     def cleanup(self):
         '''Remove thumbnails of this media item.'''
         base = os.path.dirname(db.DB)
