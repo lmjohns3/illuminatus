@@ -1,7 +1,9 @@
 import climate
+import os
 import shutil
 import subprocess
 import tempfile
+import uuid
 
 from . import base
 from . import db
@@ -10,48 +12,72 @@ from . import util
 logging = climate.get_logger(__name__)
 
 
+def mktemp():
+    return os.path.join(tempfile.gettempdir(), uuid.uuid4().hex + '.mp4')
+
+
 class Thumbnailer:
-    def __init__(self, path, size, fast=False):
-        self.size = size
+    def __init__(self, path, size, fast=True):
+        self.size = self.working_size = size
         self.path = path
-        self.working_path = tempfile.NamedTemporaryFile(delete=False)
-        shutil.copyfile(path, self.working_path)
+        self.working_path = mktemp()
+        os.symlink(path, self.working_path)
         if fast:
-            self.scale(300 / max(size))
+            audio = '-c:a libfaac -b:a 80k'
+            video = '-c:v libx264 -preset veryfast -crf 28'
+            self.scale(800 / size[1], audio=audio.split(), video=video.split())
 
     def __del__(self):
         if os.path.exists(self.working_path):
             os.unlink(self.working_path)
 
-    def _filter(self, filter, output=None):
+    def _filter(self, filter, output=None, audio=(), video=()):
         cleanup = False
         if output is None:
-            output = tempfile.NamedTemporaryFile(delete=False)
+            output = mktemp()
             cleanup = True
-        cmd = ['ffmpeg', '-i', self.working_path, '-vf', filter, output]
-        if not subprocess.check_output(cmd):
-            raise RuntimeError
+        cmd = ['ffmpeg', '-i', self.working_path]
+        cmd.extend(audio)
+        cmd.extend(video)
+        cmd.extend(['-vf', filter, output])
+        logging.info('%s: running ffmpeg\n%s', self.path, ' '.join(cmd))
+        subprocess.check_output(cmd, stderr=subprocess.PIPE)
         if cleanup:
             os.unlink(self.working_path)
             self.working_path = output
 
-    def saturation(self, level, output=None):
-        self._filter('hue=b={}'.format(level - 1), output=output)
+    def saturation(self, level, **kwargs):
+        self._filter('hue=b={}'.format(level - 1), **kwargs)
 
-    def brightness(self, level, output=None):
-        self._filter('hue=s={}'.format(level), output=output)
+    def brightness(self, level, **kwargs):
+        self._filter('hue=s={}'.format(level), **kwargs)
 
-    def scale(self, factor, output=None):
-        self._filter('scale={}'.format(factor), output=output)
+    def scale(self, factor, **kwargs):
+        w, h = self.working_size
+        w = int(factor * w)
+        w -= w % 2
+        h = int(factor * h)
+        self._filter('scale={}:{}'.format(w, h), **kwargs)
+        self.working_size = w, h
 
-    def crop(self, whxy, output=None):
-        self._filter('crop={}:{}:{}:{}'.format(*whxy), output=output)
+    def crop(self, whxy, **kwargs):
+        self._filter('crop={}:{}:{}:{}'.format(*whxy), **kwargs)
+        self.working_size = whxy[0], whxy[1]
 
-    def rotate(self, degrees, output=None):
-        self._filter('rotate={}'.format(degrees), output=output)
+    def rotate(self, degrees, **kwargs):
+        self._filter('rotate={}'.format(degrees), **kwargs)
 
-    def save_thumbnail(self, size, path):
-        srcw, srch = self.size
+    def poster(self, bbox, path):
+        W, H = bbox
+        w, h = self.working_size
+        factor = min(W / w, H / h)
+        size = '{}x{}'.format(int(factor * w), int(factor * h))
+        cmd = ['ffmpeg', '-i', self.working_path, '-s', size, '-vframes', '1', path]
+        logging.info('%s: running ffmpeg\n%s', self.path, ' '.join(cmd))
+        subprocess.check_output(cmd, stderr=subprocess.PIPE)
+
+    def thumbnail(self, size, path):
+        srcw, srch = self.working_size
         tgtw, tgth = size
         if srcw < tgtw and srch < tgth:
             # already small enough, just copy the file.
@@ -68,7 +94,7 @@ class Thumbnailer:
             return self.brightness(op['level'])
         if key == self.Ops.Crop:
             x1, y1, x2, y2 = op['box']
-            width, height = self.size
+            width, height = self.working_size
             x1 = int(width * x1)
             y1 = int(height * y1)
             x2 = int(width * x2)
@@ -88,7 +114,7 @@ class Video(base.Media):
     @property
     def frame_size(self):
         def ints(args):
-            return map(int, args)
+            return int(args[0]), int(args[1])
         def keys(k):
             return self.exif[k + 'Height'], self.exif[k + 'Width']
         try: return ints(keys('Image'))
@@ -109,8 +135,26 @@ class Video(base.Media):
 
         return util.normalized_tag_set(tags)
 
-    def get_thumbnailer(self, fast=False):
+    def make_thumbnails(self,
+                        base=None,
+                        sizes=(('full', 600), ('thumb', 100)),
+                        replace=False,
+                        fast=False):
+        '''Create a small video and save a preview image to disk.'''
+        base = base or os.path.dirname(db.DB)
         nailer = Thumbnailer(self.path, size=self.frame_size, fast=fast)
         for op in self.ops:
             nailer.apply_op(op)
-        return nailer
+        for name, size in sorted(sizes, key=lambda x: -x[1]):
+            p = os.path.join(base, name, self.thumb_path)
+            if os.path.exists(p) and not replace:
+                continue
+            dirname = os.path.dirname(p)
+            if not os.path.exists(dirname):
+                os.makedirs(dirname)
+            if isinstance(size, int):
+                size = (2 * size, size)
+            if name == 'thumb':
+                nailer.poster(size, p.replace(self.EXTENSION, 'jpg'))
+            else:
+                nailer.thumbnail(size, p)
