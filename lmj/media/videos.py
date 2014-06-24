@@ -40,7 +40,7 @@ class Thumbnailer:
         cmd.extend(audio)
         cmd.extend(video)
         cmd.extend(['-vf', filter, output])
-        logging.info('%s: running ffmpeg\n%s', self.path, ' '.join(cmd))
+        logging.debug('%s: running ffmpeg\n%s', self.path, ' '.join(cmd))
         subprocess.check_output(cmd, stderr=subprocess.PIPE)
         if cleanup:
             os.unlink(self.working_path)
@@ -73,7 +73,7 @@ class Thumbnailer:
         factor = min(W / w, H / h)
         size = '{}x{}'.format(int(factor * w), int(factor * h))
         cmd = ['ffmpeg', '-i', self.working_path, '-s', size, '-vframes', '1', path]
-        logging.info('%s: running ffmpeg\n%s', self.path, ' '.join(cmd))
+        logging.debug('%s: running ffmpeg\n%s', self.path, ' '.join(cmd))
         subprocess.check_output(cmd, stderr=subprocess.PIPE)
 
     def thumbnail(self, size, path):
