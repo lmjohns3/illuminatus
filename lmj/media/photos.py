@@ -5,6 +5,7 @@ import PIL.Image
 import PIL.ImageOps
 
 from . import base
+from . import db
 from . import util
 
 logging = climate.get_logger(__name__)
@@ -57,35 +58,30 @@ class Photo(base.Media):
         img = PIL.Image.open(self.path)
         resample = PIL.Image.ANTIALIAS
         if fast:
-            resample = PIL.Image.BILINEAR
+            resample = PIL.Image.BICUBIC
             w, h = img.size
-            if h > 600:
-                img = img.resize((int(600 * w / h), 600), resample=PIL.Image.NEAREST)
+            if h > 800:
+                img = img.resize((int(800 * w / h), 800), resample=PIL.Image.NEAREST)
         orient = self.exif.get('Orientation')
-        if orient == 'Rotate 90 CW':
-            img = img.rotate(-90)
-        if orient == 'Rotate 180':
-            img = img.rotate(-180)
-        if orient == 'Rotate 270 CW':
-            img = img.rotate(-270)
+        if orient == 'Rotate 90 CW': img = img.rotate(-90)
+        if orient == 'Rotate 180': img = img.rotate(-180)
+        if orient == 'Rotate 270 CW': img = img.rotate(-270)
         for op in self.ops:
             img = self._apply_op(img, op)
         for name, size in sorted(sizes, key=lambda x: -x[1]):
             p = os.path.join(base, name, self.thumb_path)
-            if replace or not os.path.exists(p):
-                dirname = os.path.dirname(p)
-                if not os.path.exists(dirname):
-                    os.makedirs(dirname)
-                if isinstance(size, int):
-                    size = (2 * size, size)
-                img.thumbnail(size, resample=resample)
-                img.save(path)
+            if os.path.exists(p) and not replace:
+                continue
+            dirname = os.path.dirname(p)
+            if not os.path.exists(dirname):
+                os.makedirs(dirname)
+            if isinstance(size, int):
+                size = (2 * size, size)
+            img.thumbnail(size, resample=resample)
+            img.save(p)
 
     def contrast(self, level):
         self._add_op(self.Ops.Contrast, level=level)
-
-    def brightness(self, level):
-        self._add_op(self.Ops.Brightness, level=level)
 
     def autocontrast(self):
         self._add_op(self.Ops.Autocontrast)
