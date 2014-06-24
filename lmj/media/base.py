@@ -119,6 +119,9 @@ class Media:
             degrees += op['degrees']
         self._add_op(self.Ops.Rotate, degrees=degrees % 360)
 
+    def brightness(self, level):
+        self._add_op(self.Ops.Brightness, level=level)
+
     def saturation(self, level):
         self._add_op(self.Ops.Saturation, level=level)
 
