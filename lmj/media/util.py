@@ -54,7 +54,7 @@ def normalized_tag_set(seq, sep=None):
 
 MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
 DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-EXIF_TAG_RE = re.compile(r'^(f/[\d\.]+|\d+mm|\d+ms|iso:\d+|kit:.*)$')
+EXIF_TAG_RE = re.compile(r'^(f/[\d\.]+|\d+mm|\d+ms|iso:\d+|kit:.*|photo|video)$')
 DATE_TAG_RE = re.compile('^([12]\d{3}|\d+(st|nd|rd|th)|\d+[ap]m|[adefhimnorstuw]+day|(jan|febr)uary|march|april|may|june|july|august|(sept|nov|dec)ember|october)$')
 
 def tag_class(tag):
