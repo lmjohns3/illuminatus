@@ -67,23 +67,22 @@ class Thumbnailer:
     def rotate(self, degrees, **kwargs):
         self._filter('rotate={}'.format(degrees), **kwargs)
 
-    def poster(self, bbox, path):
-        W, H = bbox
+    def poster(self, size, path):
         w, h = self.working_size
-        factor = min(W / w, H / h)
-        size = '{}x{}'.format(int(factor * w), int(factor * h))
-        cmd = ['ffmpeg', '-i', self.working_path, '-s', size, '-vframes', '1', path]
+        if h > size:
+            w = int(size * w / h)
+            h = size
+        cmd = ['ffmpeg', '-i', self.working_path, '-s', '{}x{}'.format(w, h), '-vframes', '1', path]
         logging.debug('%s: running ffmpeg\n%s', self.path, ' '.join(cmd))
         subprocess.check_output(cmd, stderr=subprocess.PIPE)
 
     def thumbnail(self, size, path):
-        srcw, srch = self.working_size
-        tgtw, tgth = size
-        if srcw < tgtw and srch < tgth:
+        w, h = self.working_size
+        if h > size:
+            self.scale(size / h, output=path)
+        else:
             # already small enough, just copy the file.
             shutil.copyfile(self.working_path, path)
-        else:
-            self.scale(min(tgtw / srcw, tgth / srch), output=path)
 
     def apply_op(self, handle, op):
         logging.info('%s: applying op %r', self.path, op)
@@ -116,7 +115,7 @@ class Video(base.Media):
         def ints(args):
             return int(args[0]), int(args[1])
         def keys(k):
-            return self.exif[k + 'Height'], self.exif[k + 'Width']
+            return self.exif[k + 'Width'], self.exif[k + 'Height']
         try: return ints(keys('Image'))
         except: pass
         try: return ints(keys('SourceImage'))
@@ -129,10 +128,8 @@ class Video(base.Media):
         '''Given an exif data structure, extract a set of tags.'''
         if not self.exif:
             return set()
-
-        highest = util.round_to_highest_digits
         tags = super().read_exif_tags()
-
+        tags.add('video')
         return util.normalized_tag_set(tags)
 
     def make_thumbnails(self,
@@ -145,15 +142,13 @@ class Video(base.Media):
         nailer = Thumbnailer(self.path, size=self.frame_size, fast=fast)
         for op in self.ops:
             nailer.apply_op(op)
-        for name, size in sorted(sizes, key=lambda x: -x[1]):
+        for name, size in sizes:
             p = os.path.join(base, name, self.thumb_path)
             if os.path.exists(p) and not replace:
                 continue
             dirname = os.path.dirname(p)
             if not os.path.exists(dirname):
                 os.makedirs(dirname)
-            if isinstance(size, int):
-                size = (2 * size, size)
             if name == 'thumb':
                 nailer.poster(size, p.replace(self.EXTENSION, 'jpg'))
             else:
