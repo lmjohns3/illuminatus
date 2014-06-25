@@ -28,7 +28,10 @@ def static(path):
 
 @bottle.get('/img/<path:path>')
 def image(path):
-    return bottle.static_file(path, os.path.dirname(db.DB))
+    try:
+        return bottle.static_file(path, os.path.dirname(db.DB))
+    except:
+        pass
 
 
 @bottle.get('/tags')
