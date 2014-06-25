@@ -23,6 +23,7 @@ class Photo(base.Media):
 
         highest = util.round_to_highest_digits
         tags = super().read_exif_tags()
+        tags.add('photo')
 
         if 'FNumber' in self.exif:
             t = 'f/{}'.format(round(2 * float(self.exif['FNumber'])) / 2)
@@ -54,30 +55,27 @@ class Photo(base.Media):
                         replace=False,
                         fast=False):
         '''Create thumbnails of this photo and save them to disk.'''
-        base = base or os.path.dirname(db.DB)
         img = PIL.Image.open(self.path)
-        resample = PIL.Image.ANTIALIAS
         if fast:
-            resample = PIL.Image.BICUBIC
             w, h = img.size
-            if h > 800:
-                img = img.resize((int(800 * w / h), 800), resample=PIL.Image.NEAREST)
+            if h > 1000:
+                img = img.resize((int(1000 * w / h), 1000), resample=PIL.Image.NEAREST)
         orient = self.exif.get('Orientation')
         if orient == 'Rotate 90 CW': img = img.rotate(-90)
         if orient == 'Rotate 180': img = img.rotate(-180)
         if orient == 'Rotate 270 CW': img = img.rotate(-270)
         for op in self.ops:
             img = self._apply_op(img, op)
-        for name, size in sorted(sizes, key=lambda x: -x[1]):
+
+        base = base or os.path.dirname(db.DB)
+        for name, size in sizes:
             p = os.path.join(base, name, self.thumb_path)
             if os.path.exists(p) and not replace:
                 continue
             dirname = os.path.dirname(p)
             if not os.path.exists(dirname):
                 os.makedirs(dirname)
-            if isinstance(size, int):
-                size = (2 * size, size)
-            img.thumbnail(size, resample=resample)
+            img.thumbnail((3 * size, size), resample=PIL.Image.ANTIALIAS)
             img.save(p)
 
     def contrast(self, level):
