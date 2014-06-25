@@ -11,9 +11,13 @@ from . import util
 
 logging = climate.get_logger(__name__)
 
+SCRATCH = 'lmj-media-scratch'
 
 def mktemp():
-    return os.path.join(tempfile.gettempdir(), uuid.uuid4().hex + '.mp4')
+    t = os.path.join(tempfile.gettempdir(), SCRATCH, uuid.uuid4().hex + '.mp4')
+    if not os.path.isdir(os.path.dirname(t)):
+        os.makedirs(os.path.dirname(t))
+    return t
 
 
 class Thumbnailer:
@@ -22,14 +26,19 @@ class Thumbnailer:
         self.path = path
         self.working_path = mktemp()
         os.symlink(path, self.working_path)
+        audio = '-c:a libfaac -b:a 160k'
+        video = '-c:v libx264 -preset medium -crf 20'
+        height = size[1]
         if fast:
             audio = '-c:a libfaac -b:a 80k'
-            video = '-c:v libx264 -preset veryfast -crf 28'
-            self.scale(800 / size[1], audio=audio.split(), video=video.split())
+            video = '-c:v libx264 -preset ultrafast -crf 30'
+            height = 700
+        self.scale(height / size[1], audio=audio.split(), video=video.split())
 
     def __del__(self):
         if os.path.exists(self.working_path):
-            os.unlink(self.working_path)
+            if SCRATCH in self.working_path:
+                os.unlink(self.working_path)
 
     def _filter(self, filter, output=None, audio=(), video=()):
         cleanup = False
@@ -43,7 +52,8 @@ class Thumbnailer:
         logging.debug('%s: running ffmpeg\n%s', self.path, ' '.join(cmd))
         subprocess.check_output(cmd, stderr=subprocess.PIPE)
         if cleanup:
-            os.unlink(self.working_path)
+            if SCRATCH in self.working_path:
+                os.unlink(self.working_path)
             self.working_path = output
 
     def saturation(self, level, **kwargs):
