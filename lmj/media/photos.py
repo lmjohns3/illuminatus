@@ -29,7 +29,8 @@ class Photo(base.Media):
             t = 'f/{}'.format(round(2 * float(self.exif['FNumber'])) / 2)
             tags.add(t.replace('.0', ''))
 
-        if 'ISO' in self.exif:
+        iso = self.exif.get('ISO')
+        if iso:
             iso = int(self.exif['ISO'])
             tags.add('iso:{}'.format(highest(iso, 1 + int(iso > 1000))))
 
