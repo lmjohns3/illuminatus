@@ -1,6 +1,7 @@
 import bottle
 import climate
 import collections
+import multiprocessing as mp
 import os
 import random
 import sys
@@ -15,6 +16,8 @@ cmd.add_argument('--port', type=int, default=5555, metavar='N',
                  help='run server on port N')
 cmd.add_argument('--reload', action='store_true',
                  help='reload server whenever modules change')
+cmd.add_argument('--workers', type=int, default=1, metavar='N',
+                 help='launch N workers starting at the given port')
 cmd.set_defaults(mod=sys.modules[__name__])
 
 
@@ -116,5 +119,18 @@ def catchall(path):
     return bottle.static_file('index.html', os.curdir)
 
 
+def run(host, port, reload):
+    bottle.run(host=host, port=port, reloader=reload)
+
+
 def main(args):
-    bottle.run(host=args.host, port=args.port, reloader=args.reload)
+    workers = []
+    for port in range(args.port, args.port + args.workers):
+        a = args.host, port, args.reload
+        workers.append(mp.Process(target=run, args=a))
+    [w.start() for w in workers]
+    try:
+        [w.join() for w in workers]
+    except:
+        [w.terminate() for w in workers]
+        raise
