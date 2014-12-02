@@ -50,12 +50,8 @@ class Photo(base.Media):
 
         return util.normalized_tag_set(tags)
 
-    def make_thumbnails(self,
-                        base=None,
-                        sizes=(('full', 600), ('thumb', 100)),
-                        replace=False,
-                        fast=False):
-        '''Create thumbnails of this photo and save them to disk.'''
+    def _prepare_image(self, fast):
+        '''Get an image for this photo.'''
         img = PIL.Image.open(self.path)
         if fast:
             w, h = img.size
@@ -67,7 +63,16 @@ class Photo(base.Media):
         if orient == 'Rotate 270 CW': img = img.rotate(-270)
         for op in self.ops:
             img = self._apply_op(img, op)
+        return img
 
+    def make_thumbnails(self,
+                        base=None,
+                        sizes=(('full', 600), ('thumb', 100)),
+                        replace=False,
+                        fast=False,
+                        output=None):
+        '''Create thumbnails of this photo and save them to disk.'''
+        img = self._prepare_image(fast)
         base = base or os.path.dirname(db.DB)
         for name, size in sizes:
             p = os.path.join(base, name, self.thumb_path)
