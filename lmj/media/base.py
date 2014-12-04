@@ -131,7 +131,7 @@ class Media:
     def _add_op(self, key, **op):
         op['key'] = key
         self.ops.append(op)
-        self.make_thumbnails(replace=True)
+        self.make_thumbnails()
         db.update(self)
 
     def cleanup(self):

@@ -64,7 +64,7 @@ class Photo(base.Media):
             img = self._apply_op(img, op)
         return img
 
-    def make_thumbnails(self, full_size=500, thumb_size=100, base=None, replace=False):
+    def make_thumbnails(self, full_size=500, thumb_size=100, base=None):
         '''Create thumbnails of this photo and save them to disk.
 
         Parameters
@@ -78,17 +78,12 @@ class Photo(base.Media):
         base : str, optional
             If provided, store full-size and thumbnail images rooted at this
             path. Defaults to the location of the media database.
-        replace : bool, optional
-            If True, replace existing files; if False, do not even generate the
-            file. Defaults to False.
         '''
         img = self._prepare_image(2 * full_size)
         base = base or os.path.dirname(db.DB)
         for name, size in (('full', full_size), ('thumb', thumb_size)):
-            p = util.ensure_path(base, name, self.thumb_path)
-            if replace or not os.path.exists(p):
-                img.thumbnail((size, size), resample=PIL.Image.ANTIALIAS)
-                img.save(p)
+            img.thumbnail((size, size), resample=PIL.Image.ANTIALIAS)
+            img.save(util.ensure_path(base, name, self.thumb_path))
 
     def export(self, **sizes):
         '''Export images to the caller.
