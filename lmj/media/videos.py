@@ -132,7 +132,7 @@ class Video(base.Media):
         tags.add('video')
         return util.normalized_tag_set(tags)
 
-    def make_thumbnails(self, full_size=400, thumb_size=100, base=None):
+    def make_thumbnails(self, full_size=400, thumb_size=80, base=None):
         '''Create a small video and save a preview image to disk.
 
         Parameters
