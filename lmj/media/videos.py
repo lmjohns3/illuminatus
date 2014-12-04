@@ -80,9 +80,6 @@ class Thumbnailer:
         if h > size or w > size:
             self.scale(max(size / w, size / h))
             self.run(path)
-        else:
-            # already small enough, just copy the file.
-            shutil.copyfile(self.working_path, path)
 
     def apply_op(self, handle, op):
         logging.info('%s: applying op %r', self.path, op)
@@ -149,7 +146,7 @@ class Video(base.Media):
             If provided, store full-size and thumbnail images rooted at this
             path. Defaults to the location of the media database.
         '''
-        nailer = Thumbnailer(self.path, self.frame_size, int(1.2 * full_size))
+        nailer = Thumbnailer(self.path, self.frame_size, full_size)
         for op in self.ops:
             nailer.apply_op(op)
 
