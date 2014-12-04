@@ -129,8 +129,8 @@ class Photo(base.Media):
                 w = h = size
             else:
                 w, h = size
-            if is_wide and h > w:
-                w, h = h, w
+                if is_wide and h > w:
+                    w, h = h, w
             img.thumbnail((w, h), resample=PIL.Image.ANTIALIAS)
             s = io.BytesIO()
             img.save(s)
