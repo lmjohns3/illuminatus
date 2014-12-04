@@ -64,7 +64,7 @@ class Photo(base.Media):
             img = self._apply_op(img, op)
         return img
 
-    def make_thumbnails(self, full_size=600, thumb_size=80, base=None):
+    def make_thumbnails(self, full_size=800, thumb_size=80, base=None):
         '''Create thumbnails of this photo and save them to disk.
 
         Parameters
