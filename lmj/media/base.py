@@ -143,9 +143,9 @@ class Media:
             except:
                 pass
 
-    def export(self, target, sizes=(('full', 1000), ('thumb', 100)), replace=False):
-        '''Export this media item by saving thumbnails of specific sizes.'''
-        self.make_thumbnails(target, sizes=sizes, replace=replace, fast=False)
+    def export(self, **sizes):
+        '''Export this media item by generating thumbnails of specific sizes.'''
+        raise NotImplementedError
 
 
 def create(medium, path, tags, add_path_tags=0):
