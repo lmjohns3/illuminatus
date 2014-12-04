@@ -20,6 +20,8 @@ cmd.add_argument('--workers', type=int, default=1, metavar='N',
                  help='launch N workers starting at the given port')
 cmd.set_defaults(mod=sys.modules[__name__])
 
+posted_float = lambda k: float(bottle.request.forms.get(k))
+
 
 @bottle.get('/')
 def index():
@@ -57,6 +59,7 @@ def list_media():
 def read_media(id):
     return stringify(db.find_one(id).to_dict())
 
+
 @bottle.put('/media/<id:int>')
 def update_media(id):
     m = db.find_one(id)
@@ -72,6 +75,7 @@ def update_media(id):
         db.update(m)
     return stringify(m.to_dict())
 
+
 @bottle.delete('/media/<id:int>')
 def delete_media(id):
     m = db.find_one(id)
@@ -80,32 +84,27 @@ def delete_media(id):
 
 @bottle.post('/photos/<id:int>/rotate')
 def rotate_photo(id):
-    post = lambda k: float(bottle.request.forms.get(k))
-    db.find_one(id).rotate(degrees=post('degrees'))
+    db.find_one(id).rotate(degrees=posted_float('degrees'))
     return 'ok'
 
 @bottle.post('/photos/<id:int>/brightness')
 def brightness_photo(id):
-    post = lambda k: float(bottle.request.forms.get(k))
-    db.find_one(id).brightness(level=post('level'))
+    db.find_one(id).brightness(level=posted_float('level'))
     return 'ok'
 
 @bottle.post('/photos/<id:int>/contrast')
 def contrast_photo(id):
-    post = lambda k: float(bottle.request.forms.get(k))
-    db.find_one(id).contrast(level=post('level'))
+    db.find_one(id).contrast(level=posted_float('level'))
     return 'ok'
 
 @bottle.post('/photos/<id:int>/saturation')
 def saturation_photo(id):
-    post = lambda k: float(bottle.request.forms.get(k))
-    db.find_one(id).saturation(level=post('level'))
+    db.find_one(id).saturation(level=posted_float('level'))
     return 'ok'
 
 @bottle.post('/photos/<id:int>/crop')
 def crop_photo(id):
-    post = lambda k: float(bottle.request.forms.get(k))
-    db.find_one(id).crop(box=[post(k) for k in 'x1 y1 x2 y2'.split()])
+    db.find_one(id).crop(box=[posted_float(k) for k in 'x1 y1 x2 y2'.split()])
     return 'ok'
 
 @bottle.post('/photos/<id:int>/autocontrast')
