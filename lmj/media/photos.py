@@ -50,13 +50,12 @@ class Photo(base.Media):
 
         return util.normalized_tag_set(tags)
 
-    def _prepare_image(self, fast):
+    def _prepare_image(self, fast=None):
         '''Get an image for this photo.'''
         img = PIL.Image.open(self.path)
-        if fast:
-            w, h = img.size
-            if h > 1000:
-                img = img.resize((int(1000 * w / h), 1000), resample=PIL.Image.NEAREST)
+        w, h = img.size
+        if fast and h > fast or w > fast:
+            img = img.thumbnail((fast, fast), resample=PIL.Image.NEAREST)
         orient = self.exif.get('Orientation')
         if orient == 'Rotate 90 CW': img = img.rotate(-90)
         if orient == 'Rotate 180': img = img.rotate(-180)
@@ -69,7 +68,7 @@ class Photo(base.Media):
                         base=None,
                         sizes=(('full', 600), ('thumb', 100)),
                         replace=False,
-                        fast=False,
+                        fast=None,
                         output=None):
         '''Create thumbnails of this photo and save them to disk.'''
         img = self._prepare_image(fast)
