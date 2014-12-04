@@ -79,7 +79,7 @@ class Photo(base.Media):
             If provided, store full-size and thumbnail images rooted at this
             path. Defaults to the location of the media database.
         '''
-        img = self._prepare_image(2 * full_size)
+        img = self._prepare_image(1.2 * full_size)
         base = base or os.path.dirname(db.DB)
         for name, size in (('full', full_size), ('thumb', thumb_size)):
             img.thumbnail((size, size), resample=PIL.Image.ANTIALIAS)
