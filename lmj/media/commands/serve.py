@@ -86,33 +86,39 @@ def delete_media(id):
 
 @bottle.post('/photos/<id:int>/rotate')
 def rotate_photo(id):
-    db.find_one(id).rotate(degrees=posted_float('degrees'))
-    return 'ok'
+    m = db.find_one(id)
+    m.rotate(degrees=posted_float('degrees'))
+    return stringify(m.to_dict())
 
 @bottle.post('/photos/<id:int>/brightness')
 def brightness_photo(id):
-    db.find_one(id).brightness(level=posted_float('level'))
-    return 'ok'
+    m = db.find_one(id)
+    m.brightness(level=posted_float('level'))
+    return stringify(m.to_dict())
 
 @bottle.post('/photos/<id:int>/contrast')
 def contrast_photo(id):
-    db.find_one(id).contrast(level=posted_float('level'))
-    return 'ok'
+    m = db.find_one(id)
+    m.contrast(level=posted_float('level'))
+    return stringify(m.to_dict())
 
 @bottle.post('/photos/<id:int>/saturation')
 def saturation_photo(id):
-    db.find_one(id).saturation(level=posted_float('level'))
-    return 'ok'
+    m = db.find_one(id)
+    m.saturation(level=posted_float('level'))
+    return stringify(m.to_dict())
 
 @bottle.post('/photos/<id:int>/crop')
 def crop_photo(id):
-    db.find_one(id).crop(box=[posted_float(k) for k in 'x1 y1 x2 y2'.split()])
-    return 'ok'
+    m = db.find_one(id)
+    m.crop(box=[posted_float(k) for k in 'x1 y1 x2 y2'.split()])
+    return stringify(m.to_dict())
 
 @bottle.post('/photos/<id:int>/autocontrast')
 def autocontrast_photo(id):
-    db.find_one(id).autocontrast()
-    return 'ok'
+    m = db.find_one(id)
+    m.autocontrast()
+    return stringify(m.to_dict())
 
 
 @bottle.get('/<path:path>')
