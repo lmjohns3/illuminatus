@@ -29,7 +29,7 @@ class Thumbnailer:
         self.audio = '-c:a libfaac -b:a 100k'.split()
         self.video = '-c:v libx264 -preset ultrafast -crf 30'.split()
         self.filters = []
-        self.scale(max(initial_size / w, initial_size / h))
+        self.scale(min(initial_size / w, initial_size / h))
 
     def __del__(self):
         if os.path.exists(self.working_path):
@@ -69,8 +69,9 @@ class Thumbnailer:
     def poster(self, size, path):
         w, h = self.working_size
         if h > size:
-            w = int(size * w / h)
-            h = size
+            w, h = int(size * w / h), size
+        elif w > size:
+            w, h = size, int(size * h / w)
         cmd = ['ffmpeg', '-i', self.working_path, '-s', '{}x{}'.format(w, h), '-vframes', '1', path]
         logging.info('%s: running ffmpeg\n%s', self.path, ' '.join(cmd))
         subprocess.check_output(cmd, stderr=subprocess.PIPE)
@@ -78,8 +79,8 @@ class Thumbnailer:
     def thumbnail(self, size, path):
         w, h = self.working_size
         if h > size or w > size:
-            self.scale(max(size / w, size / h))
-            self.run(path)
+            self.scale(min(size / w, size / h))
+        self.run(path)
 
     def apply_op(self, handle, op):
         logging.info('%s: applying op %r', self.path, op)
