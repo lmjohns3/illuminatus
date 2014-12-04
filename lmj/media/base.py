@@ -131,7 +131,7 @@ class Media:
     def _add_op(self, key, **op):
         op['key'] = key
         self.ops.append(op)
-        self.make_thumbnails(replace=True, fast=True)
+        self.make_thumbnails(replace=True)
         db.update(self)
 
     def cleanup(self):
@@ -161,7 +161,7 @@ def create(medium, path, tags, add_path_tags=0):
         userTags=list(sorted(util.normalized_tag_set(tags))),
         exifTags=list(sorted(m.read_exif_tags())))
 
-    m.make_thumbnails(fast=True)
+    m.make_thumbnails()
 
     db.update(m)
 

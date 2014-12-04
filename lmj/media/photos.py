@@ -64,23 +64,34 @@ class Photo(base.Media):
             img = self._apply_op(img, op)
         return img
 
-    def make_thumbnails(self,
-                        base=None,
-                        sizes=(('full', 600), ('thumb', 100)),
-                        replace=False,
-                        fast=None,
-                        output=None):
-        '''Create thumbnails of this photo and save them to disk.'''
-        img = self._prepare_image(fast)
+    def make_thumbnails(self, full_size=500, thumb_size=100, base=None, replace=False):
+        '''Create thumbnails of this photo and save them to disk.
+
+        Parameters
+        ----------
+        full_size : int, optional
+            Size in pixels of the "full-size" thumbnail of the photo. This is
+            typically shown in the photo editor view of the UI. Defaults to 500.
+        thumb_size : int, optional
+            Size in pixels of the thumbnail of the photo. This is typically
+            shown in the photo browser view of the UI. Defaults to 100.
+        base : str, optional
+            If provided, store full-size and thumbnail images rooted at this
+            path. Defaults to the location of the media database.
+        replace : bool, optional
+            If True, replace existing files; if False, do not even generate the
+            file. Defaults to False.
+        '''
+        img = self._prepare_image(2 * full_size)
         base = base or os.path.dirname(db.DB)
-        for name, size in sizes:
+        for name, size in (('full', full_size), ('thumb', thumb_size)):
             p = os.path.join(base, name, self.thumb_path)
             if os.path.exists(p) and not replace:
                 continue
             dirname = os.path.dirname(p)
             if not os.path.exists(dirname):
                 os.makedirs(dirname)
-            img.thumbnail((3 * size, size), resample=PIL.Image.ANTIALIAS)
+            img.thumbnail((size, size), resample=PIL.Image.ANTIALIAS)
             img.save(p)
 
     def contrast(self, level):
