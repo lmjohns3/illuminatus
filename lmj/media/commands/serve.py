@@ -34,7 +34,9 @@ def static(path):
 @bottle.get('/img/<path:path>')
 def image(path):
     try:
-        return bottle.static_file(path, os.path.dirname(db.DB))
+        res = bottle.static_file(path, os.path.dirname(db.DB))
+        res.set_header('Cache-Control', 'no-cache, no-store')
+        return res
     except:
         pass
 

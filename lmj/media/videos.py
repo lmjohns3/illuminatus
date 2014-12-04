@@ -21,61 +21,50 @@ def mktemp():
 
 
 class Thumbnailer:
-    def __init__(self, path, size, fast=True):
-        self.size = self.working_size = size
+    def __init__(self, path, size, initial_size):
+        w, h = self.size = self.working_size = size
         self.path = path
         self.working_path = mktemp()
         os.symlink(path, self.working_path)
-        audio = '-c:a libfaac -b:a 160k'
-        video = '-c:v libx264 -preset medium -crf 20'
-        height = size[1]
-        if fast:
-            audio = '-c:a libfaac -b:a 80k'
-            video = '-c:v libx264 -preset ultrafast -crf 30'
-            height = 700
-        self.scale(height / size[1], audio=audio.split(), video=video.split())
+        self.audio = '-c:a libfaac -b:a 100k'.split()
+        self.video = '-c:v libx264 -preset ultrafast -crf 30'.split()
+        self.filters = []
+        self.scale(max(initial_size / w, initial_size / h))
 
     def __del__(self):
         if os.path.exists(self.working_path):
             if SCRATCH in self.working_path:
                 os.unlink(self.working_path)
 
-    def _filter(self, filter, output=None, audio=(), video=()):
-        cleanup = False
-        if output is None:
-            output = mktemp()
-            cleanup = True
-        cmd = ['ffmpeg', '-i', self.working_path]
-        cmd.extend(audio)
-        cmd.extend(video)
-        cmd.extend(['-vf', filter, output])
-        logging.debug('%s: running ffmpeg\n%s', self.path, ' '.join(cmd))
+    def run(self, output):
+        cmd = ['ffmpeg', '-i', self.working_path] + self.audio + self.video
+        for vf in self.filters:
+            cmd.append('-vf')
+            cmd.extend(vf.split())
+        cmd.append(output)
+        logging.info('%s: running ffmpeg\n%s', self.path, ' '.join(cmd))
         subprocess.check_output(cmd, stderr=subprocess.PIPE)
-        if cleanup:
-            if SCRATCH in self.working_path:
-                os.unlink(self.working_path)
-            self.working_path = output
 
     def saturation(self, level, **kwargs):
-        self._filter('hue=b={}'.format(level - 1), **kwargs)
+        self.filters.append('hue=b={}'.format(level - 1))
 
     def brightness(self, level, **kwargs):
-        self._filter('hue=s={}'.format(level), **kwargs)
+        self.filters.append('hue=s={}'.format(level))
 
     def scale(self, factor, **kwargs):
         w, h = self.working_size
         w = int(factor * w)
         w -= w % 2
         h = int(factor * h)
-        self._filter('scale={}:{}'.format(w, h), **kwargs)
+        self.filters.append('scale={}:{}'.format(w, h))
         self.working_size = w, h
 
     def crop(self, whxy, **kwargs):
-        self._filter('crop={}:{}:{}:{}'.format(*whxy), **kwargs)
+        self.filters.append('crop={}:{}:{}:{}'.format(*whxy))
         self.working_size = whxy[0], whxy[1]
 
     def rotate(self, degrees, **kwargs):
-        self._filter('rotate={}'.format(degrees), **kwargs)
+        self.filters.append('rotate={}'.format(degrees))
 
     def poster(self, size, path):
         w, h = self.working_size
@@ -83,13 +72,14 @@ class Thumbnailer:
             w = int(size * w / h)
             h = size
         cmd = ['ffmpeg', '-i', self.working_path, '-s', '{}x{}'.format(w, h), '-vframes', '1', path]
-        logging.debug('%s: running ffmpeg\n%s', self.path, ' '.join(cmd))
+        logging.info('%s: running ffmpeg\n%s', self.path, ' '.join(cmd))
         subprocess.check_output(cmd, stderr=subprocess.PIPE)
 
     def thumbnail(self, size, path):
         w, h = self.working_size
-        if h > size:
-            self.scale(size / h, output=path)
+        if h > size or w > size:
+            self.scale(max(size / w, size / h))
+            self.run(path)
         else:
             # already small enough, just copy the file.
             shutil.copyfile(self.working_path, path)
@@ -142,24 +132,33 @@ class Video(base.Media):
         tags.add('video')
         return util.normalized_tag_set(tags)
 
-    def make_thumbnails(self,
-                        base=None,
-                        sizes=(('full', 600), ('thumb', 100)),
-                        replace=False,
-                        fast=False):
-        '''Create a small video and save a preview image to disk.'''
-        base = base or os.path.dirname(db.DB)
-        nailer = Thumbnailer(self.path, size=self.frame_size, fast=fast)
+    def make_thumbnails(self, full_size=400, thumb_size=100, base=None):
+        '''Create a small video and save a preview image to disk.
+
+        Parameters
+        ----------
+        full_size : int, optional
+            Size in pixels of the small edge of the "full-size" thumbnail of the
+            video. This is typically shown in the editor view of the UI.
+            Defaults to 400.
+        thumb_size : int, optional
+            Size in pixels of the small edge of the poster image for the video.
+            This is typically shown in the browser view of the UI. Defaults to
+            100.
+        base : str, optional
+            If provided, store full-size and thumbnail images rooted at this
+            path. Defaults to the location of the media database.
+        '''
+        nailer = Thumbnailer(self.path, self.frame_size, int(1.2 * full_size))
         for op in self.ops:
             nailer.apply_op(op)
-        for name, size in sizes:
-            p = os.path.join(base, name, self.thumb_path)
-            if os.path.exists(p) and not replace:
-                continue
-            dirname = os.path.dirname(p)
-            if not os.path.exists(dirname):
-                os.makedirs(dirname)
-            if name == 'thumb':
-                nailer.poster(size, p.replace(self.EXTENSION, 'jpg'))
-            else:
-                nailer.thumbnail(size, p)
+
+        # create "full" size video preview.
+        base = base or os.path.dirname(db.DB)
+        nailer.thumbnail(
+            full_size, util.ensure_path(base, 'full', self.thumb_path))
+
+        # create poster images at "full" and "thumb" size.
+        pp = self.thumb_path.replace(self.EXTENSION, 'jpg')
+        nailer.poster(full_size, os.path.join(base, 'full', pp))
+        nailer.poster(thumb_size, os.path.join(base, 'thumb', pp))
