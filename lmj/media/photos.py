@@ -85,14 +85,10 @@ class Photo(base.Media):
         img = self._prepare_image(2 * full_size)
         base = base or os.path.dirname(db.DB)
         for name, size in (('full', full_size), ('thumb', thumb_size)):
-            p = os.path.join(base, name, self.thumb_path)
-            if os.path.exists(p) and not replace:
-                continue
-            dirname = os.path.dirname(p)
-            if not os.path.exists(dirname):
-                os.makedirs(dirname)
-            img.thumbnail((size, size), resample=PIL.Image.ANTIALIAS)
-            img.save(p)
+            p = util.ensure_path(base, name, self.thumb_path)
+            if replace or not os.path.exists(p):
+                img.thumbnail((size, size), resample=PIL.Image.ANTIALIAS)
+                img.save(p)
 
     def export(self, **sizes):
         '''Export images to the caller.

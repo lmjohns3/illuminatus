@@ -13,6 +13,17 @@ def stringify(x):
     return json.dumps(x, default=h)
 
 
+def ensure_path(*args):
+    p = os.path.join(*args)
+    dirname = os.path.dirname(p)
+    if not os.path.exists(dirname):
+        try:
+            os.makedirs(dirname)
+        except:
+            pass
+    return p
+
+
 def round_to_highest_digits(n, digits=1):
     '''Return n rounded to the top `digits` digits.'''
     n = float(n)
