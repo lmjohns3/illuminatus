@@ -55,7 +55,7 @@ class Photo(base.Media):
         img = PIL.Image.open(self.path)
         w, h = img.size
         if fast and h > fast or w > fast:
-            img = img.thumbnail((fast, fast), resample=PIL.Image.NEAREST)
+            img.thumbnail((fast, fast), resample=PIL.Image.NEAREST)
         orient = self.exif.get('Orientation')
         if orient == 'Rotate 90 CW': img = img.rotate(-90)
         if orient == 'Rotate 180': img = img.rotate(-180)
