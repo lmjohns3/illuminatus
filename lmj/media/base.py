@@ -154,8 +154,8 @@ class Media:
             except:
                 pass
 
-    def export(self, **sizes):
-        '''Export this media item by generating thumbnails of specific sizes.'''
+    def serialize(self, size):
+        '''Serialize this media item as a specific size.'''
         raise NotImplementedError
 
 

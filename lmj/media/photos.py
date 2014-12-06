@@ -85,47 +85,33 @@ class Photo(base.Media):
             img.thumbnail((size, size), resample=PIL.Image.ANTIALIAS)
             img.save(util.ensure_path(base, name, self.thumb_path))
 
-    def export(self, **sizes):
-        '''Export images to the caller.
+    def serialize(self, size):
+        '''Serialize this images as a string to the caller.
 
-        All parameters must be given as keyword arguments. The keys are treated
-        as the names of the images to produce (e.g., "full", "thumb", "email",
-        etc.), and the values specify the size of the exported image.
-
-        Each image size may be specified as:
-
-        - an integer, N: images will be shrunk to fit inside an N x N box
-
-        - two integers, (M, N): images will be shrunk to fit inside an M x N
-          box, applied to match the portrait/landscape orientation of the image
+        Parameters
+        ----------
+        size : int or (int, int)
+            If the size is a single integer, N, then images will be shrunk to
+            fit inside an N x N box. If the size is given as two integers,
+            (M, N), then images will be shrunk to fit inside an M x N box,
+            applied to match the portrait/landscape orientation of the image.
 
         Returns
         -------
-        Generates a sequence of named image tuples.
-
-        name : str
-            The first element of each generated pair is the name of the image,
-            as given in the keyword arguments to the method (e.g., "full",
-            "thumb", "email", etc.).
         image : str
-            The second string is the image data itself, serialized to a byte
-            string.
+            The image data, serialized to a byte string.
         '''
         img = self._prepare_image()
-        w, h = img.size
-        aspect = w / h
-        is_wide = w > h
-        for name, size in sorted(sizes.items(), key=lambda x: -x[1]):
-            if isinstance(size, int):
-                w = h = size
-            else:
-                w, h = size
-                if is_wide and h > w:
-                    w, h = h, w
-            img.thumbnail((w, h), resample=PIL.Image.ANTIALIAS)
-            s = io.BytesIO()
-            img.save(s)
-            yield name, s.getvalue()
+        if isinstance(size, int):
+            w = h = size
+        else:
+            w, h = size
+            if img.size[0] > img.size[1] and h > w:
+                w, h = h, w
+        img.thumbnail((w, h), resample=PIL.Image.ANTIALIAS)
+        s = io.BytesIO()
+        img.save(s)
+        return s.getvalue()
 
     def contrast(self, level):
         self._add_op(self.Ops.Contrast, level=level)
