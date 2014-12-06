@@ -83,6 +83,12 @@ def delete_media(id):
     m = db.find_one(id)
     db.delete(m.id, m.path)
 
+@bottle.delete('/media/<id:int>/ops/<idx:int>-<key>')
+def delete_op(id, idx, key):
+    m = db.find_one(id)
+    m.remove_op(idx, key)
+    return stringify(m.to_dict())
+
 
 @bottle.post('/photos/<id:int>/rotate')
 def rotate_photo(id):
