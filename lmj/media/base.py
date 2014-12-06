@@ -134,6 +134,17 @@ class Media:
         self.make_thumbnails()
         db.update(self)
 
+    def remove_op(self, index, key):
+        if not 0 <= index < len(self.ops):
+            return
+        if self.ops[index]['key'] != key:
+            logging.error('%s: op %d has key %s not %s',
+                          self.path, i, self.ops[index]['key'], key)
+            return
+        self.ops.pop(index)
+        self.make_thumbnails()
+        db.update(self)
+
     def cleanup(self):
         '''Remove thumbnails of this media item.'''
         base = os.path.dirname(db.DB)
