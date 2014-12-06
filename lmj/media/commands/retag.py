@@ -3,7 +3,6 @@ import datetime
 import lmj.media
 import os
 import sys
-import traceback
 
 cmd = climate.add_command('retag')
 cmd.add_argument('--replace', action='store_true',
