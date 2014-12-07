@@ -12,8 +12,6 @@ cmd.add_argument('--tag', default=[], nargs='+', metavar='TAG',
                  help='apply these TAGs to all imported photos')
 cmd.add_argument('--add-path-tags', default=0, type=int, metavar='N',
                  help='use N parent DIRs as tags for each imported item')
-cmd.add_argument('--workers', default=mp.cpu_count(), type=int, metavar='N',
-                 help='use N worker processes for importing')
 cmd.add_argument('source', nargs='+', metavar='PATH',
                  help='import photos from these PATHs')
 cmd.set_defaults(mod=sys.modules[__name__])
@@ -70,7 +68,7 @@ def main(args):
     errors = []
     queue = mp.Queue()
     workers = [mp.Process(target=process, args=(args, queue))
-               for _ in range(args.workers)]
+               for _ in range(mp.cpu_count())]
     [w.start() for w in workers]
     def cleanup():
         [queue.put(None) for _ in workers]
