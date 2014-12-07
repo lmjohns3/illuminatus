@@ -88,7 +88,7 @@ def find_one(id):
         return build_media(id, medium, path, meta)
 
 
-def find(path='', tags=(), before=None, after=None, offset=0, limit=1 << 31):
+def find(path='', ids=(), tags=(), before=None, after=None, offset=0, limit=1 << 31):
     '''Find multiple media pieces.'''
     sql = ('SELECT m.id, m.medium, m.path, m.meta '
            'FROM {tables} WHERE {wheres} '
@@ -97,13 +97,16 @@ def find(path='', tags=(), before=None, after=None, offset=0, limit=1 << 31):
     tables = ['media AS m']
     wheres = ['1 = 1']
     if before:
-        wheres.append('STAMP < ?')
+        wheres.append('stamp < ?')
         args.append(before)
     if after:
-        wheres.append('STAMP > ?')
+        wheres.append('stamp > ?')
         args.append(after)
+    if ids:
+        wheres.append('id IN ({})'.format(','.join('?' for _ in ids)))
+        args.extend(ids)
     if path:
-        wheres.append('PATH LIKE ?')
+        wheres.append('path LIKE ?')
         args.append(re.sub(r'\*|\[[^\]]+\]', '%', path))
     for i, t in enumerate(tags):
         tables.extend(['media_tag AS mt{}'.format(i), 'tag AS t{}'.format(i)])
