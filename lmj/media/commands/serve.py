@@ -1,12 +1,12 @@
 import bottle
 import climate
-import collections
+import datetime
+import io
 import multiprocessing as mp
 import os
-import random
 import sys
 
-from lmj.media import db
+from lmj.media import db, export
 from lmj.media.util import parse, stringify, tag_sort_key, tag_class
 
 cmd = climate.add_command('serve')
@@ -60,6 +60,30 @@ def list_media():
 @bottle.get('/media/<id:int>')
 def read_media(id):
     return stringify(db.find_one(id).to_dict())
+
+@bottle.get('/media/export')
+def download_media():
+    q = bottle.request.query
+    media = None
+    if q.ids:
+        media = db.find(ids=list(map(int, q.ids.split(','))))
+    elif q.tags:
+        media = db.find(tags=q.tags.split('|'))
+    buf = io.BytesIO()
+    export.export(
+        list(media),
+        output=buf,
+        sizes=list(map(int, (q.size or '').split(','))),
+        hide_tags=(q.hide or '').split('|'),
+        exif_tags=bool(q.exif),
+        datetime_tags=bool(q.datetime),
+        omnipresent_tags=bool(q.omnipresent),
+    )
+    fn = 'media-{}.zip'.format(datetime.datetime.now().strftime('%Y%m%d-%H%M%S'))
+    res = bottle.response
+    res.set_header('Content-Type', 'application/zip; charset=UTF-8')
+    res.set_header('Content-Disposition', 'attachment; filename="{}"'.format(fn))
+    return buf.getvalue()
 
 
 @bottle.put('/media/<id:int>')
