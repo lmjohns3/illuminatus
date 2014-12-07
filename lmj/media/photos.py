@@ -1,4 +1,5 @@
 import climate
+import io
 import math
 import os
 import PIL.Image
@@ -110,7 +111,7 @@ class Photo(base.Media):
                 w, h = h, w
         img.thumbnail((w, h), resample=PIL.Image.ANTIALIAS)
         s = io.BytesIO()
-        img.save(s)
+        img.save(s, 'JPEG')
         return s.getvalue()
 
     def contrast(self, level):
