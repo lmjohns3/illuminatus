@@ -44,10 +44,10 @@ def main(args):
 
     export.export(
         filter_excluded(db.find(tags=args.include), set(args.exclude)),
-        args.output,
-        args.size,
-        args.hide_tags,
-        args.show_exif_tags,
-        args.show_datetime_tags,
-        args.show_omnipresent_tags,
+        output=args.output,
+        sizes=args.size,
+        hide_tags=args.hide_tags,
+        exif_tags=args.show_exif_tags,
+        datetime_tags=args.show_datetime_tags,
+        omnipresent_tags=args.show_omnipresent_tags,
     )
