@@ -121,8 +121,8 @@ class Photo(base.Media):
         self._add_op(self.Ops.Autocontrast)
 
     def _apply_op(self, img, op):
-        logging.info('%s: applying op %r', self.path, op)
         key = op['key']
+        logging.info('%s: applying %s op', self.path, key)
         if key == self.Ops.Autocontrast:
             # http://opencvpython.blogspot.com/2013/03/histograms-2-histogram-equalization.html
             return PIL.ImageOps.autocontrast(img, op.get('cutoff', 0.5))
