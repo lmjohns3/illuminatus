@@ -68,10 +68,9 @@ class Thumbnailer:
 
     def poster(self, size, path):
         w, h = self.working_size
-        if h > size:
-            w, h = int(size * w / h), size
-        elif w > size:
-            w, h = size, int(size * h / w)
+        if h > size or w > size:
+            f = min(size / w, size / h)
+            w, h = int(f * w), int(f * h)
         cmd = ['ffmpeg', '-i', self.working_path, '-s', '{}x{}'.format(w, h), '-vframes', '1', path]
         logging.info('%s: running ffmpeg\n%s', self.path, ' '.join(cmd))
         subprocess.check_output(cmd, stderr=subprocess.PIPE)
