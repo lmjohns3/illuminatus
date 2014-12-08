@@ -56,6 +56,7 @@ class Thumbnailer:
         w = int(factor * w)
         w -= w % 2
         h = int(factor * h)
+        h -= h % 2
         self.filters.append('scale={}:{}'.format(w, h))
         self.working_size = w, h
 
