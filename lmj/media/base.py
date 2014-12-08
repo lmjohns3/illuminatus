@@ -139,7 +139,7 @@ class Media:
             return
         if self.ops[index]['key'] != key:
             logging.error('%s: op %d has key %s not %s',
-                          self.path, i, self.ops[index]['key'], key)
+                          self.path, index, self.ops[index]['key'], key)
             return
         self.ops.pop(index)
         self.make_thumbnails()
