@@ -89,13 +89,15 @@ def download_media():
 @bottle.put('/media/<id:int>')
 def update_media(id):
     m = db.find_one(id)
-    f = parse(list(bottle.request.forms)[0])
+    f = bottle.request.forms
+    # so annoying! https://github.com/defnull/bottle/issues/339
+    f = dict((k, f.getunicode(k)) for k in f)
     modified = False
     if 'stamp' in f:
         m.meta['stamp'] = f['stamp']
         modified = True
-    if 'userTags' in f:
-        m.meta['userTags'] = f['userTags']
+    if 'tags' in f:
+        m.meta['userTags'] = f['tags'].split('|')
         modified = True
     if modified:
         db.update(m)
