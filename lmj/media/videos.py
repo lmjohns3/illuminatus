@@ -21,13 +21,13 @@ def mktemp():
 
 
 class Thumbnailer:
-    def __init__(self, path, size, initial_size):
+    def __init__(self, path, size, initial_size, crf=30):
         w, h = self.size = self.working_size = size
         self.path = path
         self.working_path = mktemp()
         os.symlink(path, self.working_path)
         self.audio = '-c:a libfaac -b:a 100k'.split()
-        self.video = '-c:v libx264 -preset ultrafast -crf 30'.split()
+        self.video = '-c:v libx264 -preset ultrafast -crf {}'.format(crf).split()
         self.filters = []
         self.scale(min(initial_size / w, initial_size / h))
 
@@ -159,3 +159,28 @@ class Video(base.Media):
         pp = self.thumb_path.replace(self.EXTENSION, 'jpg')
         nailer.poster(full_size, os.path.join(base, 'full', pp))
         nailer.poster(thumb_size, os.path.join(base, 'thumb', pp))
+
+    def serialize(self, size):
+        '''Serialize this video to a byte string.
+
+        Parameters
+        ----------
+        size : int or (int, int)
+            If the size is a single integer, N, then the video will be shrunk to
+            fit inside an N x N box. If the size is given as two integers,
+            (M, N), then the video will be shrunk to fit inside an M x N box,
+            applied to match the portrait/landscape orientation of the video.
+
+        Returns
+        -------
+        video : str
+            The video data, serialized to a byte string.
+        '''
+        nailer = Thumbnailer(self.path, self.frame_size, size, crf=23)
+        for op in self.ops:
+            nailer.apply_op(op)
+        p = mktemp()
+        nailer.thumbnail(size, p)
+        buf = open(p, 'rb').read()
+        os.unlink(p)
+        return buf
