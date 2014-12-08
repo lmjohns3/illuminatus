@@ -97,7 +97,6 @@ def export(media,
     pieces = []
     for m in media:
         pieces.append(dict(
-            id=m.id,
             stamp=m.stamp,
             img=os.path.basename(m.thumb_path),
             tags=list(visible_tags(m))))
