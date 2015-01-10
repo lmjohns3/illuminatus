@@ -55,9 +55,9 @@ class Media:
             return set()
 
         def ordinal(n):
-            s = {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')
-            if 10 < n < 20: s = 'th'
-            return '%d%s' % (n, s)
+            if n % 100 in (11, 12, 13):
+                return '{}th'.format(n)
+            return ('{}' + {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')).format(n)
 
         # for computing the hour tag, we set the hour boundary at 48-past, so
         # that any time from, e.g., 10:48 to 11:47 gets tagged as "11am"
