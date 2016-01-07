@@ -1,5 +1,5 @@
 import climate
-import lmj.media
+import illuminatus
 import multiprocessing as mp
 import sys
 
@@ -8,7 +8,7 @@ cmd.add_argument('tag', nargs='+', metavar='TAG',
                  help='retag only photos with these TAGs')
 cmd.set_defaults(mod=sys.modules[__name__])
 
-logging = climate.get_logger('lmj.media.rethumb')
+logging = climate.get_logger(__name__)
 
 
 def thumb(m):
@@ -18,4 +18,4 @@ def thumb(m):
 
 
 def main(args):
-    mp.Pool().imap_unordered(thumb, lmj.media.db.find(tags=args.tag or []))
+    mp.Pool().imap_unordered(thumb, illuminatus.db.find(tags=args.tag or []))

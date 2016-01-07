@@ -11,7 +11,7 @@ from . import util
 
 logging = climate.get_logger(__name__)
 
-SCRATCH = 'lmj-media-scratch'
+SCRATCH = 'illuminatus-scratch'
 
 def mktemp():
     t = os.path.join(tempfile.gettempdir(), SCRATCH, uuid.uuid4().hex + '.mp4')

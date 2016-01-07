@@ -1,7 +1,7 @@
 import climate
 import datetime
 import fnmatch
-import lmj.media
+import illuminatus
 import os
 import sys
 import traceback
@@ -19,12 +19,12 @@ cmd.add_argument('-t', '--tag', nargs='+', metavar='TAG',
                  help='show only media with these TAGs')
 cmd.set_defaults(mod=sys.modules[__name__])
 
-logging = climate.get_logger('lmj.media.ls')
+logging = climate.get_logger(__name__)
 
 
 def main(args):
     pieces = sorted(
-        lmj.media.db.find(
+        illuminatus.db.find(
             after=args.after,
             before=args.before,
             path=args.path,
@@ -32,11 +32,11 @@ def main(args):
         ),
         key=lambda p: p.path)
     if args.json:
-        print(lmj.media.util.stringify([p.to_dict() for p in pieces]))
+        print(illuminatus.util.stringify([p.to_dict() for p in pieces]))
         return
     for p in pieces:
         print('{}  {}  {}'.format(
             p.stamp.strftime('%Y-%m-%dT%H:%M:%S'),
             p.path,
-            '|'.join(lmj.media.util.sort_tags(p.tag_set)),
+            '|'.join(illuminatus.util.sort_tags(p.tag_set)),
         ))

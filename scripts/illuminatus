@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 
 import climate
-import lmj.media
-import lmj.media.commands
+import illuminatus
+import illuminatus.commands
 
 climate.add_arg('--db', default='photo.db', help='connect to this database')
 
 
 def main(args):
-    lmj.media.db.init(args.db)
+    illuminatus.db.init(args.db)
     args.mod.main(args)
 
 

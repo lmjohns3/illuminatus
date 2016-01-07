@@ -1,6 +1,6 @@
 import climate
 import fnmatch
-import lmj.media
+import illuminatus
 import mimetypes
 import multiprocessing as mp
 import os
@@ -16,13 +16,13 @@ cmd.add_argument('source', nargs='+', metavar='PATH',
                  help='import photos from these PATHs')
 cmd.set_defaults(mod=sys.modules[__name__])
 
-logging = climate.get_logger('lmj.media.import')
+logging = climate.get_logger(__name__)
 
 
 def find_class_for(mime):
     '''Find a media class for the given mime type.'''
     if mime:
-        for cls in (lmj.media.Photo, lmj.media.Video):
+        for cls in (illuminatus.Photo, illuminatus.Video):
             for pattern in cls.MIME_TYPES:
                 if fnmatch.fnmatch(mime, pattern):
                     return cls
@@ -36,17 +36,17 @@ def maybe_import(args, path):
     if cls is None:
         logging.info('? %s %s', mime, path)
         return None
-    if lmj.media.db.exists(path):
+    if illuminatus.db.exists(path):
         logging.info('= %s %s', mime, path)
         return None
     try:
-        lmj.media.create(cls.MEDIUM, path, args.tag, args.add_path_tags)
+        illuminatus.create(cls.MEDIUM, path, args.tag, args.add_path_tags)
         logging.warn('+ %s %s', mime, path)
     except KeyboardInterrupt:
-        lmj.media.db.remove_path(path)
+        illuminatus.db.remove_path(path)
         return None
     except:
-        lmj.media.db.remove_path(path)
+        illuminatus.db.remove_path(path)
         _, exc, tb = sys.exc_info()
         return exc, traceback.format_tb(tb)
 

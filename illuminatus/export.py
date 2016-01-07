@@ -6,9 +6,9 @@ import os
 import re
 import zipfile
 
-from lmj.media.util import stringify, tag_class
+from illuminatus.util import stringify, tag_class
 
-logging = climate.get_logger('lmj.media.export')
+logging = climate.get_logger(__name__)
 
 
 def serialize(work, results):

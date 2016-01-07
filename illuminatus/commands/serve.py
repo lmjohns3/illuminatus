@@ -6,8 +6,8 @@ import multiprocessing as mp
 import os
 import sys
 
-from lmj.media import db, export
-from lmj.media.util import parse, stringify, tag_sort_key, tag_class
+from illuminatus import db, export
+from illuminatus.util import parse, stringify, tag_sort_key, tag_class
 
 cmd = climate.add_command('serve')
 cmd.add_argument('--host', default='localhost',

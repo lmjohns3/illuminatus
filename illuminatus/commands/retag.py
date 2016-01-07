@@ -1,6 +1,6 @@
 import climate
 import datetime
-import lmj.media
+import illuminatus
 import os
 import sys
 
@@ -17,11 +17,11 @@ cmd.add_argument('tag', nargs='+', metavar='TAG',
                  help='retag only photos with these TAGs')
 cmd.set_defaults(mod=sys.modules[__name__])
 
-logging = climate.get_logger('lmj.media.retag')
+logging = climate.get_logger(__name__)
 
 
 def main(args):
-    photos = list(lmj.media.db.find_tagged(args.tag))
+    photos = list(illuminatus.db.find_tagged(args.tag))
     for p in photos:
         tags = list(args.add)
         if args.add_path_tag:
@@ -29,7 +29,7 @@ def main(args):
         if not args.replace:
             tags.extend(p.user_tag_set)
 
-        p.meta['user_tags'] = sorted(lmj.media.util.normalized_tag_set(tags))
+        p.meta['user_tags'] = sorted(illuminatus.util.normalized_tag_set(tags))
         if args.exif:
             p.meta['exif_tags'] = sorted(p.read_exif_tags())
 
@@ -39,4 +39,4 @@ def main(args):
                      ', '.join(p.meta['exif_tags']),
                      )
 
-        lmj.media.db.update(p)
+        illuminatus.db.update(p)

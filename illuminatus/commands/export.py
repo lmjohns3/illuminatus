@@ -1,7 +1,7 @@
 import climate
 import sys
 
-from lmj.media import db, export
+from illuminatus import db, export
 
 cmd = climate.add_command('export')
 cmd.add_argument('--output', metavar='FILE',
@@ -24,7 +24,7 @@ cmd.add_argument('--path', default=[], nargs='+', metavar='FILE',
                  help='export FILEs (or load paths from @FILE)')
 cmd.set_defaults(mod=sys.modules[__name__])
 
-logging = climate.get_logger('lmj.media.export')
+logging = climate.get_logger(__name__)
 
 
 def filter_excluded(media, blacklist):

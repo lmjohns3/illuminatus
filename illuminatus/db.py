@@ -6,7 +6,7 @@ import sqlite3
 
 from .util import stringify
 
-logging = climate.get_logger('lmj.media.db')
+logging = climate.get_logger(__name__)
 
 DB = 'media.db'
 
@@ -184,7 +184,8 @@ def delete(id, hide_original_if_path_matches=None):
         dirname = os.path.dirname(piece.path)
         basename = os.path.basename(piece.path)
         try:
-            os.rename(piece.path, os.path.join(dirname, '.lmj-removed-' + basename))
+            os.rename(piece.path, os.path.join(
+                dirname, '.illuminatus-removed-' + basename))
         except:
             logging.exception('%s: error renaming source', piece.path)
 
