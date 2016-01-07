@@ -6,8 +6,14 @@ import illuminatus.commands
 
 climate.add_arg('--db', default='photo.db', help='connect to this database')
 
+cmd = climate.add_command('help')
+cmd.set_defaults(mod='help')
+
 
 def main(args):
+    if getattr(args, 'mod', 'help') == 'help':
+        climate.usage()
+        return
     illuminatus.db.init(args.db)
     args.mod.main(args)
 
