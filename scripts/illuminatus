@@ -14,12 +14,12 @@ cmd.set_defaults(mod='help')
 
 def main(args):
     if getattr(args, 'mod', 'help') == 'help':
-        climate.usage()
+        climate.print_help()
         return
     db = args.db or os.environ.get('ILLUMINATUS_DB')
     if not db:
         logging.error('no database specified!')
-        climate.usage()
+        climate.print_help()
         return
     illuminatus.db.init(db)
     args.mod.main(args)
