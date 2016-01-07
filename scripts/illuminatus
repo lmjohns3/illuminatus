@@ -3,8 +3,10 @@
 import climate
 import illuminatus
 import illuminatus.commands
+import logging
+import os
 
-climate.add_arg('--db', default='photo.db', help='connect to this database')
+climate.add_arg('--db', help='connect to this database')
 
 cmd = climate.add_command('help')
 cmd.set_defaults(mod='help')
@@ -14,7 +16,12 @@ def main(args):
     if getattr(args, 'mod', 'help') == 'help':
         climate.usage()
         return
-    illuminatus.db.init(args.db)
+    db = args.db or os.environ.get('ILLUMINATUS_DB')
+    if not db:
+        logging.error('no database specified!')
+        climate.usage()
+        return
+    illuminatus.db.init(db)
     args.mod.main(args)
 
 
