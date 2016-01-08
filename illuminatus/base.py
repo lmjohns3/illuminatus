@@ -9,6 +9,8 @@ from . import util
 
 logging = climate.get_logger(__name__)
 
+ORD = {1: 'st', 2: 'nd', 3: 'rd'}
+
 
 class Media:
     class Ops:
@@ -55,9 +57,8 @@ class Media:
             return set()
 
         def ordinal(n):
-            if n % 100 in (11, 12, 13):
-                return '{}th'.format(n)
-            return ('{}' + {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')).format(n)
+            suf = 'th' if n % 100 in (11, 12, 13) else ORD.get(n % 10, 'th')
+            return '{}{}'.format(n, suf)
 
         # for computing the hour tag, we set the hour boundary at 48-past, so
         # that any time from, e.g., 10:48 to 11:47 gets tagged as "11am"
