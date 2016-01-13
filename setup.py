@@ -5,7 +5,7 @@ setuptools.setup(
     name='illuminatus',
     version='0.0.1',
     packages=setuptools.find_packages(),
-    requires=['bottle', 'climate', 'pillow', 'numpy'],
+    requires=['bottle', 'climate', 'pillow'],
     scripts=['scripts/illuminatus'],
     author='Leif Johnson',
     author_email='leif@lmjohns3.com',
