@@ -27,7 +27,7 @@ class Thumbnailer:
         self.working_path = mktemp()
         os.symlink(path, self.working_path)
         self.audio = '-c:a libfaac -b:a 100k'.split()
-        self.video = '-c:v libx264 -preset ultrafast -crf {}'.format(crf).split()
+        self.video = '-c:v libx264 -pre ultrafast -crf {}'.format(crf).split()
         self.filters = []
         self.scale(min(initial_size / w, initial_size / h))
 
