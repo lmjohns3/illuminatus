@@ -20,16 +20,20 @@ cmd.add_argument('--workers', type=int, default=1, metavar='N',
                  help='launch N workers starting at the given port')
 cmd.set_defaults(mod=sys.modules[__name__])
 
-posted_float = lambda k: float(bottle.request.forms.get(k))
+
+def _posted_float(k):
+    float(bottle.request.forms.get(k))
 
 
 @bottle.get('/')
 def index():
     return bottle.static_file('index.html', os.curdir)
 
+
 @bottle.get('/static/<path:path>')
 def static(path):
     return bottle.static_file(path, os.curdir)
+
 
 @bottle.get('/img/<path:path>')
 def image(path):
@@ -57,9 +61,11 @@ def list_media():
             offset=int(req.query.offset or 0),
             limit=int(req.query.limit or 10))])
 
+
 @bottle.get('/media/<id:int>')
 def read_media(id):
     return stringify(db.find_one(id).to_dict())
+
 
 @bottle.get('/media/export')
 def download_media():
@@ -109,6 +115,7 @@ def delete_media(id):
     m = db.find_one(id)
     db.delete(m.id, m.path)
 
+
 @bottle.delete('/media/<id:int>/ops/<idx:int>-<key>')
 def delete_op(id, idx, key):
     m = db.find_one(id)
@@ -119,32 +126,37 @@ def delete_op(id, idx, key):
 @bottle.post('/photos/<id:int>/rotate')
 def rotate_photo(id):
     m = db.find_one(id)
-    m.rotate(degrees=posted_float('degrees'))
+    m.rotate(degrees=_posted_float('degrees'))
     return stringify(m.to_dict())
+
 
 @bottle.post('/photos/<id:int>/brightness')
 def brightness_photo(id):
     m = db.find_one(id)
-    m.brightness(level=posted_float('level'))
+    m.brightness(level=_posted_float('level'))
     return stringify(m.to_dict())
+
 
 @bottle.post('/photos/<id:int>/contrast')
 def contrast_photo(id):
     m = db.find_one(id)
-    m.contrast(level=posted_float('level'))
+    m.contrast(level=_posted_float('level'))
     return stringify(m.to_dict())
+
 
 @bottle.post('/photos/<id:int>/saturation')
 def saturation_photo(id):
     m = db.find_one(id)
-    m.saturation(level=posted_float('level'))
+    m.saturation(level=_posted_float('level'))
     return stringify(m.to_dict())
+
 
 @bottle.post('/photos/<id:int>/crop')
 def crop_photo(id):
     m = db.find_one(id)
-    m.crop(box=[posted_float(k) for k in 'x1 y1 x2 y2'.split()])
+    m.crop(box=[_posted_float(k) for k in 'x1 y1 x2 y2'.split()])
     return stringify(m.to_dict())
+
 
 @bottle.post('/photos/<id:int>/autocontrast')
 def autocontrast_photo(id):

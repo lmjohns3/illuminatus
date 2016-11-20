@@ -61,7 +61,7 @@ def process(args, queue):
         err = maybe_import(args, path)
         if err:
             exc, tb = err
-            logging.error('! %s %s', path, exc)#, ''.join(tb))
+            logging.error('! %s %s', path, exc)  # , ''.join(tb))
 
 
 def main(args):
@@ -70,9 +70,11 @@ def main(args):
     workers = [mp.Process(target=process, args=(args, queue))
                for _ in range(mp.cpu_count())]
     [w.start() for w in workers]
+
     def cleanup():
         [queue.put(None) for _ in workers]
         [w.join() for w in workers]
+
     try:
         for src in args.source:
             for base, dirs, files in os.walk(src):

@@ -1,0 +1,18 @@
+cache: apt
+sudo: false
+language: python
+python:
+  - "3.5"
+addons:
+  apt:
+    packages:
+    - imagemagick
+    - sox
+    - ffmpeg
+install:
+  - pip install pytest-pep8 pytest-cov python-coveralls climate
+  - python setup.py develop
+script:
+  - py.test -v --pep8 --cov=illuminatus --cov-report=term-missing
+after_success:
+  - coveralls

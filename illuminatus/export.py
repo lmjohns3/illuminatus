@@ -65,6 +65,7 @@ def export(media,
     # set up a function to get visible tags for a piece.
     hide_pattern = '^{}$'.format('|'.join(hide_tags))
     logging.info('hiding tags matching %s', hide_pattern)
+
     def visible_tags(m):
         ts = m.user_tag_set
         if exif_tags:
