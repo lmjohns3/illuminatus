@@ -4,7 +4,7 @@ import linnmon
 import mimetypes
 import os
 
-from .base import Media
+from .media import Media
 
 logging = climate.get_logger(__name__)
 

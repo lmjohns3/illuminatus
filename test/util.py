@@ -1,6 +1,7 @@
 import climate
 import gzip
 import illuminatus
+import illuminatus.media
 import os
 import pytest
 
@@ -13,7 +14,7 @@ MEDIA = pytest.mark.datafiles(os.path.join(TESTDATA, 'photo.jpg'),
                               os.path.join(TESTDATA, 'video.mp4'))
 
 TEST_DB = b'''[
-{"path": "/a/b/c/photo.jpg",
+{"path": "%(testdata)s/photo.jpg",
  "medium": "photo",
  "date": "2015-06-02T09:07",
  "tags": [
@@ -21,22 +22,22 @@ TEST_DB = b'''[
   {"name": "b", "type": "user", "sort": 0},
   {"name": "c", "type": "user", "sort": 0}
  ]},
-{"path": "/a/b/c/audio.wav",
+{"path": "%(testdata)s/audio.wav",
  "medium": "audio",
  "date": "2016-01-02T03:04",
  "tags": [
   {"name": "b", "type": "user", "sort": 0},
   {"name": "c", "type": "user", "sort": 0}
  ]},
-{"path": "/a/b/c/video.mp4",
+{"path": "%(testdata)s/video.mp4",
  "medium": "video",
  "date": "2010-03-09T05:03",
  "tags": [
   {"name": "c", "type": "user", "sort": 0}
- ]}]'''
+ ]}]''' % {b'testdata': TESTDATA.encode('utf-8')}
 
 
-class Item(illuminatus.base.Media):
+class Item(illuminatus.media.Media):
     EXTENSION = 'deb'  # probably not going to be a common media type?
     MIME_TYPES = ('*debian*package*', )
 

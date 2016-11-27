@@ -6,7 +6,6 @@ import hashlib
 import os
 
 from . import tools
-from . import util
 
 logging = climate.get_logger(__name__)
 
@@ -66,7 +65,7 @@ class Media(object):
     def tags(self):
         '''The set of tags currently applied to this item.'''
         if self._tags is None:
-            self._tags = set(util.Tag(**tag) for tag in self.rec['tags'])
+            self._tags = set(Tag(**tag) for tag in self.rec['tags'])
         return self._tags
 
     @property
@@ -97,7 +96,7 @@ class Media(object):
     @property
     def thumb(self):
         '''The relative filesystem path for this item's thumbnails.'''
-        id = hashlib.md5(self.rec['path']).hexdigest().lower()
+        id = hashlib.md5(self.rec['path'].encode('utf-8')).hexdigest().lower()
         return os.path.join(id[0:2], id[2:4], '{}.{}'.format(id, self.EXTENSION))
 
     def save(self):
@@ -199,7 +198,7 @@ class Media(object):
         if 'FocalLength' in meta:
             tags.add('{}mm'.format(highest(meta['FocalLength'][:-2])))
 
-        return set(util.Tag(type='meta', sort=0, name=tag.strip().lower())
+        return set(Tag(type='meta', sort=0, name=tag.strip().lower())
                    for tag in tags if tag.strip())
 
     def _build_datetime_tags(self):
@@ -222,7 +221,7 @@ class Media(object):
         # that any time from, e.g., 10:48 to 11:47 gets tagged as "11am"
         hour = self.stamp + datetime.timedelta(minutes=12)
 
-        return set(util.Tag(type='datetime', sort=s, name=t)
+        return set(Tag(type='datetime', sort=s, name=t)
                    for s, t in enumerate((
                            self.stamp.strftime('%Y'),                # 2009
                            self.stamp.strftime('%B'),                # january
@@ -238,7 +237,7 @@ class Media(object):
         tag : str
             A tag to add.
         '''
-        self.tags.add(util.Tag(sort=0, type='user', name=tag))
+        self.tags.add(Tag(sort=0, type='user', name=tag))
         self.rec['tags'] = [tag._asdict() for tag in sorted(self.tags)]
         self.save()
 
@@ -255,7 +254,7 @@ class Media(object):
         KeyError
             If this item does not have the given tag.
         '''
-        self.tags.remove(util.Tag(sort=0, type='user', name=tag))
+        self.tags.remove(Tag(sort=0, type='user', name=tag))
         self.rec['tags'] = [tag._asdict() for tag in sorted(self.tags)]
         self.save()
 
