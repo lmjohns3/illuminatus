@@ -21,8 +21,7 @@ def main(args):
         logging.error('no database specified!')
         climate.print_help()
         return
-    illuminatus.db.init(db)
-    args.mod.main(args)
+    args.mod.main(illuminatus.DB(db), args)
 
 
 if __name__ == '__main__':

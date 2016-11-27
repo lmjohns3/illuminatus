@@ -10,7 +10,7 @@ addons:
     - sox
     - ffmpeg
 install:
-  - pip install pytest-pep8 pytest-cov python-coveralls climate
+  - pip install pytest-pep8 pytest-cov pytest-datafiles python-coveralls
   - python setup.py develop
 script:
   - py.test -v --pep8 --cov=illuminatus --cov-report=term-missing

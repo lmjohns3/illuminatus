@@ -199,6 +199,10 @@ class Convert(Tool):
     def filters(self):
         return [f.split() for f in self._filters]
 
+    @property
+    def input_args(self):
+        return [self.path, '-auto-orient']
+
     def op_autocontrast(self, cutoff):
         self._filters.append(
             '-set histogram-threshold {} -normalize'.format(cutoff))
@@ -247,10 +251,10 @@ class Exiftool(Tool):
 
     @property
     def input_args(self):
-        return ['-json', self.path]
+        return ['-json', '-d', '%Y-%m-%d %H:%M:%S', self.path]
 
     def parse(self):
-        return json.loads(self.run().stdout)
+        return json.loads(self.run().stdout.read())
 
 
 class Sox(Tool):

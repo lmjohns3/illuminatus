@@ -1,7 +1,7 @@
 import climate
 import sys
 
-from illuminatus import db, export
+from illuminatus import export
 
 cmd = climate.add_command('export')
 cmd.add_argument('--output', metavar='FILE',
@@ -39,7 +39,7 @@ def filter_excluded(media, blacklist):
     return passed
 
 
-def main(args):
+def main(db, args):
     assert args.size, 'must include at least one --size'
 
     export.export(

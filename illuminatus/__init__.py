@@ -1,8 +1,7 @@
-from . import db
+from . import base
 from . import tools
 from . import util
 
-from .base import create
-from .photos import Photo
-from .sounds import Audio
-from .videos import Video
+from .db import DB
+from .base import Audio, Photo, Video
+from .util import Tag

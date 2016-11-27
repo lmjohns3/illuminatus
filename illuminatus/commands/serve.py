@@ -170,14 +170,14 @@ def catchall(path):
     return bottle.static_file('index.html', os.curdir)
 
 
-def run(host, port, reload):
-    bottle.run(host=host, port=port, reloader=reload)
+def run(db, host, port, reload):
+    bottle.run(db, host=host, port=port, reloader=reload)
 
 
-def main(args):
+def main(db, args):
     workers = []
     for port in range(args.port, args.port + args.workers):
-        a = args.host, port, args.reload
+        a = db, args.host, port, args.reload
         workers.append(mp.Process(target=run, args=a))
     [w.start() for w in workers]
     try:

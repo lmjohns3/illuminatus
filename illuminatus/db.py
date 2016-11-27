@@ -1,20 +1,19 @@
 import climate
+import fnmatch
 import linnmon
+import mimetypes
 import os
 
-from .photos import Photo
-from .sounds import Audio
-from .videos import Video
+from .base import Media
 
 logging = climate.get_logger(__name__)
 
 
-def _by_date_asc(rec):
-    return rec['date']
-
-
-def _by_date_desc(rec):
-    return -rec['date']
+def _subclasses(base):
+    '''Recursively yield all known subclasses of the given base class.'''
+    for cls in base.__subclasses__():
+        yield from _subclasses(cls)
+        yield cls
 
 
 class DB(object):
@@ -33,32 +32,94 @@ class DB(object):
         '''Get a list of all tag names in the database.'''
         return sorted(self.db.keys('tags'))
 
-    def _build(self, rec):
-        '''Build an object of the appropriate class given a db record.'''
-        for cls in (Photo, Video, Audio):
-            if rec.get('medium', '').lower() == cls.__name__.__lower__():
-                return cls(self, rec)
-        raise ValueError('unknown medium for record {}'.format(rec))
+    def create(self, path, tags=(), path_tags=0):
+        '''Build an object for representing the given path.
 
-    def select_by_path(self, *paths, sort='newest', offset=0, limit=1 << 31):
-        '''Find one or more media pieces by path.'''
+        Parameters
+        ----------
+        path : str
+            Filesystem path where the media item is stored.
+        tags : sequence of str, optional
+            Extra user tags to add to this item.
+        path_tags : int, optional
+            Extract user tags from this many path components, starting from the
+            right. For example, if `path` is "/foo/bar/baz/item.jpg" then
+            setting this to 0 will add no extra tags, and setting it to 2 would
+            add the tags 'bar' and 'baz'.
+
+        Returns
+        -------
+        item : `illuminatus.base.Media`
+            A media item.
+        '''
+        mime, _ = mimetypes.guess_type(path)
+        for cls in _subclasses(Media):
+            for pattern in cls.MIME_TYPES:
+                if fnmatch.fnmatch(mime, pattern):
+                    item = cls(self, dict(path=path, medium=cls.__name__.lower()))
+                    for tag in tags:
+                        item.add_tag(tag)
+                    components = os.path.dirname(path).split(os.sep)
+                    while components and path_tags > 0:
+                        item.add_tag(components.pop(-1))
+                        path_tags -= 1
+                    return item
+        raise ValueError('no known media types for path {}'.format(path))
+
+    def select_by_path(self, *paths, key='date', reverse=True, offset=0, limit=1 << 31):
+        '''Find one or more media pieces by path.
+
+        Parameters
+        ----------
+        paths : str
+            Get items from the database corresponding to these paths.
+        key : str, optional
+            Record field to use for sorting. Defaults to 'date'.
+        reverse : bool, optional
+            If True (the default), sort in descending order.
+        offset : int, optional
+            Return records starting at this offset. Defaults to 0.
+        limit : int, optional
+            Return only this many records. Defaults to ~2 billion.
+        '''
         return self._select(
-            self.db.select_with_any, 'path', paths, sort, offset, limit)
+            self.db.select_with_any, 'path', paths, key, reverse, offset, limit)
 
-    def select_tagged(self, *tags, sort='newest', offset=0, limit=1 << 31):
-        '''Find media pieces tagged with all the given tags.'''
+    def select_tagged(self, *tags, key='date', reverse=True, offset=0, limit=1 << 31):
+        '''Find one or more media pieces by tag.
+
+        This method returns records tagged with all of the specified tags.
+
+        Parameters
+        ----------
+        tags : sequence of str
+            Get items from the database with these tags.
+        key : str, optional
+            Record field to use for sorting. Defaults to 'date'.
+        reverse : bool, optional
+            If True (the default), sort in descending order.
+        offset : int, optional
+            Return records starting at this offset. Defaults to 0.
+        limit : int, optional
+            Return only this many records. Defaults to ~2 billion.
+        '''
         return self._select(
-            self.db.select_with_all, 'tags', tags, sort, offset, limit)
+            self.db.select_with_all, 'tags', tags, key, reverse, offset, limit)
 
-    def _select(self, select, name, keys, sort, offset, limit):
-        if sort.lower() == 'oldest':
-            sorter = _by_date_asc
-        elif sort.lower() == 'newest':
-            sorter = _by_date_desc
-        else:
-            raise ValueError('unknown sort method {}'.format(sort))
-        recs = select(name, *keys, sort=sorter)
-        return [self._build(rec) for rec in recs[offset:offset + limit]]
+    def _select(self, select, name, keys, key, reverse, offset, limit):
+        def field(rec):
+            '''Get the key field from a record for sorting.'''
+            return rec[key]
+
+        def build(rec):
+            '''Build an object of the appropriate class given a db record.'''
+            for cls in _subclasses(Media):
+                if rec.get('medium', '').lower() == cls.__name__.lower():
+                    return cls(self, rec)
+            raise ValueError('unknown medium for record {}'.format(rec))
+
+        recs = sorted(select(name, *keys), key=field, reverse=reverse)
+        return [build(rec) for rec in recs[offset:offset + limit]]
 
     def exists(self, path):
         '''Check whether a given path exists in the database.'''

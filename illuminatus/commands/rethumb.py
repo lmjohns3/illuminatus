@@ -1,5 +1,4 @@
 import climate
-import illuminatus
 import multiprocessing as mp
 import sys
 
@@ -11,11 +10,10 @@ cmd.set_defaults(mod=sys.modules[__name__])
 logging = climate.get_logger(__name__)
 
 
-def thumb(m):
-    '''Generate thumbnails for a single piece of media.'''
-    m.make_thumbnails()
-    logging.info(m.path)
+def thumb(item):
+    item.save()
+    logging.info(item.path)
 
 
-def main(args):
-    mp.Pool().imap_unordered(thumb, illuminatus.db.find(tags=args.tag or []))
+def main(db, args):
+    mp.Pool().imap_unordered(thumb, db.select_tagged(*args.tag))
