@@ -1,3 +1,4 @@
+import arrow
 import climate
 import json
 import math
@@ -27,15 +28,13 @@ class Command(list):
         '''Run this command as a subprocess, and wait for it to finish.'''
         logging.info('%s', ' '.join(self))
         PIPE = subprocess.PIPE
-        proc = subprocess.Popen(self, stdout=PIPE, stderr=PIPE)
-        proc.wait()
-        return proc
+        return subprocess.run(self, stdout=PIPE, stderr=PIPE)
 
 
 class Tool(object):
     '''A parent class for command-line tools to manipulate media files.'''
 
-    def __init__(self, path, shape):
+    def __init__(self, path, shape=None):
         self.path = path
         self.shape = shape
         self._filters = []
@@ -53,11 +52,11 @@ class Tool(object):
         return [self.path]
 
     def run(self, *args):
-        cmd = Command(self.BINARY)
+        cmd = Command([self.BINARY])
         cmd.extend(self.input_args)
         for filter in self.filters:
             cmd.extend(filter)
-        cmd.extend(*args)
+        cmd.extend(args)
         return cmd.run()
 
     def apply_op(self, handle, op):
@@ -254,7 +253,19 @@ class Exiftool(Tool):
         return ['-json', '-d', '%Y-%m-%d %H:%M:%S', self.path]
 
     def parse(self):
-        return json.loads(self.run().stdout.read())
+        def parse_datetime(obj):
+            for key, value in obj.items():
+                if isinstance(value, basestring) and DATETIME_RE.search(value):
+                    try:
+                        obj[key] = arrow.get(value).datetime
+                    except arrow.parser.ParserError:
+                        pass
+            return obj
+
+        proc = self.run()
+        if proc.returncode:
+            return {}
+        return json.loads(proc.stdout.decode('utf-8'), object_hook=parse_datetime)
 
 
 class Sox(Tool):
