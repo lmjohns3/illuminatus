@@ -1,10 +1,22 @@
-import arrow
-import climate
-import json
+import click
+import ujson
 import math
 import subprocess
 
-logging = climate.get_logger(__name__)
+
+FILTER_ARGS = dict(
+    rotate='degrees',
+    brightness='percent',
+    saturation='percent',
+    hue='degrees',
+    contrast='percent',
+    autocontrast='percent',
+    crop='x1 x2 y1 y2',
+    hflip='',
+    vflip='',
+)
+
+_DEBUG = 1
 
 
 class Command(list):
@@ -18,79 +30,82 @@ class Command(list):
     def args(self):
         return self[1:]
 
-    def start(self):
-        '''Run this command as a subprocess.'''
-        logging.info('%s', ' '.join(self))
-        PIPE = subprocess.PIPE
-        return subprocess.Popen(self, stdout=PIPE, stderr=PIPE)
-
     def run(self):
         '''Run this command as a subprocess, and wait for it to finish.'''
-        logging.info('%s', ' '.join(self))
+        if _DEBUG > 0:
+            click.echo(' '.join(self))
         PIPE = subprocess.PIPE
-        return subprocess.run(self, stdout=PIPE, stderr=PIPE)
+        proc = subprocess.run(self, stdout=PIPE, stderr=PIPE)
+        if _DEBUG > 1:
+            click.echo(proc.stdout)
+            click.echo(proc.stderr)
+        return proc
 
 
 class Tool(object):
     '''A parent class for command-line tools to manipulate media files.'''
 
-    def __init__(self, path, shape=None):
+    def __init__(self, path, shape=None, filters=()):
         self.path = path
         self.shape = shape
         self._filters = []
+        for kwargs in filters:
+            self.apply_filter(**kwargs)
 
     @property
     def filters(self):
         return self._filters
 
     @property
-    def known_ops(self):
-        return set(x.split('_')[1] for x in dir(self) if x.startswith('op_'))
-
-    @property
     def input_args(self):
         return [self.path]
 
     def run(self, *args):
-        cmd = Command([self.BINARY])
+        '''Run this tool.
+
+        Parameters
+        ----------
+        args : str
+            Extra arguments to add to the command line for this tool.
+        '''
+        binary = self.BINARY
+        if isinstance(binary, str):
+            binary = binary.split()
+        cmd = Command(binary)
         cmd.extend(self.input_args)
         for filter in self.filters:
             cmd.extend(filter)
         cmd.extend(args)
         return cmd.run()
 
-    def apply_op(self, handle, op):
-        if op['key'] not in self.known_ops:
-            logging.info('%s: unknown op %r', self.path, op)
-            return
-        logging.info('%s: applying op %r', self.path, op)
-        key = op['key']
-        if key == 'autocontrast':
-            self.op_autocontrast(op['cutoff'])
-        if key == 'contrast':
-            self.op_contrast(op['percent'])
-        if key == 'brightness':
-            self.op_brightness(op['percent'])
-        if key == 'saturation':
-            self.op_saturation(op['percent'])
-        if key == 'hue':
-            self.op_hue(op['percent'])
-        if key == 'scale':
-            self.op_scale(op['factor'])
-        if key == 'rotate':
+    def apply_filter(self, **kwargs):
+        '''Apply a filter using this tool.
+
+        Parameters
+        ----------
+        kwargs : dict
+            A dictionary containing filter arguments. It must contain a
+            "filter" key that names the filter to apply.
+        '''
+        if _DEBUG > 0:
+            click.echo('Applying filter {!r}'.format(kwargs))
+        filter = kwargs.pop('filter')
+        if filter == 'rotate':
+            angle = kwargs['degrees']
             w, h = self.shape
-            self.op_rotate(op['degrees'])
-            self.op_crop(Tool._crop_after_rotate(w, h, op['degrees']))
-        if key == 'crop':
+            self.filter_rotate(angle)
+            if abs(angle % 90) > 0.1:
+                self.filter_crop(*Tool._crop_after_rotate(w, h, angle))
+        elif filter == 'crop':
             w, h = self.shape
-            px1, py1, px2, py2 = op['box']
+            px1, py1 = kwargs['x1'], kwargs['y1']
+            px2, py2 = kwargs['x2'], kwargs['y2']
             x1, y1 = int(w * px1), int(h * py1)
             x2, y2 = int(w * px2), int(h * py2)
-            self.op_crop([x2 - x1, y2 - y1, x1, y1])
-
-    def export(self, shape, path):
-        self.scale(shape)
-        return self.run(path)
+            self.filter_crop(x2 - x1, y2 - y1, x1, y1)
+        else:
+            method = getattr(self, 'filter_{}'.format(filter))
+            method(**kwargs)
 
     @staticmethod
     def _crop_after_rotate(width, height, degrees):
@@ -124,6 +139,28 @@ class Tool(object):
             a = f * (w * sin(t) - h * cos(t))
             b = f * (h * sin(t) - w * cos(t))
             f = sin(t) * cos(t) / (sin(t)**2 - cos(t)**2)
+
+        Parameters
+        ----------
+        width : int
+            Width in pixels of original image before rotation.
+        height : int
+            Height in pixels of original image before rotation.
+        degrees : float
+            Degrees of rotation.
+
+        Returns
+        -------
+        width : int
+            Width of cropped region.
+        height : int
+            Height of cropped region.
+        x : int
+            Offset of left edge of cropped region from outer bounding box of
+            rotated image.
+        y : int
+            Offset of top edge of cropped region from outer bounding box of
+            rotated image.
         '''
         angle = math.radians(degrees)
         C = abs(math.cos(angle))
@@ -133,7 +170,7 @@ class Tool(object):
         f = C * S / (S * S - C * C)
         a = f * (width * S - height * C)
         b = f * (height * S - width * C)
-        return [int(a), int(b), int(W - a), int(H - b)]
+        return [int(W - 2 * a), int(H - 2 * b), int(a), int(b)]
 
 
 class Ffmpeg(Tool):
@@ -141,31 +178,31 @@ class Ffmpeg(Tool):
 
     BINARY = 'ffmpeg'
 
-    def __init__(self, path, shape, crf=30):
-        super().__init__(path, shape)
+    def __init__(self, path, shape, filters=(), crf=30):
+        super().__init__(path, shape, filters=filters)
         self.crf = crf
-        self._filters = []
 
     @property
     def input_args(self):
-        audio = '-c:a libfaac -b:a 100k'
-        video = '-c:v libx264 -pre ultrafast -crf {}'.format(self.crf)
-        return ['-i', self.path] + audio.split() + video.split()
+        return ['-i', self.path]
 
     @property
     def filters(self):
         return [f if isinstance(f, list) else ['-vf', f] for f in self._filters]
 
-    def op_saturation(self, percent):
+    def filter_autocontrast(self, percent):
+        self._filters.append('histeq=strength={}'.format(percent / 100))
+
+    def filter_saturation(self, percent):
         self._filters.append('hue=s={}'.format(percent / 100))
 
-    def op_brightness(self, percent):
+    def filter_brightness(self, percent):
         self._filters.append('hue=b={}'.format(percent / 100 - 1))
 
-    def op_hue(self, percent):
-        self._filters.append('hue=h={}'.format(percent * 180))
+    def filter_hue(self, degrees):
+        self._filters.append('hue=h={}'.format(degrees))
 
-    def op_scale(self, factor):
+    def filter_scale(self, factor):
         w, h = self.shape
         w = int(factor * w)
         w -= w % 2
@@ -174,25 +211,44 @@ class Ffmpeg(Tool):
         self._filters.append('scale={}:{}'.format(w, h))
         self.shape = w, h
 
-    def op_crop(self, whxy):
-        w, h, x, y = whxy
+    def filter_crop(self, w, h, x, y):
         self._filters.append('crop={}:{}:{}:{}'.format(w, h, x, y))
         self.shape = w, h
 
-    def op_rotate(self, degrees):
+    def filter_rotate(self, degrees):
         r = math.radians(degrees)
         self._filters.append('rotate={0}:ow=rotw({0}):oh=roth({0})'.format(r))
 
-    def thumbnail(self, shape, path):
-        w, h = self.shape
-        self._filters.append('-s {}x{} -vframes 1'.format(w, h))
-        return self.run(path)
+    def filter_hflip(self):
+        self._filters.append('hflip')
+
+    def filter_vflip(self):
+        self._filters.append('vflip')
+
+    def export(self, shape, path):
+        self._filters.append(
+            'scale={}:{}:force_original_aspect_ratio=decrease'.format(*shape))
+        self._filters.append('-c:a aac -b:a 192k'.split())
+        self._filters.append('-c:v libx264 -crf {}'.format(self.crf).split())
+        self._filters.append('-pix_fmt yuv420p -movflags +faststart'.split())
+        proc = self.run(path)
+        self._filters = self._filters[:-4]
+        return proc
+
+    def poster(self, shape, path):
+        self._filters.append(
+            'scale={}:{}:force_original_aspect_ratio=decrease'.format(*shape))
+        self._filters.append('thumbnail')
+        self._filters.append('-frames:v 1'.split())
+        proc = self.run(path)
+        self._filters = self._filters[:-3]
+        return proc
 
 
 class Convert(Tool):
     '''GraphicsMagick (or ImageMagick) is a tool for manipulating images.'''
 
-    BINARY = 'convert'
+    BINARY = 'gm convert'
 
     @property
     def filters(self):
@@ -202,31 +258,41 @@ class Convert(Tool):
     def input_args(self):
         return [self.path, '-auto-orient']
 
-    def op_autocontrast(self, cutoff):
+    def filter_autocontrast(self, percent):
         self._filters.append(
-            '-set histogram-threshold {} -normalize'.format(cutoff))
+            '-set histogram-threshold {} -normalize'.format(percent))
 
-    def op_contrast(self, percent):
+    def filter_contrast(self, percent):
         if percent < 100:
-            self._filters.append('-contrast')
-        if percent > 100:
             self._filters.append('+contrast')
+        if percent > 100:
+            self._filters.append('-contrast')
 
-    def op_brightness(self, percent):
+    def filter_brightness(self, percent):
         self._filters.append('-modulate {},100,100'.format(percent))
 
-    def op_saturation(self, percent):
+    def filter_saturation(self, percent):
         self._filters.append('-modulate 100,{},100'.format(percent))
 
-    def op_hue(self, percent):
-        self._filters.append('-modulate 100,100,{}'.format(percent))
+    def filter_hue(self, degrees):
+        while degrees < 0:
+            degrees += 360
+        if degrees > 180:
+            # map 181 degrees to -179, 270 to -90, etc.
+            degrees -= 360
+        self._filters.append('-modulate 100,100,{}'.format(degrees / 180))
 
-    def op_crop(self, whxy):
-        w, h, x, y = whxy
+    def filter_hflip(self):
+        self._filters.append('-flop')
+
+    def filter_vflip(self):
+        self._filters.append('-flip')
+
+    def filter_crop(self, w, h, x, y):
         self._filters.append('-crop {}x{}+{}+{}'.format(w, h, x, y))
         self.shape = w, h
 
-    def op_scale(self, factor):
+    def filter_scale(self, factor):
         w, h = self.shape
         w = int(factor * w)
         w -= w % 2
@@ -235,10 +301,11 @@ class Convert(Tool):
         self._filters.append('-scale {}x{}'.format(w, h))
         self.shape = w, h
 
-    def op_rotate(self, degrees):
+    def filter_rotate(self, degrees):
         self._filters.append('-rotate {}'.format(degrees))
 
     def thumbnail(self, shape, path):
+        # self._filters.append('-profile "*"')
         self._filters.append('-thumbnail {}x{}'.format(*shape))
         return self.run(path)
 
@@ -246,29 +313,17 @@ class Convert(Tool):
 class Exiftool(Tool):
     '''Exiftool is used to extract metadata from images and videos.'''
 
-    BINARY = 'exiftool'
-
-    @property
-    def input_args(self):
-        return ['-json', '-d', '%Y-%m-%d %H:%M:%S', self.path]
+    BINARY = ['exiftool', '-json', '-d', '%Y-%m-%d %H:%M:%S']
 
     def parse(self):
-        def parse_datetime(obj):
-            for key, value in obj.items():
-                if isinstance(value, basestring) and DATETIME_RE.search(value):
-                    try:
-                        obj[key] = arrow.get(value).datetime
-                    except arrow.parser.ParserError:
-                        pass
-            return obj
-
-        proc = self.run()
-        if proc.returncode:
-            return {}
-        return json.loads(proc.stdout.decode('utf-8'), object_hook=parse_datetime)
+        output = self.run().stdout.decode('utf-8').strip()
+        return ujson.loads(output)[0] if output.startswith('[{') else {}
 
 
 class Sox(Tool):
     '''Sox is a tool for manipulating sound files.'''
 
     BINARY = 'sox'
+
+    def thumbnail(self, shape, path):
+        pass

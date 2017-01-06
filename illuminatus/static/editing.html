@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css" />
+<link rel="stylesheet" href="static/editing.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-jcrop/2.0.4/css/Jcrop.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/featherlight/1.7.0/featherlight.min.css" />
+<body>
+
+<div id="columns">
+  <div id="tags-column" class="column"><ul id="tags"></ul></div>
+  <div id="thumbs-column" class="column"><ul id="thumbs"></ul></div>
+  <div id="editor-column" class="column closed"><div id="editor"></div></div>
+</div>
+
+<script id="tag-template" type="text/x-handlebars-template">
+  <li class="tag source-{{ this.source }}">{{ this.name }}</li>
+</script>
+
+<script id="thumb-template" type="text/x-handlebars-template">
+  <li class="thumb" id="item-{{ item.id }}">
+    {{#if video}}
+    <img src="thumb/{{ size }}/{{ poster }}">
+    <span class="video">🎥</span>
+    {{else}}
+    <img src="thumb/{{ size }}/{{ item.thumb }}">
+    {{/if}}
+    <span class="star">★</span>
+    <span class="cursor">✱</span> <!-- or: ➘ ✱ ❦ ➤ ➷ -->
+  </li>
+</script>
+
+<script id="export-template" type="text/x-handlebars-template">
+  <form id="export" action="/export/{{ query }}" method="post">
+    <table>
+      <tr>
+        <td><label for="sizes">Name:</label>
+        <td><input type="text" name="name" value="{{ name }}" size="12" />
+      <tr>
+        <td><label for="sizes">Exported size:</label>
+        <td><input type="text" name="sizes" value="1000" size="12" />
+      <tr>
+        <td><label for="hide_omnipresent_tags">Hide omnipresent tags:</label>
+        <td><input type="checkbox" name="hide_omnipresent_tags" value="1" />
+      <tr>
+        <td><label for="hide_metadata_tags">Hide metadata tags:</label>
+        <td><input type="checkbox" name="hide_metadata_tags" value="1" />
+      <tr>
+        <td><label for="hide_datetime_tags">Hide datetime tags:</label>
+        <td><input type="checkbox" name="hide_datetime_tags" value="1" />
+      <tr>
+        <td><label for="hide_tags">Hide additional tags:</label>
+        <td><input type="text" name="hide_tags" value="" size="12" />
+      <tr><td><td><button>Export</button>
+    </table>
+  </form>
+</script>
+
+<script id="editor-template" type="text/x-handlebars-template">
+  <div id="tools">
+    <ul class="toolbar" id="basic-tools">
+      <li><span class="dingbat">⚒</span> Edit
+        <ul>
+          <li><a id="magic"><span class="dingbat">☘</span> Magic</a></li>
+          <li></li>
+          <li><a id="brightness"><span class="dingbat">☀</span> Brightness</a></li>
+          <li><a id="contrast"><span class="dingbat">◑</span> Contrast</a></li>
+          <li><a id="saturation"><span class="dingbat">▧</span> Saturation</a></li>
+          <li><a id="hue"><span class="dingbat">🖌</span> Hue</a></li>
+          <li></li>
+          <li><a id="rotate"><span class="dingbat">↻</span> Rotate</a></li>
+          <li><a id="cw-90"><span class="dingbat">⤵</span> Clockwise 90&deg;</a></li>
+          <li><a id="ccw-90"><span class="dingbat">⤴</span> Counter-clockwise 90&deg;</a></li>
+          <li><a id="hflip"><span class="dingbat">↔</span> Flip Horizontal</a></li>
+          <li><a id="vflip"><span class="dingbat">↕</span> Flip Vertical</a></li>
+          <li></li>
+          <li><a id="crop"><span class="dingbat">✂</span> Crop</a></li>
+        </ul>
+      </li>
+      <li id="tags-tab"><span class="dingbat">🏷</span> Tags
+        <div id="editor-tags">
+          {{#each item.tags}}
+          <a class="tag source-{{ this.source }}">{{ this.name }}</a>
+          {{/each}}
+          <input id="tag-input" type="text">
+        </div>
+      </li>
+      <li><span class="dingbat">☞</span>Filters
+        <ul id="filters">
+          {{#each item.filters}}
+          <li><a data-filter="{{ this.filter }}" data-index="{{ @index }}"><span class="dingbat">✘</span> {{this.filter}}</a></li>
+          {{/each}}
+        </ul>
+      </li>
+      <li><span class="dingbat">⏰</span> {{ stamp.title }}
+        <ul>
+          <li><a id="">Y: {{ stamp.year }}</a></li>
+          <li><a id="">M: {{ stamp.month }}</a></li>
+          <li><a id="">D: {{ stamp.day }}</a></li>
+          <li><a id="">H: {{ stamp.hour }}</a></li>
+        </ul>
+      </li>
+      <li><span id="path">{{ item.path }}</span></li>
+    </ul>
+    <ul class="toolbar" id="ephemeral-tools">
+      <li id="cancel"><span class="dingbat">✘</span> Cancel</li>
+      <li id="commit"><span class="dingbat">✔</span> Save</li>
+      <li id="range"><input type="range" min="0" max="200" value="100" step="1"/><span id="range-value"></span></li>
+    </ul>
+  </div>
+  <div id="workspace">
+    <div id="grid"></div>
+    {{#if video}}
+    <video controls src="thumb/{{ size }}/{{ item.thumb }}?{{ uniq }}">
+    {{else}}
+    <img src="thumb/{{ size }}/{{ item.thumb }}?{{ uniq }}">
+    {{/if}}
+  </div>
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.5/handlebars.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-jcrop/2.0.4/js/Jcrop.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/corejs-typeahead/1.0.1/typeahead.jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/featherlight/1.7.0/featherlight.min.js"></script>
+<script type="text/javascript" src="static/item.js"></script>
+<script type="text/javascript" src="static/tags.js"></script>
+<script type="text/javascript" src="static/thumbs.js"></script>
+<script type="text/javascript" src="static/editing.js"></script>
