@@ -81,9 +81,9 @@ def rm(ctx, query, hide_original):
 
 @cli.command()
 @click.option('--output', metavar='FILE', help='save export zip to FILE')
-@click.option('--size', metavar='N', type=int, multiple=True,
+@click.option('--size', metavar='N [N...]', type=int, multiple=True,
               help='Save thumbnails to fit inside an NxN box.')
-@click.option('--hide-tags', multiple=True, metavar='REGEXP',
+@click.option('--hide-tags', multiple=True, metavar='REGEXP [REGEXP...]',
               help='Exclude tags matching REGEXP from exported items.')
 @click.option('--hide-datetime-tags', default=False, is_flag=True,
               help='Include tags related to timestamp data.')
@@ -105,11 +105,11 @@ def export(ctx, query, size, **kwargs):
 
 
 @cli.command('import')
-@click.option('--tag', multiple=True, metavar='TAG',
+@click.option('--tag', multiple=True, metavar='TAG [TAG...]',
               help='Add TAG to all imported items.')
 @click.option('--path-tags', default=0, metavar='N',
               help='Add N parent directories as tags.')
-@click.option('--size', metavar='N', type=int, multiple=True,
+@click.option('--size', metavar='N [N...]', type=int, multiple=True,
               help='Save thumbnails to fit inside an NxN box.')
 @click.argument('source', nargs=-1)
 @click.pass_context
@@ -126,8 +126,8 @@ def import_(ctx, tag, path_tags, size, source):
 @cli.command()
 @click.option('--stamp', type=str,
               help='Modify the timestamp of matching records.')
-@click.option('--add-tag', type=str, multiple=True, metavar='TAG')
-@click.option('--remove-tag', type=str, multiple=True, metavar='TAG')
+@click.option('--add-tag', type=str, multiple=True, metavar='TAG [TAG...]')
+@click.option('--remove-tag', type=str, multiple=True, metavar='TAG [TAG...]')
 @click.option('--add-path-tags', default=0, metavar='N',
               help='Add N parent directories as tags.')
 @click.argument('query', nargs=-1)
@@ -164,7 +164,7 @@ def modify(ctx, query, add_tag, remove_tag, add_path_tags, stamp):
 
 @cli.command()
 @click.option('--root', metavar='PATH', help='Save thumbnails under PATH.')
-@click.option('--size', metavar='N', type=int, multiple=True,
+@click.option('--size', metavar='N [N...]', type=int, multiple=True,
               help='Save thumbnails to fit inside an NxN box.')
 @click.argument('query', nargs=-1)
 @click.pass_context
