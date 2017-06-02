@@ -11,6 +11,7 @@ addons:
     - ffmpeg
 install:
   - pip install pytest-pep8 pytest-cov pytest-datafiles python-coveralls
+  - pip install arrow click colorama flask parsimonious ujson
   - python setup.py develop
 script:
   - py.test -v --pep8 --cov=illuminatus --cov-report=term-missing
