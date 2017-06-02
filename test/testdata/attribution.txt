@@ -1,0 +1,8 @@
+video.ogv: CC-BY-NC, produced by electricsheep.org
+https://archive.org/download/electricsheep-flock-244-32500-2/00244=32592=22973=22551.ogv
+
+photo.jpg: CC-BY-SA, taken by wikipedia author Heliconsoft
+https://commons.wikimedia.org/wiki/File:Test_image_to_check_how_exif_fields_are_accepted_by_wiki.jpg
+
+audio.mp3: Public Domain
+https://ia802609.us.archive.org/9/items/Free_20s_Jazz_Collection/jinglbel_64kb.mp3
