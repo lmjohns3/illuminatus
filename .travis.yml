@@ -5,10 +5,13 @@ python:
   - "3.5"
 addons:
   apt:
+    sources:
+      - trusty-media
     packages:
-    - imagemagick
-    - sox
-    - ffmpeg
+      - libimage-exiftool-perl
+      - imagemagick
+      - sox
+      - ffmpeg
 install:
   - pip install pytest-pep8 pytest-cov pytest-datafiles python-coveralls
   - pip install arrow click colorama flask parsimonious ujson
