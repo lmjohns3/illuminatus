@@ -9,7 +9,7 @@ addons:
       - trusty-media
     packages:
       - libimage-exiftool-perl
-      - imagemagick
+      - graphicsmagick
       - sox
       - ffmpeg
 install:
