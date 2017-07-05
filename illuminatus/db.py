@@ -212,7 +212,7 @@ class QueryParser(parsimonious.NodeVisitor):
         self.ops.append(lambda ids: ids[node.text])
 
 
-class _DebugCursor:
+class _DebugCursor(object):
     def __init__(self, cur):
         self.cur = cur
 
@@ -229,6 +229,8 @@ class DB(object):
     def __init__(self, path):
         self.path = os.path.abspath(os.path.expanduser(path))
         self.root = os.path.dirname(self.path)
+        if not os.path.exists(self.path):
+            self.setup()
 
     @property
     def tags(self):
@@ -249,7 +251,9 @@ class DB(object):
         cur.close()
 
     def setup(self):
-        '''Set up the database schema.'''
+        '''Set up the database file and initial schema.'''
+        if not os.path.isdir(self.root):
+            os.makedirs(self.root)
         with self._cursor() as cur:
             for sql in _SCHEMA.split(';'):
                 if sql.strip():
