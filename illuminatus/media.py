@@ -1,4 +1,5 @@
 import arrow
+import bisect
 import click
 import collections
 import datetime
@@ -58,7 +59,86 @@ class Tag(collections.namedtuple('TagBase', 'name source sort')):
         return False
 
 
-class Media:
+class Format(object):
+    '''A POD class representing an export file format specification.
+
+    Attributes
+    ----------
+    extension : str
+        Filename extension.
+    bbox : int
+        Maximum size of the output. For photos and videos, exported frames must
+        fit within a box of this size, while preserving the original aspect
+        ratio.
+    fps : str
+        Frames per second when exporting audio or video. For videos this can
+        be a rational number like "30/1.001" or a basic frame rate like "10".
+    channels : int
+        Number of channels in exported audio files.
+    palette : int
+        Number of colors in the palette for exported animated GIFs.
+    vcodec : str
+        Codec to use for exported video.
+    acodec : str
+        Name of an audio codec to use when exporting videos. If None, remove
+        audio from exported videos.
+    abitrate : str
+        Bitrate specification for audio in exported videos. If None, remove
+        audio from exported videos.
+    crf : int
+        Quality scale for exporting videos.
+    preset : str
+        Speed preset for exporting videos.
+    '''
+
+    def __init__(self, ext=None, bbox=None, fps=None, channels=1, palette=255,
+                 acodec='aac', abitrate='128k', vcodec='libx264', crf=30,
+                 preset='medium'):
+        self.ext = ext
+        self.bbox = bbox
+        if isinstance(bbox, int):
+            self.bbox = (bbox, bbox)
+        self.fps = fps
+        self.channels = channels
+        self.acodec = acodec
+        self.abitrate = abitrate
+        self.palette = palette
+        self.vcodec = vcodec
+        self.crf = crf
+        self.preset = preset
+
+    def __str__(self):
+        if self.bbox:
+            return '{}x{}'.format(*self.bbox)
+        if self.fps:
+            return str(self.fps)
+        if self.abitrate:
+            return str(self.abitrate)
+        return 'media'
+
+    @classmethod
+    def parse(cls, s):
+        kwargs = {}
+        for item in s.split(','):
+            if '=' in item:
+                key, value = item.split('=', 1)
+            elif re.match(r'\d+(x\d+)?', item):
+                key, value = 'bbox', item
+            else:
+                key, value = 'ext', item
+            if key == 'bbox':
+                if 'x' in value:
+                    w, h = value.split('x')
+                    value = (int(w), int(h))
+                else:
+                    value = (int(value), int(value))
+            if hasattr(value, 'isdigit') and value.isdigit():
+                value = int(value)
+            kwargs[key] = value
+        return cls(**kwargs)
+
+
+class Media(object):
     '''A base class for different types of media.'''
 
     EXTENSION = None
@@ -148,14 +228,6 @@ class Media:
         return hashlib.md5(self.path.encode('utf-8')).hexdigest().lower()
 
     @property
-    def thumbnail_path(self):
-        '''The relative filesystem path for this item's thumbnails.'''
-        id = self.path_hash
-        name = '{}-{}.{}'.format(
-            os.path.splitext(self.basename)[0], id[-8:], self.EXTENSION)
-        return os.path.join(id[0:2], id[2:4], name)
-
-    @property
     def media_id(self):
         '''Database id for this item.'''
         return self.rec['id']
@@ -165,38 +237,55 @@ class Media:
         self.rec.update(self._get_record_updates())
         self.rec['stamp'] = str(self.stamp)
         self.rec['meta'] = self.meta
-        self.rec['thumb'] = self.thumbnail_path
-        self.rebuild_tags()
+        self.rec['tags'] = self.rebuild_tags()
         self.db.update(self.rec)
 
-    def thumbnail(self, size, root):
-        '''Save a "thumbnailed" version of this media item.
+    def rebuild_tags(self):
+        '''Rebuild the tag list for this media item, and clear the cache.
+
+        Returns
+        -------
+        The rebuilt list of tags.
+        '''
+        self.rec['tags'] = [
+            dict(tag._asdict()) for tag in sorted(
+                set(t for t in self.tags if t.source == Tag.USER) |
+                self._build_metadata_tags() |
+                self._build_datetime_tags())]
+        self._tags = None
+        return self.rec['tags']
+
+    def export(self, fmt=None, root=None, **kwargs):
+        '''Export a version of this media item to another location.
 
         Parameters
         ----------
-        size : int
-            Export media with the given size under the `root`.
-        root : str
-            Save thumbnails under this root path.
+        fmt : Format
+            Export media with the given `Format`.
+        root : str, optional
+            Save exported media under this root path. If not given, the media
+            will be exported to an "internal" subdirectory under the directory
+            containing the illuminatus database; these "internal exports" will
+            be deleted automatically if the corresponding media item is deleted.
         '''
-        path = os.path.join(root, str(size), self.thumbnail_path)
-        dirname = os.path.dirname(path)
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
-        self._thumbnail(size, path)
+        if fmt is None:
+            fmt = Format(**kwargs)
+        hash = self.path_hash
+        ext = fmt.ext or self.EXTENSION
+        if root is None:
+            name = '{}.{}'.format(hash[-16:], ext)
+            root = os.path.join(self.db.root, str(fmt), hash[0:2], hash[2:4])
+        else:
+            name = '{}_{}.{}'.format(self.stamp.format('YYYYMMDD'), hash[-8:], ext)
+        if not os.path.exists(root):
+            os.makedirs(root)
+        self._export(fmt, os.path.join(root, name))
 
-    def _thumbnail(self, size, path):
-        raise NotImplemented
-
-    def rebuild_tags(self):
-        '''Rebuild the tags for this media item using current metadata.'''
-        tags = (set(tag for tag in self.tags if tag.source == Tag.USER) |
-                self._build_metadata_tags() | self._build_datetime_tags())
-        self.rec['tags'] = [dict(tag._asdict()) for tag in sorted(tags)]
-        self._tags = None
+    def _export(self, fmt, output):
+        self.TOOL(self.path, self.shape, self.filters).export(fmt, output)
 
     def delete(self, hide_original=False):
-        '''Remove thumbnails for this media item.
+        '''Remove exported media for this media item.
 
         WARNING: If `hide_original` is True, the original file will be renamed
         with a hidden (dot) prefix. These hidden prefix files can be garbage
@@ -213,26 +302,21 @@ class Media:
         green_path = click.style(self.path, fg='green')
         click.echo('Removed {} from the database'.format(green_path))
 
-        def longest(xs):
-            max_length = 0
-            max_item = None
-            for x in xs:
-                if len(x) > max_length:
-                    max_length = len(x)
-                    max_item = x
-            return max_item
-
-        base = os.path.splitext(self.thumbnail_path)[0]
-        paths = set(glob.glob(os.path.join(self.db.root, '*', base + '*')))
+        hash = self.path_hash
+        pattern = os.path.join(
+            self.db.root, '*', hash[0:2], hash[2:4], hash[-16:] + '*')
+        paths = sorted((len(p), p) for p in glob.glob(pattern))
         while paths:
-            path = longest(paths)
-            paths.remove(path)
-            if path != self.db.root:
-                try:
-                    os.unlink(path)
-                    paths.add(os.path.dirname(path))
-                except:
-                    pass
+            path = paths.pop()
+            if path == self.db.root:
+                continue
+            try:
+                os.unlink(path)
+                dirname = os.path.dirname(path)
+                elem = (len(dirname), dirname)
+                paths.insert(bisect.bisect(paths, elem), elem)
+            except:
+                pass
 
         # if desired, hide the original file referenced by this item.
         if hide_original:
@@ -433,29 +517,24 @@ class Media:
 class Photo(Media):
     EXTENSION = 'jpg'
     MIME_TYPES = ('image/*', )
-
-    def _thumbnail(self, size, path):
-        tool = tools.Convert(self.path, self.shape, self.filters)
-        tool.thumbnail((size, size), path)
+    TOOL = tools.Convert
 
 
 class Video(Media):
     EXTENSION = 'mp4'
     MIME_TYPES = ('video/*', )
+    TOOL = tools.Ffmpeg
 
-    def _thumbnail(self, size, path):
-        tool = tools.Ffmpeg(self.path, self.shape, self.filters)
-        tool.poster((size, size), path.replace('.mp4', '.jpg'))
-        tool.export((size, size), path)
+    def _export(self, fmt, output):
+        super()._export(fmt, output)
+        poster = os.path.splitext(output)[0] + '.jpg'
+        self.TOOL(self.path, self.shape, self.filters).export(fmt, poster)
 
 
 class Audio(Media):
     EXTENSION = 'mp3'
     MIME_TYPES = ('audio/*', )
+    TOOL = tools.Sox
 
     def _load_metadata(self):
         return {}
-
-    def _thumbnail(self, size, path):
-        tool = tools.Sox(self.path, self.shape, self.filters)
-        tool.thumbnail((size,), path)

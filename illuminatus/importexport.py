@@ -1,6 +1,7 @@
 import click
 import collections
 import contextlib
+import glob
 import multiprocessing as mp
 import os
 import re
@@ -32,15 +33,17 @@ def workqueue(jobs, callback, num_workers=mp.cpu_count()):
     [jobs_queue.put(None) for w in workers]
     try:
         yield results_queue
-    except KeyboardInterrupt:
+    except:
         # empty the jobs queue to force workers to halt.
         while not jobs_queue.empty():
             jobs_queue.get(False)
+        raise
     [w.join() for w in workers]
 
 
-class Importer:
-    '''
+class Importer(object):
+    '''A class for importing media into the database.
+
     Parameters
     ----------
     db : str
@@ -49,16 +52,22 @@ class Importer:
         Extra tags to add to all imported items.
     path_tags : int
         Number of parent directory names to add as tags for each imported item.
-    sizes : list of int
-      A list of integers giving the sizes of square bounding boxes for
-      thumbnails to be generated.
+    audio_formats : list of Format
+      A list of Format tuples giving the formats for audio thumbnails.
+    photo_formats : list of Format
+      A list of Format tuples for photo thumbnails.
+    video_formats : list of Format
+      A list of Format tuples for video thumbnails.
     '''
 
-    def __init__(self, db, tags, path_tags, sizes):
+    def __init__(self, db, tags, path_tags, audio_formats=(), video_formats=(),
+                 photo_formats=()):
         self.db = DB(db)
         self.tags = tags
         self.path_tags = path_tags
-        self.sizes = sizes
+        self.audio_formats = audio_formats
+        self.photo_formats = photo_formats
+        self.video_formats = video_formats
 
     def walk(self, roots):
         '''Recursively visit all files under the given root directories.
@@ -73,12 +82,17 @@ class Importer:
         Filenames under each of the given root paths.
         '''
         for src in roots:
-            for base, dirs, files in os.walk(src):
-                dots = [n for n in dirs if n.startswith('.')]
-                [dirs.remove(d) for d in dots]
-                for name in files:
-                    if not name.startswith('.'):
-                        yield os.path.join(base, name)
+            for match in glob.glob(src):
+                match = os.path.abspath(match)
+                if os.path.isdir(match):
+                    for base, dirs, files in os.walk(match):
+                        dots = [n for n in dirs if n.startswith('.')]
+                        [dirs.remove(d) for d in dots]
+                        for name in files:
+                            if not name.startswith('.'):
+                                yield os.path.abspath(os.path.join(base, name))
+                else:
+                    yield match
 
     def run(self, roots):
         '''Run the import process in parallel on the given root paths.
@@ -101,11 +115,15 @@ class Importer:
         '''
         try:
             if self.db.exists(path):
-                click.secho('= Already have {}'.format(path), fg='gray')
+                click.echo('{} Already have {}'.format(
+                    click.style('=', fg='blue'),
+                    click.style(path, fg='red')))
                 return
             item = self.db.create(path)
             if item is None:
-                click.secho('? Unknown {}'.format(path), fg='yellow')
+                click.echo('{} Unknown {}'.format(
+                    click.style('?', fg='yellow'),
+                    click.style(path, fg='red')))
                 return
             for tag in self.tags:
                 item.add_tag(tag)
@@ -113,9 +131,12 @@ class Importer:
             for i in range(self.path_tags):
                 item.add_tag(components[i])
             item.save()
-            for size in self.sizes:
-                item.thumbnail(size, self.db.root)
-            click.secho('+ Added {}'.format(path))
+            cls = item.__class__.__name__.lower()
+            for fmt in getattr(self, '{}_formats'.format(cls)):
+                item.export(fmt=fmt)
+            click.echo('{} Added {}'.format(
+                    click.style('+', fg='green'),
+                    click.style(path, fg='red')))
         except KeyboardInterrupt:
             self.db.delete(path)
         except:
@@ -124,7 +145,7 @@ class Importer:
             click.echo('! Error {} {}'.format(path, exc))  # , ''.join(tb))
 
 
-class Exporter:
+class Exporter(object):
     '''Export media content to a zip file on disk.
 
     Parameters
@@ -133,13 +154,23 @@ class Exporter:
         All tags defined in the database.
     items : list of :class:`Media`
         A list of the media items to export.
+    audio_formats : list of Format
+      A list of Format tuples giving the formats for audio thumbnails.
+    photo_formats : list of Format
+      A list of Format tuples for photo thumbnails.
+    video_formats : list of Format
+      A list of Format tuples for video thumbnails.
     '''
 
-    def __init__(self, all_tags, items):
+    def __init__(self, all_tags, items, audio_formats=(), video_formats=(),
+                 photo_formats=()):
         self.all_tags = all_tags
         self.items = items
+        self.audio_formats = audio_formats
+        self.photo_formats = photo_formats
+        self.video_formats = video_formats
 
-    def run(self, output, sizes, hide_tags=(), hide_metadata_tags=False,
+    def run(self, output, hide_tags=(), hide_metadata_tags=False,
             hide_datetime_tags=False, hide_omnipresent_tags=False):
         '''Export media to a zip archive.
 
@@ -153,10 +184,6 @@ class Exporter:
         output : str or file
             The name of a zip file to save, or a file-like object to write zip
             content to.
-        sizes : list of int
-            A list of sizes to export media to. Each media item being
-            exported will be resized (if needed) to fit inside a square box of
-            the given size.
         hide_tags : list of str, optional
             A list of regular expressions matching tags to be excluded from the
             export information. For example, '^a' will exclude all tags
@@ -195,7 +222,6 @@ class Exporter:
 
         with tempfile.TemporaryDirectory() as root:
             index = os.path.join(root, 'index.json')
-            self.sizes = sizes
             self.root = root
             # export thumbnails in parallel, create index at the same time.
             with workqueue(self.items, self), open(index, 'w') as handle:
@@ -210,11 +236,12 @@ class Exporter:
 
         click.echo('Exported {} items to {}'.format(
             click.style(str(len(self.items)), fg='cyan'),
-            click.style(output, fg='green')))
+            click.style(output, fg='red')))
 
     def __call__(self, item):
-        for size in self.sizes:
-            item.thumbnail(size, self.root)
+        cls = item.__class__.__name__.lower()
+        for fmt in getattr(self, '{}_formats'.format(cls)):
+            item.export(fmt=fmt, root=self.root)
 
 
 # This is mostly from zipfile.py in the Python source.

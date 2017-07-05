@@ -1,32 +1,45 @@
 import click
 import os
+import sys
 
 from .db import DB
-from .media import Tag
+from .media import Tag, Format
 from .importexport import Importer, Exporter
-
-_DEFAULT_SIZES = (200, 1000)
 
 
 @click.group()
 @click.option('--db', envvar='ILLUMINATUS_DB', metavar='PATH',
               help='Load illuminatus database from PATH.')
+@click.option('--audio-format', metavar='SPEC [SPEC...]', multiple=True,
+              default=['abitrate=128k'],
+              help='Save audio thumbnails in these formats.')
+@click.option('--photo-format', metavar='SPEC [SPEC...]', multiple=True,
+              default=['100', '800'],
+              help='Save photo thumbnails in these formats.')
+@click.option('--video-format', metavar='SPEC [SPEC...]', multiple=True,
+              default=['100,acodec=', '800'],
+              help='Save audio thumbnails in these formats.')
 @click.pass_context
-def cli(ctx, db):
+def cli(ctx, db, **kwargs):
     '''Command-line interface for media management.'''
+    # Don't require a database for getting help.
+    if ctx.invoked_subcommand == 'query' or '--help' in sys.argv:
+        return
+
     if not db:
         raise click.UsageError('no --database specified!')
-    ctx.obj = dict(db=db)
+
+    ctx.obj = dict(db=db, formats=dict(
+        audio_formats=[Format.parse(s) for s in kwargs['audio_format']],
+        photo_formats=[Format.parse(s) for s in kwargs['photo_format']],
+        video_formats=[Format.parse(s) for s in kwargs['video_format']],
+    ))
 
 
 @cli.command()
-@click.option('--order', default='stamp-', metavar='[stamp|path]',
-              help='Sort records by this field. A "-" at the end reverses the order.')
-@click.argument('query', nargs=-1)
 @click.pass_context
-def ls(ctx, query, order):
-    '''List media matching a QUERY.
-
+def query(ctx):
+    '''
     Illuminatus queries permit a wide range of media selection, expressed using
     a set notation. The query syntax understands the following sets of media:
 
@@ -45,6 +58,104 @@ def ls(ctx, query, order):
     - X ~ Y -- media in set X but not in set Y
 
     Finally, parentheses can be used in the usual way, to group operations.
+
+    \b
+    Examples
+    --------
+
+    \b
+    - cake
+      selects everything tagged "cake"
+    - cake ~ ice-cream
+      selects everything tagged "cake" that is not also tagged "ice-cream"
+    - cake & ice-cream
+      selects everything tagged with both "cake" and "ice-cream"
+    - cake & before:2010-03-14
+      selects everything tagged "cake" from before pi day 2010
+    - cake & (before:2010-03-14 | after:2011-03-14)
+      selects everything tagged "cake" that wasn't between pi day 2010 and
+      pi day 2011
+    '''
+    print(ctx.get_help())
+
+
+@cli.command()
+@click.pass_context
+def spec(ctx):
+    '''
+    Illuminatus can export media in a variety of output formats thanks to the
+    power of open-source tools like ffmpeg, graphicsmagick, and sox. To specify
+    which format you'd like to use for output, provide a format string.
+
+    \b
+    All
+    ---
+    - extension: Output filename extension.
+
+    \b
+    Video / Photos
+    --------------
+    - bbox: Maximum size of the output, for photos and videos.
+
+    \b
+    Audio
+    -----
+    - fps: Frames per second when exporting audio or video.
+    - channels [1]: Number of channels in exported audio files.
+
+    Examples
+
+    - 8000
+      export audio clips as AAC at 8kHz -- this is the shortest way of
+      specifying an audio format
+
+    \b
+    Photo
+    -----
+
+    Examples
+
+    - 100
+      export photos as jpg scaled down to fit inside a 100x100 box -- this is
+      the shortest way of specifying a photo format
+    - ext=jpg,bbox=100x100
+      same as above, giving explicit option names
+
+    \b
+    Video
+    -----
+    - fps: Frames per second when exporting audio or video.
+    - palette [255]: Number of colors in the palette for exported animated GIFs.
+    - vcodec [libx264]: Codec to use for exported video.
+    - acodec [aac]: Codec to use for audio in exported videos.
+    - abitrate [128k]: Bits per second for audio in exported videos.
+    - crf [30]: Quality scale for exporting videos.
+    - preset [medium]: Speed preset for exporting videos.
+
+    \b
+    Examples
+
+    - 100
+      exports video as mp4 scaled down to fit inside a 100x100 box -- this is
+      the shortest way of specifying a video format
+    - ext=mp4,bbox=100x100
+      same as above, giving explicit option names for extension and bounding box
+    - gif,100,fps=3,palette=64
+      exports video as 64-color animated GIFs at 3 frames per second
+
+    '''
+    print(ctx.get_help())
+
+
+@cli.command()
+@click.option('--order', default='stamp-', metavar='[stamp|path]',
+              help='Sort records by this field. A "-" at the end reverses the order.')
+@click.argument('query', nargs=-1)
+@click.pass_context
+def ls(ctx, query, order):
+    '''List media items matching a QUERY.
+
+    See "illuminatus query --help" for help on QUERY syntax.
     '''
     def color(tag):
         if tag.source == Tag.METADATA:
@@ -67,7 +178,9 @@ def ls(ctx, query, order):
 @click.argument('query', nargs=-1)
 @click.pass_context
 def rm(ctx, query, hide_original):
-    '''Remove media from the database.
+    '''Remove media matching a QUERY from the database.
+
+    See "illuminatus query --help" for help on QUERY syntax.
 
     Media that are deleted from the database can additionally be "removed" from
     the filesystem by specifying an extra flag. The "removal" takes place by
@@ -81,8 +194,6 @@ def rm(ctx, query, hide_original):
 
 @cli.command()
 @click.option('--output', metavar='FILE', help='save export zip to FILE')
-@click.option('--size', metavar='N [N...]', type=int, multiple=True,
-              help='Save thumbnails to fit inside an NxN box.')
 @click.option('--hide-tags', multiple=True, metavar='REGEXP [REGEXP...]',
               help='Exclude tags matching REGEXP from exported items.')
 @click.option('--hide-datetime-tags', default=False, is_flag=True,
@@ -93,15 +204,14 @@ def rm(ctx, query, hide_original):
               help='Do not remove tags that are present in all items.')
 @click.argument('query', nargs=-1)
 @click.pass_context
-def export(ctx, query, size, **kwargs):
-    '''Export media as a zip file.
+def export(ctx, query, **kwargs):
+    '''Export a zip file of media matching a QUERY.
 
-    Media can be selected using an illuminatus QUERY, and then multiple sizes
-    of thumbnails are generated and saved along with a JSON index.
+    See "illuminatus query --help" for help on QUERY syntax.
     '''
     db = DB(ctx.obj['db'])
-    size = size or _DEFAULT_SIZES
-    Exporter(db.tags, db.select(' '.join(query))).run(size=size, **kwargs)
+    Exporter(db.tags, db.select(' '.join(query)),
+             **ctx.obj['formats']).run(**kwargs)
 
 
 @cli.command('import')
@@ -109,18 +219,15 @@ def export(ctx, query, size, **kwargs):
               help='Add TAG to all imported items.')
 @click.option('--path-tags', default=0, metavar='N',
               help='Add N parent directories as tags.')
-@click.option('--size', metavar='N [N...]', type=int, multiple=True,
-              help='Save thumbnails to fit inside an NxN box.')
 @click.argument('source', nargs=-1)
 @click.pass_context
-def import_(ctx, tag, path_tags, size, source):
+def import_(ctx, source, tag, path_tags):
     '''Import media into the illuminatus database.
 
     If any SOURCE is a directory, all media under that directory will be
     imported recursively.
     '''
-    size = size or _DEFAULT_SIZES
-    Importer(ctx.obj['db'], tag, path_tags, size).run(source)
+    Importer(ctx.obj['db'], tag, path_tags, **ctx.obj['formats']).run(source)
 
 
 @cli.command()
@@ -132,8 +239,10 @@ def import_(ctx, tag, path_tags, size, source):
               help='Add N parent directories as tags.')
 @click.argument('query', nargs=-1)
 @click.pass_context
-def modify(ctx, query, add_tag, remove_tag, add_path_tags, stamp):
-    '''Modify media items in the database.
+def modify(ctx, query, stamp, add_tag, remove_tag, add_path_tags):
+    '''Modify media items matching a QUERY.
+
+    See "illuminatus query --help" for help on QUERY syntax.
 
     Common tasks are adding or removing tags, or updating the timestamps
     associated with one or more media items (e.g., to adjust for a
@@ -164,19 +273,17 @@ def modify(ctx, query, add_tag, remove_tag, add_path_tags, stamp):
 
 @cli.command()
 @click.option('--root', metavar='PATH', help='Save thumbnails under PATH.')
-@click.option('--size', metavar='N [N...]', type=int, multiple=True,
-              help='Save thumbnails to fit inside an NxN box.')
 @click.argument('query', nargs=-1)
 @click.pass_context
-def thumbnail(ctx, query, size, root):
-    '''Generate thumbnails for media items.
+def thumbnail(ctx, query, root):
+    '''Generate thumbnails for media items matching a QUERY.
 
-    Media are selected using an illuminatus QUERY, and thumbnails can be
-    generated in one or more sizes.
+    See "illuminatus query --help" for help on QUERY syntax.
     '''
     for item in DB(ctx.obj['db']).select(' '.join(query)):
-        for s in size or _DEFAULT_SIZES:
-            item.thumbnail(s, root)
+        cls = item.__class__.__name__.lower()
+        for fmt in ctx.obj['formats'].get('{}_format'.format(cls)):
+            item.export(fmt, root)
 
 
 @cli.command()

@@ -110,18 +110,12 @@ def test_video_filters(test_db, tmpdir, filters):
         video.add_filter(filter)
 
     root = tmpdir.mkdir('export')
-    sized = root.join('100')
-    hash8d = sized.join('8d')
-    hasha5 = hash8d.join('a5')
-    movie = hasha5.join('video-dfe3161e.mp4')
-    poster = hasha5.join('video-dfe3161e.jpg')
+    mp4 = root.join('{}_{}.mp4'.format(
+        video.stamp.format('YYYYMMDD'), video.path_hash[-8:]))
 
     assert root.listdir() == []
-    video.thumbnail(100, str(root))
-    assert root.listdir() == [sized]
-    assert sized.listdir() == [hash8d]
-    assert hash8d.listdir() == [hasha5]
-    assert hasha5.listdir() == [poster, movie]
+    video.export(root=str(root), bbox=100)
+    assert sorted(root.listdir()) == [str(mp4).replace('.mp4', '.jpg'), mp4]
 
 
 @pytest.mark.parametrize('filters', [
@@ -142,14 +136,9 @@ def test_photo_filters(test_db, tmpdir, filters):
         photo.add_filter(filter)
 
     root = tmpdir.mkdir('export')
-    sized = root.join('100')
-    hash9f = sized.join('9f')
-    hash1b = hash9f.join('1b')
-    image = hash1b.join('photo-0b25b6f5.jpg')
+    jpg = root.join('{}_{}.jpg'.format(
+        photo.stamp.format('YYYYMMDD'), photo.path_hash[-8:]))
 
     assert root.listdir() == []
-    photo.thumbnail(100, str(root))
-    assert root.listdir() == [sized]
-    assert sized.listdir() == [hash9f]
-    assert hash9f.listdir() == [hash1b]
-    assert hash1b.listdir() == [image]
+    photo.export(root=str(root), bbox=100)
+    assert root.listdir() == [jpg]

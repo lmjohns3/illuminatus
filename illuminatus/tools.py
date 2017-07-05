@@ -1,7 +1,8 @@
 import click
-import ujson
+import itertools
 import math
 import subprocess
+import ujson
 
 
 FILTER_ARGS = dict(
@@ -19,29 +20,6 @@ FILTER_ARGS = dict(
 _DEBUG = 1
 
 
-class Command(list):
-    '''A wrapper for invoking a subprocess.'''
-
-    @property
-    def binary(self):
-        return self[0]
-
-    @property
-    def args(self):
-        return self[1:]
-
-    def run(self):
-        '''Run this command as a subprocess, and wait for it to finish.'''
-        if _DEBUG > 0:
-            click.echo(' '.join(self))
-        PIPE = subprocess.PIPE
-        proc = subprocess.run(self, stdout=PIPE, stderr=PIPE)
-        if _DEBUG > 1:
-            click.echo(proc.stdout)
-            click.echo(proc.stderr)
-        return proc
-
-
 class Tool(object):
     '''A parent class for command-line tools to manipulate media files.'''
 
@@ -51,32 +29,54 @@ class Tool(object):
         self._filters = []
         for kwargs in filters:
             self.apply_filter(**kwargs)
-
-    @property
-    def filters(self):
-        return self._filters
+        self._already_run = False
 
     @property
     def input_args(self):
         return [self.path]
 
-    def run(self, *args):
+    @property
+    def filter_args(self):
+        return list(itertools.chain.from_iterable(f.split() for f in self._filters))
+
+    def export(self, fmt, output):
+        '''Run the tool to create an export output.
+
+        Parameters
+        ----------
+        fmt : `Format`
+            A `Format` class giving parameters for the output format.
+        output : str
+            Filename for the exported output.
+        '''
+        self._run(output)
+
+    def _run(self, *output_args):
         '''Run this tool.
 
         Parameters
         ----------
-        args : str
+        output_args : str
             Extra arguments to add to the command line for this tool.
+
+        Returns
+        -------
+        The subprocess object that is running the command.
         '''
-        binary = self.BINARY
-        if isinstance(binary, str):
-            binary = binary.split()
-        cmd = Command(binary)
+        cmd = list(self.BINARY)
+        self._add_args(cmd, *output_args)
+        if self._already_run:
+            raise RuntimeError('Attempted to run twice: {!r}'.format(cmd))
+        self._already_run = True
+        if _DEBUG > 0:
+            click.echo('{} {!r}'.format(click.style('$', fg='red'), cmd))
+        return subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    def _add_args(self, cmd, *output_args):
+        '''Add arguments to a command to be run.'''
         cmd.extend(self.input_args)
-        for filter in self.filters:
-            cmd.extend(filter)
-        cmd.extend(args)
-        return cmd.run()
+        cmd.extend(self.filter_args)
+        cmd.extend(output_args)
 
     def apply_filter(self, **kwargs):
         '''Apply a filter using this tool.
@@ -89,14 +89,14 @@ class Tool(object):
         '''
         if _DEBUG > 0:
             click.echo('Applying filter {!r}'.format(kwargs))
-        filter = kwargs.pop('filter')
-        if filter == 'rotate':
+        flt = kwargs.pop('filter')
+        if flt == 'rotate':
             angle = kwargs['degrees']
             w, h = self.shape
             self.filter_rotate(angle)
             if abs(angle % 90) > 0.1:
                 self.filter_crop(*Tool._crop_after_rotate(w, h, angle))
-        elif filter == 'crop':
+        elif flt == 'crop':
             w, h = self.shape
             px1, py1 = kwargs['x1'], kwargs['y1']
             px2, py2 = kwargs['x2'], kwargs['y2']
@@ -104,7 +104,7 @@ class Tool(object):
             x2, y2 = int(w * px2), int(h * py2)
             self.filter_crop(x2 - x1, y2 - y1, x1, y1)
         else:
-            method = getattr(self, 'filter_{}'.format(filter))
+            method = getattr(self, 'filter_{}'.format(flt))
             method(**kwargs)
 
     @staticmethod
@@ -176,19 +176,15 @@ class Tool(object):
 class Ffmpeg(Tool):
     '''Ffmpeg is a tool for manipulating video files.'''
 
-    BINARY = 'ffmpeg'
-
-    def __init__(self, path, shape, filters=(), crf=30):
-        super().__init__(path, shape, filters=filters)
-        self.crf = crf
+    BINARY = ('ffmpeg', )
 
     @property
     def input_args(self):
         return ['-i', self.path]
 
     @property
-    def filters(self):
-        return [f if isinstance(f, list) else ['-vf', f] for f in self._filters]
+    def filter_args(self):
+        return ['-vf', ','.join(self._filters)]
 
     def filter_autocontrast(self, percent):
         self._filters.append('histeq=strength={}'.format(percent / 100))
@@ -208,7 +204,7 @@ class Ffmpeg(Tool):
         w -= w % 2
         h = int(factor * h)
         h -= h % 2
-        self._filters.append('scale={}:{}'.format(w, h))
+        self._set_bbox(w, h)
         self.shape = w, h
 
     def filter_crop(self, w, h, x, y):
@@ -225,34 +221,47 @@ class Ffmpeg(Tool):
     def filter_vflip(self):
         self._filters.append('vflip')
 
-    def export(self, shape, path):
-        self._filters.append(
-            'scale={}:{}:force_original_aspect_ratio=decrease'.format(*shape))
-        self._filters.append('-c:a aac -b:a 192k'.split())
-        self._filters.append('-c:v libx264 -crf {}'.format(self.crf).split())
-        self._filters.append('-pix_fmt yuv420p -movflags +faststart'.split())
-        proc = self.run(path)
-        self._filters = self._filters[:-4]
-        return proc
+    def filter_fps(self, fps):
+        self._filters.append('fps={}'.format(fps))
 
-    def poster(self, shape, path):
-        self._filters.append(
-            'scale={}:{}:force_original_aspect_ratio=decrease'.format(*shape))
-        self._filters.append('thumbnail')
-        self._filters.append('-frames:v 1'.split())
-        proc = self.run(path)
-        self._filters = self._filters[:-3]
-        return proc
+    def _set_bbox(self, w, h):
+        flt = 'scale={}:{}:force_original_aspect_ratio=decrease:flags=lanczos'
+        self._filters.append(flt.format(w, h))
+
+    def export(self, fmt, output):
+        self._set_bbox(*fmt.bbox)
+
+        if fmt.fps is not None:
+            self.filter_fps(fmt.fps)
+
+        args = []
+
+        if output.lower().endswith('.gif'):
+            pal = 'split[x][z];[z]palettegen={}[y];[x][y]paletteuse'
+            self._filters.append(pal.format(fmt.palette))
+            self._filters.append('loop=0')
+
+        elif output.lower().endswith('.jpg'):
+            self._filters.append('thumbnail')
+            args.extend(['-frames:v', '1'])
+
+        else:
+            args.extend(['-c:v', str(fmt.vcodec), '-crf', str(fmt.crf),
+                         '-preset', str(fmt.preset), '-pix_fmt', 'yuv420p',
+                         '-movflags', '+faststart'])
+            if fmt.acodec and fmt.abitrate:
+                args.extend(['-c:a', str(fmt.acodec), '-b:a', str(fmt.abitrate)])
+            else:
+                args.append('-an')
+
+        args.append(output)
+        return self._run(*args)
 
 
 class Convert(Tool):
     '''GraphicsMagick (or ImageMagick) is a tool for manipulating images.'''
 
-    BINARY = 'gm convert'
-
-    @property
-    def filters(self):
-        return [f.split() for f in self._filters]
+    BINARY = ('gm', 'convert')
 
     @property
     def input_args(self):
@@ -304,26 +313,36 @@ class Convert(Tool):
     def filter_rotate(self, degrees):
         self._filters.append('-rotate {}'.format(degrees))
 
-    def thumbnail(self, shape, path):
-        # self._filters.append('-profile "*"')
-        self._filters.append('-thumbnail {}x{}'.format(*shape))
-        return self.run(path)
+    def export(self, fmt, output):
+        wi, hi = self.shape
+        wo, ho = fmt.bbox
+        if wo < wi / 2 and ho < hi / 2:
+            prescale = '-scale {}x{}'.format(int(1.2 * wo), int(1.2 * ho))
+            self._filters.insert(0, prescale)
+        self._filters.append('-profile *')
+        self._filters.append('-thumbnail {}x{}'.format(wo, ho))
+        self._run(output)
 
 
 class Exiftool(Tool):
     '''Exiftool is used to extract metadata from images and videos.'''
 
-    BINARY = ['exiftool', '-json', '-d', '%Y-%m-%d %H:%M:%S']
+    BINARY = ('exiftool', '-json', '-d', '%Y-%m-%d %H:%M:%S')
 
     def parse(self):
-        output = self.run().stdout.decode('utf-8').strip()
+        output = self._run().stdout.decode('utf-8').strip()
         return ujson.loads(output)[0] if output.startswith('[{') else {}
 
 
 class Sox(Tool):
     '''Sox is a tool for manipulating sound files.'''
 
-    BINARY = 'sox'
+    BINARY = ('sox', )
 
-    def thumbnail(self, shape, path):
-        pass
+    def filter_crop(self, offset, length):
+        self._filters.append('trim {} {}'.format(offset, length))
+
+    def _add_args(self, cmd, *output_args):
+        cmd.extend(self.input_args)
+        cmd.extend(output_args)
+        cmd.extend(self.filter_args)
