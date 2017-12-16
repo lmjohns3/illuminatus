@@ -17,7 +17,7 @@ FILTER_ARGS = dict(
     vflip='',
 )
 
-_DEBUG = 1
+_DEBUG = 0
 
 
 class Tool(object):
@@ -246,10 +246,13 @@ class Ffmpeg(Tool):
             args.extend(['-frames:v', '1'])
 
         else:
-            args.extend(['-c:v', str(fmt.vcodec), '-crf', str(fmt.crf),
-                         '-preset', str(fmt.preset), '-pix_fmt', 'yuv420p',
-                         '-movflags', '+faststart'])
-            if fmt.acodec and fmt.abitrate:
+            if fmt.vcodec:
+                args.extend(['-c:v', str(fmt.vcodec), '-crf', str(fmt.crf),
+                             '-preset', str(fmt.preset), '-pix_fmt', 'yuv420p',
+                             '-movflags', '+faststart'])
+            else:
+                args.append('-vn')
+            if fmt.acodec:
                 args.extend(['-c:a', str(fmt.acodec), '-b:a', str(fmt.abitrate)])
             else:
                 args.append('-an')
