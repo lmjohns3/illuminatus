@@ -105,16 +105,57 @@ class Format(object):
         self.preset = preset
 
     def __str__(self):
-        if self.bbox:
-            return '{}x{}'.format(*self.bbox)
+        parts = []
+        if self.ext is not None:
+            parts.append(self.ext)
+        if self.bbox is not None:
+            parts.append('{}x{}'.format(*self.bbox))
         if self.fps:
-            return str(self.fps)
-        if self.abitrate:
-            return str(self.abitrate)
-        return 'media'
+            parts.append('fps={}'.format(self.fps))
+        for key, default in (('channels', 1),
+                             ('palette', 255),
+                             ('acodec', 'aac'),
+                             ('abitrate', '128k'),
+                             ('vcodec', 'libx264'),
+                             ('crf', 30),
+                             ('preset', 'medium')):
+            value = getattr(self, key)
+            if value != default:
+                parts.append('{}={}'.format(key, value))
+        return ','.join(parts)
 
     @classmethod
     def parse(cls, s):
+        '''Parse a string s into a Format.
+
+        The string is expected to consist of one or more parts, separated by
+        commas. Each part can be:
+
+          - A bare string matching MMM or MMMxNNN. This is used to specify a
+            media geometry, giving the "bbox" property. If MMM is given, it
+            designates a geometry of MMMxMMM.
+          - A bare string. This is used to specify an output extension, which
+            determines the encoding of the output.
+          - A string with two halves containing one equals (=). The first half
+            gives the name of a :class:`Format` field, while the second
+            half gives the value for the field.
+
+        Examples
+        --------
+
+        - 100: Use the default file format for the medium (JPG for photos and
+               MP4 for movies), and size outputs to fit in a 100x100 box.
+        - 100x100: Same as above.
+        - bbox=100x100: Same.
+        - png,100: Same as above, but use PNG for photo outputs.
+        - ext=png,100: Same as above.
+        - ext=png,bbox=100: Same as above.
+
+        Parameters
+        ----------
+        s : str
+            A string to parse.
+        '''
         kwargs = {}
         for item in s.split(','):
             if '=' in item:
@@ -252,31 +293,34 @@ class Media(object):
         self._tags = None
         return self.rec['tags']
 
-    def export(self, fmt=None, root=None, **kwargs):
+    def export(self, root, fmt=None, force=False, **kwargs):
         '''Export a version of this media item to another location.
+
+        Additional keyword arguments are used to create a :class:`Format` if
+        `fmt` is `None`.
 
         Parameters
         ----------
-        fmt : Format
-            Export media with the given `Format`.
-        root : str, optional
-            Save exported media under this root path. If not given, the media
-            will be exported to an "internal" subdirectory under the directory
-            containing the illuminatus database; these "internal exports" will
-            be deleted automatically if the corresponding media item is deleted.
+        root : str
+            Save exported media under this root path.
+        fmt : :class:`Format`, optional
+            Export media with the given :class:`Format`.
+        force : bool, optional
+            If an exported file already exists, this flag determines what to
+            do. If `True` overwrite it; otherwise (the default), return.
         '''
+        hash = self.path_hash
         if fmt is None:
             fmt = Format(**kwargs)
-        hash = self.path_hash
+        dirname = os.path.join(root, str(fmt), hash[:2])
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
         ext = fmt.ext or self.EXTENSION
-        if root is None:
-            name = '{}.{}'.format(hash[-16:], ext)
-            root = os.path.join(self.db.root, str(fmt), hash[0:2], hash[2:4])
-        else:
-            name = '{}_{}.{}'.format(self.stamp.format('YYYYMMDD'), hash[-8:], ext)
-        if not os.path.exists(root):
-            os.makedirs(root)
-        self._export(fmt, os.path.join(root, name))
+        output = os.path.join(dirname, '{}.{}'.format(hash, ext))
+        if os.path.exists(output) and not force:
+            return None
+        self._export(fmt, output)
+        return output
 
     def _export(self, fmt, output):
         self.TOOL(self.path, self.shape, self.filters).export(fmt, output)

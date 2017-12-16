@@ -110,12 +110,12 @@ def test_video_filters(test_db, tmpdir, filters):
         video.add_filter(filter)
 
     root = tmpdir.mkdir('export')
-    mp4 = root.join('{}_{}.mp4'.format(
-        video.stamp.format('YYYYMMDD'), video.path_hash[-8:]))
+    thumb = root.join(video.path_hash[:2])
+    mp4 = thumb.join(video.path_hash + '.mp4')
 
     assert root.listdir() == []
     video.export(root=str(root), bbox=100)
-    assert sorted(root.listdir()) == [str(mp4).replace('.mp4', '.jpg'), mp4]
+    assert sorted(thumb.listdir()) == [str(mp4).replace('.mp4', '.jpg'), mp4]
 
 
 @pytest.mark.parametrize('filters', [
@@ -136,9 +136,9 @@ def test_photo_filters(test_db, tmpdir, filters):
         photo.add_filter(filter)
 
     root = tmpdir.mkdir('export')
-    jpg = root.join('{}_{}.jpg'.format(
-        photo.stamp.format('YYYYMMDD'), photo.path_hash[-8:]))
+    thumb = root.join(photo.path_hash[:2])
+    jpg = thumb.join(photo.path_hash + '.jpg')
 
     assert root.listdir() == []
     photo.export(root=str(root), bbox=100)
-    assert root.listdir() == [jpg]
+    assert thumb.listdir() == [jpg]

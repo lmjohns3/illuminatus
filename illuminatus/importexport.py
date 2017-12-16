@@ -1,6 +1,5 @@
 import click
 import collections
-import contextlib
 import glob
 import multiprocessing as mp
 import os
@@ -14,31 +13,31 @@ from .db import DB
 from .media import Tag
 
 
-def _process(jobs_queue, results_queue, callback):
+def _process(jobs_queue, callback):
     while True:
         job = jobs_queue.get()
         if job is None:
             break
-        results_queue.put((job, callback(job)))
+        callback(job)
 
 
-@contextlib.contextmanager
-def workqueue(jobs, callback, num_workers=mp.cpu_count()):
-    jobs_queue, results_queue = mp.Queue(), mp.Queue()
-    args = (jobs_queue, results_queue, callback)
-    workers = [mp.Process(target=_process, args=args) for _ in range(num_workers)]
+def run_workqueue(jobs, callback, num_workers=mp.cpu_count()):
+    jobs_queue = mp.Queue()
+    workers = [mp.Process(target=_process, args=(jobs_queue, callback))
+               for _ in range(num_workers)]
     [w.start() for w in workers]
     for job in jobs:
         jobs_queue.put(job)
     [jobs_queue.put(None) for w in workers]
     try:
-        yield results_queue
+        [w.join() for w in workers]
     except:
         # empty the jobs queue to force workers to halt.
         while not jobs_queue.empty():
             jobs_queue.get(False)
         raise
-    [w.join() for w in workers]
+    finally:
+        [w.terminate() for w in workers]
 
 
 class Importer(object):
@@ -52,22 +51,12 @@ class Importer(object):
         Extra tags to add to all imported items.
     path_tags : int
         Number of parent directory names to add as tags for each imported item.
-    audio_formats : list of Format
-      A list of Format tuples giving the formats for audio thumbnails.
-    photo_formats : list of Format
-      A list of Format tuples for photo thumbnails.
-    video_formats : list of Format
-      A list of Format tuples for video thumbnails.
     '''
 
-    def __init__(self, db, tags, path_tags, audio_formats=(), video_formats=(),
-                 photo_formats=()):
+    def __init__(self, db, tags, path_tags):
         self.db = DB(db)
         self.tags = tags
         self.path_tags = path_tags
-        self.audio_formats = audio_formats
-        self.photo_formats = photo_formats
-        self.video_formats = video_formats
 
     def walk(self, roots):
         '''Recursively visit all files under the given root directories.
@@ -102,8 +91,7 @@ class Importer(object):
         roots : sequence of str
             Root paths to search for files.
         '''
-        with workqueue(self.walk(roots), self):
-            pass
+        run_workqueue(self.walk(roots), self)
 
     def __call__(self, path):
         '''Import a single path into the media database.
@@ -131,9 +119,6 @@ class Importer(object):
             for i in range(self.path_tags):
                 item.add_tag(components[i])
             item.save()
-            cls = item.__class__.__name__.lower()
-            for fmt in getattr(self, '{}_formats'.format(cls)):
-                item.export(fmt=fmt)
             click.echo('{} Added {}'.format(
                     click.style('+', fg='green'),
                     click.style(path, fg='red')))
@@ -145,6 +130,45 @@ class Importer(object):
             click.echo('! Error {} {}'.format(path, exc))  # , ''.join(tb))
 
 
+class Thumbnailer(object):
+    '''Export thumbnails of media content to files on disk.
+
+    Parameters
+    ----------
+    items : list of :class:`Media`
+        A list of the media items to thumbnail.
+    root : str
+        A filesystem path for saving thumbnails.
+    audio_format : :class:`Format`
+        A Format for audio thumbnails.
+    photo_format : :class:`Format`
+        A Format for photo thumbnails.
+    video_format : :class:`Format`
+        A Format for video thumbnails.
+    '''
+
+    def __init__(self, items, root=None, audio_format=None, video_format=None,
+                 photo_format=None):
+        self.items = items
+        self.root = root
+        self.audio_format = audio_format
+        self.photo_format = photo_format
+        self.video_format = video_format
+
+    def run(self):
+        '''Export thumbnails for media to files on disk.'''
+        run_workqueue(self.items, self)
+
+    def __call__(self, item):
+        fmt = getattr(self, '{}_format'.format(item.__class__.__name__.lower()))
+        if fmt is not None:
+            output = item.export(fmt=fmt, root=self.root)
+            if output is not None:
+                click.echo('{} {} -> {}'.format(click.style('T', fg='cyan'),
+                                                click.style(item.path, fg='red'),
+                                                click.style(output, fg='green')))
+
+
 class Exporter(object):
     '''Export media content to a zip file on disk.
 
@@ -154,21 +178,21 @@ class Exporter(object):
         All tags defined in the database.
     items : list of :class:`Media`
         A list of the media items to export.
-    audio_formats : list of Format
-      A list of Format tuples giving the formats for audio thumbnails.
-    photo_formats : list of Format
-      A list of Format tuples for photo thumbnails.
-    video_formats : list of Format
-      A list of Format tuples for video thumbnails.
+    audio_format : :class:`Format`
+        A Format for audio thumbnails.
+    photo_format : :class:`Format`
+        A Format for photo thumbnails.
+    video_format : :class:`Format`
+        A Format for video thumbnails.
     '''
 
-    def __init__(self, all_tags, items, audio_formats=(), video_formats=(),
-                 photo_formats=()):
+    def __init__(self, all_tags, items, audio_format=None, video_format=None,
+                 photo_format=None):
         self.all_tags = all_tags
         self.items = items
-        self.audio_formats = audio_formats
-        self.photo_formats = photo_formats
-        self.video_formats = video_formats
+        self.audio_format = audio_format
+        self.photo_format = photo_format
+        self.video_format = video_format
 
     def run(self, output, hide_tags=(), hide_metadata_tags=False,
             hide_datetime_tags=False, hide_omnipresent_tags=False):
@@ -223,8 +247,8 @@ class Exporter(object):
         with tempfile.TemporaryDirectory() as root:
             index = os.path.join(root, 'index.json')
             self.root = root
-            # export thumbnails in parallel, create index at the same time.
-            with workqueue(self.items, self), open(index, 'w') as handle:
+            run_workqueue(self.items, self)
+            with open(index, 'w') as handle:
                 export = []
                 for item in self.items:
                     for tag in list(item.tags):
@@ -239,8 +263,8 @@ class Exporter(object):
             click.style(output, fg='red')))
 
     def __call__(self, item):
-        cls = item.__class__.__name__.lower()
-        for fmt in getattr(self, '{}_formats'.format(cls)):
+        fmt = getattr(self, '{}_format'.format(item.__class__.__name__.lower()))
+        if fmt is not None:
             item.export(fmt=fmt, root=self.root)
 
 
