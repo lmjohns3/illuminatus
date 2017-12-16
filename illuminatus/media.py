@@ -1,4 +1,5 @@
 import arrow
+import base64
 import bisect
 import click
 import collections
@@ -221,7 +222,8 @@ class Media(object):
     @property
     def path_hash(self):
         '''A string containing the hash of this item's path.'''
-        return hashlib.md5(self.path.encode('utf-8')).hexdigest().lower()
+        digest = hashlib.md5(self.path.encode('utf-8')).digest()
+        return base64.b32encode(digest).strip(b'=').lower().decode('utf-8')
 
     @property
     def media_id(self):
@@ -348,7 +350,7 @@ class Media(object):
         Returns
         -------
         tags : set
-            A set containing `illuminatus.Tag`s derived from the metadata on
+            A set containing :class:`Tag`s derived from the metadata on
             this item.
         '''
         if not self.meta:
