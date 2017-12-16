@@ -299,22 +299,6 @@ class Media(object):
         green_path = click.style(self.path, fg='green')
         click.echo('Removed {} from the database'.format(green_path))
 
-        hash = self.path_hash
-        pattern = os.path.join(
-            self.db.root, '*', hash[0:2], hash[2:4], hash[-16:] + '*')
-        paths = sorted((len(p), p) for p in glob.glob(pattern))
-        while paths:
-            path = paths.pop()
-            if path == self.db.root:
-                continue
-            try:
-                os.unlink(path)
-                dirname = os.path.dirname(path)
-                elem = (len(dirname), dirname)
-                paths.insert(bisect.bisect(paths, elem), elem)
-            except:
-                pass
-
         # if desired, hide the original file referenced by this item.
         if hide_original:
             hidden = os.path.join(
