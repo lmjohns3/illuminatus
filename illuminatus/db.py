@@ -68,13 +68,15 @@ def _clear_tags(cur, media_id):
 
 def _add_tag(cur, media_id, tag):
     get = 'SELECT id FROM tags WHERE name = ? AND source = ?'
-    found = _fetchone(cur, get, tag['name'], tag['source'])
-    if found is None:
+    tag_id = _fetchone(cur, get, tag['name'], tag['source'])
+    if tag_id is None:
         cur.execute('INSERT INTO tags (name, source, sort) VALUES (?, ?, ?)',
                     (tag['name'], tag['source'], tag['sort']))
-        found = _fetchone(cur, get, tag['name'], tag['source'])
-    cur.execute('INSERT INTO taggedmedia (tag_id, media_id) VALUES (?, ?)',
-                (found[0], media_id))
+        tag_id = _fetchone(cur, get, tag['name'], tag['source'])
+    tag_id = tag_id[0]
+    cur.execute(
+        'INSERT INTO taggedmedia (tag_id, media_id, weight) VALUES (?, ?, ?)',
+        (tag_id, media_id, tag.get('weight', 1)))
 
 
 _SCHEMA = '''\
@@ -102,7 +104,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_tags_name_source ON tags(name, source);
 CREATE TABLE IF NOT EXISTS taggedmedia (
   id INTEGER PRIMARY KEY NOT NULL,
   media_id INTEGER REFERENCES media(id),
-  tag_id INTEGER REFERENCES tags(id));
+  tag_id INTEGER REFERENCES tags(id),
+  weight INTEGER NOT NULL DEFAULT 1);
 
 CREATE INDEX IF NOT EXISTS idx_taggedmedia_media_id ON taggedmedia(media_id);
 CREATE INDEX IF NOT EXISTS idx_taggedmedia_tag_id ON taggedmedia(tag_id);

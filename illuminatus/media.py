@@ -32,15 +32,15 @@ def _ints(*args):
     return tuple(int(a) for a in args)
 
 
-class Tag(collections.namedtuple('TagBase', 'name source sort')):
+class Tag(collections.namedtuple('TagBase', 'name source sort weight')):
     '''A POD class representing a tag from a source of data.'''
 
     DATETIME = 0
     METADATA = 1
     USER = 255
 
-    def __new__(cls, name, source=USER, sort=0):
-        return super().__new__(cls, str(name).strip().lower(), source, sort)
+    def __new__(cls, name, source=USER, sort=0, weight=1):
+        return super().__new__(cls, str(name).strip().lower(), source, sort, weight)
 
     def __hash__(self):
         return hash('{}|{}|{}'.format(self.source, self.sort, self.name))
@@ -49,14 +49,10 @@ class Tag(collections.namedtuple('TagBase', 'name source sort')):
         return self.source == other.source and self.name == other.name
 
     def __lt__(self, other):
-        if self.source < other.source:
-            return True
-        if self.source == other.source:
-            if self.sort < other.sort:
-                return True
-            if self.sort == other.sort:
-                return self.name < other.name
-        return False
+        same_source = self.source == other.source
+        return ((self.source < other.source) or
+                (same_source and self.sort < other.sort) or
+                (same_source and self.sort == other.sort and self.name < other.name))
 
 
 class Format(object):
@@ -448,6 +444,14 @@ class Media(object):
         '''
         if isinstance(tag, str):
             tag = Tag(tag)
+        for t in sorted(self.tags):
+            if t == tag:
+                self.tags.remove(t)
+                tag = Tag(name=t.name,
+                          source=t.source,
+                          sort=t.sort,
+                          weight=t.weight + 1)
+                break
         self.tags.add(tag)
 
     def remove_tag(self, tag):
@@ -465,7 +469,15 @@ class Media(object):
         '''
         if isinstance(tag, str):
             tag = Tag(tag)
-        self.tags.remove(tag)
+        for t in sorted(self.tags):
+            if t == tag:
+                self.tags.remove(t)
+                if t.weight > 1:
+                    self.tags.add(Tag(name=t.name,
+                                      source=t.source,
+                                      sort=t.sort,
+                                      weight=t.weight - 1))
+                break
 
     def add_filter(self, filter):
         '''Add a filter to this item.
