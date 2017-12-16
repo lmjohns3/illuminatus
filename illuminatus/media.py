@@ -232,7 +232,6 @@ class Media(object):
 
     def save(self):
         '''Save this media item to the database.'''
-        self.rec.update(self._get_record_updates())
         self.rec['stamp'] = str(self.stamp)
         self.rec['meta'] = self.meta
         self.rec['tags'] = self.rebuild_tags()
@@ -324,15 +323,6 @@ class Media(object):
             os.rename(self.path, hidden)
             click.echo('Renamed {} to {}'.format(
                 green_path, click.style(hidden, fg='blue')))
-
-    def _get_record_updates(self):
-        '''Return updates for our database record.
-
-        Returns
-        -------
-        A dictionary containing updates we wish to make to our database record.
-        '''
-        return {}
 
     def _load_metadata(self):
         '''Load metadata for this item.
