@@ -454,19 +454,20 @@ class Media(object):
                     -1 if sign == '-' else 1) * int(shift)
             self.rec['stamp'] = self.stamp.replace(**kwargs)
 
-    def add_tag(self, tag):
-        '''Add a user tag to this item.
+    def increment_tag(self, tag):
+        '''Add or increment a user tag for this item.
 
         Parameters
         ----------
         tag : str or :class:`Tag`
-            A tag to add.
+            A tag to add. If it is not already present, it will be added with
+            weight 1. If it is already present, the weight will increase by 1.
         '''
         if isinstance(tag, str):
             tag = Tag(tag)
-        for t in sorted(self.tags):
+        for t in self.tags:
             if t == tag:
-                self.tags.remove(t)
+                self.tags.remove(tag)
                 tag = Tag(name=t.name,
                           source=t.source,
                           sort=t.sort,
@@ -474,30 +475,40 @@ class Media(object):
                 break
         self.tags.add(tag)
 
-    def remove_tag(self, tag):
-        '''Remove a user tag from this item.
+    def decrement_tag(self, tag):
+        '''Decrement the weight of a user tag for this item.
 
         Parameters
         ----------
         tag : str or :class:`Tag`
-            A tag to remove.
-
-        Raises
-        ------
-        KeyError
-            If this item does not have the given tag.
+            A tag to decrement. The tag's current weight is decreased by 1. If
+            the tag's weight is then 0, the tag will be removed. No effect if
+            the tag does not exist for this item.
         '''
         if isinstance(tag, str):
             tag = Tag(tag)
-        for t in sorted(self.tags):
+        for t in self.tags:
             if t == tag:
-                self.tags.remove(t)
+                self.tags.remove(tag)
                 if t.weight > 1:
                     self.tags.add(Tag(name=t.name,
                                       source=t.source,
                                       sort=t.sort,
                                       weight=t.weight - 1))
                 break
+
+    def remove_tag(self, tag):
+        '''Remove a user tag from this item.
+
+        Parameters
+        ----------
+        tag : str or :class:`Tag`
+            A tag to remove. No effect if the tag does not exist for this item.
+        '''
+        if isinstance(tag, str):
+            tag = Tag(tag)
+        if tag in self.tags:
+            self.tags.remove(tag)
 
     def add_filter(self, filter):
         '''Add a filter to this item.

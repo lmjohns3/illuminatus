@@ -114,10 +114,10 @@ class Importer(object):
                     click.style(path, fg='red')))
                 return
             for tag in self.tags:
-                item.add_tag(tag)
+                item.increment_tag(tag)
             components = os.path.dirname(path).split(os.sep)[::-1]
             for i in range(self.path_tags):
-                item.add_tag(components[i])
+                item.increment_tag(components[i])
             item.save()
             click.echo('{} Added {}'.format(
                     click.style('+', fg='green'),

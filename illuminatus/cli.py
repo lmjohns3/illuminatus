@@ -225,13 +225,14 @@ def import_(ctx, source, tag, path_tags):
 @cli.command()
 @click.option('--stamp', type=str,
               help='Modify the timestamp of matching records.')
-@click.option('--add-tag', type=str, multiple=True, metavar='TAG [TAG...]')
+@click.option('--inc-tag', type=str, multiple=True, metavar='TAG [TAG...]')
+@click.option('--dec-tag', type=str, multiple=True, metavar='TAG [TAG...]')
 @click.option('--remove-tag', type=str, multiple=True, metavar='TAG [TAG...]')
 @click.option('--add-path-tags', default=0, metavar='N',
               help='Add N parent directories as tags.')
 @click.argument('query', nargs=-1)
 @click.pass_context
-def modify(ctx, query, stamp, add_tag, remove_tag, add_path_tags):
+def modify(ctx, query, stamp, inc_tag, dec_tag, remove_tag, add_path_tags):
     '''Modify media items matching a QUERY.
 
     See "illuminatus query --help" for help on QUERY syntax.
@@ -250,8 +251,10 @@ def modify(ctx, query, stamp, add_tag, remove_tag, add_path_tags):
     'm' (month), 'd' (day), or 'h' (hour).
     '''
     for item in DB(ctx.obj['db']).select(' '.join(query)):
-        for tag in add_tag:
-            item.add_tag(tag)
+        for tag in inc_tag:
+            item.increment_tag(tag)
+        for tag in dec_tag:
+            item.decrement_tag(tag)
         for tag in remove_tag:
             item.remove_tag(tag)
         if add_path_tags > 0:
