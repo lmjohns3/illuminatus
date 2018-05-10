@@ -9,8 +9,7 @@ import tempfile
 import ujson
 import zipfile
 
-from .db import DB
-from .media import Tag
+from .media import Asset, Tag, medium_for
 
 
 def _process(jobs_queue, callback):
@@ -48,13 +47,13 @@ class Importer(object):
     db : str
         Filesystem path for our database.
     tags : list of str
-        Extra tags to add to all imported items.
+        Extra tags to add to all imported assets.
     path_tags : int
-        Number of parent directory names to add as tags for each imported item.
+        Number of parent directory names to add as tags for each imported asset.
     '''
 
-    def __init__(self, db, tags, path_tags):
-        self.db = DB(db)
+    def __init__(self, sess, tags, path_tags):
+        self.sess = sess
         self.tags = tags
         self.path_tags = path_tags
 
@@ -91,9 +90,10 @@ class Importer(object):
         roots : sequence of str
             Root paths to search for files.
         '''
-        run_workqueue(self.walk(roots), self)
+        for path in self.walk(roots):
+            self.import_one(path)
 
-    def __call__(self, path):
+    def import_one(self, path):
         '''Import a single path into the media database.
 
         Parameters
@@ -102,30 +102,30 @@ class Importer(object):
             A filesystem path to examine and possibly import.
         '''
         try:
-            if self.db.exists(path):
+            if self.sess.query(Asset).filter(Asset.path == path).count():
                 click.echo('{} Already have {}'.format(
                     click.style('=', fg='blue'),
                     click.style(path, fg='red')))
                 return
-            item = self.db.create(path)
-            if item is None:
+            medium = medium_for(path)
+            if medium is None:
                 click.echo('{} Unknown {}'.format(
                     click.style('?', fg='yellow'),
                     click.style(path, fg='red')))
                 return
+            asset = Asset(path=path, medium=medium)
             for tag in self.tags:
-                item.increment_tag(tag)
+                asset.increment_tag(tag)
             components = os.path.dirname(path).split(os.sep)[::-1]
             for i in range(self.path_tags):
-                item.increment_tag(components[i])
-            item.save()
+                asset.increment_tag(components[i])
+            self.sess.add(asset)
             click.echo('{} Added {}'.format(
                     click.style('+', fg='green'),
                     click.style(path, fg='red')))
         except KeyboardInterrupt:
-            self.db.delete(path)
+            pass
         except:
-            self.db.delete(path)
             _, exc, tb = sys.exc_info()
             click.echo('! Error {} {}'.format(path, exc))  # , ''.join(tb))
 
@@ -135,8 +135,8 @@ class Thumbnailer(object):
 
     Parameters
     ----------
-    items : list of :class:`Media`
-        A list of the media items to thumbnail.
+    assets : list of :class:`Asset`
+        A list of the media assets to thumbnail.
     root : str
         A filesystem path for saving thumbnails.
     audio_format : :class:`Format`
@@ -147,9 +147,9 @@ class Thumbnailer(object):
         A Format for video thumbnails.
     '''
 
-    def __init__(self, items, root=None, audio_format=None, video_format=None,
+    def __init__(self, assets, root=None, audio_format=None, video_format=None,
                  photo_format=None):
-        self.items = items
+        self.assets = assets
         self.root = root
         self.audio_format = audio_format
         self.photo_format = photo_format
@@ -157,16 +157,18 @@ class Thumbnailer(object):
 
     def run(self):
         '''Export thumbnails for media to files on disk.'''
-        run_workqueue(self.items, self)
+        run_workqueue(self.assets, self)
 
-    def __call__(self, item):
-        fmt = getattr(self, '{}_format'.format(item.__class__.__name__.lower()))
-        if fmt is not None:
-            output = item.export(fmt=fmt, root=self.root)
-            if output is not None:
-                click.echo('{} {} -> {}'.format(click.style('T', fg='cyan'),
-                                                click.style(item.path, fg='red'),
-                                                click.style(output, fg='green')))
+    def __call__(self, asset):
+        fmt = getattr(self, '{}_format'.format(asset.__class__.__name__.lower()))
+        if fmt is None:
+            return
+        output = asset.export(fmt=fmt, root=self.root)
+        if output is None:
+            return
+        click.echo('{} {} -> {}'.format(click.style('T', fg='cyan'),
+                                        click.style(asset.path, fg='red'),
+                                        click.style(output, fg='green')))
 
 
 class Exporter(object):
@@ -176,8 +178,8 @@ class Exporter(object):
     ----------
     all_tags : list of :class:`Tag`
         All tags defined in the database.
-    items : list of :class:`Media`
-        A list of the media items to export.
+    assets : list of :class:`Asset`
+        A list of the media assets to export.
     audio_format : :class:`Format`
         A Format for audio thumbnails.
     photo_format : :class:`Format`
@@ -186,10 +188,10 @@ class Exporter(object):
         A Format for video thumbnails.
     '''
 
-    def __init__(self, all_tags, items, audio_format=None, video_format=None,
+    def __init__(self, all_tags, assets, audio_format=None, video_format=None,
                  photo_format=None):
         self.all_tags = all_tags
-        self.items = items
+        self.assets = assets
         self.audio_format = audio_format
         self.photo_format = photo_format
         self.video_format = video_format
@@ -220,7 +222,7 @@ class Exporter(object):
             10am, etc.). The default is not to export this information.
         hide_omnipresent_tags : bool, optional
             If True, export tags present in all media. By default, tags that
-            are present in all items being exported will not be exported.
+            are present in all assets being exported will not be exported.
         '''
         hide_sources = set()
         if hide_metadata_tags:
@@ -234,38 +236,38 @@ class Exporter(object):
                 if re.match(pattern, tag.name):
                     hide_names.add(tag.name)
         if hide_omnipresent_tags:
-            # count tag usage for this set of media.
+            # count tag usage for this set of assets.
             tag_counts = collections.defaultdict(int)
-            for item in self.items:
-                for tag in item.tags:
+            for asset in self.assets:
+                for tag in asset.tags:
                     tag_counts[tag.name] += 1
-            # remove tags that are applied to all media pieces.
+            # remove tags that are applied to all assets.
             for name, count in tag_counts.items():
-                if count == len(self.items):
+                if count == len(self.assets):
                     hide_names.add(name)
 
         with tempfile.TemporaryDirectory() as root:
             index = os.path.join(root, 'index.json')
             self.root = root
-            run_workqueue(self.items, self)
+            run_workqueue(self.assets, self)
             with open(index, 'w') as handle:
                 export = []
-                for item in self.items:
-                    for tag in list(item.tags):
+                for asset in self.assets:
+                    for tag in list(asset.tags):
                         if tag.name in hide_names or tag.source in hide_sources:
-                            item.remove_tag(tag)
-                    export.append(item.rec)
+                            asset.remove_tag(tag)
+                    export.append(asset.to_dict())
                 ujson.dump(export, handle)
             _create_zip(output, root)
 
-        click.echo('Exported {} items to {}'.format(
-            click.style(str(len(self.items)), fg='cyan'),
+        click.echo('Exported {} assets to {}'.format(
+            click.style(str(len(self.assets)), fg='cyan'),
             click.style(output, fg='red')))
 
-    def __call__(self, item):
-        fmt = getattr(self, '{}_format'.format(item.__class__.__name__.lower()))
+    def __call__(self, asset):
+        fmt = getattr(self, '{}_format'.format(asset.__class__.__name__.lower()))
         if fmt is not None:
-            item.export(fmt=fmt, root=self.root)
+            asset.export(fmt=fmt, root=self.root)
 
 
 # This is mostly from zipfile.py in the Python source.

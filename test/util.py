@@ -1,5 +1,5 @@
+import arrow
 import illuminatus
-import illuminatus.media
 import illuminatus.tools
 import os
 import pytest
@@ -18,56 +18,38 @@ VIDEO_ID = 3
 
 RECORDS = [
     {'path': PHOTO_PATH,
-     'medium': 'photo',
+     'medium': illuminatus.Medium.Photo,
      'stamp': '2015-06-02T09:07',
-     'tags': [
-         {'name': 'a', 'source': illuminatus.Tag.USER, 'sort': 0},
-         {'name': 'b', 'source': illuminatus.Tag.USER, 'sort': 0},
-         {'name': 'c', 'source': illuminatus.Tag.USER, 'sort': 0},
-     ]},
+     'tag_weights': dict(a=1, b=2, c=3)},
     {'path': AUDIO_PATH,
-     'medium': 'audio',
+     'medium': illuminatus.Medium.Audio,
      'stamp': '2016-01-02T03:04',
-     'tags': [
-         {'name': 'b', 'source': illuminatus.Tag.USER, 'sort': 0},
-         {'name': 'c', 'source': illuminatus.Tag.USER, 'sort': 0},
-     ]},
+     'tag_weights': dict(b=2, c=3)},
     {'path': VIDEO_PATH,
-     'medium': 'video',
+     'medium': illuminatus.Medium.Video,
      'stamp': '2010-03-09T05:03',
-     'tags': [
-         {'name': 'c', 'source': illuminatus.Tag.USER, 'sort': 0},
-     ]},
+     'tag_weights': dict(c=3)},
 ]
 
 MEDIA = pytest.mark.datafiles(*tuple(rec['path'] for rec in RECORDS))
 
 
-class Item(illuminatus.media.Media):
-    EXTENSION = 'deb'  # probably not going to be a common media type?
-    MIME_TYPES = ('*debian*package*', )
-
-    def _build_metadata_tags(self):
-        return set()
-
-    def _refresh_thumbnails(self):
-        pass
-
-
 @pytest.fixture
 def empty_db(tmpdir):
-    db = illuminatus.DB(str(tmpdir.mkdir('illuminatus').join('empty.db')))
-    db.setup()
-    return db
+    path = str(tmpdir.mkdir('illuminatus').join('empty.db'))
+    illuminatus.db.init(path)
+    return path
 
 
 @pytest.fixture
 def test_db(tmpdir):
-    db = illuminatus.DB(str(tmpdir.mkdir('illuminatus').join('test.db')))
-    db.setup()
-
-    for i, rec in enumerate(RECORDS):
-        db.create(rec['path'])
-        db.update(rec)
-
-    return db
+    path = str(tmpdir.mkdir('illuminatus').join('test.db'))
+    illuminatus.db.init(path)
+    with illuminatus.db.session(path) as sess:
+        for i, rec in enumerate(RECORDS):
+            asset = illuminatus.Asset(path=rec['path'],
+                                      medium=rec['medium'],
+                                      tag_weights=rec['tag_weights'],
+                                      stamp=arrow.get(rec['stamp']).datetime)
+            sess.add(asset)
+    return path

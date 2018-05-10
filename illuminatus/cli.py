@@ -1,48 +1,87 @@
 import click
+import contextlib
 import os
 import sys
 
-from .db import DB
-from .media import Tag, Format, Audio, Photo, Video
+from . import db, tools
+from .media import Asset, Format, Tag
 from .importexport import Importer, Exporter, Thumbnailer
 
 
+def ensure_db_config(ctx):
+    if ctx.obj.get('db_path') is None:
+        ctx.obj['db_path'] = os.path.abspath(os.path.expanduser(
+            click.prompt('Scrooge database file')))
+
+
+@contextlib.contextmanager
+def session(ctx, hide_original_on_delete=False):
+    ensure_db_config(ctx)
+    with db.session(path=ctx.obj['db_path'],
+                    echo=ctx.obj['db_echo'],
+                    hide_original_on_delete=hide_original_on_delete) as sess:
+        yield sess
+
+
 @click.group()
-@click.option('--db', envvar='ILLUMINATUS_DB', metavar='PATH',
-              help='Load illuminatus database from PATH.')
+@click.option('--db-path', envvar='ILLUMINATUS_DB', metavar='PATH',
+              help='Load database from PATH.')
+@click.option('--log-sql/--no-log-sql', default=False,
+              help='Log database queries.')
+@click.option('--log-tools/--no-log-tools', default=False,
+              help='Log tool commands.')
 @click.pass_context
-def cli(ctx, db, **kwargs):
-    '''Command-line interface for media management.'''
+def cli(ctx, db_path, log_sql, log_tools):
+    '''Command-line interface for media database.'''
     # Don't require a database for getting help.
-    if ctx.invoked_subcommand == 'query' or '--help' in sys.argv:
+    if ctx.invoked_subcommand == 'help' or '--help' in sys.argv:
         return
 
-    if not db:
-        raise click.UsageError('no --database specified!')
+    '''
+    for color in 'black white red yellow green cyan blue magenta'.split():
+        click.echo('{} {}'.format(
+            click.style('{:7s}'.format(color), fg=color, bold=False),
+            click.style('{:7s}'.format(color), fg=color, bold=True)))
+    '''
 
-    ctx.obj = dict(db=db)
+    if ctx.invoked_subcommand != 'init':
+        if not os.path.isfile(db_path):
+            raise RuntimeError('Illuminatus database {} not found!'.format(
+                click.style(db_path, fg='cyan')))
+
+    db_path = os.path.abspath(os.path.expanduser(db_path))
+    ctx.obj = dict(db_path=db_path, db_echo=log_sql)
+
+    if log_tools:
+        tools._DEBUG = 2
 
 
 @cli.command()
 @click.pass_context
-def query(ctx):
-    '''
-    Illuminatus queries permit a wide range of media selection, expressed using
-    a set notation. The query syntax understands the following sets of media:
+def help(ctx):
+    '''Help on QUERYs and format SPECs.
+
+    \b
+    Queries
+    =======
+
+    Queries permit a wide range of media selection, expressed using a set
+    notation. The query syntax understands the following sets of media:
 
     \b
     - TAG -- media that are tagged with TAG
     - before:YYYY-MM-DD -- media with timestamps on or before YYYY-MM-DD
     - after:YYYY-MM-DD -- media with timestamps on or after YYYY-MM-DD
     - path:STRING -- media whose source path contains the given STRING
+    - fp:STRING -- media whose fingerprint contains the given STRING
 
-    Each pair of terms in a query is combined using one of the three set
+    Each of the terms in a query is combined using one of the three set
     operators:
 
     \b
-    - X & Y -- media in set X and in set Y
-    - X | Y -- media in set X or set Y
-    - X ~ Y -- media in set X but not in set Y
+    - X and Y -- media in set X and in set Y
+    - X or Y -- media in set X or set Y
+    - not Y -- media not in set Y
 
     Finally, parentheses can be used in the usual way, to group operations.
 
@@ -53,23 +92,20 @@ def query(ctx):
     \b
     - cake
       selects everything tagged "cake"
-    - cake ~ ice-cream
+    - cake and not ice-cream
       selects everything tagged "cake" that is not also tagged "ice-cream"
-    - cake & ice-cream
+    - cake and ice-cream
       selects everything tagged with both "cake" and "ice-cream"
-    - cake & before:2010-03-14
+    - cake and before:2010-03-14
       selects everything tagged "cake" from before pi day 2010
-    - cake & (before:2010-03-14 | after:2011-03-14)
+    - cake and (before:2010-03-14 or after:2011-03-14)
       selects everything tagged "cake" that wasn't between pi day 2010 and
       pi day 2011
-    '''
-    print(ctx.get_help())
 
+    \b
+    Format Specifications
+    =====================
 
-@cli.command()
-@click.pass_context
-def spec(ctx):
-    '''
     Illuminatus can export media in a variety of output formats. To specify
     which format you'd like to use for output, provide one or more format
     specifications using the --audio-format, --photo-format and
@@ -82,8 +118,10 @@ def spec(ctx):
     - fps: Frames per second when exporting audio or video.
     - channels [1]: Number of channels in exported audio files.
 
+    \b
     Examples
 
+    \b
     - fps=8000
       export audio clips as AAC at 8kHz -- this is the shortest way of
       specifying an audio format
@@ -94,8 +132,10 @@ def spec(ctx):
     - ext: Output filename extension.
     - bbox: Maximum size of the output images.
 
+    \b
     Examples
 
+    \b
     - 100
       export photos as jpg scaled down to fit inside a 100x100 box -- this is
       the shortest way of specifying a photo format
@@ -118,6 +158,7 @@ def spec(ctx):
     \b
     Examples
 
+    \b
     - 100
       exports video as mp4 scaled down to fit inside a 100x100 box -- this is
       the shortest way of specifying a video format
@@ -130,46 +171,54 @@ def spec(ctx):
 
 
 @cli.command()
+@click.pass_context
+def init(ctx):
+    '''Initialize a new database.'''
+    ensure_db_config(ctx)
+    db.init(ctx.obj['db_path'])
+
+
+@cli.command()
 @click.option('--order', default='stamp-', metavar='[stamp|path]',
               help='Sort records by this field. A "-" at the end reverses the order.')
 @click.argument('query', nargs=-1)
 @click.pass_context
 def ls(ctx, query, order):
-    '''List media items matching a QUERY.
+    '''List assets matching a QUERY.
 
-    See "illuminatus query --help" for help on QUERY syntax.
+    See "illuminatus help" for help on QUERY syntax.
     '''
-    def color(tag):
-        return ('cyan' if tag.source == Tag.METADATA else
-                'green' if tag.source == Tag.DATETIME else
-                'yellow')
-
-    for item in DB(ctx.obj['db']).select(' '.join(query), order=order):
-        click.echo('{} {} {}'.format(
-            # click.style(item.path_hash, fg='red'),
-            click.style(str(item.stamp)),
-            ' '.join(click.style(t.name, fg=color(t)) for t in sorted(item.tags)),
-            click.style(item.path)))
+    with session(ctx) as sess:
+        for asset in db.matching_assets(sess, ' '.join(query), order):
+            click.echo(' '.join((
+                click.style(str(asset.stamp), fg='yellow'),
+                click.style(asset.dhash4, fg='red'),
+                ' '.join(t.name_string for t in
+                         sorted(asset.tags, key=lambda t: t.sort_key)),
+                click.style(asset.path),
+            )))
 
 
 @cli.command()
-@click.option('--hide-original', is_flag=True,
-              help='"Delete" the source media file, by renaming it.')
+@click.option('--hide-original/--no-hide-original', default=False,
+              help='"Delete" the source file, by renaming it.')
 @click.argument('query', nargs=-1)
 @click.pass_context
 def rm(ctx, query, hide_original):
-    '''Remove media matching a QUERY from the database.
+    '''Remove assets matching a QUERY.
 
-    See "illuminatus query --help" for help on QUERY syntax.
+    See "illuminatus help" for help on QUERY syntax.
 
-    Media that are deleted from the database can additionally be "removed" from
-    the filesystem by specifying an extra flag. The "removal" takes place by
-    renaming the original source file with an ".illuminatus-removed-" prefix.
-    An offline process (e.g., a cron script) can garbage-collect these renamed
-    files as needed.
+    Assets that are deleted from the database can additionally be "removed"
+    from the filesystem by specifying an extra flag. The "removal" takes place
+    by renaming the original source file with an ".illuminatus-removed-"
+    prefix. An offline process (e.g., a cron script) can garbage-collect these
+    renamed files as needed.
     '''
-    for item in DB(ctx.obj['db']).select(' '.join(query)):
-        item.delete(hide_original=hide_original)
+    with session(ctx, hide_original_on_delete=hide_original) as sess:
+        for asset in db.matching_assets(sess, ' '.join(query)):
+            asset.delete()
+            sess.add(asset)
 
 
 @cli.command()
@@ -191,10 +240,9 @@ def rm(ctx, query, hide_original):
 @click.argument('query', nargs=-1)
 @click.pass_context
 def export(ctx, query, audio_format, photo_format, video_format, **kwargs):
-    '''Export a zip file of all media that match a QUERY.
+    '''Export a zip file of assets matching a QUERY.
 
-    See "illuminatus query --help" for help on QUERY syntax, and
-    "illuminatus spec --help" for help on SPEC syntax.
+    See "illuminatus help" for help on QUERY and SPEC syntax.
     '''
     db = DB(ctx.obj['db'])
     Exporter(
@@ -214,12 +262,13 @@ def export(ctx, query, audio_format, photo_format, video_format, **kwargs):
 @click.argument('source', nargs=-1)
 @click.pass_context
 def import_(ctx, source, tag, path_tags):
-    '''Import media into the illuminatus database.
+    '''Import assets into the database.
 
-    If any SOURCE is a directory, all media under that directory will be
+    If any source is a directory, all assets under that directory will be
     imported recursively.
     '''
-    Importer(ctx.obj['db'], tag, path_tags).run(source)
+    with session(ctx) as sess:
+        Importer(sess, tag, path_tags).run(source)
 
 
 @cli.command()
@@ -233,37 +282,37 @@ def import_(ctx, source, tag, path_tags):
 @click.argument('query', nargs=-1)
 @click.pass_context
 def modify(ctx, query, stamp, inc_tag, dec_tag, remove_tag, add_path_tags):
-    '''Modify media items matching a QUERY.
+    '''Modify assets matching a QUERY.
 
-    See "illuminatus query --help" for help on QUERY syntax.
+    See "illuminatus help" for help on QUERY syntax.
 
     Common tasks are adding or removing tags, or updating the timestamps
-    associated with one or more media items (e.g., to adjust for a
+    associated with one or more assets (e.g., to adjust for a
     miscalibrated camera or the like).
 
     The --stamp option can take two different types of timestamp specifiers.
     If this option is passed a timestamp string, it will replace the current
-    timestamp for all matching media. Otherwise it can contain any number
-    of strings of the form 'sNx' which will adjust timestamp unit x by
-    N units either later (if s is '+') or earlier (if s is '-'). For
-    example, '+3y,-2h' will shift the timestamp of all matching media
-    three years later and two hours earlier. Here x can be 'y' (year),
-    'm' (month), 'd' (day), or 'h' (hour).
+    timestamp for all matching assets. Otherwise it can contain any number of
+    strings of the form 'sNx' which will adjust timestamp unit x by N units
+    later (if s is '+') or earlier (if s is '-'). For example, '+3y,-2h' will
+    shift the timestamp of all matching media three years later and two hours
+    earlier. Here x can be 'y' (year), 'm' (month), 'd' (day), or 'h' (hour).
     '''
-    for item in DB(ctx.obj['db']).select(' '.join(query)):
-        for tag in inc_tag:
-            item.increment_tag(tag)
-        for tag in dec_tag:
-            item.decrement_tag(tag)
-        for tag in remove_tag:
-            item.remove_tag(tag)
-        if add_path_tags > 0:
-            components = os.path.dirname(item.path).split(os.sep)[::-1]
-            for i in range(add_path_tags):
-                tags.append(components[i])
-        if stamp:
-            item.update_stamp(stamp)
-        item.save()
+    with session(ctx, hide_original_on_delete=hide_original) as sess:
+        for asset in db.matching_assets(sess, ' '.join(query)):
+            for tag in inc_tag:
+                asset.increment_tag(tag)
+            for tag in dec_tag:
+                asset.decrement_tag(tag)
+            for tag in remove_tag:
+                asset.remove_tag(tag)
+            if add_path_tags > 0:
+                components = os.path.dirname(asset.path).split(os.sep)[::-1]
+                for i in range(add_path_tags):
+                    tags.append(components[i])
+            if stamp:
+                asset.update_stamp(stamp)
+            sess.add(asset)
 
 
 @cli.command()
@@ -278,10 +327,9 @@ def modify(ctx, query, stamp, inc_tag, dec_tag, remove_tag, add_path_tags):
 @click.argument('query', nargs=-1)
 @click.pass_context
 def thumbnail(ctx, query, thumbnails, audio_format, photo_format, video_format):
-    '''Generate thumbnails for media items matching a QUERY.
+    '''Create thumbnails for assets matching a QUERY.
 
-    See "illuminatus query --help" for help on QUERY syntax, and
-    "illuminatus spec --help" for help on SPEC syntax.
+    See "illuminatus help" for help on QUERY and SPEC syntax.
     '''
     Thumbnailer(
         DB(ctx.obj['db']).select(' '.join(query)),
@@ -315,15 +363,18 @@ def thumbnail(ctx, query, thumbnails, audio_format, photo_format, video_format):
               help='Format for large video format "thumbnails".')
 @click.pass_context
 def serve(ctx, host, port, debug, hide_originals, thumbnails, **kwargs):
-    '''Start an HTTP server for media metadata.'''
-    classes = dict(audio=Audio, photo=Photo, video=Video)
+    '''Start an HTTP server for asset metadata.'''
     from .serve import app
-    app.config['db'] = DB(ctx.obj['db'])
+    from .serve import db as serve_db
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SQLALCHEMY_DATABASE_URI'] = db.db_uri(path=ctx.obj['db_path'])
+    app.config['thumbnails'] = thumbnails
+    app.config['hide-originals'] = hide_originals
     fmts = app.config['formats'] = {}
+    classes = dict(audio=Audio, photo=Photo, video=Video)
     for key, value in kwargs.items():
         cls = classes[key.split('_')[1]]
         fmt = Format.parse(value)
         fmts[key] = dict(path=str(fmt), ext=fmt.ext or cls.EXTENSION)
-    app.config['thumbnails'] = thumbnails
-    app.config['hide-originals'] = hide_originals
+    serve_db.init_app(app)
     app.run(host=host, port=port, debug=debug, threaded=True)

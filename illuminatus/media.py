@@ -1,59 +1,58 @@
 import arrow
 import base64
-import bisect
 import click
 import collections
-import datetime
+import enum
 import hashlib
+import mimetypes
+import numpy as np
 import os
+import PIL.Image
 import re
+import sqlalchemy
+import sqlalchemy.ext.declarative
+import ujson
 
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Table
+from sqlalchemy.orm.attributes import flag_modified
+
+from . import metadata
 from . import tools
 
-# Names of camera models, these will be filtered out of the metadata tags.
-_CAMERAS = 'canon nikon kodak digital camera super powershot'.split()
+# a map from bit pattern to hex digit, e.g. (True, False, True, True) --> 'b'
+_HEX_DIGITS = {
+    tuple(b == '1' for b in '{:04b}'.format(i)): '{:x}'.format(i)
+    for i in range(16)
+}
 
-# EXIF tags where we should look for timestamps.
-_TIMESTAMP_KEYS = 'DateTimeOriginal CreateDate ModifyDate FileModifyDate'.split()
-
-
-def _round_to_most_significant_digits(n, digits=1):
-    '''Return n rounded to the most significant `digits` digits.'''
-    nint = n
-    if not isinstance(nint, int):
-        nint = int(re.search(r'^(\d+).*$', n).group(1))
-    if nint < 10 ** digits:
-        return nint
-    shift = 10 ** (len(str(n)) - digits)
-    return int(shift * round(nint / shift))
+@enum.unique
+class Medium(enum.Enum):
+    '''Enumeration of different supported media types.'''
+    Audio = 1
+    Photo = 2
+    Video = 3
 
 
-def _ints(*args):
-    '''Convert the arguments to integers.'''
-    return tuple(int(a) for a in args)
+def medium_for(path):
+    '''Determine the appropriate medium for a given path.
 
+    Parameters
+    ----------
+    path : str
+        Filesystem path where the asset is stored.
 
-class Tag(collections.namedtuple('TagBase', 'name source sort weight')):
-    '''A POD class representing a tag from a source of data.'''
-
-    DATETIME = 0
-    METADATA = 1
-    USER = 255
-
-    def __new__(cls, name, source=USER, sort=0, weight=1):
-        return super().__new__(cls, str(name).strip().lower(), source, sort, weight)
-
-    def __hash__(self):
-        return hash('{}|{}|{}'.format(self.source, self.sort, self.name))
-
-    def __eq__(self, other):
-        return self.source == other.source and self.name == other.name
-
-    def __lt__(self, other):
-        same_source = self.source == other.source
-        return ((self.source < other.source) or
-                (same_source and self.sort < other.sort) or
-                (same_source and self.sort == other.sort and self.name < other.name))
+    Returns
+    -------
+    A string naming an asset medium. Returns None if no known media types
+    handle the given path.
+    '''
+    mime, _ = mimetypes.guess_type(path)
+    for pattern, medium in (('audio/.*', Medium.Audio),
+                            ('video/.*', Medium.Video),
+                            ('image/.*', Medium.Photo)):
+        if re.match(pattern, mime):
+            return medium
+    return None
 
 
 class Format(object):
@@ -176,125 +175,158 @@ class Format(object):
         return cls(**kwargs)
 
 
-class Media(object):
-    '''A base class for different types of media.'''
+Model = sqlalchemy.ext.declarative.declarative_base()
 
-    EXTENSION = None
-    MIME_TYPES = ()
 
-    def __init__(self, db, rec):
-        '''Initialize this item with a database handle and a data record.
+class Tag(Model):
+    __tablename__ = 'tags'
+    __table_args__ = dict(sqlite_autoincrement=True)
+    id = Column(Integer, primary_key=True)
 
-        Parameters
-        ----------
-        db : :class:`illuminatus.db.DB`
-            A handle to the database that stores this item's dictionary.
-        rec : dict
-            A dictionary containing item information.
-        '''
-        self.db = db
-        self.rec = rec
+    name = Column(String, index=True, nullable=False)
 
-        self._meta = None
-        self._tags = None
+    def __repr__(self):
+        return '<Tag {}>'.format(self.name)
 
-        self.rec.setdefault('tags', [])
-        self.rec.setdefault('filters', [])
+    Group = collections.namedtuple('Group', 'index color')
+
+    GROUPS = dict(
+        y=Group(0, 'green'),
+        m=Group(1, 'green'),
+        d=Group(2, 'green'),
+        w=Group(3, 'green'),
+        h=Group(4, 'green'),
+        kit=Group(5, 'cyan'),
+        aperture=Group(6, 'cyan'),
+        iso=Group(7, 'cyan'),
+        shutter=Group(8, 'cyan'),
+        focus=Group(9, 'cyan'),
+    )
+
+    @staticmethod
+    def get_or_create(sess, name):
+        tag = sess.query(Tag).filter(Tag.name == name).first()
+        if not tag:
+            tag = Tag(name=name)
+            sess.add(tag)
+        return tag
+
+    @property
+    def sort_key(self):
+        group = len(Tag.GROUPS)
+        if ':' not in self.name:
+            return (1 + len(Tag.GROUPS), self.name)
+        group = Tag.GROUPS.get(self.name.split(':')[0])
+        if group is None:
+            return (len(Tag.GROUPS), self.name)
+        return '{:02d}-{}'.format(group.index, self.name)
+
+    @property
+    def name_string(self):
+        if ':' not in self.name:
+            return click.style(self.name, 'blue', bold=True)
+        parts = self.name.split(':')
+        group = parts.pop(0)
+        if group in tuple('ymdwh'):
+            name = parts[-1]
+            return click.style(name, fg=Tag.GROUPS[group].color, bold=True)
+        color = Tag.GROUPS[group].color if group in Tag.GROUPS else 'red'
+        return '{}:{}'.format(click.style(group, fg=color),
+                              click.style(':'.join(parts), fg=color, bold=True))
+
+    def to_dict(self, weight):
+        return dict(id=self.id, name=self.name, sort_key=self.sort_key, weight=weight)
+
+
+class TextJson(sqlalchemy.types.TypeDecorator):
+    impl = sqlalchemy.types.TEXT
+
+    def process_bind_param(self, value, dialect):
+        return None if value is None else ujson.dumps(value)
+
+    def process_result_value(self, value, dialect):
+        return None if value is None else ujson.loads(value)
+
+JSON = sqlalchemy.types.JSON().with_variant(TextJson, 'sqlite')
+
+
+asset_tags = Table('asset_tags', Model.metadata,
+                   Column('tag_id', Integer, ForeignKey('tags.id')),
+                   Column('asset_id', Integer, ForeignKey('assets.id')))
+
+
+class Asset(Model):
+    __tablename__ = 'assets'
+    __table_args__ = dict(sqlite_autoincrement=True)
+    id = Column(Integer, primary_key=True)
+
+    path = Column(String, unique=True)
+    medium = Column(Enum(Medium), index=True, nullable=False)
+    stamp = Column(DateTime, index=True, nullable=False)
+    dhash8 = Column(String, index=True)
+
+    meta = Column(JSON, nullable=False, default={})
+    filters = Column(JSON, nullable=False, default=[])
+    tag_weights = Column(JSON, nullable=False, default={})
+
+    tags = sqlalchemy.orm.relationship(Tag,
+                                       backref='assets',
+                                       secondary=asset_tags,
+                                       lazy='joined')
+
+    TOOLS = {Medium.Audio: tools.Sox,
+             Medium.Video: tools.Ffmpeg,
+             Medium.Photo: tools.Convert}
+
+    EXTENSIONS = {Medium.Audio: 'mp3',
+                  Medium.Video: 'mp4',
+                  Medium.Photo: 'jpg'}
 
     @property
     def shape(self):
+        def ints(*args): return tuple(int(a) for a in args)
         m = self.meta
         try:
-            return _ints(m['ImageWidth'], m['ImageHeight'])
+            return ints(m['ImageWidth'], m['ImageHeight'])
         except:
             pass
         try:
-            return _ints(m['SourceImageWidth'], m['SourceImageHeight'])
+            return ints(m['SourceImageWidth'], m['SourceImageHeight'])
         except:
             pass
         try:
-            return _ints(*m['ImageSize'].split('x'))
+            return ints(*m['ImageSize'].split('x'))
         except:
             pass
         return -1, -1
 
     @property
-    def filters(self):
-        '''The list of media filters for this item.'''
-        return self.rec['filters']
-
-    @property
-    def tags(self):
-        '''The set of tags currently applied to this item.'''
-        if self._tags is None:
-            self._tags = set(Tag(**tag) for tag in self.rec['tags'])
-        return self._tags
-
-    @property
-    def stamp(self):
-        '''A timestamp for this item, or None.'''
-        stamp = self.rec.get('stamp')
-        if not stamp:
-            for key in _TIMESTAMP_KEYS:
-                stamp = self.meta.get(key)
-                if stamp is not None:
-                    break
-        return arrow.get(stamp)
-
-    @property
-    def meta(self):
-        '''A dictionary of metadata for this item.'''
-        if self._meta is None:
-            self._meta = self.rec.get('meta')
-            if self._meta is None:
-                self._meta = self._load_metadata()
-        return self._meta
-
-    @property
     def basename(self):
-        '''The base filename for this item.'''
+        '''The base filename for this asset.'''
         return os.path.basename(self.path)
 
     @property
-    def path(self):
-        '''The full source filesystem path for this item.'''
-        return self.rec['path']
-
-    @property
     def path_hash(self):
-        '''A string containing the hash of this item's path.'''
+        '''A string containing the hash of this asset's path.'''
         digest = hashlib.md5(self.path.encode('utf-8')).digest()
         return base64.b32encode(digest).strip(b'=').lower().decode('utf-8')
 
-    @property
-    def media_id(self):
-        '''Database id for this item.'''
-        return self.rec['id']
-
-    def save(self):
-        '''Save this media item to the database.'''
-        self.rec['stamp'] = str(self.stamp)
-        self.rec['meta'] = self.meta
-        self.rec['tags'] = self.rebuild_tags()
-        self.db.update(self.rec)
-
-    def rebuild_tags(self):
-        '''Rebuild the tag list for this media item, and clear the cache.
-
-        Returns
-        -------
-        The rebuilt list of tags.
-        '''
-        self.rec['tags'] = [
-            dict(tag._asdict()) for tag in sorted(
-                set(t for t in self.tags if t.source == Tag.USER) |
-                self._build_metadata_tags() |
-                self._build_datetime_tags())]
-        self._tags = None
-        return self.rec['tags']
+    def to_dict(self):
+        w = self.tag_weights
+        return dict(
+            id=self.id,
+            path=self.path,
+            medium=self.medium,
+            stamp=arrow.get(self.stamp).isoformat(),
+            dhash8=self.dhash8,
+            metadata=self.meta,
+            filters=self.filters,
+            tags=[t.to_dict(w.get(t.name, -1.0)) for t in
+                  sorted(self.tags, key=lambda t: t.sort_key)],
+        )
 
     def export(self, root, fmt=None, force=False, **kwargs):
-        '''Export a version of this media item to another location.
+        '''Export a version of this media asset to another location.
 
         Additional keyword arguments are used to create a :class:`Format` if
         `fmt` is `None`.
@@ -315,18 +347,19 @@ class Media(object):
         dirname = os.path.join(root, str(fmt), hash[:2])
         if not os.path.exists(dirname):
             os.makedirs(dirname)
-        ext = fmt.ext or self.EXTENSION
+        ext = fmt.ext or Asset.EXTENSIONS[self.medium]
         output = os.path.join(dirname, '{}.{}'.format(hash, ext))
         if os.path.exists(output) and not force:
             return None
-        self._export(fmt, output)
+        tool = Asset.TOOLS[self.medium]
+        tool(self.path, self.shape, self.filters).export(fmt, output)
+        if self.medium == Medium.Video:
+            poster = os.path.splitext(output)[0] + '.jpg'
+            tool(self.path, self.shape, self.filters).export(fmt, poster)
         return output
 
-    def _export(self, fmt, output):
-        self.TOOL(self.path, self.shape, self.filters).export(fmt, output)
-
-    def delete(self, hide_original=False):
-        '''Remove exported media for this media item.
+    def _maybe_hide_original(self, hide_original=False):
+        '''Rename the original source for this asset.
 
         WARNING: If `hide_original` is True, the original file will be renamed
         with a hidden (dot) prefix. These hidden prefix files can be garbage
@@ -338,182 +371,114 @@ class Media(object):
             If this is True, the item's source file will be renamed with an
             ".illuminatus-removed-" prefix.
         '''
-        self.db.delete(self.path)
-
-        green_path = click.style(self.path, fg='green')
-        click.echo('Removed {} from the database'.format(green_path))
-
-        # if desired, hide the original file referenced by this item.
+        # if desired, hide the original file referenced by this asset.
         if hide_original:
             hidden = os.path.join(
                 os.path.dirname(self.path),
                 '.illuminatus-removed-' + os.path.basename(self.path))
-            os.rename(self.path, hidden)
-            click.echo('Renamed {} to {}'.format(
-                green_path, click.style(hidden, fg='blue')))
+            os.rename(target.path, hidden)
 
-    def _load_metadata(self):
-        '''Load metadata for this item.
+    def _init(self):
+        '''Initialize this asset from content on disk.'''
+        if self.medium == Medium.Photo:
+            self.meta = tools.Exiftool(self.path).parse()
+            self.dhash8 = self.compute_dhash(8)
+        if self.medium == Medium.Video:
+            self.meta = tools.Exiftool(self.path).parse()
+        self.stamp = metadata.get_timestamp(self.path, self.meta).datetime
 
-        Returns
-        -------
-        meta : dict
-            A dictionary mapping string metadata tags to metadata values.
+    def _rebuild_tags(self, sess):
+        '''Rebuild the tag list for this asset.
+
+        Parameters
+        ----------
+        sess : db session
+            Database session.
         '''
-        return tools.Exiftool(self.path).parse()
-
-    def _build_metadata_tags(self):
-        '''Build a set of metadata tags for this item.
-
-        Returns
-        -------
-        tags : set
-            A set containing :class:`Tag`s derived from the metadata on
-            this item.
-        '''
-        if not self.meta:
-            return set()
-
-        highest = _round_to_most_significant_digits
-
-        tags = set()
-
-        model = self.meta.get('Model', '').lower()
-        for pattern in _CAMERAS + ['ed$', 'is$']:
-            model = re.sub(pattern, '', model).strip()
-        if model:
-            tags.add('kit:{}'.format(model))
-
-        fstop = self.meta.get('FNumber', '')
-        if isinstance(fstop, (int, float)) or re.match(r'[.\d]+', fstop):
-            tags.add('f/{}'.format(round(2 * float(fstop)) / 2).replace('.0', ''))
-
-        iso = self.meta.get('ISO', '')
-        if isinstance(iso, (int, float)) or re.match(r'[.\d]+', iso):
-            tags.add('iso:{}'.format(highest(iso, 1 + (int(iso) > 1000))))
-
-        ss = self.meta.get('ShutterSpeed', '')
-        ms = None
-        if isinstance(ss, (int, float)):
-            ms = int(1000 * ss)
-        elif re.match(r'1/[.\d]+', ss):
-            ms = int(1000 / float(ss[2:]))
-        if ms:
-            tags.add('{}ms'.format(max(1, highest(ms))))
-
-        mm = self.meta.get('FocalLength', '')
-        if isinstance(mm, str):
-            match = re.search(r'(\d+)(\.\d+)?\s*mm', mm)
-            if match:
-                mm = match.group(1)
-        if mm:
-            tags.add('{}mm'.format(highest(mm)))
-
-        return set(Tag(tag, Tag.METADATA) for tag in tags if tag.strip())
-
-    def _build_datetime_tags(self):
-        '''Build a set of datetime tags for this item.
-
-        Returns
-        -------
-        tags : set
-            A set containing `illuminatus.Tag`s derived from the timestamp on
-            this item.
-        '''
-        if not self.stamp:
-            return set()
-
-        # for computing the hour tag, we set the hour boundary at 49-past, so
-        # that any time from, e.g., 10:49 to 11:48 gets tagged as "11am"
-        hour = self.stamp + datetime.timedelta(minutes=11)
-        k = 4 + hour.hour  # sort by 24-hour value
-
-        return set(Tag(t, Tag.DATETIME, s) for s, t in (
-            (0, self.stamp.format('YYYY')),  # 2009
-            (1, self.stamp.format('MMMM')),  # january
-            (2, self.stamp.format('Do')),    # 22nd
-            (3, self.stamp.format('dddd')),  # monday
-            (k, hour.format('ha'))))         # 4pm
+        user = set(self.tag_weights or {})
+        meta = set(metadata.gen_metadata_tags(self.meta))
+        stamp = set(metadata.gen_datetime_tags(arrow.get(self.stamp)))
+        target = user | meta | stamp
+        existing = {tag.name: tag for tag in self.tags}
+        for name in target - set(existing):
+            self.tags.append(Tag.get_or_create(sess, name))
+        for name in set(existing) - target:
+            self.tags.remove(existing[name])
 
     def update_stamp(self, when):
-        '''Update the timestamp for this item.
+        '''Update the timestamp for this asset.
 
         Parameters
         ----------
         when : str
-            A modifier for the stamp for this item.
+            A modifier for the stamp for this asset.
         '''
         try:
-            self.rec['stamp'] = arrow.get(when)
+            self.stamp = arrow.get(when).datetime
         except arrow.parser.ParserError:
             fields = dict(y='years', m='months', d='days', h='hours')
             kwargs = {}
             for spec in re.findall(r'[-+]\d+[ymdh]', when):
                 sign, shift, granularity = spec[0], spec[1:-1], spec[-1]
-                kwargs[fields[granularity]] = (
-                    -1 if sign == '-' else 1) * int(shift)
-            self.rec['stamp'] = self.stamp.replace(**kwargs)
+                kwargs[fields[granularity]] = (-1 if sign == '-' else 1) * int(shift)
+            self.stamp = arrow.get(self.stamp).replace(**kwargs).datetime
 
-    def increment_tag(self, tag):
-        '''Add or increment a user tag for this item.
-
-        Parameters
-        ----------
-        tag : str or :class:`Tag`
-            A tag to add. If it is not already present, it will be added with
-            weight 1. If it is already present, the weight will increase by 1.
-        '''
-        if isinstance(tag, str):
-            tag = Tag(tag)
-        for t in self.tags:
-            if t == tag:
-                self.tags.remove(tag)
-                tag = Tag(name=t.name,
-                          source=t.source,
-                          sort=t.sort,
-                          weight=t.weight + 1)
-                break
-        self.tags.add(tag)
-
-    def decrement_tag(self, tag):
-        '''Decrement the weight of a user tag for this item.
+    def increment_tag(self, tag, weight=1.0):
+        '''Add or increment the weight for a tag for this asset.
 
         Parameters
         ----------
         tag : str or :class:`Tag`
-            A tag to decrement. The tag's current weight is decreased by 1. If
-            the tag's weight is then 0, the tag will be removed. No effect if
-            the tag does not exist for this item.
+            A tag to add. If the tag does not currently exist for this asset,
+            the weight will be set to this value.
+        weight : float, optional
+            Weight to add to the tag. Defaults to 1.0.
         '''
-        if isinstance(tag, str):
-            tag = Tag(tag)
-        for t in self.tags:
-            if t == tag:
-                self.tags.remove(tag)
-                if t.weight > 1:
-                    self.tags.add(Tag(name=t.name,
-                                      source=t.source,
-                                      sort=t.sort,
-                                      weight=t.weight - 1))
-                break
+        if isinstance(tag, Tag):
+            tag = tag.name
+        if not isinstance(self.tag_weights, dict):
+            self.tag_weights = {}
+        self.tag_weights[tag] = self.tag_weights.get(tag, 0.0) + weight
+        flag_modified(self, 'tag_weights')
+
+    def decrement_tag(self, tag, weight=1.0):
+        '''Decrement the weight of a user tag for this asset.
+
+        Parameters
+        ----------
+        tag : str or :class:`Tag`
+            A tag to decrement. If the tag's weight reaches 0, the tag will be
+            removed. No effect if the tag does not exist for this asset.
+        weight : float, optional
+            Decrement the weight by this amount. Defaults to 1.0.
+        '''
+        if isinstance(tag, Tag):
+            tag = tag.name
+        if not isinstance(self.tag_weights, dict):
+            self.tag_weights = {}
+        self.tag_weights[tag] = self.tag_weights.get(tag, 0.0) - weight
+        if self.tag_weights[tag] <= 0.0:
+            del self.tag_weights[tag]
+            flag_modified(self, 'tag_weights')
 
     def remove_tag(self, tag):
-        '''Remove a user tag from this item.
+        '''Remove a user tag from this asset.
 
         Parameters
         ----------
         tag : str or :class:`Tag`
-            A tag to remove. No effect if the tag does not exist for this item.
+            A tag to remove. No effect if the tag does not exist on this asset.
         '''
-        if isinstance(tag, str):
-            tag = Tag(tag)
-        if tag in self.tags:
-            self.tags.remove(tag)
+        if isinstance(tag, Tag):
+            tag = tag.name
+        if not isinstance(self.tag_weights, dict):
+            self.tag_weights = {}
+        if tag in self.tag_weights:
+            del self.tag_weights[tag]
+            flag_modified(self, 'tag_weights')
 
     def add_filter(self, filter):
-        '''Add a filter to this item.
-
-        The item is *not* saved after adding the filter.
+        '''Add a filter to this asset.
 
         Parameters
         ----------
@@ -521,12 +486,13 @@ class Media(object):
             A dictionary containing filter arguments. The dictionary must have
             a "filter" key that names a valid media filter.
         '''
+        if not isinstance(self.filters, list):
+            self.filters = []
         self.filters.append(filter)
+        flag_modified(self, 'filters')
 
     def remove_filter(self, filter, index=-1):
         '''Remove a filter if the index matches.
-
-        The item is *not* saved after removing the filter.
 
         Parameters
         ----------
@@ -540,11 +506,15 @@ class Media(object):
         Raises
         ------
         IndexError
-            If the given `index` exceeds the number of filters for this item.
+            If the given `index` exceeds the number of filters for this asset.
         KeyError
             If the filter at the specified `index` does not have the given
             `key`.
         '''
+        if not isinstance(self.filters, list):
+            self.filters = []
+        if not self.filters:
+            return
         while index < 0:
             index += len(self.filters)
         if index >= len(self.filters):
@@ -555,29 +525,13 @@ class Media(object):
             raise KeyError('{}: filter {} has key {!r}, expected {!r}'.format(
                 self.path, index, actual_filter, filter))
         self.filters.pop(index)
+        flag_modified(self, 'filters')
 
-
-class Photo(Media):
-    EXTENSION = 'jpg'
-    MIME_TYPES = ('image/*', )
-    TOOL = tools.Convert
-
-
-class Video(Media):
-    EXTENSION = 'mp4'
-    MIME_TYPES = ('video/*', )
-    TOOL = tools.Ffmpeg
-
-    def _export(self, fmt, output):
-        super()._export(fmt, output)
-        poster = os.path.splitext(output)[0] + '.jpg'
-        self.TOOL(self.path, self.shape, self.filters).export(fmt, poster)
-
-
-class Audio(Media):
-    EXTENSION = 'mp3'
-    MIME_TYPES = ('audio/*', )
-    TOOL = tools.Sox
-
-    def _load_metadata(self):
-        return {}
+    def compute_dhash(self, size):
+        if not os.path.exists(self.path):
+            return ''
+        gray = PIL.Image.open(self.path).convert('L')
+        px = np.asarray(gray.resize((size + 1, size), PIL.Image.ANTIALIAS))
+        bits = (px[:, 1:] > px[:, :-1]).flatten()
+        return ''.join(_HEX_DIGITS[tuple(b)] for b in
+                       np.split(bits, list(range(4, len(bits), 4))))

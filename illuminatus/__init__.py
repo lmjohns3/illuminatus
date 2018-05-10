@@ -1,4 +1,4 @@
-from . import cli
+from . import cli, db
 
-from .db import DB
-from .media import Audio, Photo, Video, Tag
+from .db import session, matching_assets
+from .media import Asset, Tag, Medium
