@@ -175,6 +175,28 @@ class Format(object):
         return cls(**kwargs)
 
 
+def compute_image_simhash(path, size=8):
+    '''Compute a similarity hash for an image.
+
+    Parameters
+    ----------
+    path : str
+        Path to an image file on disk.
+    size : int, optional
+        Number of pixels per side for the image. The hash will have s * s bits.
+        Defaults to 8, giving a 64-bit hash.
+
+    Returns
+    -------
+    A string containing a hex representation of the similarity hash.
+    '''
+    gray = PIL.Image.open(path).convert('L')
+    px = np.asarray(gray.resize((size + 1, size), PIL.Image.ANTIALIAS))
+    bits = (px[:, 1:] > px[:, :-1]).flatten()
+    return ''.join(_HEX_DIGITS[tuple(b)] for b in
+                   np.split(bits, list(range(4, len(bits), 4))))
+
+
 Model = sqlalchemy.ext.declarative.declarative_base()
 
 
@@ -259,12 +281,31 @@ class Asset(Model):
     __table_args__ = dict(sqlite_autoincrement=True)
     id = Column(Integer, primary_key=True)
 
-    path = Column(String, unique=True)
-    medium = Column(Enum(Medium), index=True, nullable=False)
-    stamp = Column(DateTime, index=True, nullable=False)
-    dhash8 = Column(String, index=True)
+    def _default_meta(self):
+        meta = tools.Exiftool(self.path).parse()
+        self.stamp = metadata.get_timestamp(self.path, meta).datetime
+        self.lat = metadata.get_latitude(meta)
+        self.lng = metadata.get_longitude(meta)
+        return meta
 
-    meta = Column(JSON, nullable=False, default={})
+    def _default_fingerprint(self):
+        with open(self.path, 'rb') as handle:
+            return hashlib.md5(handle.read()).hexdigest()
+
+    def _default_simhash(self):
+        if self.medium == Medium.Photo:
+            return compute_image_simhash(self.path)
+        return None
+
+    path = Column(String, unique=True, nullable=False)
+    medium = Column(Enum(Medium), index=True, nullable=False)
+    stamp = Column(DateTime, index=True)
+    lat = Column(Float, index=True)
+    lng = Column(Float, index=True)
+    simhash = Column(String, index=True, default=_default_simhash)
+    fingerprint = Column(String, unique=True, default=_default_fingerprint)
+
+    meta = Column(JSON, nullable=False, default=_default_meta)
     filters = Column(JSON, nullable=False, default=[])
     tag_weights = Column(JSON, nullable=False, default={})
 
@@ -317,7 +358,8 @@ class Asset(Model):
             path=self.path,
             medium=self.medium,
             stamp=arrow.get(self.stamp).isoformat(),
-            dhash8=self.dhash8,
+            simhash=self.simhash,
+            fingerprint=self.fingerprint,
             metadata=self.meta,
             filters=self.filters,
             tags=[t.to_dict(w.get(t.name, -1.0)) for t in
@@ -376,15 +418,6 @@ class Asset(Model):
                 os.path.dirname(self.path),
                 '.illuminatus-removed-' + os.path.basename(self.path))
             os.rename(target.path, hidden)
-
-    def _init(self):
-        '''Initialize this asset from content on disk.'''
-        if self.medium == Medium.Photo:
-            self.meta = tools.Exiftool(self.path).parse()
-            self.dhash8 = self.compute_dhash(8)
-        if self.medium == Medium.Video:
-            self.meta = tools.Exiftool(self.path).parse()
-        self.stamp = metadata.get_timestamp(self.path, self.meta).datetime
 
     def _rebuild_tags(self, sess):
         '''Rebuild the tag list for this asset.
@@ -525,12 +558,3 @@ class Asset(Model):
                 self.path, index, actual_filter, filter))
         self.filters.pop(index)
         flag_modified(self, 'filters')
-
-    def compute_dhash(self, size):
-        if not os.path.exists(self.path):
-            return ''
-        gray = PIL.Image.open(self.path).convert('L')
-        px = np.asarray(gray.resize((size + 1, size), PIL.Image.ANTIALIAS))
-        bits = (px[:, 1:] > px[:, :-1]).flatten()
-        return ''.join(_HEX_DIGITS[tuple(b)] for b in
-                       np.split(bits, list(range(4, len(bits), 4))))
