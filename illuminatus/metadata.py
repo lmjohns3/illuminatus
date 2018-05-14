@@ -68,7 +68,7 @@ def gen_metadata_tags(meta):
         A dictionary mapping metadata fields to values.
 
     Yields
-    -------
+    ------
     A :class:`Tag`s derived from the given metadata.
     '''
     if not meta:
@@ -76,7 +76,7 @@ def gen_metadata_tags(meta):
 
     highest = _round_to_most_significant_digits
 
-    model = meta.get('Model', '').lower()
+    model = meta.get('CameraModelName', meta.get('Model', '')).lower()
     for pattern in _CAMERA_WORD_BLACKLIST + ['ed$', 'is$']:
         model = re.sub(pattern, '', model).strip()
     if model:
@@ -86,20 +86,7 @@ def gen_metadata_tags(meta):
     if isinstance(fstop, (int, float)) or re.match(_FLOAT_PATTERN, fstop):
         yield 'aperture:f/{}'.format(round(10 * float(fstop)) / 10).replace('.0', '')
 
-    iso = meta.get('ISO', '')
-    if isinstance(iso, (int, float)) or re.match(_FLOAT_PATTERN, iso):
-        yield 'iso:{}'.format(highest(iso, 1 + (int(iso) > 1000)))
-
-    ss = meta.get('ShutterSpeed', '')
-    ms = None
-    if isinstance(ss, (int, float)):
-        ms = int(1000 * ss)
-    elif re.match('1/' + _FLOAT_PATTERN, ss):
-        ms = int(1000 / float(ss[2:]))
-    if ms is not None:
-        yield 'shutter:{}ms'.format(max(1, highest(ms)))
-
-    mm = meta.get('FocalLength', '')
+    mm = meta.get('FocalLengthIn35mmFormat', meta.get('FocalLength', ''))
     if isinstance(mm, str):
         match = re.match(_FLOAT_PATTERN + r'\s*mm', mm)
         mm = match.group(1) if match else None

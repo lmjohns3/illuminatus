@@ -198,9 +198,8 @@ class Tag(Model):
         h=Group(4, 'green'),
         kit=Group(5, 'cyan'),
         aperture=Group(6, 'cyan'),
-        iso=Group(7, 'cyan'),
-        shutter=Group(8, 'cyan'),
-        focus=Group(9, 'cyan'),
+        focus=Group(7, 'cyan'),
+        geo=Group(8, 'blue'),
     )
 
     @staticmethod

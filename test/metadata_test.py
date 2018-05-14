@@ -11,8 +11,7 @@ def test_real_metadata_and_datetime_tags(test_db):
         photo = sess.query(A).filter(A.path == PHOTO_PATH).one()
         assert set(t.name for t in photo.tags) == {
             'y:2013', 'm:04:april', 'd:07:7th', 'w:6:sunday', 'h:14:2pm',
-            'shutter:10ms', 'focus:20mm', 'aperture:f/14', 'iso:100',
-            'kit:dslr-a200', 'a', 'b', 'c'}
+            'focus:30mm', 'aperture:f/14', 'kit:dslr-a200', 'a', 'b', 'c'}
 
 
 @pytest.mark.parametrize('meta, expected', [
@@ -34,19 +33,6 @@ def test_real_metadata_and_datetime_tags(test_db):
     (dict(FNumber='1.77'), 'aperture:f/1.8'),
     (dict(FNumber='3.3'), 'aperture:f/3.3'),
     (dict(FNumber='abc'), ''),
-
-    (dict(ISO='4'), 'iso:4'),
-    (dict(ISO='44'), 'iso:40'),
-    (dict(ISO='444'), 'iso:400'),
-    (dict(ISO='4444'), 'iso:4400'),
-    (dict(ISO='44444'), 'iso:44000'),
-    (dict(ISO='abc'), ''),
-
-    (dict(ShutterSpeed='1/12'), 'shutter:80ms'),
-    (dict(ShutterSpeed='1/123'), 'shutter:8ms'),
-    (dict(ShutterSpeed='1/1234'), 'shutter:1ms'),
-    (dict(ShutterSpeed=0.23), 'shutter:200ms'),
-    (dict(ShutterSpeed='abc'), ''),
 ])
 def test_synthetic_metadata_tags(meta, expected):
     actual = illuminatus.metadata.gen_metadata_tags(meta)
