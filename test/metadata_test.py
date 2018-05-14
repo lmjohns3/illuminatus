@@ -48,3 +48,39 @@ def test_synthetic_metadata_tags(meta, expected):
 def test_synthetic_datetime_tags(date, expected):
     actual = illuminatus.metadata.gen_datetime_tags(arrow.get(date))
     assert set(actual) == set(expected.split())
+
+
+@pytest.mark.parametrize('meta, expected', [
+    (dict(), None),
+    (dict(GPSPosition='abc'), None),
+    (dict(GPSPosition='1 deg 1\' 1" N'), 1.01694),
+    (dict(GPSPosition='1 deg 1\' 1" E'), None),
+    (dict(GPSLatitude='1 deg 1\' 1" N'), 1.01694),
+    (dict(GPSLatitude='5 deg 6\' 7.8" E'), None),
+    (dict(GPSPosition='1 deg 2\' 3.4" N, 5 deg 6\' 7.8" E'), 1.03428),
+    (dict(GPSPosition='1 deg 2\' 3.4" S, 5 deg 6\' 7.8" E'), -1.03428),
+])
+def test_synthetic_latitude(meta, expected):
+    lat = illuminatus.metadata.get_latitude(meta)
+    if lat is None:
+        assert lat == expected
+    else:
+        assert round(lat, 5) == expected
+
+
+@pytest.mark.parametrize('meta, expected', [
+    (dict(), None),
+    (dict(GPSPosition='abc'), None),
+    (dict(GPSPosition='1 deg 1\' 1" N'), None),
+    (dict(GPSLongitude='1 deg 1\' 1" N'), None),
+    (dict(GPSLongitude='5 deg 6\' 7.8" E'), 5.10217),
+    (dict(GPSPosition='5 deg 6\' 7.8" E'), 5.10217),
+    (dict(GPSPosition='1 deg 2\' 3.4" N, 5 deg 6\' 7.8" E'), 5.10217),
+    (dict(GPSPosition='1 deg 2\' 3.4" N, 5 deg 6\' 7.8" W'), -5.10217),
+])
+def test_synthetic_longitude(meta, expected):
+    lng = illuminatus.metadata.get_longitude(meta)
+    if lng is None:
+        assert lng == expected
+    else:
+        assert round(lng, 5) == expected

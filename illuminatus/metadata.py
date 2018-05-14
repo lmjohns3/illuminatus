@@ -12,6 +12,9 @@ _TIMESTAMP_FORMATS = ['YYYY-MM-DD HH:mm:ss', 'YYYY:MM:DD HH:mm:ss']
 # Pattern for matching a floating-point number.
 _FLOAT_PATTERN = r'(\d+)(\.\d+)?'
 
+# Pattern for matching a geotagging coordinate.
+_GEO_PATTERN = r'(?P<deg>\d+) deg (?P<min>\d+)\' (?P<sec>\d+(\.\d*)?)" (?P<sgn>[{}])'
+
 
 def get_timestamp(path, meta):
     '''Get the timestamp for an asset based on metadata or file mtime.
@@ -40,6 +43,71 @@ def get_timestamp(path, meta):
     except FileNotFoundError:
         pass
     return arrow.get('1000-01-01 00:00:00')
+
+
+def _geo_to_degrees(raw, pattern, positive):
+    '''Convert a geo metadata field to float degrees.
+
+    Parameters
+    ----------
+    raw : str
+        Raw metadata string possibly containing a geo coordinate.
+    pattern : str
+        Regular expression pattern for finding geo coordinate fields.
+    positive : str
+        The compass direction that should be considered positive (N for
+        latitude or E for longitude).
+
+    Returns
+    -------
+    A floating point number of degrees, or None if nothing could be found.
+    '''
+    match = re.search(pattern, raw)
+    if match is None:
+        return None
+    m = match.groupdict()
+    deg = int(m['deg']) + int(m['min']) / 60 + float(m['sec']) / 3600
+    return [-1, 1][m['sgn'] == positive] * deg
+
+
+def get_latitude(meta):
+    '''Compute the latitude of an asset from exif metadata.
+
+    Parameters
+    ----------
+    meta : dict
+        A dictionary mapping metadata fields to values.
+
+    Returns
+    -------
+    A latitude value, as a floating point number of degrees from the equator.
+    If the geo information cannot be computed this will return None.
+    '''
+    pattern = _GEO_PATTERN.format('NS')
+    lat = _geo_to_degrees(meta.get('GPSLatitude', ''), pattern, 'N')
+    if lat is None:
+        lat = _geo_to_degrees(meta.get('GPSPosition', ''), pattern, 'N')
+    return lat
+
+
+def get_longitude(meta):
+    '''Compute the longitude of an asset from exif metadata.
+
+    Parameters
+    ----------
+    meta : dict
+        A dictionary mapping metadata fields to values.
+
+    Returns
+    -------
+    A longitude value, as a floating point number of degrees from the meridian
+    line. If the geo information cannot be computed this will return None.
+    '''
+    pattern = _GEO_PATTERN.format('EW')
+    lng = _geo_to_degrees(meta.get('GPSLongitude', ''), pattern, 'E')
+    if lng is None:
+        lng = _geo_to_degrees(meta.get('GPSPosition', ''), pattern, 'E')
+    return lng
 
 
 def _round_to_most_significant_digits(n, digits=1):

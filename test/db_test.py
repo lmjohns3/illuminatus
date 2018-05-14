@@ -1,3 +1,5 @@
+import arrow
+
 from util import *
 
 
@@ -43,6 +45,7 @@ def test_matching_assets_stubs(empty_db, query, ids):
                            ('4', '.bc')):
             sess.add(illuminatus.Asset(
                 path=path, medium=illuminatus.Medium.Audio,
+                stamp=arrow.get().datetime,
                 tag_weights={t: 1 for t in tags if t != '.'}))
     with illuminatus.session(empty_db) as sess:
         matching = illuminatus.matching_assets(sess, query)

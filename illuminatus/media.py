@@ -13,7 +13,7 @@ import sqlalchemy
 import sqlalchemy.ext.declarative
 import ujson
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Table
+from sqlalchemy import Column, DateTime, Enum, Float, ForeignKey, Integer, String, Table
 from sqlalchemy.orm.attributes import flag_modified
 
 from . import metadata
@@ -24,6 +24,67 @@ _HEX_DIGITS = {
     tuple(b == '1' for b in '{:04b}'.format(i)): '{:x}'.format(i)
     for i in range(16)
 }
+
+# a map from hex digit to hex digits that differ in 1 bit.
+_HEX_NEIGHBORS = {
+    '{:x}'.format(i): tuple('{:x}'.format(i ^ (1 << j)) for j in range(4))
+    for i in range(16)
+}
+
+
+def compute_image_simhash(path, size=8):
+    '''Compute a similarity hash for an image.
+
+    Parameters
+    ----------
+    path : str
+        Path to an image file on disk.
+    size : int, optional
+        Number of pixels per side for the image. The hash will have s * s bits.
+        Defaults to 8, giving a 64-bit hash.
+
+    Returns
+    -------
+    A string containing a hex representation of the similarity hash.
+    '''
+    gray = PIL.Image.open(path).convert('L')
+    px = np.asarray(gray.resize((size + 1, size), PIL.Image.ANTIALIAS))
+    bits = (px[:, 1:] > px[:, :-1]).flatten()
+    return ''.join(_HEX_DIGITS[tuple(b)] for b in
+                   np.split(bits, list(range(4, len(bits), 4))))
+
+
+def neighboring_simhashes(simhash, within=1):
+    '''Generate all neighboring simhashes within a given Hamming distance.
+
+    Parameters
+    ----------
+    simhash : str
+        Sim hash to use for computing neighborhood.
+    within : int, optional
+        Yield all sim hashes within this Hamming distance.
+
+    Returns
+    -------
+    The set of sim hashes that are within the given distance from the
+    original. Does not include the original.
+    '''
+    nearby = set()
+    if not simhash:
+        return nearby
+    frontier = {simhash}
+    while within:
+        within -= 1
+        next_frontier = set()
+        for sh in frontier:
+            if sh not in nearby:
+                for i, c in enumerate(sh):
+                    for d in _HEX_NEIGHBORS[c]:
+                        next_frontier.add(sh[:i] + d + sh[i+1:])
+        nearby |= frontier
+        frontier = next_frontier
+    return (nearby | frontier) - {simhash}
+
 
 @enum.unique
 class Medium(enum.Enum):
@@ -175,28 +236,6 @@ class Format(object):
         return cls(**kwargs)
 
 
-def compute_image_simhash(path, size=8):
-    '''Compute a similarity hash for an image.
-
-    Parameters
-    ----------
-    path : str
-        Path to an image file on disk.
-    size : int, optional
-        Number of pixels per side for the image. The hash will have s * s bits.
-        Defaults to 8, giving a 64-bit hash.
-
-    Returns
-    -------
-    A string containing a hex representation of the similarity hash.
-    '''
-    gray = PIL.Image.open(path).convert('L')
-    px = np.asarray(gray.resize((size + 1, size), PIL.Image.ANTIALIAS))
-    bits = (px[:, 1:] > px[:, :-1]).flatten()
-    return ''.join(_HEX_DIGITS[tuple(b)] for b in
-                   np.split(bits, list(range(4, len(bits), 4))))
-
-
 Model = sqlalchemy.ext.declarative.declarative_base()
 
 
@@ -281,31 +320,15 @@ class Asset(Model):
     __table_args__ = dict(sqlite_autoincrement=True)
     id = Column(Integer, primary_key=True)
 
-    def _default_meta(self):
-        meta = tools.Exiftool(self.path).parse()
-        self.stamp = metadata.get_timestamp(self.path, meta).datetime
-        self.lat = metadata.get_latitude(meta)
-        self.lng = metadata.get_longitude(meta)
-        return meta
-
-    def _default_fingerprint(self):
-        with open(self.path, 'rb') as handle:
-            return hashlib.md5(handle.read()).hexdigest()
-
-    def _default_simhash(self):
-        if self.medium == Medium.Photo:
-            return compute_image_simhash(self.path)
-        return None
-
     path = Column(String, unique=True, nullable=False)
     medium = Column(Enum(Medium), index=True, nullable=False)
-    stamp = Column(DateTime, index=True)
+    stamp = Column(DateTime, index=True, nullable=False)
     lat = Column(Float, index=True)
     lng = Column(Float, index=True)
-    simhash = Column(String, index=True, default=_default_simhash)
-    fingerprint = Column(String, unique=True, default=_default_fingerprint)
+    simhash = Column(String, index=True)
+    fingerprint = Column(String, unique=True)
 
-    meta = Column(JSON, nullable=False, default=_default_meta)
+    meta = Column(JSON, nullable=False, default={})
     filters = Column(JSON, nullable=False, default=[])
     tag_weights = Column(JSON, nullable=False, default={})
 
@@ -358,6 +381,8 @@ class Asset(Model):
             path=self.path,
             medium=self.medium,
             stamp=arrow.get(self.stamp).isoformat(),
+            lat=self.lat,
+            lng=self.lng,
             simhash=self.simhash,
             fingerprint=self.fingerprint,
             metadata=self.meta,
@@ -418,6 +443,27 @@ class Asset(Model):
                 os.path.dirname(self.path),
                 '.illuminatus-removed-' + os.path.basename(self.path))
             os.rename(target.path, hidden)
+
+    def _init(self):
+        '''Initialize a newly created asset.'''
+        if not os.path.isfile(self.path):
+            return
+
+        with open(self.path, 'rb') as handle:
+            self.fingerprint = hashlib.md5(handle.read()).hexdigest()
+
+        if self.medium == Medium.Photo:
+            self.simhash = compute_image_simhash(self.path)
+
+        if not self.meta:
+            self.meta = tools.Exiftool(self.path).parse()
+
+        stamp = metadata.get_timestamp(self.path, self.meta).datetime
+        if stamp is not None or self.stamp is None:
+            self.stamp = stamp
+
+        self.lat = metadata.get_latitude(self.meta)
+        self.lng = metadata.get_longitude(self.meta)
 
     def _rebuild_tags(self, sess):
         '''Rebuild the tag list for this asset.

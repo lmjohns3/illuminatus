@@ -7,7 +7,9 @@ A = illuminatus.Asset
 
 def test_add_remove_tags(empty_db):
     with illuminatus.session(empty_db) as sess:
-        sess.add(illuminatus.Asset(path='foo', medium=illuminatus.Medium.Photo))
+        sess.add(illuminatus.Asset(path='foo',
+                                   medium=illuminatus.Medium.Photo,
+                                   stamp=arrow.get().datetime))
     with illuminatus.session(empty_db) as sess:
         asset = sess.query(A).filter(A.path == 'foo').one()
         assert 'hello' not in set(t.name for t in asset.tags)
@@ -102,8 +104,27 @@ def test_photo_filters(test_db, tmpdir, filters):
         assert thumb.listdir() == [jpg]
 
 
-def test_dhash(test_db):
+def test_image_simhash(test_db):
+    simhash = illuminatus.media.compute_image_simhash
     with illuminatus.session(test_db) as sess:
         photo = sess.query(A).filter(A.id == PHOTO_ID).one()
-        assert photo.compute_dhash(4) == 'a443'
-        assert photo.compute_dhash(8) == 'ccc48228397b238e'
+        assert simhash(photo.path, 4) == 'a443'
+        assert simhash(photo.path, 8) == 'ccc48228397b238e'
+
+
+@pytest.mark.parametrize('simhash, within, expected', [
+    (None, 1, set()),
+    ('', 1, set()),
+    ('0', 1, set('1248')),
+    ('0', 2, set('12345689ac')),
+    ('00', 1, {'01', '02', '04', '08', '10', '20', '40', '80'}),
+    ('00', 2, {'01', '02', '04', '08', '03', '05', '06', '09', '0a', '0c',
+               '11', '21', '41', '81', '12', '22', '42', '82',
+               '14', '24', '44', '84', '18', '28', '48', '88',
+               '10', '20', '40', '80', '30', '50', '60', '90', 'a0', 'c0',
+               '11', '21', '41', '81', '12', '22', '42', '82',
+               '14', '24', '44', '84', '18', '28', '48', '88',
+    }),
+])
+def test_neighboring_simhashes(simhash, within, expected):
+    assert illuminatus.media.neighboring_simhashes(simhash, within) == expected
