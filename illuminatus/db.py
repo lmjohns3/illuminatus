@@ -30,7 +30,8 @@ def init(path):
 
 @contextlib.contextmanager
 def session(path, echo=False, hide_original_on_delete=False):
-    session = sqlalchemy.orm.sessionmaker(bind=engine(path, echo))()
+    session = sqlalchemy.orm.scoping.scoped_session(
+        sqlalchemy.orm.sessionmaker(bind=engine(path, echo)))
 
     @sqlalchemy.event.listens_for(session, 'before_flush')
     def handle_asset_bookkeeping(sess, ctx, instances):
@@ -52,7 +53,7 @@ def session(path, echo=False, hide_original_on_delete=False):
         session.rollback()
         raise
     finally:
-        session.close()
+        session.remove()
 
 
 class QueryParser(parsimonious.NodeVisitor):

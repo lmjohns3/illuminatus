@@ -104,15 +104,15 @@ def test_photo_filters(test_db, tmpdir, filters):
         assert thumb.listdir() == [jpg]
 
 
-def test_image_simhash(test_db):
-    simhash = illuminatus.media.compute_image_simhash
+def test_photo_diff(test_db):
+    simhash = illuminatus.media.Hash.compute_photo_diff
     with illuminatus.session(test_db) as sess:
         photo = sess.query(A).filter(A.id == PHOTO_ID).one()
-        assert simhash(photo.path, 4) == 'a443'
-        assert simhash(photo.path, 8) == 'ccc48228397b238e'
+        assert photo.nibbles == 'a443'
+        assert photo.nibbles == 'ccc48228397b238e'
 
 
-@pytest.mark.parametrize('simhash, within, expected', [
+@pytest.mark.parametrize('nibbles, within, expected', [
     (None, 1, set()),
     ('', 1, set()),
     ('0', 1, set('1248')),
@@ -123,8 +123,7 @@ def test_image_simhash(test_db):
                '14', '24', '44', '84', '18', '28', '48', '88',
                '10', '20', '40', '80', '30', '50', '60', '90', 'a0', 'c0',
                '11', '21', '41', '81', '12', '22', '42', '82',
-               '14', '24', '44', '84', '18', '28', '48', '88',
-    }),
+               '14', '24', '44', '84', '18', '28', '48', '88'}),
 ])
-def test_neighboring_simhashes(simhash, within, expected):
-    assert illuminatus.media.neighboring_simhashes(simhash, within) == expected
+def test_neighboring_hashes(nibbles, within, expected):
+    assert illuminatus.media.neighboring_hashes(nibbles, within) == expected

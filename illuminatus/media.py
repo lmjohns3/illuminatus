@@ -19,72 +19,6 @@ from sqlalchemy.orm.attributes import flag_modified
 from . import metadata
 from . import tools
 
-# a map from bit pattern to hex digit, e.g. (True, False, True, True) --> 'b'
-_HEX_DIGITS = {
-    tuple(b == '1' for b in '{:04b}'.format(i)): '{:x}'.format(i)
-    for i in range(16)
-}
-
-# a map from hex digit to hex digits that differ in 1 bit.
-_HEX_NEIGHBORS = {
-    '{:x}'.format(i): tuple('{:x}'.format(i ^ (1 << j)) for j in range(4))
-    for i in range(16)
-}
-
-
-def compute_image_simhash(path, size=8):
-    '''Compute a similarity hash for an image.
-
-    Parameters
-    ----------
-    path : str
-        Path to an image file on disk.
-    size : int, optional
-        Number of pixels per side for the image. The hash will have s * s bits.
-        Defaults to 8, giving a 64-bit hash.
-
-    Returns
-    -------
-    A string containing a hex representation of the similarity hash.
-    '''
-    gray = PIL.Image.open(path).convert('L')
-    px = np.asarray(gray.resize((size + 1, size), PIL.Image.ANTIALIAS))
-    bits = (px[:, 1:] > px[:, :-1]).flatten()
-    return ''.join(_HEX_DIGITS[tuple(b)] for b in
-                   np.split(bits, list(range(4, len(bits), 4))))
-
-
-def neighboring_simhashes(simhash, within=1):
-    '''Generate all neighboring simhashes within a given Hamming distance.
-
-    Parameters
-    ----------
-    simhash : str
-        Sim hash to use for computing neighborhood.
-    within : int, optional
-        Yield all sim hashes within this Hamming distance.
-
-    Returns
-    -------
-    The set of sim hashes that are within the given distance from the
-    original. Does not include the original.
-    '''
-    nearby = set()
-    if not simhash:
-        return nearby
-    frontier = {simhash}
-    while within:
-        within -= 1
-        next_frontier = set()
-        for sh in frontier:
-            if sh not in nearby:
-                for i, c in enumerate(sh):
-                    for d in _HEX_NEIGHBORS[c]:
-                        next_frontier.add(sh[:i] + d + sh[i+1:])
-        nearby |= frontier
-        frontier = next_frontier
-    return (nearby | frontier) - {simhash}
-
 
 @enum.unique
 class Medium(enum.Enum):
@@ -325,8 +259,6 @@ class Asset(Model):
     stamp = Column(DateTime, index=True, nullable=False)
     lat = Column(Float, index=True)
     lng = Column(Float, index=True)
-    simhash = Column(String, index=True)
-    fingerprint = Column(String, unique=True)
 
     meta = Column(JSON, nullable=False, default={})
     filters = Column(JSON, nullable=False, default=[])
@@ -383,7 +315,7 @@ class Asset(Model):
             stamp=arrow.get(self.stamp).isoformat(),
             lat=self.lat,
             lng=self.lng,
-            simhash=self.simhash,
+            hashes=[h.to_dict() for h in self.hashes],
             fingerprint=self.fingerprint,
             metadata=self.meta,
             filters=self.filters,
@@ -449,11 +381,10 @@ class Asset(Model):
         if not os.path.isfile(self.path):
             return
 
-        with open(self.path, 'rb') as handle:
-            self.fingerprint = hashlib.md5(handle.read()).hexdigest()
-
+        self.hashes.append(Hash.compute_md5sum(self.path))
         if self.medium == Medium.Photo:
-            self.simhash = compute_image_simhash(self.path)
+            #self.hashes.append(Hash.compute_photo_diff(self.path, size=4))
+            self.hashes.append(Hash.compute_photo_diff(self.path, size=8))
 
         if not self.meta:
             self.meta = tools.Exiftool(self.path).parse()
@@ -604,3 +535,145 @@ class Asset(Model):
                 self.path, index, actual_filter, filter))
         self.filters.pop(index)
         flag_modified(self, 'filters')
+
+
+# a map from bit pattern to hex digit, e.g. (True, False, True, True) --> 'b'
+_HEX_DIGITS = {
+    tuple(b == '1' for b in '{:04b}'.format(i)): '{:x}'.format(i)
+    for i in range(16)
+}
+
+
+# a map from hex digit to hex digits that differ in 1 bit.
+_HEX_NEIGHBORS = {
+    '{:x}'.format(i): tuple('{:x}'.format(i ^ (1 << j)) for j in range(4))
+    for i in range(16)
+}
+
+
+@enum.unique
+class HashFlavor(enum.Enum):
+    '''Enumeration of different supported hash types.'''
+    MD5 = 1
+    DiffHash = 2
+    LuminanceHistogram = 3
+
+
+class Hash(Model):
+    __tablename__ = 'hashes'
+    __table_args__ = dict(sqlite_autoincrement=True)
+    id = Column(Integer, primary_key=True)
+
+    nibbles = Column(String, index=True, nullable=False)
+    flavor = Column(Enum(HashFlavor), index=True, nullable=False)
+    after = Column(Float, nullable=False, default=0.0)
+
+    asset_id = Column(ForeignKey('assets.id'), index=True)
+    asset = sqlalchemy.orm.relationship(Asset,
+                                        backref='hashes',
+                                        lazy='joined')
+
+    @classmethod
+    def compute_md5sum(cls, path):
+        '''Compute an MD5 sum based on the contents of a file.
+
+        Parameters
+        ----------
+        path : str
+            Path to a file on disk.
+
+        Returns
+        -------
+        A Hash instance representing the MD5 sum of this file's contents.
+        '''
+        with open(path, 'rb') as handle:
+            nibbles = hashlib.md5(handle.read()).hexdigest()
+        return cls(nibbles=nibbles, flavor=HashFlavor.MD5)
+
+    @classmethod
+    def compute_photo_diff(cls, path, size=8):
+        '''Compute a similarity hash for an image.
+
+        Parameters
+        ----------
+        path : str
+            Path to an image file on disk.
+        size : {4, 8}, optional
+            Number of pixels, `s`, per side for the image. The hash will have
+            `s * s` bits. Defaults to 8, giving a 64-bit hash.
+
+        Returns
+        -------
+        A Hash instance representing the diff hash.
+        '''
+        gray = PIL.Image.open(path).convert('L')
+        pixels = np.asarray(gray.resize((size + 1, size), PIL.Image.ANTIALIAS))
+        bits = (pixels[:, 1:] > pixels[:, :-1]).flatten()
+        nibbles = ''.join(_HEX_DIGITS[tuple(b)] for b in
+                          np.split(bits, list(range(4, len(bits), 4))))
+        return cls(nibbles=nibbles, flavor=HashFlavor.DiffHash)
+
+    @classmethod
+    def compute_audio_diff(cls, path, size=8):
+        raise NotImplementedError
+
+    @classmethod
+    def compute_video_diff(cls, path, size=8):
+        raise NotImplementedError
+
+    def select_neighbors(self, sess, within=1):
+        '''Get all neighboring hashes from the database.
+
+        Parameters
+        ----------
+        sess : SQLAlchemy
+            Database session.
+        within : int, optional
+            Select all existing hashes within this Hamming distance.
+
+        Returns
+        -------
+        A query object over neighboring hashes from our hash.
+        '''
+        return sess.query(Hash).filter(
+            Hash.nibbles.in_(neighboring_hashes(self.nibbles, within)),
+            Hash.flavor == self.flavor)
+
+    def to_dict(self):
+        return dict(
+            nibbles=self.nibbles,
+            flavor=self.flavor,
+            after=self.after,
+        )
+
+
+def neighboring_hashes(nibbles, within=1):
+    '''Pull all neighboring hashes within a given Hamming distance.
+
+    Parameters
+    ----------
+    nibbles : str
+        Hexadecimal string representing the source hash value.
+    within : int, optional
+        Identify all hashes within this Hamming distance.
+
+    Returns
+    -------
+    The set of hashes that are within the given distance from the original.
+    Does not include the original.
+    '''
+    nearby = set()
+    if not nibbles:
+        return nearby
+    frontier = {nibbles}
+    while within:
+        within -= 1
+        next_frontier = set()
+        for chars in frontier:
+            if chars not in nearby:
+                for i, c in enumerate(chars):
+                    for d in _HEX_NEIGHBORS[c]:
+                        next_frontier.add(chars[:i] + d + chars[i+1:])
+        nearby |= frontier
+        frontier = next_frontier
+    return (nearby | frontier) - {nibbles}
