@@ -322,7 +322,7 @@ class Convert(Tool):
         if wo < wi / 2 and ho < hi / 2:
             prescale = '-scale {}x{}'.format(int(1.2 * wo), int(1.2 * ho))
             self._filters.insert(0, prescale)
-        self._filters.append('-profile *')
+        self._filters.append('+profile *')
         self._filters.append('-thumbnail {}x{}'.format(wo, ho))
         self._run(output)
 
