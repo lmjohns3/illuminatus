@@ -45,6 +45,70 @@ def get_timestamp(path, meta):
     return arrow.get('1000-01-01 00:00:00')
 
 
+def get_width(meta):
+    '''Get the width of a media asset, in pixels.
+
+    Parameters
+    ----------
+    meta : dict
+        A dictionary mapping metadata fields to values.
+
+    Returns
+    -------
+    A width value in pixels. Returns -1 if no value can be found.
+    '''
+    for key in ('ImageWidth', 'SourceImageWidth'):
+        if key in meta:
+            return int(meta[key])
+    if 'ImageSize' in meta:
+        return int(meta['ImageSize'].split('x')[0])
+    return -1
+
+
+def get_height(meta):
+    '''Get the height of a media asset, in pixels.
+
+    Parameters
+    ----------
+    meta : dict
+        A dictionary mapping metadata fields to values.
+
+    Returns
+    -------
+    A height value in pixels. Returns -1 if no value can be found.
+    '''
+    for key in ('ImageHeight', 'SourceImageHeight'):
+        if key in meta:
+            return int(meta[key])
+    if 'ImageSize' in meta:
+        return int(meta['ImageSize'].split('x')[1])
+    return -1
+
+
+def get_duration(meta):
+    '''Get the duration of a media asset, in seconds.
+
+    Parameters
+    ----------
+    meta : dict
+        A dictionary mapping metadata fields to values.
+
+    Returns
+    -------
+    A duration value in seconds. Returns -1 if no value can be found.
+    '''
+    value = meta.get('Duration', '')
+    if re.match(r'^[:\d]+$', value):
+        sec, mul = 0, 1
+        for n in reversed(value.split(':')):
+            sec += mul * int(n)
+            mul *= 60
+        return sec
+    if re.match(r'^[.\d]+ s$', value):
+        return int(round(float(value.split()[0])))
+    return -1
+
+
 def _geo_to_degrees(raw, pattern, positive):
     '''Convert a geo metadata field to float degrees.
 

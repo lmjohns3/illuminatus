@@ -8,6 +8,7 @@ import mimetypes
 import numpy as np
 import os
 import PIL.Image
+import PIL.ImageCms
 import re
 import sqlalchemy
 import sqlalchemy.ext.declarative
@@ -18,6 +19,11 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from . import metadata
 from . import tools
+
+RGB2LAB = PIL.ImageCms.buildTransformFromOpenProfiles(
+    PIL.ImageCms.createProfile('sRGB'),
+    PIL.ImageCms.createProfile('LAB'),
+    'RGB', 'LAB')
 
 
 @enum.unique
@@ -50,7 +56,7 @@ def medium_for(path):
     return None
 
 
-class Format(object):
+class Format:
     '''A POD class representing an export file format specification.
 
     Attributes
@@ -183,18 +189,18 @@ class Tag(Model):
     def __repr__(self):
         return '<Tag {}>'.format(self.name)
 
-    Group = collections.namedtuple('Group', 'index color')
+    Group = collections.namedtuple('Group', 'index color bold')
 
     GROUPS = dict(
-        y=Group(0, 'green'),
-        m=Group(1, 'green'),
-        d=Group(2, 'green'),
-        w=Group(3, 'green'),
-        h=Group(4, 'green'),
-        kit=Group(5, 'cyan'),
-        aperture=Group(6, 'cyan'),
-        focus=Group(7, 'cyan'),
-        geo=Group(8, 'blue'),
+        y=Group(0, 'green', False),
+        m=Group(1, 'green', False),
+        d=Group(2, 'green', False),
+        w=Group(3, 'green', False),
+        h=Group(4, 'green', False),
+        kit=Group(5, 'cyan', False),
+        aperture=Group(6, 'cyan', False),
+        focus=Group(7, 'cyan', False),
+        geo=Group(8, 'blue', False),
     )
 
     @staticmethod
@@ -221,15 +227,20 @@ class Tag(Model):
             return click.style(self.name, 'blue', bold=True)
         parts = self.name.split(':')
         group = parts.pop(0)
+        g = Tag.GROUPS.get(group) or Tag.Group(None, 'red', False)
         if group in tuple('ymdwh'):
-            name = parts[-1]
-            return click.style(name, fg=Tag.GROUPS[group].color, bold=True)
-        color = Tag.GROUPS[group].color if group in Tag.GROUPS else 'red'
-        return '{}:{}'.format(click.style(group, fg=color),
-                              click.style(':'.join(parts), fg=color, bold=True))
+            return click.style(parts[-1], fg=g.color, bold=g.bold)
+        return '{}:{}'.format(
+            click.style(group, fg=g.color),
+            click.style(':'.join(parts), fg=g.color, bold=True))
 
     def to_dict(self, weight):
-        return dict(id=self.id, name=self.name, sort_key=self.sort_key, weight=weight)
+        return dict(
+            id=self.id,
+            name=self.name,
+            sort_key=self.sort_key,
+            weight=weight,
+        )
 
 
 class TextJson(sqlalchemy.types.TypeDecorator):
@@ -257,11 +268,14 @@ class Asset(Model):
     path = Column(String, unique=True, nullable=False)
     medium = Column(Enum(Medium), index=True, nullable=False)
     stamp = Column(DateTime, index=True, nullable=False)
-    lat = Column(Float, index=True)
-    lng = Column(Float, index=True)
-
-    meta = Column(JSON, nullable=False, default={})
+    description = Column(String, nullable=False, default='')
+    width = Column(Integer, index=True, nullable=False, default=0.0)
+    height = Column(Integer, index=True, nullable=False, default=0.0)
+    duration = Column(Integer, index=True, nullable=False, default=0.0)
+    lat = Column(Float, index=True, nullable=False, default=0.0)
+    lng = Column(Float, index=True, nullable=False, default=0.0)
     filters = Column(JSON, nullable=False, default=[])
+    meta_tags = Column(JSON, nullable=False, default=[])
     tag_weights = Column(JSON, nullable=False, default={})
 
     tags = sqlalchemy.orm.relationship(Tag,
@@ -278,24 +292,6 @@ class Asset(Model):
                   Medium.Photo: 'jpg'}
 
     @property
-    def shape(self):
-        def ints(*args): return tuple(int(a) for a in args)
-        m = self.meta
-        try:
-            return ints(m['ImageWidth'], m['ImageHeight'])
-        except:
-            pass
-        try:
-            return ints(m['SourceImageWidth'], m['SourceImageHeight'])
-        except:
-            pass
-        try:
-            return ints(*m['ImageSize'].split('x'))
-        except:
-            pass
-        return -1, -1
-
-    @property
     def basename(self):
         '''The base filename for this asset.'''
         return os.path.basename(self.path)
@@ -306,21 +302,21 @@ class Asset(Model):
         digest = hashlib.md5(self.path.encode('utf-8')).digest()
         return base64.b32encode(digest).strip(b'=').lower().decode('utf-8')
 
-    def to_dict(self):
+    def to_dict(self, exclude_tags=set()):
         w = self.tag_weights
         return dict(
             id=self.id,
             path=self.path,
             medium=self.medium,
-            stamp=arrow.get(self.stamp).isoformat(),
-            lat=self.lat,
-            lng=self.lng,
-            hashes=[h.to_dict() for h in self.hashes],
-            fingerprint=self.fingerprint,
-            metadata=self.meta,
             filters=self.filters,
+            stamp=arrow.get(self.stamp).isoformat(),
+            description=self.description,
+            shape=(self.width, self.height, self.duration),
+            latlng=(self.lat, self.lng),
+            hashes=[h.to_dict() for h in self.hashes],
             tags=[t.to_dict(w.get(t.name, -1.0)) for t in
-                  sorted(self.tags, key=lambda t: t.sort_key)],
+                  sorted(self.tags, key=lambda t: t.sort_key)
+                  if t.name not in exclude_tags],
         )
 
     def export(self, root, fmt=None, force=False, **kwargs):
@@ -383,18 +379,23 @@ class Asset(Model):
 
         self.hashes.append(Hash.compute_md5sum(self.path))
         if self.medium == Medium.Photo:
-            #self.hashes.append(Hash.compute_photo_diff(self.path, size=4))
-            self.hashes.append(Hash.compute_photo_diff(self.path, size=8))
+            self.hashes.append(Hash.compute_photo_diff(self.path))
+            self.hashes.append(Hash.compute_photo_histogram(self.path))
 
-        if not self.meta:
-            self.meta = tools.Exiftool(self.path).parse()
+        meta = tools.Exiftool(self.path).parse()
 
-        stamp = metadata.get_timestamp(self.path, self.meta).datetime
+        stamp = metadata.get_timestamp(self.path, meta).datetime
         if stamp is not None or self.stamp is None:
             self.stamp = stamp
 
-        self.lat = metadata.get_latitude(self.meta)
-        self.lng = metadata.get_longitude(self.meta)
+        self.width = metadata.get_width(meta)
+        self.height = metadata.get_height(meta)
+        self.duration = metadata.get_duration(meta)
+
+        self.lat = metadata.get_latitude(meta)
+        self.lng = metadata.get_longitude(meta)
+
+        self.meta_tags = sorted(set(metadata.gen_metadata_tags(meta)))
 
     def _rebuild_tags(self, sess):
         '''Rebuild the tag list for this asset.
@@ -405,7 +406,7 @@ class Asset(Model):
             Database session.
         '''
         user = set(self.tag_weights or {})
-        meta = set(metadata.gen_metadata_tags(self.meta))
+        meta = set(self.meta_tags or ())
         stamp = set(metadata.gen_datetime_tags(arrow.get(self.stamp)))
         target = user | meta | stamp
         existing = {tag.name: tag for tag in self.tags}
@@ -551,27 +552,29 @@ _HEX_NEIGHBORS = {
 }
 
 
-@enum.unique
-class HashFlavor(enum.Enum):
-    '''Enumeration of different supported hash types.'''
-    MD5 = 1
-    DiffHash = 2
-    LuminanceHistogram = 3
-
-
 class Hash(Model):
     __tablename__ = 'hashes'
     __table_args__ = dict(sqlite_autoincrement=True)
     id = Column(Integer, primary_key=True)
 
     nibbles = Column(String, index=True, nullable=False)
-    flavor = Column(Enum(HashFlavor), index=True, nullable=False)
-    after = Column(Float, nullable=False, default=0.0)
+    flavor = Column(String, index=True, nullable=False)
+    offset_sec = Column(Float, nullable=False, default=0.0)
 
     asset_id = Column(ForeignKey('assets.id'), index=True)
     asset = sqlalchemy.orm.relationship(Asset,
                                         backref='hashes',
                                         lazy='joined')
+
+    class Flavor:
+        '''Enumeration of different supported hash types.'''
+        MD5 = 'md5'
+        DIFF_8 = 'diff8'
+        HSL_HIST = 'hslhist'
+
+    def __str__(self):
+        return ':'.join((click.style(self.flavor, fg='white'),
+                         click.style(self.nibbles, fg='white', bold=True)))
 
     @classmethod
     def compute_md5sum(cls, path):
@@ -588,7 +591,7 @@ class Hash(Model):
         '''
         with open(path, 'rb') as handle:
             nibbles = hashlib.md5(handle.read()).hexdigest()
-        return cls(nibbles=nibbles, flavor=HashFlavor.MD5)
+        return cls(nibbles=nibbles, flavor=Hash.Flavor.MD5)
 
     @classmethod
     def compute_photo_diff(cls, path, size=8):
@@ -606,12 +609,36 @@ class Hash(Model):
         -------
         A Hash instance representing the diff hash.
         '''
+        if size != 8:
+            raise ValueError('Diff hash size must be 8, got {}'.format(size))
         gray = PIL.Image.open(path).convert('L')
         pixels = np.asarray(gray.resize((size + 1, size), PIL.Image.ANTIALIAS))
         bits = (pixels[:, 1:] > pixels[:, :-1]).flatten()
         nibbles = ''.join(_HEX_DIGITS[tuple(b)] for b in
                           np.split(bits, list(range(4, len(bits), 4))))
-        return cls(nibbles=nibbles, flavor=HashFlavor.DiffHash)
+        return cls(nibbles=nibbles, flavor=Hash.Flavor.DIFF_8)
+
+    @classmethod
+    def compute_photo_histogram(cls, path):
+        #img = PIL.ImageCms.applyTransform(
+        #    PIL.Image.open(path).convert('RGB'), RGB2LAB)
+
+        def quantize(counts, bins):
+            parts = np.array([sum(c) for c in np.split(np.array(counts), bins)])
+            logp = np.log(1e-4 + parts) - np.log(sum(parts) + 1e-4 * len(parts))
+            lo, hi = np.percentile(logp, [1, 99])
+            quantized = np.linspace(lo, hi, 16).searchsorted(np.clip(logp, lo, hi))
+            return ''.join('{:x}'.format(b) for b in quantized)
+
+        #counts = PIL.Image.open(path).convert('L').histogram()
+        #return cls(nibbles=quantize(counts, 16), flavor=Hash.Flavor.L_HIST)
+
+        hist = PIL.Image.open(path).convert('HSV').histogram()
+        hhist, shist, vhist = np.split(np.asarray(hist), 3)
+        return cls(nibbles=''.join((quantize(hhist, 16),
+                                    quantize(shist, 8),
+                                    quantize(vhist, 8))),
+                   flavor=Hash.Flavor.HSL_HIST)
 
     @classmethod
     def compute_audio_diff(cls, path, size=8):
@@ -643,7 +670,7 @@ class Hash(Model):
         return dict(
             nibbles=self.nibbles,
             flavor=self.flavor,
-            after=self.after,
+            offset_sec=self.offset_sec,
         )
 
 

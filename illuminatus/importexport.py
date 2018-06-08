@@ -39,7 +39,7 @@ def run_workqueue(jobs, callback, num_workers=mp.cpu_count()):
         [w.terminate() for w in workers]
 
 
-class Importer(object):
+class Importer:
     '''A class for importing media into the database.
 
     Parameters
@@ -52,8 +52,8 @@ class Importer(object):
         Number of parent directory names to add as tags for each imported asset.
     '''
 
-    def __init__(self, sess, tags, path_tags):
-        self.sess = sess
+    def __init__(self, session, tags, path_tags):
+        self.session = session
         self.tags = tags
         self.path_tags = path_tags
 
@@ -90,8 +90,7 @@ class Importer(object):
         roots : sequence of str
             Root paths to search for files.
         '''
-        for path in self.walk(roots):
-            self.import_one(path)
+        run_workqueue(self.walk(roots), self.import_one)
 
     def import_one(self, path):
         '''Import a single path into the media database.
@@ -102,27 +101,28 @@ class Importer(object):
             A filesystem path to examine and possibly import.
         '''
         try:
-            if self.sess.query(Asset).filter(Asset.path == path).count():
-                click.echo('{} Already have {}'.format(
-                    click.style('=', fg='blue'),
-                    click.style(path, fg='red')))
-                return
-            medium = medium_for(path)
-            if medium is None:
-                click.echo('{} Unknown {}'.format(
-                    click.style('?', fg='yellow'),
-                    click.style(path, fg='red')))
-                return
-            asset = Asset(path=path, medium=medium)
-            for tag in self.tags:
-                asset.increment_tag(tag)
-            components = os.path.dirname(path).split(os.sep)[::-1]
-            for i in range(self.path_tags):
-                asset.increment_tag(components[i])
-            self.sess.add(asset)
-            click.echo('{} Added {}'.format(
-                    click.style('+', fg='green'),
-                    click.style(path, fg='red')))
+            with self.session() as sess:
+                if sess.query(Asset).filter(Asset.path == path).count():
+                    click.echo('{} Already have {}'.format(
+                        click.style('=', fg='blue'),
+                        click.style(path, fg='red')))
+                    return
+                medium = medium_for(path)
+                if medium is None:
+                    click.echo('{} Unknown {}'.format(
+                        click.style('?', fg='yellow'),
+                        click.style(path, fg='red')))
+                    return
+                asset = Asset(path=path, medium=medium)
+                for tag in self.tags:
+                    asset.increment_tag(tag)
+                components = os.path.dirname(path).split(os.sep)[::-1]
+                for i in range(self.path_tags):
+                    asset.increment_tag(components[i])
+                sess.add(asset)
+                click.echo('{} Added {}'.format(
+                        click.style('+', fg='green'),
+                        click.style(path, fg='red')))
         except KeyboardInterrupt:
             pass
         except:
@@ -130,7 +130,7 @@ class Importer(object):
             click.echo('! Error {} {}'.format(path, exc))  # , ''.join(tb))
 
 
-class Thumbnailer(object):
+class Thumbnailer:
     '''Export thumbnails of media content to files on disk.
 
     Parameters
@@ -160,7 +160,7 @@ class Thumbnailer(object):
         run_workqueue(self.assets, self)
 
     def __call__(self, asset):
-        fmt = getattr(self, '{}_format'.format(asset.__class__.__name__.lower()))
+        fmt = getattr(self, '{}_format'.format(type(asset).__name__.lower()))
         if fmt is None:
             return
         output = asset.export(fmt=fmt, root=self.root)
@@ -171,7 +171,7 @@ class Thumbnailer(object):
                                         click.style(output, fg='green')))
 
 
-class Exporter(object):
+class Exporter:
     '''Export media content to a zip file on disk.
 
     Parameters
@@ -224,14 +224,14 @@ class Exporter(object):
             If True, export tags present in all media. By default, tags that
             are present in all assets being exported will not be exported.
         '''
-        hide_sources = set()
+        hide_patterns = list(hide_tags)
         if hide_metadata_tags:
-            hide_sources.add(Tag.METADATA)
+            hide_patterns.append(Tag.METADATA_PATTERN)
         if hide_datetime_tags:
-            hide_sources.add(Tag.DATETIME)
+            hide_patterns.append(Tag.DATETIME_PATTERN)
 
         hide_names = set()
-        for pattern in hide_tags:
+        for pattern in hide_patterns:
             for tag in self.all_tags:
                 if re.match(pattern, tag.name):
                     hide_names.add(tag.name)
@@ -251,21 +251,14 @@ class Exporter(object):
             self.root = root
             run_workqueue(self.assets, self)
             with open(index, 'w') as handle:
-                export = []
-                for asset in self.assets:
-                    for tag in list(asset.tags):
-                        if tag.name in hide_names or tag.source in hide_sources:
-                            asset.remove_tag(tag)
-                    export.append(asset.to_dict())
-                ujson.dump(export, handle)
+                ujson.dump([asset.to_dict(exclude_tags=hide_names)
+                            for asset in self.assets], handle)
             _create_zip(output, root)
 
-        click.echo('Exported {} assets to {}'.format(
-            click.style(str(len(self.assets)), fg='cyan'),
-            click.style(output, fg='red')))
+        return len(self.assets)
 
     def __call__(self, asset):
-        fmt = getattr(self, '{}_format'.format(asset.__class__.__name__.lower()))
+        fmt = getattr(self, '{}_format'.format(type(asset).__name__.lower()))
         if fmt is not None:
             asset.export(fmt=fmt, root=self.root)
 

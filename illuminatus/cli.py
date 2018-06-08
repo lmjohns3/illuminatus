@@ -25,7 +25,7 @@ def session(ctx, hide_original_on_delete=False):
 
 @click.group()
 @click.option('--db-path', envvar='ILLUMINATUS_DB', metavar='PATH',
-              help='Load database from PATH.')
+              default='', help='Load database from PATH.')
 @click.option('--log-sql/--no-log-sql', default=False,
               help='Log database queries.')
 @click.option('--log-tools/--no-log-tools', default=False,
@@ -38,7 +38,7 @@ def cli(ctx, db_path, log_sql, log_tools):
         return
 
     '''
-    for color in 'black white red yellow green cyan blue magenta'.split():
+    for color in 'black white red magenta yellow green cyan blue'.split():
         click.echo('{} {}'.format(
             click.style('{:7s}'.format(color), fg=color, bold=False),
             click.style('{:7s}'.format(color), fg=color, bold=True)))
@@ -46,7 +46,7 @@ def cli(ctx, db_path, log_sql, log_tools):
 
     if ctx.invoked_subcommand != 'init':
         if not os.path.isfile(db_path):
-            raise RuntimeError('Illuminatus database {} not found!'.format(
+            raise RuntimeError('Illuminatus database not found: {}'.format(
                 click.style(db_path, fg='cyan')))
 
     db_path = os.path.abspath(os.path.expanduser(db_path))
@@ -192,7 +192,7 @@ def ls(ctx, query, order):
         for asset in db.matching_assets(sess, ' '.join(query), order):
             click.echo(' '.join((
                 click.style(str(asset.stamp), fg='yellow'),
-                click.style(asset.dhash4, fg='red'),
+                ' '.join(str(h) for h in asset.hashes if h.flavor == 'diff8'),
                 ' '.join(t.name_string for t in
                          sorted(asset.tags, key=lambda t: t.sort_key)),
                 click.style(asset.path),
@@ -240,18 +240,21 @@ def rm(ctx, query, hide_original):
 @click.argument('query', nargs=-1)
 @click.pass_context
 def export(ctx, query, audio_format, photo_format, video_format, **kwargs):
-    '''Export a zip file of assets matching a QUERY.
+    '''Export a zip file matching a QUERY.
 
     See "illuminatus help" for help on QUERY and SPEC syntax.
     '''
-    db = DB(ctx.obj['db'])
-    Exporter(
-        db.tags,
-        db.select(' '.join(query)),
-        audio_format=Format.parse(audio_format),
-        photo_format=Format.parse(photo_format),
-        video_format=Format.parse(video_format),
-    ).run(**kwargs)
+    with session(ctx) as sess:
+        count = Exporter(
+            sess.query(Tag).all(),
+            db.matching_assets(sess, ' '.join(query)),
+            audio_format=Format.parse(audio_format),
+            photo_format=Format.parse(photo_format),
+            video_format=Format.parse(video_format),
+        ).run(**kwargs)
+        click.echo('Exported {} assets to {}'.format(
+            click.style(str(count), fg='cyan'),
+            click.style(kwargs['output'], fg='red')))
 
 
 @cli.command('import')
@@ -267,8 +270,7 @@ def import_(ctx, source, tag, path_tags):
     If any source is a directory, all assets under that directory will be
     imported recursively.
     '''
-    with session(ctx) as sess:
-        Importer(sess, tag, path_tags).run(source)
+    Importer(lambda: session(ctx), tag, path_tags).run(source)
 
 
 @cli.command()
@@ -331,13 +333,14 @@ def thumbnail(ctx, query, thumbnails, audio_format, photo_format, video_format):
 
     See "illuminatus help" for help on QUERY and SPEC syntax.
     '''
-    Thumbnailer(
-        DB(ctx.obj['db']).select(' '.join(query)),
-        root=thumbnails,
-        audio_format=Format.parse(audio_format),
-        photo_format=Format.parse(photo_format),
-        video_format=Format.parse(video_format),
-    ).run()
+    with session(ctx) as sess:
+        Thumbnailer(
+            db.matching_assets(sess, ' '.join(query)),
+            root=thumbnails,
+            audio_format=Format.parse(audio_format),
+            photo_format=Format.parse(photo_format),
+            video_format=Format.parse(video_format),
+        ).run()
 
 
 @cli.command()

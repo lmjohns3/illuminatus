@@ -20,7 +20,7 @@ FILTER_ARGS = dict(
 _DEBUG = 0
 
 
-class Tool(object):
+class Tool:
     '''A parent class for command-line tools to manipulate media files.'''
 
     def __init__(self, path, shape=None, filters=()):
