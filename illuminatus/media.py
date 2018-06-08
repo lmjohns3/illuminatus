@@ -292,6 +292,10 @@ class Asset(Model):
                   Medium.Photo: 'jpg'}
 
     @property
+    def shape(self):
+        return self.width, self.height
+
+    @property
     def basename(self):
         '''The base filename for this asset.'''
         return os.path.basename(self.path)
@@ -319,7 +323,7 @@ class Asset(Model):
                   if t.name not in exclude_tags],
         )
 
-    def export(self, root, fmt=None, force=False, **kwargs):
+    def export(self, root, fmt=None, overwrite=False, **kwargs):
         '''Export a version of this media asset to another location.
 
         Additional keyword arguments are used to create a :class:`Format` if
@@ -331,9 +335,13 @@ class Asset(Model):
             Save exported media under this root path.
         fmt : :class:`Format`, optional
             Export media with the given :class:`Format`.
-        force : bool, optional
+        overwrite : bool, optional
             If an exported file already exists, this flag determines what to
             do. If `True` overwrite it; otherwise (the default), return.
+
+        Returns
+        -------
+        The path to the exported file, or None if nothing was exported.
         '''
         hash = self.path_hash
         if fmt is None:
@@ -343,7 +351,7 @@ class Asset(Model):
             os.makedirs(dirname)
         ext = fmt.ext or Asset.EXTENSIONS[self.medium]
         output = os.path.join(dirname, '{}.{}'.format(hash, ext))
-        if os.path.exists(output) and not force:
+        if os.path.exists(output) and not overwrite:
             return None
         tool = Asset.TOOLS[self.medium]
         tool(self.path, self.shape, self.filters).export(fmt, output)

@@ -139,6 +139,8 @@ class Thumbnailer:
         A list of the media assets to thumbnail.
     root : str
         A filesystem path for saving thumbnails.
+    overwrite : bool
+        If True, we'll overwrite existing thumbnails.
     audio_format : :class:`Format`
         A Format for audio thumbnails.
     photo_format : :class:`Format`
@@ -147,10 +149,11 @@ class Thumbnailer:
         A Format for video thumbnails.
     '''
 
-    def __init__(self, assets, root=None, audio_format=None, video_format=None,
-                 photo_format=None):
+    def __init__(self, assets, root=None, overwrite=False, audio_format=None,
+                 video_format=None, photo_format=None):
         self.assets = assets
         self.root = root
+        self.overwrite = overwrite
         self.audio_format = audio_format
         self.photo_format = photo_format
         self.video_format = video_format
@@ -160,10 +163,10 @@ class Thumbnailer:
         run_workqueue(self.assets, self)
 
     def __call__(self, asset):
-        fmt = getattr(self, '{}_format'.format(type(asset).__name__.lower()))
+        fmt = getattr(self, '{}_format'.format(asset.medium.name.lower()))
         if fmt is None:
             return
-        output = asset.export(fmt=fmt, root=self.root)
+        output = asset.export(fmt=fmt, root=self.root, overwrite=self.overwrite)
         if output is None:
             return
         click.echo('{} {} -> {}'.format(click.style('T', fg='cyan'),
@@ -258,7 +261,7 @@ class Exporter:
         return len(self.assets)
 
     def __call__(self, asset):
-        fmt = getattr(self, '{}_format'.format(type(asset).__name__.lower()))
+        fmt = getattr(self, '{}_format'.format(asset.medium.name.lower()))
         if fmt is not None:
             asset.export(fmt=fmt, root=self.root)
 

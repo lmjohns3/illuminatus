@@ -326,9 +326,12 @@ def modify(ctx, query, stamp, inc_tag, dec_tag, remove_tag, add_path_tags):
               help='Save photo thumbnails in this format.')
 @click.option('--video-format', default='', metavar='SPEC',
               help='Save video thumbnails in this format.')
+@click.option('--overwrite/--no-overwrite', default=False,
+              help='When set, overwrite existing thumbnails.')
 @click.argument('query', nargs=-1)
 @click.pass_context
-def thumbnail(ctx, query, thumbnails, audio_format, photo_format, video_format):
+def thumbnail(ctx, query, thumbnails, audio_format, photo_format, video_format,
+              overwrite):
     '''Create thumbnails for assets matching a QUERY.
 
     See "illuminatus help" for help on QUERY and SPEC syntax.
@@ -337,6 +340,7 @@ def thumbnail(ctx, query, thumbnails, audio_format, photo_format, video_format):
         Thumbnailer(
             db.matching_assets(sess, ' '.join(query)),
             root=thumbnails,
+            overwrite=overwrite,
             audio_format=Format.parse(audio_format),
             photo_format=Format.parse(photo_format),
             video_format=Format.parse(video_format),
