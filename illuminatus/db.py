@@ -85,10 +85,11 @@ class QueryParser(parsimonious.NodeVisitor):
     union      = intersect ( _ 'or' _ intersect )*
     intersect  = negation ( _ 'and' _  negation )*
     negation   = 'not'? _ set
-    set        = stamp / path / fp / tag / group
+    set        = stamp / path / medium / hash / tag / group
     stamp      = ~'(before|after):\S+'
     path       = ~'path:\S+'
-    fp         = ~'fp:[a-z0-9]+'
+    medium     = ~'medium:(photo|video|audio)'
+    hash       = ~'hash:[a-z0-9]+'
     tag        = ~'[-\w]+(:[-\w]+)*'
     group      = '(' _ query _ ')'
     _          = ~'\s*'
@@ -136,8 +137,12 @@ class QueryParser(parsimonious.NodeVisitor):
     def visit_path(self, node, visited_children):
         return media.Asset.path.ilike('%{}%'.format(node.text.split(':', 1)[1]))
 
-    def visit_fp(self, node, visited_children):
-        return media.Asset.fingerprint == node.text
+    def visit_hash(self, node, visited_children):
+        return media.Asset.hashes.any(
+            media.Hash.nibbles.ilike('%{}%'.format(node.text.split(':', 1)[1])))
+
+    def visit_medium(self, node, visited_children):
+        return media.Asset.medium == node.text.split(':', 1)[1].capitalize()
 
 
 def matching_assets(db, query, order=None):
