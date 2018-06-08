@@ -69,11 +69,12 @@ def help(ctx):
     notation. The query syntax understands the following sets of media:
 
     \b
-    - TAG -- media that are tagged with TAG
-    - before:YYYY-MM-DD -- media with timestamps on or before YYYY-MM-DD
-    - after:YYYY-MM-DD -- media with timestamps on or after YYYY-MM-DD
-    - path:STRING -- media whose source path contains the given STRING
-    - fp:STRING -- media whose fingerprint contains the given STRING
+    - TAG -- assets that are tagged with TAG
+    - before:YYYY-MM-DD -- assets with timestamps on or before YYYY-MM-DD
+    - after:YYYY-MM-DD -- assets with timestamps on or after YYYY-MM-DD
+    - path:STRING -- assets whose source path contains the given STRING
+    - hash:STRING -- assets whose hash contains the given STRING
+    - medium:M -- assets in medium M (audio, photo, video)
 
     Each of the terms in a query is combined using one of the three set
     operators:
