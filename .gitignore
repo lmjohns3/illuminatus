@@ -33,12 +33,3 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
-
-# coffeescript and stylus generated stuff
-node_modules
-*.css
-*.js
-
-# photos and database
-*.db
-img

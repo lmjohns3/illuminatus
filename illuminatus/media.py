@@ -211,6 +211,14 @@ class Tag(Model):
             sess.add(tag)
         return tag
 
+    @staticmethod
+    def with_asset_counts(sess):
+        q = (sess.query(Tag, sqlalchemy.func.count(AssetTag.c.asset_id))
+             .join(AssetTag)
+             .group_by(Tag.name))
+        return sorted((t.to_dict(c) for t, c in q.all()),
+                      key=lambda d: d['sort_key'])
+
     @property
     def sort_key(self):
         group = len(Tag.GROUPS)
@@ -220,6 +228,15 @@ class Tag(Model):
         if group is None:
             return (len(Tag.GROUPS), self.name)
         return '{:02d}-{}'.format(group.index, self.name)
+
+    @property
+    def display_name(self):
+        parts = self.name.split(':')
+        if len(parts) > 1:
+            group = parts.pop(0)
+            if group in tuple('ymdwh'):
+                parts = [parts[-1]]
+        return ':'.join(parts)
 
     @property
     def name_string(self):
@@ -234,10 +251,12 @@ class Tag(Model):
             click.style(group, fg=g.color),
             click.style(':'.join(parts), fg=g.color, bold=True))
 
-    def to_dict(self, weight):
+    def to_dict(self, weight=1):
         return dict(
             id=self.id,
             name=self.name,
+            group='user' if ':' not in self.name else self.name.split(':')[0],
+            display_name=self.display_name,
             sort_key=self.sort_key,
             weight=weight,
         )
@@ -255,9 +274,9 @@ class TextJson(sqlalchemy.types.TypeDecorator):
 JSON = sqlalchemy.types.JSON().with_variant(TextJson, 'sqlite')
 
 
-asset_tags = Table('asset_tags', Model.metadata,
-                   Column('tag_id', Integer, ForeignKey('tags.id')),
-                   Column('asset_id', Integer, ForeignKey('assets.id')))
+AssetTag = Table('asset_tags', Model.metadata,
+                 Column('tag_id', Integer, ForeignKey('tags.id'), index=True),
+                 Column('asset_id', Integer, ForeignKey('assets.id'), index=True))
 
 
 class Asset(Model):
@@ -278,9 +297,13 @@ class Asset(Model):
     meta_tags = Column(JSON, nullable=False, default=[])
     tag_weights = Column(JSON, nullable=False, default={})
 
+    hashes = sqlalchemy.orm.relationship('Hash',
+                                         backref='assets',
+                                         lazy='joined')
+
     tags = sqlalchemy.orm.relationship(Tag,
                                        backref='assets',
-                                       secondary=asset_tags,
+                                       secondary=AssetTag,
                                        lazy='joined')
 
     TOOLS = {Medium.Audio: tools.Sox,
@@ -311,7 +334,8 @@ class Asset(Model):
         return dict(
             id=self.id,
             path=self.path,
-            medium=self.medium,
+            path_hash=self.path_hash,
+            medium=self.medium.name.lower(),
             filters=self.filters,
             stamp=arrow.get(self.stamp).isoformat(),
             description=self.description,
@@ -385,11 +409,6 @@ class Asset(Model):
         if not os.path.isfile(self.path):
             return
 
-        self.hashes.append(Hash.compute_md5sum(self.path))
-        if self.medium == Medium.Photo:
-            self.hashes.append(Hash.compute_photo_diff(self.path))
-            self.hashes.append(Hash.compute_photo_histogram(self.path))
-
         meta = tools.Exiftool(self.path).parse()
 
         stamp = metadata.get_timestamp(self.path, meta).datetime
@@ -404,6 +423,14 @@ class Asset(Model):
         self.lng = metadata.get_longitude(meta)
 
         self.meta_tags = sorted(set(metadata.gen_metadata_tags(meta)))
+
+        self.hashes.append(Hash.compute_md5sum(self.path))
+        if self.medium == Medium.Photo:
+            self.hashes.append(Hash.compute_photo_diff(self.path))
+            self.hashes.append(Hash.compute_photo_histogram(self.path))
+        if self.medium == Medium.Video:
+            for o in range(0, int(self.duration), 30):
+                self.hashes.append(Hash.compute_video_diff(self.path, o + 15))
 
     def _rebuild_tags(self, sess):
         '''Rebuild the tag list for this asset.
@@ -570,9 +597,6 @@ class Hash(Model):
     offset_sec = Column(Float, nullable=False, default=0.0)
 
     asset_id = Column(ForeignKey('assets.id'), index=True)
-    asset = sqlalchemy.orm.relationship(Asset,
-                                        backref='hashes',
-                                        lazy='joined')
 
     class Flavor:
         '''Enumeration of different supported hash types.'''

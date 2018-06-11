@@ -1,53 +1,47 @@
 import contextlib
+import datetime
 import flask
+import flask_sqlalchemy
+import io
 import os
 import shutil
 import tempfile
 
 from flask import request
 
+from .db import matching_assets
 from . import importexport
+from .media import Asset, Tag
 from . import tools
 
 app = flask.Flask('illuminatus')
+db = flask_sqlalchemy.SQLAlchemy()
 
 
 @contextlib.contextmanager
-def get_item(id):
-    for item in app.config['db'].select_by_id(id):
-        yield item
-
-
-@app.route('/tags')
-def tags():
-    return flask.jsonify(
-        tags=[t._asdict() for t in sorted(app.config['db'].tags)])
-
-
-@app.route('/sizes')
-def sizes():
-    return flask.jsonify(sizes=app.config['sizes'])
+def get_asset(id):
+    for asset in app.config['db'].select_by_id(id):
+        yield asset
 
 
 @app.route('/query/<string:query>')
 def query(query):
-    kwargs = dict(order=request.args.get('order', 'stamp-'),
-                  offset=int(request.args.get('offset', 0)),
-                  limit=int(request.args.get('limit', 0)))
-    return flask.jsonify(
-        items=[m.rec for m in app.config['db'].select(query, **kwargs)])
+    order = request.args.get('order', 'stamp-')
+    assets = (matching_assets(db.session, query, order=order)
+              .limit(int(request.args.get('limit', 0)))
+              .offset(int(request.args.get('offset', 0))))
+    return flask.jsonify(assets=[a.to_dict() for a in assets])
 
 
 @app.route('/export/<string:query>', methods=['POST'])
 def export(query):
+    formats = {'{}_format'.format(medium): Format.parse(request.form[medium])
+               for medium in ('audio', 'photo', 'video')}
+
     db = app.config['db']
     dirname = tempfile.mkdtemp()
-    output = os.path.join(dirname, request.form['name'] + '.zip')
-    sizes = [int(x) for x in request.form.get('sizes', '1000').split()]
-
-    importexport.Exporter(db.tags, db.select(query)).run(
-        output=output,
-        sizes=sizes,
+    importexport.Exporter(db.tags, db.select(query), **formats).run(
+        output=os.path.join(dirname, request.form['name'] + '.zip'),
         hide_tags=request.form.get('hide_tags', '').split(),
         hide_metadata_tags=request.form.get('hide_metadata_tags') == '1',
         hide_datetime_tags=request.form.get('hide_datetime_tags') == '1',
@@ -62,59 +56,71 @@ def export(query):
     return flask.send_file(output, as_attachment=True)
 
 
-@app.route('/item/<int:id>/', methods=['PUT'])
-def update_item(id):
+@app.route('/asset/<int:id>/', methods=['PUT'])
+def update_asset(id):
     stamp = request.form.get('stamp', '')
-    add_tags = request.form.get('add_tags', '').split()
+    inc_tags = request.form.get('inc_tags', '').split()
+    dec_tags = request.form.get('dec_tags', '').split()
     remove_tags = request.form.get('remove_tags', '').split()
-    with get_item(id) as item:
-        for tag in add_tags:
-            item.add_tag(tag)
+    with get_asset(id) as asset:
+        for tag in inc_tags:
+            asset.increment_tag(tag)
+        for tag in dec_tags:
+            asset.decrement_tag(tag)
         for tag in remove_tags:
-            item.remove_tag(tag)
+            asset.remove_tag(tag)
         if stamp:
-            item.update_stamp(stamp)
-        item.save()
-        return flask.jsonify(item.rec)
+            asset.update_stamp(stamp)
+        asset.save()
+        return flask.jsonify(asset.rec)
 
 
-@app.route('/item/<int:id>/', methods=['DELETE'])
-def delete_item(id):
-    with get_item(id) as item:
-        item.delete(hide_original=app.config['hide-originals'])
+@app.route('/asset/<int:id>/', methods=['DELETE'])
+def delete_asset(id):
+    with get_asset(id) as asset:
+        asset.delete(hide_original=app.config['hide-originals'])
         return flask.jsonify('ok')
 
 
-@app.route('/item/<int:id>/filters/<string:filter>', methods=['POST'])
+@app.route('/asset/<int:id>/filters/<string:filter>', methods=['POST'])
 def add_filter(id, filter):
     kwargs = dict(filter=filter)
     for arg in tools.FILTER_ARGS[filter].split():
         kwargs[arg] = float(request.form[arg])
-    with get_item(id) as item:
-        item.add_filter(kwargs)
-        item.save()
+    with get_asset(id) as asset:
+        asset.add_filter(kwargs)
+        asset.save()
         root = app.config['db'].root
         for s in app.config['sizes']:
-            item.thumbnail(s, root)
-        return flask.jsonify(item.rec)
+            asset.export(s, root, force=True)
+        return flask.jsonify(asset.rec)
 
 
-@app.route('/item/<int:id>/filters/<string:filter>/<int:index>', methods=['DELETE'])
+@app.route('/asset/<int:id>/filters/<string:filter>/<int:index>', methods=['DELETE'])
 def delete_filter(id, filter, index):
-    with get_item(id) as item:
-        item.remove_filter(filter, index)
-        item.save()
+    with get_asset(id) as asset:
+        asset.remove_filter(filter, index)
+        asset.save()
         root = app.config['db'].root
         for s in app.config['sizes']:
-            item.thumbnail(s, root)
-        return flask.jsonify(item.rec)
+            asset.export(s, root, force=True)
+        return flask.jsonify(asset.rec)
 
 
-@app.route('/')
-def index():
-    return app.send_static_file('editing.html')
+@app.route('/config')
+def config():
+    return flask.jsonify(
+        formats=app.config['formats'],
+        tags=Tag.with_asset_counts(db.session),
+    )
 
 
 @app.route('/thumb/<path:path>')
 def thumb(path):
-    return flask.send_from_directory(app.config['db'].root, path)
+    return flask.send_from_directory(app.config['thumbnails'], path)
+
+
+@app.route('/')
+def index():
+    return flask.render_template('editing.html', now=datetime.datetime.now())
+    #return app.send_static_file('editing.html')

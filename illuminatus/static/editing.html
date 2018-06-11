@@ -1,11 +1,13 @@
 <!doctype html>
 <html lang="en">
 <head>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css" />
-<link rel="stylesheet" href="static/editing.css" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-jcrop/2.0.4/css/Jcrop.min.css" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/featherlight/1.7.0/featherlight.min.css" />
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css" />
+<link rel="stylesheet" href="static/editing.css?q={{ now.isoformat() }}" />
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jquery-jcrop/2.0.4/css/Jcrop.min.css" />
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/featherlight/1.7.0/featherlight.min.css" />
 <body>
+
+{% raw %}
 
 <div id="columns">
   <div id="tags-column" class="column"><ul id="tags"></ul></div>
@@ -14,19 +16,19 @@
 </div>
 
 <script id="tag-template" type="text/x-handlebars-template">
-  <li class="tag source-{{ this.source }}">{{ this.name }}</li>
+  <li class="tag group-{{ this.group }}">{{ this.display_name }}</li>
 </script>
 
 <script id="thumb-template" type="text/x-handlebars-template">
-  <li class="thumb" id="item-{{ item.id }}">
-    {{#if video}}
-    <img src="thumb/{{ size }}/{{ poster }}">
-    <span class="video">🎥</span>
-    {{else}}
-    <img src="thumb/{{ size }}/{{ item.thumb }}">
+  <li class="thumb" id="asset-{{ asset.id }}">
+    <span class="cursor star">*</span>
+    {{#if is_video}}
+    <img class="video" src="/thumb/{{ format.path }}/{{ thumb }}.jpg">
+    {{else if is_audio}}
+    <img class="audio" src="/thumb/{{ format.path }}/{{ thumb }}.jpg">
+    {{else if is_photo}}
+    <img class="photo" src="/thumb/{{ format.path }}/{{ thumb }}.jpg">
     {{/if}}
-    <span class="star">★</span>
-    <span class="cursor">✱</span> <!-- or: ➘ ✱ ❦ ➤ ➷ -->
   </li>
 </script>
 
@@ -79,7 +81,7 @@
       </li>
       <li id="tags-tab"><span class="dingbat">🏷</span> Tags
         <div id="editor-tags">
-          {{#each item.tags}}
+          {{#each asset.tags}}
           <a class="tag source-{{ this.source }}">{{ this.name }}</a>
           {{/each}}
           <input id="tag-input" type="text">
@@ -87,7 +89,7 @@
       </li>
       <li><span class="dingbat">☞</span>Filters
         <ul id="filters">
-          {{#each item.filters}}
+          {{#each asset.filters}}
           <li><a data-filter="{{ this.filter }}" data-index="{{ @index }}"><span class="dingbat">✘</span> {{this.filter}}</a></li>
           {{/each}}
         </ul>
@@ -100,7 +102,7 @@
           <li><a id="">H: {{ stamp.hour }}</a></li>
         </ul>
       </li>
-      <li><span id="path">{{ item.path }}</span></li>
+      <li><span id="path">{{ asset.path }}</span></li>
     </ul>
     <ul class="toolbar" id="ephemeral-tools">
       <li id="cancel"><span class="dingbat">✘</span> Cancel</li>
@@ -110,21 +112,25 @@
   </div>
   <div id="workspace">
     <div id="grid"></div>
-    {{#if video}}
-    <video controls src="thumb/{{ size }}/{{ item.thumb }}?{{ uniq }}">
-    {{else}}
-    <img src="thumb/{{ size }}/{{ item.thumb }}?{{ uniq }}">
+    {{#if is_video}}
+    <video controls src="/thumb/{{ format.path }}/{{ thumb }}.{{ format.ext }}?{{ uniq }}">
+    {{else if is_audio}}
+    <audio controls src="/thumb/{{ format.path }}/{{ thumb }}.{{ format.ext }}?{{ uniq }}">
+    {{else if is_photo}}
+    <img src="/thumb/{{ format.path }}/{{ thumb }}.{{ format.ext }}?{{ uniq }}">
     {{/if}}
   </div>
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.5/handlebars.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-jcrop/2.0.4/js/Jcrop.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/corejs-typeahead/1.0.1/typeahead.jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/featherlight/1.7.0/featherlight.min.js"></script>
-<script type="text/javascript" src="static/item.js"></script>
-<script type="text/javascript" src="static/tags.js"></script>
-<script type="text/javascript" src="static/thumbs.js"></script>
-<script type="text/javascript" src="static/editing.js"></script>
+{% endraw %}
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.5/handlebars.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery-jcrop/2.0.4/js/Jcrop.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/corejs-typeahead/1.0.1/typeahead.jquery.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/featherlight/1.7.0/featherlight.min.js"></script>
+<script type="text/javascript" src="/static/assets.js?q={{ now.isoformat() }}"></script>
+<script type="text/javascript" src="/static/tags.js?q={{ now.isoformat() }}"></script>
+<script type="text/javascript" src="/static/thumbs.js?q={{ now.isoformat() }}"></script>
+<script type="text/javascript" src="/static/editing.js?q={{ now.isoformat() }}"></script>

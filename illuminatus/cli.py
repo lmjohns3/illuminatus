@@ -4,7 +4,7 @@ import os
 import sys
 
 from . import db, tools
-from .media import Asset, Format, Tag
+from .media import Asset, Format, Medium, Tag
 from .importexport import Importer, Exporter, Thumbnailer
 
 
@@ -374,15 +374,15 @@ def serve(ctx, host, port, debug, hide_originals, thumbnails, **kwargs):
     '''Start an HTTP server for asset metadata.'''
     from .serve import app
     from .serve import db as serve_db
+    app.config['SQLALCHEMY_ECHO'] = debug
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_DATABASE_URI'] = db.db_uri(path=ctx.obj['db_path'])
     app.config['thumbnails'] = thumbnails
     app.config['hide-originals'] = hide_originals
     fmts = app.config['formats'] = {}
-    classes = dict(audio=Audio, photo=Photo, video=Video)
     for key, value in kwargs.items():
-        cls = classes[key.split('_')[1]]
+        default = Asset.EXTENSIONS[Medium[key.split('_')[1].capitalize()]]
         fmt = Format.parse(value)
-        fmts[key] = dict(path=str(fmt), ext=fmt.ext or cls.EXTENSION)
+        fmts[key] = dict(path=str(fmt), ext=fmt.ext or default)
     serve_db.init_app(app)
     app.run(host=host, port=port, debug=debug, threaded=True)
