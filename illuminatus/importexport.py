@@ -9,7 +9,8 @@ import tempfile
 import ujson
 import zipfile
 
-from .media import Asset, Tag, medium_for
+from . import db
+from . import metadata
 
 
 def _process(jobs_queue, callback):
@@ -102,18 +103,18 @@ class Importer:
         '''
         try:
             with self.session() as sess:
-                if sess.query(Asset).filter(Asset.path == path).count():
+                if sess.query(db.Asset).filter(db.Asset.path == path).count():
                     click.echo('{} Already have {}'.format(
                         click.style('=', fg='blue'),
                         click.style(path, fg='red')))
                     return
-                medium = medium_for(path)
+                medium = metadata.medium_for(path)
                 if medium is None:
                     click.echo('{} Unknown {}'.format(
                         click.style('?', fg='yellow'),
                         click.style(path, fg='red')))
                     return
-                asset = Asset(path=path, medium=medium)
+                asset = db.Asset(path=path, medium=medium)
                 for tag in self.tags:
                     asset.increment_tag(tag)
                 components = os.path.dirname(path).split(os.sep)[::-1]
@@ -135,7 +136,7 @@ class Thumbnailer:
 
     Parameters
     ----------
-    assets : list of :class:`Asset`
+    assets : list of :class:`db.Asset`
         A list of the media assets to thumbnail.
     root : str
         A filesystem path for saving thumbnails.
@@ -179,9 +180,9 @@ class Exporter:
 
     Parameters
     ----------
-    all_tags : list of :class:`Tag`
+    all_tags : list of :class:`db.Tag`
         All tags defined in the database.
-    assets : list of :class:`Asset`
+    assets : list of :class:`db.Asset`
         A list of the media assets to export.
     audio_format : :class:`Format`
         A Format for audio thumbnails.
@@ -229,9 +230,9 @@ class Exporter:
         '''
         hide_patterns = list(hide_tags)
         if hide_metadata_tags:
-            hide_patterns.append(Tag.METADATA_PATTERN)
+            hide_patterns.append(db.Tag.METADATA_PATTERN)
         if hide_datetime_tags:
-            hide_patterns.append(Tag.DATETIME_PATTERN)
+            hide_patterns.append(db.Tag.DATETIME_PATTERN)
 
         hide_names = set()
         for pattern in hide_patterns:

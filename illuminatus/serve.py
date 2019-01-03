@@ -1,51 +1,44 @@
+import arrow
+import collections
 import contextlib
-import datetime
 import flask
 import flask_sqlalchemy
-import io
 import os
 import shutil
 import tempfile
 
-from flask import request
-
-from .db import matching_assets
+from . import db
 from . import importexport
-from .media import Asset, Tag
 from . import tools
 
 app = flask.Flask('illuminatus')
-db = flask_sqlalchemy.SQLAlchemy()
+sql = flask_sqlalchemy.SQLAlchemy()
 
 
-@contextlib.contextmanager
-def get_asset(id):
-    for asset in app.config['db'].select_by_id(id):
-        yield asset
-
-
-@app.route('/query/<string:query>')
+@app.route('/query/<string:query>/')
 def query(query):
-    order = request.args.get('order', 'stamp-')
-    assets = (matching_assets(db.session, query, order=order)
-              .limit(int(request.args.get('limit', 0)))
-              .offset(int(request.args.get('offset', 0))))
+    req = flask.request
+    order = req.args.get('order', 'random')
+    assets = (db.Asset.matching(sql.session, query, order=order)
+              .limit(int(req.args.get('limit', 0)))
+              .offset(int(req.args.get('offset', 0))))
     return flask.jsonify(assets=[a.to_dict() for a in assets])
 
 
-@app.route('/export/<string:query>', methods=['POST'])
+@app.route('/export/<string:query>/', methods=['POST'])
 def export(query):
-    formats = {'{}_format'.format(medium): Format.parse(request.form[medium])
+    req = flask.request
+    formats = {'{}_format'.format(medium): Format.parse(req.form[medium])
                for medium in ('audio', 'photo', 'video')}
 
     db = app.config['db']
     dirname = tempfile.mkdtemp()
     importexport.Exporter(db.tags, db.select(query), **formats).run(
-        output=os.path.join(dirname, request.form['name'] + '.zip'),
-        hide_tags=request.form.get('hide_tags', '').split(),
-        hide_metadata_tags=request.form.get('hide_metadata_tags') == '1',
-        hide_datetime_tags=request.form.get('hide_datetime_tags') == '1',
-        hide_omnipresent_tags=request.form.get('hide_omnipresent_tags') == '1',
+        output=os.path.join(dirname, req.form['name'] + '.zip'),
+        hide_tags=req.form.get('hide_tags', '').split(),
+        hide_metadata_tags=req.form.get('hide_metadata_tags') == '1',
+        hide_datetime_tags=req.form.get('hide_datetime_tags') == '1',
+        hide_omnipresent_tags=req.form.get('hide_omnipresent_tags') == '1',
     )
 
     @flask.after_this_request
@@ -58,10 +51,11 @@ def export(query):
 
 @app.route('/asset/<int:id>/', methods=['PUT'])
 def update_asset(id):
-    stamp = request.form.get('stamp', '')
-    inc_tags = request.form.get('inc_tags', '').split()
-    dec_tags = request.form.get('dec_tags', '').split()
-    remove_tags = request.form.get('remove_tags', '').split()
+    req = flask.request
+    stamp = req.form.get('stamp', '')
+    inc_tags = req.form.get('inc_tags', '').split()
+    dec_tags = req.form.get('dec_tags', '').split()
+    remove_tags = req.form.get('remove_tags', '').split()
     with get_asset(id) as asset:
         for tag in inc_tags:
             asset.increment_tag(tag)
@@ -72,7 +66,7 @@ def update_asset(id):
         if stamp:
             asset.update_stamp(stamp)
         asset.save()
-        return flask.jsonify(asset.rec)
+        return flask.jsonify(asset.to_dict())
 
 
 @app.route('/asset/<int:id>/', methods=['DELETE'])
@@ -84,9 +78,10 @@ def delete_asset(id):
 
 @app.route('/asset/<int:id>/filters/<string:filter>', methods=['POST'])
 def add_filter(id, filter):
+    req = flask.request
     kwargs = dict(filter=filter)
     for arg in tools.FILTER_ARGS[filter].split():
-        kwargs[arg] = float(request.form[arg])
+        kwargs[arg] = float(req.form[arg])
     with get_asset(id) as asset:
         asset.add_filter(kwargs)
         asset.save()
@@ -107,20 +102,40 @@ def delete_filter(id, filter, index):
         return flask.jsonify(asset.rec)
 
 
-@app.route('/config')
-def config():
-    return flask.jsonify(
-        formats=app.config['formats'],
-        tags=Tag.with_asset_counts(db.session),
-    )
+@app.route('/manifest.json')
+def manifest():
+    return flask.jsonify(dict(
+        short_name='Awww',
+        name='Illuminatus',
+        icons=[dict(src='icon.png', sizes='192x192', type='image/png')],
+        start_url='/',
+        display='standalone',
+        orientation='portrait',
+    ))
 
 
-@app.route('/thumb/<path:path>')
-def thumb(path):
-    return flask.send_from_directory(app.config['thumbnails'], path)
-
-
-@app.route('/')
-def index():
-    return flask.render_template('editing.html', now=datetime.datetime.now())
-    #return app.send_static_file('editing.html')
+@app.route('/', defaults=dict(tags=''))
+@app.route('/<path:tags>')
+def index(tags):
+    if not tags:
+        return flask.redirect(arrow.get().format('/YYYY/'))
+    tags = tuple(t.strip().lower() for t in tags.split('/') if t.strip())
+    assets = db.Asset.matching(sql.session, ' and '.join(tags))
+    active_tags = set()
+    remaining_tags = collections.defaultdict(int)
+    for asset in assets:
+        for tag in asset.tags:
+            if tag.name in tags:
+                active_tags.add(tag)
+            else:
+                remaining_tags[tag] += 1
+    for tag in active_tags:
+        tag.url = '/'.join(t.name for t in active_tags if t.name != tag.name)
+        print(tag, tag.url)
+    order = db.parse_order(flask.request.args.get('s', 'stamp-'))
+    return flask.render_template(
+        'index.html',
+        now=arrow.get(),
+        active_tags=sorted(active_tags, key=lambda t: (t.group, t.name)),
+        remaining_tags=sorted(remaining_tags, key=lambda t: (t.group, t.name)),
+        assets=assets.order_by(order))

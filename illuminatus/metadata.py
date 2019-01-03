@@ -1,4 +1,6 @@
 import arrow
+import enum
+import mimetypes
 import os
 import re
 
@@ -14,6 +16,156 @@ _FLOAT_PATTERN = r'(\d+)(\.\d+)?'
 
 # Pattern for matching a geotagging coordinate.
 _GEO_PATTERN = r'(?P<deg>\d+) deg (?P<min>\d+)\' (?P<sec>\d+(\.\d*)?)" (?P<sgn>[{}])'
+
+
+@enum.unique
+class Medium(enum.Enum):
+    '''Enumeration of different supported media types.'''
+    Audio = 1
+    Photo = 2
+    Video = 3
+
+
+def medium_for(path):
+    '''Determine the appropriate medium for a given path.
+
+    Parameters
+    ----------
+    path : str
+        Filesystem path where the asset is stored.
+
+    Returns
+    -------
+    A string naming an asset medium. Returns None if no known media types
+    handle the given path.
+    '''
+    mime, _ = mimetypes.guess_type(path)
+    for pattern, medium in (('audio/.*', Medium.Audio),
+                            ('video/.*', Medium.Video),
+                            ('image/.*', Medium.Photo)):
+        if re.match(pattern, mime):
+            return medium
+    return None
+
+
+class Format:
+    '''A POD class representing an export file format specification.
+
+    Attributes
+    ----------
+    extension : str
+        Filename extension.
+    bbox : int
+        Maximum size of the output. For photos and videos, exported frames must
+        fit within a box of this size, while preserving the original aspect
+        ratio.
+    fps : str
+        Frames per second when exporting audio or video. For videos this can
+        be a rational number like "30/1.001" or a basic frame rate like "10".
+    channels : int
+        Number of channels in exported audio files.
+    palette : int
+        Number of colors in the palette for exported animated GIFs.
+    vcodec : str
+        Codec to use for exported video.
+    acodec : str
+        Name of an audio codec to use when exporting videos. If None, remove
+        audio from exported videos.
+    abitrate : str
+        Bitrate specification for audio in exported videos. If None, remove
+        audio from exported videos.
+    crf : int
+        Quality scale for exporting videos.
+    preset : str
+        Speed preset for exporting videos.
+    '''
+
+    def __init__(self, ext=None, bbox=None, fps=None, channels=1, palette=255,
+                 acodec='aac', abitrate='128k', vcodec='libx264', crf=30,
+                 preset='medium'):
+        self.ext = ext
+        self.bbox = bbox
+        if isinstance(bbox, int):
+            self.bbox = (bbox, bbox)
+        self.fps = fps
+        self.channels = channels
+        self.acodec = acodec
+        self.abitrate = abitrate
+        self.palette = palette
+        self.vcodec = vcodec
+        self.crf = crf
+        self.preset = preset
+
+    def __str__(self):
+        parts = []
+        if self.ext is not None:
+            parts.append(self.ext)
+        if self.bbox is not None:
+            parts.append('{}x{}'.format(*self.bbox))
+        if self.fps:
+            parts.append('fps={}'.format(self.fps))
+        for key, default in (('channels', 1),
+                             ('palette', 255),
+                             ('acodec', 'aac'),
+                             ('abitrate', '128k'),
+                             ('vcodec', 'libx264'),
+                             ('crf', 30),
+                             ('preset', 'medium')):
+            value = getattr(self, key)
+            if value != default:
+                parts.append('{}={}'.format(key, value))
+        return ','.join(parts)
+
+    @classmethod
+    def parse(cls, s):
+        '''Parse a string s into a Format.
+
+        The string is expected to consist of one or more parts, separated by
+        commas. Each part can be:
+
+          - A bare string matching MMM or MMMxNNN. This is used to specify a
+            media geometry, giving the "bbox" property. If MMM is given, it
+            designates a geometry of MMMxMMM.
+          - A bare string. This is used to specify an output extension, which
+            determines the encoding of the output.
+          - A string with two halves containing one equals (=). The first half
+            gives the name of a :class:`Format` field, while the second
+            half gives the value for the field.
+
+        Examples
+        --------
+
+        - 100: Use the default file format for the medium (JPG for photos and
+               MP4 for movies), and size outputs to fit in a 100x100 box.
+        - 100x100: Same as above.
+        - bbox=100x100: Same.
+        - png,100: Same as above, but use PNG for photo outputs.
+        - ext=png,100: Same as above.
+        - ext=png,bbox=100: Same as above.
+
+        Parameters
+        ----------
+        s : str
+            A string to parse.
+        '''
+        kwargs = {}
+        for item in s.split(','):
+            if '=' in item:
+                key, value = item.split('=', 1)
+            elif re.match(r'\d+(x\d+)?', item):
+                key, value = 'bbox', item
+            else:
+                key, value = 'ext', item
+            if key == 'bbox':
+                if 'x' in value:
+                    w, h = value.split('x')
+                    value = (int(w), int(h))
+                else:
+                    value = (int(value), int(value))
+            if hasattr(value, 'isdigit') and value.isdigit():
+                value = int(value)
+            kwargs[key] = value
+        return cls(**kwargs)
 
 
 def get_timestamp(path, meta):
@@ -216,14 +368,14 @@ def gen_metadata_tags(meta):
 
     fstop = meta.get('FNumber', '')
     if isinstance(fstop, (int, float)) or re.match(_FLOAT_PATTERN, fstop):
-        yield 'aperture:f/{}'.format(round(10 * float(fstop)) / 10).replace('.0', '')
+        yield 'f:{}'.format(round(10 * float(fstop)) / 10).replace('.0', '')
 
     mm = meta.get('FocalLengthIn35mmFormat', meta.get('FocalLength', ''))
     if isinstance(mm, str):
         match = re.match(_FLOAT_PATTERN + r'\s*mm', mm)
         mm = match.group(1) if match else None
     if mm:
-        yield 'focus:{}mm'.format(highest(mm))
+        yield '{}mm'.format(highest(mm))
 
 
 def gen_datetime_tags(stamp):
@@ -242,18 +394,17 @@ def gen_datetime_tags(stamp):
         return
 
     # 2009
-    yield 'y:{:04d}'.format(stamp.year)
+    yield stamp.format('YYYY')
 
     # january
-    yield 'm:{:02d}:{}'.format(stamp.month, stamp.format('MMMM')).lower()
+    yield stamp.format('MMMM').lower()
 
     # 22nd
-    yield 'd:{:02d}:{}'.format(stamp.day, stamp.format('Do')).lower()
+    yield stamp.format('Do').lower()
 
     # monday
-    yield 'w:{}:{}'.format(stamp.weekday(), stamp.format('dddd')).lower()
+    yield stamp.format('dddd').lower()
 
     # for computing the hour tag, we set the hour boundary at 49-past, so
     # that any time from, e.g., 10:49 to 11:48 gets tagged as "11am"
-    hour = stamp.shift(minutes=11)
-    yield 'h:{:02d}:{}'.format(hour.hour, hour.format('ha')).lower()
+    yield stamp.shift(minutes=11).format('ha').lower()

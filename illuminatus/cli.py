@@ -1,11 +1,13 @@
 import click
+import collections
 import contextlib
 import os
 import sys
 
-from . import db, tools
-from .media import Asset, Format, Medium, Tag
-from .importexport import Importer, Exporter, Thumbnailer
+from . import db
+from . import importexport
+from . import metadata
+from . import tools
 
 
 def ensure_db_config(ctx):
@@ -182,22 +184,53 @@ def init(ctx):
 @cli.command()
 @click.option('--order', default='stamp-', metavar='[stamp|path]',
               help='Sort records by this field. A "-" at the end reverses the order.')
+@click.option('--limit', default=0, metavar='N', help='Limit to N records.')
 @click.argument('query', nargs=-1)
 @click.pass_context
-def ls(ctx, query, order):
+def ls(ctx, query, order, limit):
     '''List assets matching a QUERY.
 
     See "illuminatus help" for help on QUERY syntax.
     '''
     with session(ctx) as sess:
-        for asset in db.matching_assets(sess, ' '.join(query), order):
+        for asset in db.Asset.matching(sess, ' '.join(query), order, limit):
             click.echo(' '.join((
-                click.style(str(asset.stamp), fg='yellow'),
-                ' '.join(str(h) for h in asset.hashes if h.flavor == 'diff8'),
+                str(asset.md5_hash),
+                ' '.join(str(h) for h in asset.diff8_hashes),
                 ' '.join(t.name_string for t in
-                         sorted(asset.tags, key=lambda t: t.sort_key)),
+                         sorted(asset.tags, key=lambda t: (t.group[0], t.name))),
                 click.style(asset.path),
             )))
+
+
+@cli.command()
+@click.option('--hash', default='md5', metavar='[md5|diff8]',
+              help='Group assets by this hash.')
+@click.argument('query', nargs=-1)
+@click.pass_context
+def dupe(ctx, query, hash):
+    '''List duplicate assets matching a QUERY.
+
+    See "illuminatus help" for help on QUERY syntax.
+    '''
+    def get_hash(asset):
+        hashes = [h for h in asset.hashes if h.flavor == hash]
+        if len(hashes) == 1:
+            return str(hashes[0])
+        return None
+
+    with session(ctx) as sess:
+        groups = collections.defaultdict(set)
+        for asset in db.Asset.matching(sess, ' '.join(query)):
+            h = get_hash(asset)
+            if h is not None:
+                groups[h].add(asset)
+        for h, group in groups.items():
+            if len(group) > 1:
+                click.echo()
+                click.echo(h)
+                for i, asset in enumerate(sorted(group, key=lambda a: a.path)):
+                    click.echo('{} {}'.format('*' if i else ' ', asset.path))
 
 
 @cli.command()
@@ -217,7 +250,7 @@ def rm(ctx, query, hide_original):
     renamed files as needed.
     '''
     with session(ctx, hide_original_on_delete=hide_original) as sess:
-        for asset in db.matching_assets(sess, ' '.join(query)):
+        for asset in db.Asset.matching(sess, ' '.join(query)):
             asset.delete()
             sess.add(asset)
 
@@ -246,9 +279,9 @@ def export(ctx, query, audio_format, photo_format, video_format, **kwargs):
     See "illuminatus help" for help on QUERY and SPEC syntax.
     '''
     with session(ctx) as sess:
-        count = Exporter(
-            sess.query(Tag).all(),
-            db.matching_assets(sess, ' '.join(query)),
+        count = importexport.Exporter(
+            sess.query(db.Tag).all(),
+            db.Asset.matching(sess, ' '.join(query)),
             audio_format=Format.parse(audio_format),
             photo_format=Format.parse(photo_format),
             video_format=Format.parse(video_format),
@@ -271,7 +304,7 @@ def import_(ctx, source, tag, path_tags):
     If any source is a directory, all assets under that directory will be
     imported recursively.
     '''
-    Importer(lambda: session(ctx), tag, path_tags).run(source)
+    importexport.Importer(lambda: session(ctx), tag, path_tags).run(source)
 
 
 @cli.command()
@@ -302,7 +335,7 @@ def modify(ctx, query, stamp, inc_tag, dec_tag, remove_tag, add_path_tags):
     earlier. Here x can be 'y' (year), 'm' (month), 'd' (day), or 'h' (hour).
     '''
     with session(ctx, hide_original_on_delete=hide_original) as sess:
-        for asset in db.matching_assets(sess, ' '.join(query)):
+        for asset in db.Asset.matching(sess, ' '.join(query)):
             for tag in inc_tag:
                 asset.increment_tag(tag)
             for tag in dec_tag:
@@ -339,7 +372,7 @@ def thumbnail(ctx, query, thumbnails, audio_format, photo_format, video_format,
     '''
     with session(ctx) as sess:
         Thumbnailer(
-            db.matching_assets(sess, ' '.join(query)),
+            db.Asset.matching(sess, ' '.join(query)),
             root=thumbnails,
             overwrite=overwrite,
             audio_format=Format.parse(audio_format),
@@ -373,7 +406,7 @@ def thumbnail(ctx, query, thumbnails, audio_format, photo_format, video_format,
 def serve(ctx, host, port, debug, hide_originals, thumbnails, **kwargs):
     '''Start an HTTP server for asset metadata.'''
     from .serve import app
-    from .serve import db as serve_db
+    from .serve import sql
     app.config['SQLALCHEMY_ECHO'] = debug
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_DATABASE_URI'] = db.db_uri(path=ctx.obj['db_path'])
@@ -381,8 +414,8 @@ def serve(ctx, host, port, debug, hide_originals, thumbnails, **kwargs):
     app.config['hide-originals'] = hide_originals
     fmts = app.config['formats'] = {}
     for key, value in kwargs.items():
-        default = Asset.EXTENSIONS[Medium[key.split('_')[1].capitalize()]]
+        default = db.Asset.EXTENSIONS[metadata.Medium[key.split('_')[1].capitalize()]]
         fmt = Format.parse(value)
         fmts[key] = dict(path=str(fmt), ext=fmt.ext or default)
-    serve_db.init_app(app)
+    sql.init_app(app)
     app.run(host=host, port=port, debug=debug, threaded=True)
