@@ -13,7 +13,7 @@ from . import tools
 def ensure_db_config(ctx):
     if ctx.obj.get('db_path') is None:
         ctx.obj['db_path'] = os.path.abspath(os.path.expanduser(
-            click.prompt('Scrooge database file')))
+            click.prompt('Illuminatus database file')))
 
 
 @contextlib.contextmanager
@@ -282,9 +282,9 @@ def export(ctx, query, audio_format, photo_format, video_format, **kwargs):
         count = importexport.Exporter(
             sess.query(db.Tag).all(),
             db.Asset.matching(sess, ' '.join(query)),
-            audio_format=Format.parse(audio_format),
-            photo_format=Format.parse(photo_format),
-            video_format=Format.parse(video_format),
+            audio_format=metadata.Format.parse(audio_format),
+            photo_format=metadata.Format.parse(photo_format),
+            video_format=metadata.Format.parse(video_format),
         ).run(**kwargs)
         click.echo('Exported {} assets to {}'.format(
             click.style(str(count), fg='cyan'),
@@ -375,9 +375,9 @@ def thumbnail(ctx, query, thumbnails, audio_format, photo_format, video_format,
             db.Asset.matching(sess, ' '.join(query)),
             root=thumbnails,
             overwrite=overwrite,
-            audio_format=Format.parse(audio_format),
-            photo_format=Format.parse(photo_format),
-            video_format=Format.parse(video_format),
+            audio_format=metadata.Format.parse(audio_format),
+            photo_format=metadata.Format.parse(photo_format),
+            video_format=metadata.Format.parse(video_format),
         ).run()
 
 
@@ -415,7 +415,7 @@ def serve(ctx, host, port, debug, hide_originals, thumbnails, **kwargs):
     fmts = app.config['formats'] = {}
     for key, value in kwargs.items():
         default = db.Asset.EXTENSIONS[metadata.Medium[key.split('_')[1].capitalize()]]
-        fmt = Format.parse(value)
+        fmt = metadata.Format.parse(value)
         fmts[key] = dict(path=str(fmt), ext=fmt.ext or default)
     sql.init_app(app)
     app.run(host=host, port=port, debug=debug, threaded=True)
