@@ -368,7 +368,7 @@ def gen_metadata_tags(meta):
 
     fstop = meta.get('FNumber', '')
     if isinstance(fstop, (int, float)) or re.match(_FLOAT_PATTERN, fstop):
-        yield 'f:{}'.format(round(10 * float(fstop)) / 10).replace('.0', '')
+        yield 'f/{}'.format(round(10 * float(fstop)) / 10)
 
     mm = meta.get('FocalLengthIn35mmFormat', meta.get('FocalLength', ''))
     if isinstance(mm, str):
@@ -405,6 +405,6 @@ def gen_datetime_tags(stamp):
     # monday
     yield stamp.format('dddd').lower()
 
-    # for computing the hour tag, we set the hour boundary at 49-past, so
-    # that any time from, e.g., 10:49 to 11:48 gets tagged as "11am"
-    yield stamp.shift(minutes=11).format('ha').lower()
+    # for computing the hour tag, we set the hour boundary at 48-past, so
+    # that any time from, e.g., 10:48 to 11:47 gets tagged as "11am"
+    yield stamp.shift(minutes=12).format('ha').lower()
