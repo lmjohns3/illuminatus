@@ -104,12 +104,11 @@ class Tag(Model):
             return click.style(self.name, fg=g.color, bold=g.bold)
         return click.style(self.name, fg='blue', bold=True)
 
-    def to_dict(self, weight=1):
+    def to_dict(self):
         return dict(
             id=self.id,
             name=self.name,
             group=self.group,
-            weight=weight,
         )
 
 
@@ -124,11 +123,15 @@ class TextJson(sqlalchemy.types.TypeDecorator):
 
 JSON = sqlalchemy.types.JSON().with_variant(TextJson, 'sqlite')
 
+asset_tags = Table('asset_tags',
+                   Model.metadata,
+                   Column('asset_id', ForeignKey('assets.id'), index=True),
+                   Column('tag_id', ForeignKey('tags.id'), index=True))
 
-AssetTag = Table('asset_tags', Model.metadata,
-                 Column('tag_id', Integer, ForeignKey('tags.id'), index=True),
-                 Column('asset_id', Integer, ForeignKey('assets.id'), index=True))
-
+similar = Table('similar',
+                Model.metadata,
+                Column('a_id', ForeignKey('assets.id'), index=True),
+                Column('b_id', ForeignKey('assets.id')))
 
 class Asset(Model):
     __tablename__ = 'assets'
@@ -138,23 +141,25 @@ class Asset(Model):
     medium = Column(Enum(metadata.Medium), index=True, nullable=False)
     stamp = Column(DateTime, index=True, nullable=False)
     description = Column(String, nullable=False, default='')
-    width = Column(Integer, index=True, nullable=False, default=0.0)
-    height = Column(Integer, index=True, nullable=False, default=0.0)
-    duration = Column(Integer, index=True, nullable=False, default=0.0)
+    width = Column(Integer, index=True, nullable=False, default=0)
+    height = Column(Integer, index=True, nullable=False, default=0)
+    duration = Column(Float, index=True, nullable=False, default=0.0)
     lat = Column(Float, index=True, nullable=False, default=0.0)
     lng = Column(Float, index=True, nullable=False, default=0.0)
     filters = Column(JSON, nullable=False, default=[])
-    meta_tags = Column(JSON, nullable=False, default=[])
-    tag_weights = Column(JSON, nullable=False, default={})
 
-    hashes = sqlalchemy.orm.relationship('Hash',
-                                         backref='assets',
-                                         lazy='joined')
+    hashes = sqlalchemy.orm.relationship('Hash', backref='asset')
 
-    tags = sqlalchemy.orm.relationship(Tag,
+    tags = sqlalchemy.orm.relationship('Tag',
+                                       secondary=asset_tags,
+                                       collection_class=set,
                                        backref='assets',
-                                       secondary=AssetTag,
                                        lazy='joined')
+
+    similar = sqlalchemy.orm.relationship('Asset',
+                                          secondary=similar,
+                                          primaryjoin=id == similar.c.a_id,
+                                          secondaryjoin=id == similar.c.b_id)
 
     TOOLS = {metadata.Medium.Audio: tools.Sox,
              metadata.Medium.Video: tools.Ffmpeg,
@@ -215,8 +220,7 @@ class Asset(Model):
             rs = rs.limit(limit)
         return rs
 
-    def to_dict(self, exclude_tags=set()):
-        w = self.tag_weights
+    def to_dict(self, exclude_tags=()):
         return dict(
             id=self.id,
             path=self.path,
@@ -225,11 +229,11 @@ class Asset(Model):
             filters=self.filters,
             stamp=arrow.get(self.stamp).isoformat(),
             description=self.description,
-            shape=(self.width, self.height, self.duration),
+            shape=(self.width, self.height),
+            duration=self.duration,
             latlng=(self.lat, self.lng),
             hashes=[h.to_dict() for h in self.hashes],
-            tags=[t.to_dict(w.get(t.name, -1.0))
-                  for t in self.tags
+            tags=[t.to_dict() for t in self.tags
                   if t.name not in exclude_tags],
         )
 
@@ -290,7 +294,7 @@ class Asset(Model):
                 '.illuminatus-removed-' + os.path.basename(self.path))
             os.rename(target.path, hidden)
 
-    def _init(self):
+    def _init(self, sess):
         '''Initialize a newly created asset.'''
         if not os.path.isfile(self.path):
             return
@@ -301,6 +305,9 @@ class Asset(Model):
         if stamp is not None or self.stamp is None:
             self.stamp = stamp
 
+        for t in metadata.gen_datetime_tags(arrow.get(self.stamp)):
+            self.tags.add(Tag.get_or_create(sess, t))
+
         self.width = metadata.get_width(meta)
         self.height = metadata.get_height(meta)
         self.duration = metadata.get_duration(meta)
@@ -308,7 +315,8 @@ class Asset(Model):
         self.lat = metadata.get_latitude(meta)
         self.lng = metadata.get_longitude(meta)
 
-        self.meta_tags = sorted(set(metadata.gen_metadata_tags(meta)))
+        for t in metadata.gen_metadata_tags(meta):
+            self.tags.add(Tag.get_or_create(sess, t))
 
         self.hashes.append(Hash.compute_md5sum(self.path))
         if self.medium == metadata.Medium.Photo:
@@ -318,24 +326,6 @@ class Asset(Model):
             for o in range(0, int(self.duration), 30):
                 self.hashes.append(Hash.compute_video_diff(self.path, o + 15))
 
-    def _rebuild_tags(self, sess):
-        '''Rebuild the tag list for this asset.
-
-        Parameters
-        ----------
-        sess : db session
-            Database session.
-        '''
-        user = set(self.tag_weights or {})
-        meta = set(self.meta_tags or ())
-        stamp = set(metadata.gen_datetime_tags(arrow.get(self.stamp)))
-        target = user | meta | stamp
-        existing = {tag.name: tag for tag in self.tags}
-        for name in target - set(existing):
-            self.tags.append(Tag.get_or_create(sess, name))
-        for name in set(existing) - target:
-            self.tags.remove(existing[name])
-
     def update_stamp(self, when):
         '''Update the timestamp for this asset.
 
@@ -344,6 +334,9 @@ class Asset(Model):
         when : str
             A modifier for the stamp for this asset.
         '''
+        for t in metadata.gen_datetime_tags(arrow.get(self.stamp)):
+            self.tags.remove(t)
+
         try:
             self.stamp = arrow.get(when).datetime
         except arrow.parser.ParserError:
@@ -354,59 +347,8 @@ class Asset(Model):
                 kwargs[fields[granularity]] = (-1 if sign == '-' else 1) * int(shift)
             self.stamp = arrow.get(self.stamp).replace(**kwargs).datetime
 
-    def increment_tag(self, tag, weight=1.0):
-        '''Add or increment the weight for a tag for this asset.
-
-        Parameters
-        ----------
-        tag : str or :class:`Tag`
-            A tag to add. If the tag does not currently exist for this asset,
-            the weight will be set to this value.
-        weight : float, optional
-            Weight to add to the tag. Defaults to 1.0.
-        '''
-        if isinstance(tag, Tag):
-            tag = tag.name
-        if not isinstance(self.tag_weights, dict):
-            self.tag_weights = {}
-        self.tag_weights[tag] = self.tag_weights.get(tag, 0.0) + weight
-        flag_modified(self, 'tag_weights')
-
-    def decrement_tag(self, tag, weight=1.0):
-        '''Decrement the weight of a user tag for this asset.
-
-        Parameters
-        ----------
-        tag : str or :class:`Tag`
-            A tag to decrement. If the tag's weight reaches 0, the tag will be
-            removed. No effect if the tag does not exist for this asset.
-        weight : float, optional
-            Decrement the weight by this amount. Defaults to 1.0.
-        '''
-        if isinstance(tag, Tag):
-            tag = tag.name
-        if not isinstance(self.tag_weights, dict):
-            self.tag_weights = {}
-        self.tag_weights[tag] = self.tag_weights.get(tag, 0.0) - weight
-        if self.tag_weights[tag] <= 0.0:
-            del self.tag_weights[tag]
-            flag_modified(self, 'tag_weights')
-
-    def remove_tag(self, tag):
-        '''Remove a user tag from this asset.
-
-        Parameters
-        ----------
-        tag : str or :class:`Tag`
-            A tag to remove. No effect if the tag does not exist on this asset.
-        '''
-        if isinstance(tag, Tag):
-            tag = tag.name
-        if not isinstance(self.tag_weights, dict):
-            self.tag_weights = {}
-        if tag in self.tag_weights:
-            del self.tag_weights[tag]
-            flag_modified(self, 'tag_weights')
+        for t in metadata.gen_datetime_tags(arrow.get(self.stamp)):
+            self.tags.add(t)
 
     def add_filter(self, filter):
         '''Add a filter to this asset.
@@ -754,11 +696,7 @@ def session(path, echo=False, hide_original_on_delete=False):
     def handle_asset_bookkeeping(sess, ctx, instances):
         for asset in sess.new:
             if isinstance(asset, Asset):
-                asset._init()
-                asset._rebuild_tags(sess)
-        for asset in sess.dirty:
-            if isinstance(asset, Asset):
-                asset._rebuild_tags(sess)
+                asset._init(sess)
         for asset in sess.deleted:
             if isinstance(asset, Asset):
                 asset._maybe_hide_original(hide_original_on_delete)

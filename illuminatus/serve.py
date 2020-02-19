@@ -53,14 +53,11 @@ def export(query):
 def update_asset(id):
     req = flask.request
     stamp = req.form.get('stamp', '')
-    inc_tags = req.form.get('inc_tags', '').split()
-    dec_tags = req.form.get('dec_tags', '').split()
+    add_tags = req.form.get('add_tags', '').split()
     remove_tags = req.form.get('remove_tags', '').split()
     with get_asset(id) as asset:
-        for tag in inc_tags:
-            asset.increment_tag(tag)
-        for tag in dec_tags:
-            asset.decrement_tag(tag)
+        for tag in add_tags:
+            asset.add_tag(tag)
         for tag in remove_tags:
             asset.remove_tag(tag)
         if stamp:

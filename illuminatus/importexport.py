@@ -40,6 +40,32 @@ def run_workqueue(jobs, callback, num_workers=mp.cpu_count()):
         [w.terminate() for w in workers]
 
 
+def walk(self, roots):
+    '''Recursively visit all files under the given root directories.
+
+    Parameters
+    ----------
+    roots : sequence of str
+        Root paths to search for files.
+
+    Yields
+    ------
+    Filenames under each of the given root paths.
+    '''
+    for src in roots:
+        for match in glob.glob(src):
+            match = os.path.abspath(match)
+            if os.path.isdir(match):
+                for base, dirs, files in os.walk(match):
+                    dots = [n for n in dirs if n.startswith('.')]
+                    [dirs.remove(d) for d in dots]
+                    for name in files:
+                        if not name.startswith('.'):
+                            yield os.path.abspath(os.path.join(base, name))
+            else:
+                yield match
+
+
 class Importer:
     '''A class for importing media into the database.
 
@@ -55,33 +81,9 @@ class Importer:
 
     def __init__(self, session, tags, path_tags):
         self.session = session
-        self.tags = tags
+        with session() as sess:
+            self.tags = set(db.Tag.get_or_create(sess, t) for t in tags)
         self.path_tags = path_tags
-
-    def walk(self, roots):
-        '''Recursively visit all files under the given root directories.
-
-        Parameters
-        ----------
-        roots : sequence of str
-            Root paths to search for files.
-
-        Yields
-        ------
-        Filenames under each of the given root paths.
-        '''
-        for src in roots:
-            for match in glob.glob(src):
-                match = os.path.abspath(match)
-                if os.path.isdir(match):
-                    for base, dirs, files in os.walk(match):
-                        dots = [n for n in dirs if n.startswith('.')]
-                        [dirs.remove(d) for d in dots]
-                        for name in files:
-                            if not name.startswith('.'):
-                                yield os.path.abspath(os.path.join(base, name))
-                else:
-                    yield match
 
     def run(self, roots):
         '''Run the import process in parallel on the given root paths.
@@ -91,7 +93,7 @@ class Importer:
         roots : sequence of str
             Root paths to search for files.
         '''
-        run_workqueue(self.walk(roots), self.import_one)
+        run_workqueue(walk(roots), self.import_one)
 
     def import_one(self, path):
         '''Import a single path into the media database.
@@ -115,20 +117,19 @@ class Importer:
                         click.style(path, fg='red')))
                     return
                 asset = db.Asset(path=path, medium=medium)
-                for tag in self.tags:
-                    asset.increment_tag(tag)
+                asset.tags |= self.tags
                 components = os.path.dirname(path).split(os.sep)[::-1]
                 for i in range(self.path_tags):
-                    asset.increment_tag(components[i])
+                    asset.tags.add(db.Tag.get_or_create(sess, components[i]))
                 sess.add(asset)
                 click.echo('{} Added {}'.format(
                         click.style('+', fg='green'),
                         click.style(path, fg='red')))
         except KeyboardInterrupt:
-            pass
+            return
         except:
             _, exc, tb = sys.exc_info()
-            click.echo('! Error {} {}'.format(path, exc))  # , ''.join(tb))
+            click.echo('! Error {} {}\n{}'.format(path, exc, ''.join(tb)))
 
 
 class Thumbnailer:
