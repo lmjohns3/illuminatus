@@ -639,8 +639,8 @@ class QueryParser(parsimonious.NodeVisitor):
 
     The specified sets can be combined using any combination of:
 
+    - x y -- contains media in both sets x and y
     - x or y -- contains media in either set x or set y
-    - x and y -- contains media in both sets x and y
     - not y -- contains media not in set y
 
     Any of the operators above can be combined multiple times, and parentheses
@@ -649,19 +649,20 @@ class QueryParser(parsimonious.NodeVisitor):
     where d consists of things in b or c.
     '''
 
-    grammar = parsimonious.Grammar('''\
-    query      = union+
-    union      = intersect ( _ 'or' _ intersect )*
-    intersect  = negation ( _ 'and' _  negation )*
-    negation   = 'not'? _ set
-    set        = stamp / path / medium / hash / tag / group
-    stamp      = ~'(before|after):[-\d]+'
-    path       = ~'path:\S+?'
-    medium     = ~'(photo|video|audio)'
-    hash       = ~'hash:[a-z0-9]+'
-    tag        = ~'[-:\w]+'
-    group      = '(' _ query _ ')'
-    _          = ~'\s*'
+    grammar = parsimonious.Grammar(r'''
+    query    = union ( __ union )*
+    union    = negation ( __ 'or' __ negation )*
+    negation = ( 'not' __ )? set
+    set      = stamp / path / medium / hash / tag / text / group
+    stamp    = ~'(before|after):[-\d]+'
+    path     = ~'path:\S+?'
+    medium   = ~'(photo|video|audio)'
+    hash     = ~'hash:[a-z0-9]+'
+    tag      = ~'tag:[-:\w]+'
+    text     = ~'(?!or\b)(?!not\b)("[^ ()"]+"|[^ ()]+)'
+    group    = '(' _ query _ ')'
+    _        = ~'\s*'
+    __       = ~'\s+'
     ''')
 
     def __init__(self, db):
@@ -671,31 +672,20 @@ class QueryParser(parsimonious.NodeVisitor):
         return children or node.text
 
     def visit_query(self, node, children):
-        child, = children
-        return child
-
-    def visit_group(self, node, children):
-        _, _, child, _, _ = children
-        return child
+        intersection, rest = children
+        for elem in rest:
+            intersection &= elem[-1]
+        return intersection
 
     def visit_union(self, node, children):
-        acc, rest = children
-        for part in rest:
-            acc = sqlalchemy.or_(acc, part[-1])
-        return acc
-
-    def visit_intersect(self, node, children):
-        acc, rest = children
-        for part in rest:
-            acc = sqlalchemy.and_(acc, part[-1])
-        return acc
+        union, rest = children
+        for elem in rest:
+            union |= elem[-1]
+        return union
 
     def visit_negation(self, node, children):
-        neg, _, [filter] = children
-        return sqlalchemy.not_(filter) if neg == ['not'] else filter
-
-    def visit_tag(self, node, children):
-        return Asset.tags.any(Tag.name == node.text)
+        neg, [which] = children
+        return ~which if neg else which
 
     def visit_stamp(self, node, children):
         comp, value = node.text.split(':', 1)
@@ -703,15 +693,22 @@ class QueryParser(parsimonious.NodeVisitor):
         column = Asset.stamp
         return column < value if comp == 'before' else column > value
 
-    def visit_path(self, node, visited_children):
-        return Asset.path.ilike('%{}%'.format(node.text.split(':', 1)[1]))
+    def visit_path(self, node, children):
+        return Asset.path.contains(node.text[4:])
 
-    def visit_hash(self, node, visited_children):
-        return Asset.hashes.any(
-            Hash.nibbles.ilike('%{}%'.format(node.text.split(':', 1)[1])))
+    def visit_hash(self, node, children):
+        return Asset.hashes.any(Hash.nibbles.contains((node.text[5:])))
 
-    def visit_medium(self, node, visited_children):
+    def visit_medium(self, node, children):
         return Asset.medium == node.text.split(':', 1)[1].capitalize()
+
+    def visit_tag(self, node, children):
+        return Asset.tags.any(Tag.name == node.text[4:])
+
+    def visit_text(self, node, children):
+        s = node.text.strip('"')
+        return (Asset.description.contains(s) |
+                Asset.tags.any(Tag.name == s))
 
 
 def parse_order(order):
