@@ -1,4 +1,18 @@
-(function() {
+import React, {Component} from "react"
+import {Link, useParams} from "react-router-dom"
+import ReactCrop from "react-image-crop"
+import Select from "react-select"
+import axios from "axios"
+
+class Edit extends Component {
+    render() {
+        return <div className="edit">EDIT {useParams().id}</div>
+    }
+}
+
+export default Edit
+
+/*(function() {
   'use strict';
 
   var KEYS = {
@@ -471,3 +485,4 @@
 })();
 
 $(app.init);
+*/
