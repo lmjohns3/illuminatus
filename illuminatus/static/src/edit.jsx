@@ -4,15 +4,112 @@ import ReactCrop from "react-image-crop"
 import Select from "react-select"
 import axios from "axios"
 
-class Edit extends Component {
-    render() {
-        return <div className="edit">EDIT {useParams().id}</div>
-    }
-}
+const Edit = () => (
+  <div className="edit">EDIT {useParams().id}</div>
+)
 
 export default Edit
 
-/*(function() {
+/*
+
+const EditTools = () => (
+  <ul>
+    <li><a id="magic"><span className="dingbat">☘</span> Magic</a></li>
+    <li className="sep"></li>
+    <li><a id="brightness"><span className="dingbat">☀</span> Brightness</a></li>
+    <li><a id="contrast"><span className="dingbat">◑</span> Contrast</a></li>
+    <li><a id="saturation"><span className="dingbat">▧</span> Saturation</a></li>
+    <li><a id="hue"><span className="dingbat">🖌</span> Hue</a></li>
+    <li className="sep"></li>
+    <li><a id="rotate"><span className="dingbat">↻</span> Rotate</a></li>
+    <li><a id="cw-90"><span className="dingbat">⤵</span> Clockwise 90&deg;</a></li>
+    <li><a id="ccw-90"><span className="dingbat">⤴</span> Counter-clockwise 90&deg;</a></li>
+    <li><a id="hflip"><span className="dingbat">↔</span> Flip Horizontal</a></li>
+    <li><a id="vflip"><span className="dingbat">↕</span> Flip Vertical</a></li>
+    <li className="sep"></li>
+    <li><a id="crop"><span className="dingbat">✂</span> Crop</a></li>
+  </ul>)
+
+const TagTools = ({tags}) => (
+  <ul>
+    {tags.map(tag => <li className="tag group-{tag.group}">{tag.name}</li>)}
+    <li><input id="tag-input" type="text"/></li>
+  </ul>)
+
+const FilterTools = ({filters}) => (
+    <ul>{filters.map(filter => (
+      <li><a data-filter="{filter}" data-index="{index}">
+        <span className="dingbat">✘</span> {filter}</a></li>
+    ))}</ul>)
+
+const StampTools = ({stamp}) => (
+  <ul>
+    <li><a id="">Y: {stamp.year}</a></li>
+    <li><a id="">M: {stamp.month}</a></li>
+    <li><a id="">D: {stamp.day}</a></li>
+    <li><a id="">H: {stamp.hour}</a></li>
+  </ul>)
+
+
+class Editing extends Component {
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            asset: {
+                tags: [],
+                filters: [],
+                stamp: {},
+            },
+            format: {},
+            uniq: 1,
+            isRanging: false,
+            isCropping: false,
+            crop: {unit: "%"},
+        };
+
+        this.setCurrent = this.setCurrent.bind(this);
+    }
+
+    setCurrent() {
+    }
+
+    setCrop() {
+    }
+
+    render() {
+        const {asset, format, uniq} = this.state;
+        return (
+<div id="editing">
+  <div id="tools">
+    <ul className="toolbar" id="basic-tools">
+      <li><span className="dingbat">⚒</span> Edit <EditTools /></li>
+      <li><span className="dingbat">🏷</span> Tags <TagTools tags={asset.tags} /></li>
+      <li><span className="dingbat">☞</span> Filters <FilterTools filters={asset.filters} /></li>
+      <li><span className="dingbat">⏰</span> {asset.stamp.title} <StampTools stamp={asset.stamp} /></li>
+      <li><span id="path">{asset.path}</span></li>
+    </ul>
+    <ul className="toolbar" id="ephemeral-tools">
+      <li id="cancel"><span className="dingbat">✘</span> Cancel</li>
+      <li id="commit"><span className="dingbat">✔</span> Save</li>
+      <li id="range"><input type="range" min="0" max="200" defaultValue="100" step="1"/><span id="range-value"></span></li>
+    </ul>
+  </div>
+  <div id="workspace">
+    <div id="grid"></div>
+    { (asset.is_video) ? <video controls src="/thumb/{format.path}/{asset.thumb}.{format.ext}?{uniq}"/>
+    : (asset.is_audio) ? <audio controls src="/thumb/{format.path}/{asset.thumb}.{format.ext}?{uniq}"/>
+    : (asset.is_photo) ? <img src="/thumb/{format.path}/{asset.thumb}.{format.ext}?{this.state.uniq}"/>
+    : ""}
+    <ReactCrop src={this.state.asset.src} crop={this.state.crop} onChange={newCrop => this.setCrop(newCrop)} />
+  </div>
+</div>);
+    }
+}
+
+
+
+(function() {
   'use strict';
 
   var KEYS = {
@@ -419,70 +516,4 @@ export default Edit
   });
 
   $(document).on('submit', '#export', function(e) { $.featherlight.close(); });
-
-  var app = {
-    routes: [
-      {
-        pattern: /#thumbs.(.+)/,
-        render: function(match) {
-          tags.refresh();
-          thumbs.setQuery(match[1]);
-          thumbs.fetch();
-        }
-      },
-
-      {
-        pattern: /#edit.(.+)=([0-9]+)/,
-        render: function(match) {
-          var n = parseInt(match[2]);
-          tags.refresh();
-          thumbs.setQuery(match[1]);
-          thumbs.fetch(n + 10 - thumbs.assets.length, function() {
-            thumbs.setCursor(n);
-            ensureEditor();
-          });
-        }
-      }
-    ],
-
-    handleRouteChange: function() {
-      var hasMatch = false;
-      for (var i = 0; i < app.routes.length; i++) {
-        var view = app.routes[i];
-        var match = view.pattern.exec(location.hash);
-        if (match) {
-          view.render(match);
-          hasMatch = true;
-          break;
-        }
-      }
-      if (!hasMatch)
-        location.hash = 'thumbs:' + moment().year();
-    },
-
-    init: function() {
-      addEventListener('hashchange', function() {
-        app.handleRouteChange();
-      });
-
-      $.getJSON('/config', function(data) {
-        config = data;
-        thumbs = new Illuminatus.Thumbs(
-          data, '#thumb-template', $('#thumbs'), $('#thumbs-column'));
-        tags = new Illuminatus.Tags(
-          '#tag-template', $('#tags'), $('#tags-column'));
-        if (!location.hash) {
-          location.hash = 'thumbs:' + moment().year();
-        } else {
-          app.handleRouteChange();
-        }
-      });
-    }
-  };
-
-  window.app = app;
-
-})();
-
-$(app.init);
 */

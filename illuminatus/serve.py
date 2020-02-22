@@ -27,17 +27,19 @@ def handle_foo_event(json):
     return 'a'
 
 
-@app.route('/api/query/<string:query>/')
+@app.route('/rest/query/<string:query>/')
 def assets(query):
     req = flask.request
-    order = req.args.get('order', 'stamp')
-    assets = (db.Asset.matching(sql.session, query, order=order)
-              .limit(int(req.args.get('limit', 0)))
-              .offset(int(req.args.get('offset', 0))))
+    assets = (db.Asset.matching(sql.session, query)
+              .order_by(db.parse_order(req.args.get('order', 'stamp')))
+              .limit(int(req.args.get('limit', 99999)))
+              .offset(int(req.args.get('offset', 0)))
+              .all())
+    print(len(assets))
     return flask.jsonify(assets=[a.to_dict() for a in assets])
 
 
-@app.route('/api/export/<string:query>/', methods=['POST'])
+@app.route('/rest/export/<string:query>/', methods=['POST'])
 def export(query):
     req = flask.request
     formats = {
@@ -62,7 +64,7 @@ def export(query):
     return flask.send_file(output, as_attachment=True)
 
 
-@app.route('/api/asset/<int:id>/', methods=['PUT'])
+@app.route('/rest/asset/<int:id>/', methods=['PUT'])
 def update_asset(id):
     req = flask.request
     stamp = req.form.get('stamp', '')
@@ -79,13 +81,13 @@ def update_asset(id):
     return flask.jsonify(asset.to_dict())
 
 
-@app.route('/api/asset/<int:id>/', methods=['DELETE'])
+@app.route('/rest/asset/<int:id>/', methods=['DELETE'])
 def delete_asset(id):
     _get_asset(id).delete(hide_original=app.config['hide-originals'])
     return flask.jsonify('ok')
 
 
-@app.route('/api/asset/<int:id>/filters/<string:filter>/', methods=['POST'])
+@app.route('/rest/asset/<int:id>/filters/<string:filter>/', methods=['POST'])
 def add_filter(id, filter):
     req = flask.request
     kwargs = dict(filter=filter)
@@ -100,7 +102,7 @@ def add_filter(id, filter):
     return flask.jsonify(asset.to_dict())
 
 
-@app.route('/api/asset/<int:id>/filters/<string:filter>/<int:index>/', methods=['DELETE'])
+@app.route('/rest/asset/<int:id>/filters/<string:filter>/<int:index>/', methods=['DELETE'])
 def delete_filter(id, filter, index):
     asset = _get_asset(id)
     asset.remove_filter(filter, index)
@@ -109,6 +111,11 @@ def delete_filter(id, filter, index):
     for s in app.config['sizes']:
         asset.export(s, root, force=True)
     return flask.jsonify(asset.to_dict())
+
+
+@app.route('/asset/thumb/<int:id>/')
+def thumb(id):
+    return flask.send_file(_get_asset(id).path)
 
 
 @app.route('/manifest.json')
@@ -124,10 +131,10 @@ def manifest():
 
 
 @app.route('/')
-@app.route('/view/<int:id>/')
 @app.route('/edit/<int:id>/')
 @app.route('/label/<int:id>/')
 @app.route('/cluster/<int:id>/')
 @app.route('/browse/<string:query>/')
+@app.route('/view/<string:query>/<int:offset>/')
 def index(*args, **kwargs):
     return flask.render_template('index.html')

@@ -35706,927 +35706,9582 @@ if ("development" === 'production') {
 } else {
   module.exports = require('./cjs/react-dom.development.js');
 }
-},{"./cjs/react-dom.development.js":"../node_modules/react-dom/cjs/react-dom.development.js"}],"../node_modules/react-image-crop/dist/ReactCrop.min.js":[function(require,module,exports) {
+},{"./cjs/react-dom.development.js":"../node_modules/react-dom/cjs/react-dom.development.js"}],"../node_modules/moment/moment.js":[function(require,module,exports) {
 var define;
-!function (e, t) {
-  "object" == typeof exports && "object" == typeof module ? module.exports = t(require("react")) : "function" == typeof define && define.amd ? define(["react"], t) : "object" == typeof exports ? exports.ReactCrop = t(require("react")) : e.ReactCrop = t(e.React);
-}(this, function (e) {
-  return function (e) {
-    var t = {};
+var global = arguments[3];
+//! moment.js
 
-    function r(o) {
-      if (t[o]) return t[o].exports;
-      var n = t[o] = {
-        i: o,
-        l: !1,
-        exports: {}
-      };
-      return e[o].call(n.exports, n, n.exports, r), n.l = !0, n.exports;
+;(function (global, factory) {
+    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+    typeof define === 'function' && define.amd ? define(factory) :
+    global.moment = factory()
+}(this, (function () { 'use strict';
+
+    var hookCallback;
+
+    function hooks () {
+        return hookCallback.apply(null, arguments);
     }
 
-    return r.m = e, r.c = t, r.d = function (e, t, o) {
-      r.o(e, t) || Object.defineProperty(e, t, {
-        enumerable: !0,
-        get: o
-      });
-    }, r.r = function (e) {
-      "undefined" != typeof Symbol && Symbol.toStringTag && Object.defineProperty(e, Symbol.toStringTag, {
-        value: "Module"
-      }), Object.defineProperty(e, "__esModule", {
-        value: !0
-      });
-    }, r.t = function (e, t) {
-      if (1 & t && (e = r(e)), 8 & t) return e;
-      if (4 & t && "object" == typeof e && e && e.__esModule) return e;
-      var o = Object.create(null);
-      if (r.r(o), Object.defineProperty(o, "default", {
-        enumerable: !0,
-        value: e
-      }), 2 & t && "string" != typeof e) for (var n in e) r.d(o, n, function (t) {
-        return e[t];
-      }.bind(null, n));
-      return o;
-    }, r.n = function (e) {
-      var t = e && e.__esModule ? function () {
-        return e.default;
-      } : function () {
-        return e;
-      };
-      return r.d(t, "a", t), t;
-    }, r.o = function (e, t) {
-      return Object.prototype.hasOwnProperty.call(e, t);
-    }, r.p = "", r(r.s = 4);
-  }([function (e, t, r) {
-    e.exports = r(2)();
-  }, function (t, r) {
-    t.exports = e;
-  }, function (e, t, r) {
-    "use strict";
+    // This is done to register the method called with moment()
+    // without creating circular dependencies.
+    function setHookCallback (callback) {
+        hookCallback = callback;
+    }
 
-    var o = r(3);
+    function isArray(input) {
+        return input instanceof Array || Object.prototype.toString.call(input) === '[object Array]';
+    }
 
-    function n() {}
+    function isObject(input) {
+        // IE8 will treat undefined and null as object if it wasn't for
+        // input != null
+        return input != null && Object.prototype.toString.call(input) === '[object Object]';
+    }
 
-    function i() {}
-
-    i.resetWarningCache = n, e.exports = function () {
-      function e(e, t, r, n, i, a) {
-        if (a !== o) {
-          var s = new Error("Calling PropTypes validators directly is not supported by the `prop-types` package. Use PropTypes.checkPropTypes() to call them. Read more at http://fb.me/use-check-prop-types");
-          throw s.name = "Invariant Violation", s;
+    function isObjectEmpty(obj) {
+        if (Object.getOwnPropertyNames) {
+            return (Object.getOwnPropertyNames(obj).length === 0);
+        } else {
+            var k;
+            for (k in obj) {
+                if (obj.hasOwnProperty(k)) {
+                    return false;
+                }
+            }
+            return true;
         }
-      }
+    }
 
-      function t() {
-        return e;
-      }
+    function isUndefined(input) {
+        return input === void 0;
+    }
 
-      e.isRequired = e;
-      var r = {
-        array: e,
-        bool: e,
-        func: e,
-        number: e,
-        object: e,
-        string: e,
-        symbol: e,
-        any: e,
-        arrayOf: t,
-        element: e,
-        elementType: e,
-        instanceOf: t,
-        node: e,
-        objectOf: t,
-        oneOf: t,
-        oneOfType: t,
-        shape: t,
-        exact: t,
-        checkPropTypes: i,
-        resetWarningCache: n
-      };
-      return r.PropTypes = r, r;
+    function isNumber(input) {
+        return typeof input === 'number' || Object.prototype.toString.call(input) === '[object Number]';
+    }
+
+    function isDate(input) {
+        return input instanceof Date || Object.prototype.toString.call(input) === '[object Date]';
+    }
+
+    function map(arr, fn) {
+        var res = [], i;
+        for (i = 0; i < arr.length; ++i) {
+            res.push(fn(arr[i], i));
+        }
+        return res;
+    }
+
+    function hasOwnProp(a, b) {
+        return Object.prototype.hasOwnProperty.call(a, b);
+    }
+
+    function extend(a, b) {
+        for (var i in b) {
+            if (hasOwnProp(b, i)) {
+                a[i] = b[i];
+            }
+        }
+
+        if (hasOwnProp(b, 'toString')) {
+            a.toString = b.toString;
+        }
+
+        if (hasOwnProp(b, 'valueOf')) {
+            a.valueOf = b.valueOf;
+        }
+
+        return a;
+    }
+
+    function createUTC (input, format, locale, strict) {
+        return createLocalOrUTC(input, format, locale, strict, true).utc();
+    }
+
+    function defaultParsingFlags() {
+        // We need to deep clone this object.
+        return {
+            empty           : false,
+            unusedTokens    : [],
+            unusedInput     : [],
+            overflow        : -2,
+            charsLeftOver   : 0,
+            nullInput       : false,
+            invalidMonth    : null,
+            invalidFormat   : false,
+            userInvalidated : false,
+            iso             : false,
+            parsedDateParts : [],
+            meridiem        : null,
+            rfc2822         : false,
+            weekdayMismatch : false
+        };
+    }
+
+    function getParsingFlags(m) {
+        if (m._pf == null) {
+            m._pf = defaultParsingFlags();
+        }
+        return m._pf;
+    }
+
+    var some;
+    if (Array.prototype.some) {
+        some = Array.prototype.some;
+    } else {
+        some = function (fun) {
+            var t = Object(this);
+            var len = t.length >>> 0;
+
+            for (var i = 0; i < len; i++) {
+                if (i in t && fun.call(this, t[i], i, t)) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+    }
+
+    function isValid(m) {
+        if (m._isValid == null) {
+            var flags = getParsingFlags(m);
+            var parsedParts = some.call(flags.parsedDateParts, function (i) {
+                return i != null;
+            });
+            var isNowValid = !isNaN(m._d.getTime()) &&
+                flags.overflow < 0 &&
+                !flags.empty &&
+                !flags.invalidMonth &&
+                !flags.invalidWeekday &&
+                !flags.weekdayMismatch &&
+                !flags.nullInput &&
+                !flags.invalidFormat &&
+                !flags.userInvalidated &&
+                (!flags.meridiem || (flags.meridiem && parsedParts));
+
+            if (m._strict) {
+                isNowValid = isNowValid &&
+                    flags.charsLeftOver === 0 &&
+                    flags.unusedTokens.length === 0 &&
+                    flags.bigHour === undefined;
+            }
+
+            if (Object.isFrozen == null || !Object.isFrozen(m)) {
+                m._isValid = isNowValid;
+            }
+            else {
+                return isNowValid;
+            }
+        }
+        return m._isValid;
+    }
+
+    function createInvalid (flags) {
+        var m = createUTC(NaN);
+        if (flags != null) {
+            extend(getParsingFlags(m), flags);
+        }
+        else {
+            getParsingFlags(m).userInvalidated = true;
+        }
+
+        return m;
+    }
+
+    // Plugins that add properties should also add the key here (null value),
+    // so we can properly clone ourselves.
+    var momentProperties = hooks.momentProperties = [];
+
+    function copyConfig(to, from) {
+        var i, prop, val;
+
+        if (!isUndefined(from._isAMomentObject)) {
+            to._isAMomentObject = from._isAMomentObject;
+        }
+        if (!isUndefined(from._i)) {
+            to._i = from._i;
+        }
+        if (!isUndefined(from._f)) {
+            to._f = from._f;
+        }
+        if (!isUndefined(from._l)) {
+            to._l = from._l;
+        }
+        if (!isUndefined(from._strict)) {
+            to._strict = from._strict;
+        }
+        if (!isUndefined(from._tzm)) {
+            to._tzm = from._tzm;
+        }
+        if (!isUndefined(from._isUTC)) {
+            to._isUTC = from._isUTC;
+        }
+        if (!isUndefined(from._offset)) {
+            to._offset = from._offset;
+        }
+        if (!isUndefined(from._pf)) {
+            to._pf = getParsingFlags(from);
+        }
+        if (!isUndefined(from._locale)) {
+            to._locale = from._locale;
+        }
+
+        if (momentProperties.length > 0) {
+            for (i = 0; i < momentProperties.length; i++) {
+                prop = momentProperties[i];
+                val = from[prop];
+                if (!isUndefined(val)) {
+                    to[prop] = val;
+                }
+            }
+        }
+
+        return to;
+    }
+
+    var updateInProgress = false;
+
+    // Moment prototype object
+    function Moment(config) {
+        copyConfig(this, config);
+        this._d = new Date(config._d != null ? config._d.getTime() : NaN);
+        if (!this.isValid()) {
+            this._d = new Date(NaN);
+        }
+        // Prevent infinite loop in case updateOffset creates new moment
+        // objects.
+        if (updateInProgress === false) {
+            updateInProgress = true;
+            hooks.updateOffset(this);
+            updateInProgress = false;
+        }
+    }
+
+    function isMoment (obj) {
+        return obj instanceof Moment || (obj != null && obj._isAMomentObject != null);
+    }
+
+    function absFloor (number) {
+        if (number < 0) {
+            // -0 -> 0
+            return Math.ceil(number) || 0;
+        } else {
+            return Math.floor(number);
+        }
+    }
+
+    function toInt(argumentForCoercion) {
+        var coercedNumber = +argumentForCoercion,
+            value = 0;
+
+        if (coercedNumber !== 0 && isFinite(coercedNumber)) {
+            value = absFloor(coercedNumber);
+        }
+
+        return value;
+    }
+
+    // compare two arrays, return the number of differences
+    function compareArrays(array1, array2, dontConvert) {
+        var len = Math.min(array1.length, array2.length),
+            lengthDiff = Math.abs(array1.length - array2.length),
+            diffs = 0,
+            i;
+        for (i = 0; i < len; i++) {
+            if ((dontConvert && array1[i] !== array2[i]) ||
+                (!dontConvert && toInt(array1[i]) !== toInt(array2[i]))) {
+                diffs++;
+            }
+        }
+        return diffs + lengthDiff;
+    }
+
+    function warn(msg) {
+        if (hooks.suppressDeprecationWarnings === false &&
+                (typeof console !==  'undefined') && console.warn) {
+            console.warn('Deprecation warning: ' + msg);
+        }
+    }
+
+    function deprecate(msg, fn) {
+        var firstTime = true;
+
+        return extend(function () {
+            if (hooks.deprecationHandler != null) {
+                hooks.deprecationHandler(null, msg);
+            }
+            if (firstTime) {
+                var args = [];
+                var arg;
+                for (var i = 0; i < arguments.length; i++) {
+                    arg = '';
+                    if (typeof arguments[i] === 'object') {
+                        arg += '\n[' + i + '] ';
+                        for (var key in arguments[0]) {
+                            arg += key + ': ' + arguments[0][key] + ', ';
+                        }
+                        arg = arg.slice(0, -2); // Remove trailing comma and space
+                    } else {
+                        arg = arguments[i];
+                    }
+                    args.push(arg);
+                }
+                warn(msg + '\nArguments: ' + Array.prototype.slice.call(args).join('') + '\n' + (new Error()).stack);
+                firstTime = false;
+            }
+            return fn.apply(this, arguments);
+        }, fn);
+    }
+
+    var deprecations = {};
+
+    function deprecateSimple(name, msg) {
+        if (hooks.deprecationHandler != null) {
+            hooks.deprecationHandler(name, msg);
+        }
+        if (!deprecations[name]) {
+            warn(msg);
+            deprecations[name] = true;
+        }
+    }
+
+    hooks.suppressDeprecationWarnings = false;
+    hooks.deprecationHandler = null;
+
+    function isFunction(input) {
+        return input instanceof Function || Object.prototype.toString.call(input) === '[object Function]';
+    }
+
+    function set (config) {
+        var prop, i;
+        for (i in config) {
+            prop = config[i];
+            if (isFunction(prop)) {
+                this[i] = prop;
+            } else {
+                this['_' + i] = prop;
+            }
+        }
+        this._config = config;
+        // Lenient ordinal parsing accepts just a number in addition to
+        // number + (possibly) stuff coming from _dayOfMonthOrdinalParse.
+        // TODO: Remove "ordinalParse" fallback in next major release.
+        this._dayOfMonthOrdinalParseLenient = new RegExp(
+            (this._dayOfMonthOrdinalParse.source || this._ordinalParse.source) +
+                '|' + (/\d{1,2}/).source);
+    }
+
+    function mergeConfigs(parentConfig, childConfig) {
+        var res = extend({}, parentConfig), prop;
+        for (prop in childConfig) {
+            if (hasOwnProp(childConfig, prop)) {
+                if (isObject(parentConfig[prop]) && isObject(childConfig[prop])) {
+                    res[prop] = {};
+                    extend(res[prop], parentConfig[prop]);
+                    extend(res[prop], childConfig[prop]);
+                } else if (childConfig[prop] != null) {
+                    res[prop] = childConfig[prop];
+                } else {
+                    delete res[prop];
+                }
+            }
+        }
+        for (prop in parentConfig) {
+            if (hasOwnProp(parentConfig, prop) &&
+                    !hasOwnProp(childConfig, prop) &&
+                    isObject(parentConfig[prop])) {
+                // make sure changes to properties don't modify parent config
+                res[prop] = extend({}, res[prop]);
+            }
+        }
+        return res;
+    }
+
+    function Locale(config) {
+        if (config != null) {
+            this.set(config);
+        }
+    }
+
+    var keys;
+
+    if (Object.keys) {
+        keys = Object.keys;
+    } else {
+        keys = function (obj) {
+            var i, res = [];
+            for (i in obj) {
+                if (hasOwnProp(obj, i)) {
+                    res.push(i);
+                }
+            }
+            return res;
+        };
+    }
+
+    var defaultCalendar = {
+        sameDay : '[Today at] LT',
+        nextDay : '[Tomorrow at] LT',
+        nextWeek : 'dddd [at] LT',
+        lastDay : '[Yesterday at] LT',
+        lastWeek : '[Last] dddd [at] LT',
+        sameElse : 'L'
     };
-  }, function (e, t, r) {
-    "use strict";
 
-    e.exports = "SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED";
-  }, function (e, t, r) {
-    "use strict";
-
-    r.r(t);
-    var o = r(1),
-        n = r.n(o),
-        i = r(0),
-        a = r.n(i);
-
-    function s(e) {
-      var t,
-          r,
-          o = "";
-      if (e) if ("object" == typeof e) {
-        if (e.push) for (t = 0; t < e.length; t++) e[t] && (r = s(e[t])) && (o && (o += " "), o += r);else for (t in e) e[t] && (r = s(t)) && (o && (o += " "), o += r);
-      } else "boolean" == typeof e || e.call || (o && (o += " "), o += e);
-      return o;
+    function calendar (key, mom, now) {
+        var output = this._calendar[key] || this._calendar['sameElse'];
+        return isFunction(output) ? output.call(mom, now) : output;
     }
 
-    function c(e) {
-      return (c = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (e) {
-        return typeof e;
-      } : function (e) {
-        return e && "function" == typeof Symbol && e.constructor === Symbol && e !== Symbol.prototype ? "symbol" : typeof e;
-      })(e);
-    }
+    var defaultLongDateFormat = {
+        LTS  : 'h:mm:ss A',
+        LT   : 'h:mm A',
+        L    : 'MM/DD/YYYY',
+        LL   : 'MMMM D, YYYY',
+        LLL  : 'MMMM D, YYYY h:mm A',
+        LLLL : 'dddd, MMMM D, YYYY h:mm A'
+    };
 
-    function h(e, t) {
-      for (var r = 0; r < t.length; r++) {
-        var o = t[r];
-        o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, o.key, o);
-      }
-    }
+    function longDateFormat (key) {
+        var format = this._longDateFormat[key],
+            formatUpper = this._longDateFormat[key.toUpperCase()];
 
-    function d(e) {
-      return (d = Object.setPrototypeOf ? Object.getPrototypeOf : function (e) {
-        return e.__proto__ || Object.getPrototypeOf(e);
-      })(e);
-    }
-
-    function p(e) {
-      if (void 0 === e) throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
-      return e;
-    }
-
-    function u(e, t) {
-      return (u = Object.setPrototypeOf || function (e, t) {
-        return e.__proto__ = t, e;
-      })(e, t);
-    }
-
-    function f(e, t) {
-      var r = Object.keys(e);
-
-      if (Object.getOwnPropertySymbols) {
-        var o = Object.getOwnPropertySymbols(e);
-        t && (o = o.filter(function (t) {
-          return Object.getOwnPropertyDescriptor(e, t).enumerable;
-        })), r.push.apply(r, o);
-      }
-
-      return r;
-    }
-
-    function l(e) {
-      for (var t = 1; t < arguments.length; t++) {
-        var r = null != arguments[t] ? arguments[t] : {};
-        t % 2 ? f(Object(r), !0).forEach(function (t) {
-          m(e, t, r[t]);
-        }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(r)) : f(Object(r)).forEach(function (t) {
-          Object.defineProperty(e, t, Object.getOwnPropertyDescriptor(r, t));
-        });
-      }
-
-      return e;
-    }
-
-    function m(e, t, r) {
-      return t in e ? Object.defineProperty(e, t, {
-        value: r,
-        enumerable: !0,
-        configurable: !0,
-        writable: !0
-      }) : e[t] = r, e;
-    }
-
-    function v(e, t) {
-      return function (e) {
-        if (Array.isArray(e)) return e;
-      }(e) || function (e, t) {
-        if (!(Symbol.iterator in Object(e) || "[object Arguments]" === Object.prototype.toString.call(e))) return;
-        var r = [],
-            o = !0,
-            n = !1,
-            i = void 0;
-
-        try {
-          for (var a, s = e[Symbol.iterator](); !(o = (a = s.next()).done) && (r.push(a.value), !t || r.length !== t); o = !0);
-        } catch (e) {
-          n = !0, i = e;
-        } finally {
-          try {
-            o || null == s.return || s.return();
-          } finally {
-            if (n) throw i;
-          }
+        if (format || !formatUpper) {
+            return format;
         }
 
-        return r;
-      }(e, t) || function () {
-        throw new TypeError("Invalid attempt to destructure non-iterable instance");
-      }();
+        this._longDateFormat[key] = formatUpper.replace(/MMMM|MM|DD|dddd/g, function (val) {
+            return val.slice(1);
+        });
+
+        return this._longDateFormat[key];
     }
 
-    r.d(t, "default", function () {
-      return R;
-    }), r.d(t, "Component", function () {
-      return R;
-    }), r.d(t, "makeAspectCrop", function () {
-      return O;
-    }), r.d(t, "containCrop", function () {
-      return E;
+    var defaultInvalidDate = 'Invalid date';
+
+    function invalidDate () {
+        return this._invalidDate;
+    }
+
+    var defaultOrdinal = '%d';
+    var defaultDayOfMonthOrdinalParse = /\d{1,2}/;
+
+    function ordinal (number) {
+        return this._ordinal.replace('%d', number);
+    }
+
+    var defaultRelativeTime = {
+        future : 'in %s',
+        past   : '%s ago',
+        s  : 'a few seconds',
+        ss : '%d seconds',
+        m  : 'a minute',
+        mm : '%d minutes',
+        h  : 'an hour',
+        hh : '%d hours',
+        d  : 'a day',
+        dd : '%d days',
+        M  : 'a month',
+        MM : '%d months',
+        y  : 'a year',
+        yy : '%d years'
+    };
+
+    function relativeTime (number, withoutSuffix, string, isFuture) {
+        var output = this._relativeTime[string];
+        return (isFunction(output)) ?
+            output(number, withoutSuffix, string, isFuture) :
+            output.replace(/%d/i, number);
+    }
+
+    function pastFuture (diff, output) {
+        var format = this._relativeTime[diff > 0 ? 'future' : 'past'];
+        return isFunction(format) ? format(output) : format.replace(/%s/i, output);
+    }
+
+    var aliases = {};
+
+    function addUnitAlias (unit, shorthand) {
+        var lowerCase = unit.toLowerCase();
+        aliases[lowerCase] = aliases[lowerCase + 's'] = aliases[shorthand] = unit;
+    }
+
+    function normalizeUnits(units) {
+        return typeof units === 'string' ? aliases[units] || aliases[units.toLowerCase()] : undefined;
+    }
+
+    function normalizeObjectUnits(inputObject) {
+        var normalizedInput = {},
+            normalizedProp,
+            prop;
+
+        for (prop in inputObject) {
+            if (hasOwnProp(inputObject, prop)) {
+                normalizedProp = normalizeUnits(prop);
+                if (normalizedProp) {
+                    normalizedInput[normalizedProp] = inputObject[prop];
+                }
+            }
+        }
+
+        return normalizedInput;
+    }
+
+    var priorities = {};
+
+    function addUnitPriority(unit, priority) {
+        priorities[unit] = priority;
+    }
+
+    function getPrioritizedUnits(unitsObj) {
+        var units = [];
+        for (var u in unitsObj) {
+            units.push({unit: u, priority: priorities[u]});
+        }
+        units.sort(function (a, b) {
+            return a.priority - b.priority;
+        });
+        return units;
+    }
+
+    function zeroFill(number, targetLength, forceSign) {
+        var absNumber = '' + Math.abs(number),
+            zerosToFill = targetLength - absNumber.length,
+            sign = number >= 0;
+        return (sign ? (forceSign ? '+' : '') : '-') +
+            Math.pow(10, Math.max(0, zerosToFill)).toString().substr(1) + absNumber;
+    }
+
+    var formattingTokens = /(\[[^\[]*\])|(\\)?([Hh]mm(ss)?|Mo|MM?M?M?|Do|DDDo|DD?D?D?|ddd?d?|do?|w[o|w]?|W[o|W]?|Qo?|YYYYYY|YYYYY|YYYY|YY|gg(ggg?)?|GG(GGG?)?|e|E|a|A|hh?|HH?|kk?|mm?|ss?|S{1,9}|x|X|zz?|ZZ?|.)/g;
+
+    var localFormattingTokens = /(\[[^\[]*\])|(\\)?(LTS|LT|LL?L?L?|l{1,4})/g;
+
+    var formatFunctions = {};
+
+    var formatTokenFunctions = {};
+
+    // token:    'M'
+    // padded:   ['MM', 2]
+    // ordinal:  'Mo'
+    // callback: function () { this.month() + 1 }
+    function addFormatToken (token, padded, ordinal, callback) {
+        var func = callback;
+        if (typeof callback === 'string') {
+            func = function () {
+                return this[callback]();
+            };
+        }
+        if (token) {
+            formatTokenFunctions[token] = func;
+        }
+        if (padded) {
+            formatTokenFunctions[padded[0]] = function () {
+                return zeroFill(func.apply(this, arguments), padded[1], padded[2]);
+            };
+        }
+        if (ordinal) {
+            formatTokenFunctions[ordinal] = function () {
+                return this.localeData().ordinal(func.apply(this, arguments), token);
+            };
+        }
+    }
+
+    function removeFormattingTokens(input) {
+        if (input.match(/\[[\s\S]/)) {
+            return input.replace(/^\[|\]$/g, '');
+        }
+        return input.replace(/\\/g, '');
+    }
+
+    function makeFormatFunction(format) {
+        var array = format.match(formattingTokens), i, length;
+
+        for (i = 0, length = array.length; i < length; i++) {
+            if (formatTokenFunctions[array[i]]) {
+                array[i] = formatTokenFunctions[array[i]];
+            } else {
+                array[i] = removeFormattingTokens(array[i]);
+            }
+        }
+
+        return function (mom) {
+            var output = '', i;
+            for (i = 0; i < length; i++) {
+                output += isFunction(array[i]) ? array[i].call(mom, format) : array[i];
+            }
+            return output;
+        };
+    }
+
+    // format date using native date object
+    function formatMoment(m, format) {
+        if (!m.isValid()) {
+            return m.localeData().invalidDate();
+        }
+
+        format = expandFormat(format, m.localeData());
+        formatFunctions[format] = formatFunctions[format] || makeFormatFunction(format);
+
+        return formatFunctions[format](m);
+    }
+
+    function expandFormat(format, locale) {
+        var i = 5;
+
+        function replaceLongDateFormatTokens(input) {
+            return locale.longDateFormat(input) || input;
+        }
+
+        localFormattingTokens.lastIndex = 0;
+        while (i >= 0 && localFormattingTokens.test(format)) {
+            format = format.replace(localFormattingTokens, replaceLongDateFormatTokens);
+            localFormattingTokens.lastIndex = 0;
+            i -= 1;
+        }
+
+        return format;
+    }
+
+    var match1         = /\d/;            //       0 - 9
+    var match2         = /\d\d/;          //      00 - 99
+    var match3         = /\d{3}/;         //     000 - 999
+    var match4         = /\d{4}/;         //    0000 - 9999
+    var match6         = /[+-]?\d{6}/;    // -999999 - 999999
+    var match1to2      = /\d\d?/;         //       0 - 99
+    var match3to4      = /\d\d\d\d?/;     //     999 - 9999
+    var match5to6      = /\d\d\d\d\d\d?/; //   99999 - 999999
+    var match1to3      = /\d{1,3}/;       //       0 - 999
+    var match1to4      = /\d{1,4}/;       //       0 - 9999
+    var match1to6      = /[+-]?\d{1,6}/;  // -999999 - 999999
+
+    var matchUnsigned  = /\d+/;           //       0 - inf
+    var matchSigned    = /[+-]?\d+/;      //    -inf - inf
+
+    var matchOffset    = /Z|[+-]\d\d:?\d\d/gi; // +00:00 -00:00 +0000 -0000 or Z
+    var matchShortOffset = /Z|[+-]\d\d(?::?\d\d)?/gi; // +00 -00 +00:00 -00:00 +0000 -0000 or Z
+
+    var matchTimestamp = /[+-]?\d+(\.\d{1,3})?/; // 123456789 123456789.123
+
+    // any word (or two) characters or numbers including two/three word month in arabic.
+    // includes scottish gaelic two word and hyphenated months
+    var matchWord = /[0-9]{0,256}['a-z\u00A0-\u05FF\u0700-\uD7FF\uF900-\uFDCF\uFDF0-\uFF07\uFF10-\uFFEF]{1,256}|[\u0600-\u06FF\/]{1,256}(\s*?[\u0600-\u06FF]{1,256}){1,2}/i;
+
+    var regexes = {};
+
+    function addRegexToken (token, regex, strictRegex) {
+        regexes[token] = isFunction(regex) ? regex : function (isStrict, localeData) {
+            return (isStrict && strictRegex) ? strictRegex : regex;
+        };
+    }
+
+    function getParseRegexForToken (token, config) {
+        if (!hasOwnProp(regexes, token)) {
+            return new RegExp(unescapeFormat(token));
+        }
+
+        return regexes[token](config._strict, config._locale);
+    }
+
+    // Code from http://stackoverflow.com/questions/3561493/is-there-a-regexp-escape-function-in-javascript
+    function unescapeFormat(s) {
+        return regexEscape(s.replace('\\', '').replace(/\\(\[)|\\(\])|\[([^\]\[]*)\]|\\(.)/g, function (matched, p1, p2, p3, p4) {
+            return p1 || p2 || p3 || p4;
+        }));
+    }
+
+    function regexEscape(s) {
+        return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    }
+
+    var tokens = {};
+
+    function addParseToken (token, callback) {
+        var i, func = callback;
+        if (typeof token === 'string') {
+            token = [token];
+        }
+        if (isNumber(callback)) {
+            func = function (input, array) {
+                array[callback] = toInt(input);
+            };
+        }
+        for (i = 0; i < token.length; i++) {
+            tokens[token[i]] = func;
+        }
+    }
+
+    function addWeekParseToken (token, callback) {
+        addParseToken(token, function (input, array, config, token) {
+            config._w = config._w || {};
+            callback(input, config._w, config, token);
+        });
+    }
+
+    function addTimeToArrayFromToken(token, input, config) {
+        if (input != null && hasOwnProp(tokens, token)) {
+            tokens[token](input, config._a, config, token);
+        }
+    }
+
+    var YEAR = 0;
+    var MONTH = 1;
+    var DATE = 2;
+    var HOUR = 3;
+    var MINUTE = 4;
+    var SECOND = 5;
+    var MILLISECOND = 6;
+    var WEEK = 7;
+    var WEEKDAY = 8;
+
+    // FORMATTING
+
+    addFormatToken('Y', 0, 0, function () {
+        var y = this.year();
+        return y <= 9999 ? '' + y : '+' + y;
     });
-    var g = !1;
+
+    addFormatToken(0, ['YY', 2], 0, function () {
+        return this.year() % 100;
+    });
+
+    addFormatToken(0, ['YYYY',   4],       0, 'year');
+    addFormatToken(0, ['YYYYY',  5],       0, 'year');
+    addFormatToken(0, ['YYYYYY', 6, true], 0, 'year');
+
+    // ALIASES
+
+    addUnitAlias('year', 'y');
+
+    // PRIORITIES
+
+    addUnitPriority('year', 1);
+
+    // PARSING
+
+    addRegexToken('Y',      matchSigned);
+    addRegexToken('YY',     match1to2, match2);
+    addRegexToken('YYYY',   match1to4, match4);
+    addRegexToken('YYYYY',  match1to6, match6);
+    addRegexToken('YYYYYY', match1to6, match6);
+
+    addParseToken(['YYYYY', 'YYYYYY'], YEAR);
+    addParseToken('YYYY', function (input, array) {
+        array[YEAR] = input.length === 2 ? hooks.parseTwoDigitYear(input) : toInt(input);
+    });
+    addParseToken('YY', function (input, array) {
+        array[YEAR] = hooks.parseTwoDigitYear(input);
+    });
+    addParseToken('Y', function (input, array) {
+        array[YEAR] = parseInt(input, 10);
+    });
+
+    // HELPERS
+
+    function daysInYear(year) {
+        return isLeapYear(year) ? 366 : 365;
+    }
+
+    function isLeapYear(year) {
+        return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+    }
+
+    // HOOKS
+
+    hooks.parseTwoDigitYear = function (input) {
+        return toInt(input) + (toInt(input) > 68 ? 1900 : 2000);
+    };
+
+    // MOMENTS
+
+    var getSetYear = makeGetSet('FullYear', true);
+
+    function getIsLeapYear () {
+        return isLeapYear(this.year());
+    }
+
+    function makeGetSet (unit, keepTime) {
+        return function (value) {
+            if (value != null) {
+                set$1(this, unit, value);
+                hooks.updateOffset(this, keepTime);
+                return this;
+            } else {
+                return get(this, unit);
+            }
+        };
+    }
+
+    function get (mom, unit) {
+        return mom.isValid() ?
+            mom._d['get' + (mom._isUTC ? 'UTC' : '') + unit]() : NaN;
+    }
+
+    function set$1 (mom, unit, value) {
+        if (mom.isValid() && !isNaN(value)) {
+            if (unit === 'FullYear' && isLeapYear(mom.year()) && mom.month() === 1 && mom.date() === 29) {
+                mom._d['set' + (mom._isUTC ? 'UTC' : '') + unit](value, mom.month(), daysInMonth(value, mom.month()));
+            }
+            else {
+                mom._d['set' + (mom._isUTC ? 'UTC' : '') + unit](value);
+            }
+        }
+    }
+
+    // MOMENTS
+
+    function stringGet (units) {
+        units = normalizeUnits(units);
+        if (isFunction(this[units])) {
+            return this[units]();
+        }
+        return this;
+    }
+
+
+    function stringSet (units, value) {
+        if (typeof units === 'object') {
+            units = normalizeObjectUnits(units);
+            var prioritized = getPrioritizedUnits(units);
+            for (var i = 0; i < prioritized.length; i++) {
+                this[prioritized[i].unit](units[prioritized[i].unit]);
+            }
+        } else {
+            units = normalizeUnits(units);
+            if (isFunction(this[units])) {
+                return this[units](value);
+            }
+        }
+        return this;
+    }
+
+    function mod(n, x) {
+        return ((n % x) + x) % x;
+    }
+
+    var indexOf;
+
+    if (Array.prototype.indexOf) {
+        indexOf = Array.prototype.indexOf;
+    } else {
+        indexOf = function (o) {
+            // I know
+            var i;
+            for (i = 0; i < this.length; ++i) {
+                if (this[i] === o) {
+                    return i;
+                }
+            }
+            return -1;
+        };
+    }
+
+    function daysInMonth(year, month) {
+        if (isNaN(year) || isNaN(month)) {
+            return NaN;
+        }
+        var modMonth = mod(month, 12);
+        year += (month - modMonth) / 12;
+        return modMonth === 1 ? (isLeapYear(year) ? 29 : 28) : (31 - modMonth % 7 % 2);
+    }
+
+    // FORMATTING
+
+    addFormatToken('M', ['MM', 2], 'Mo', function () {
+        return this.month() + 1;
+    });
+
+    addFormatToken('MMM', 0, 0, function (format) {
+        return this.localeData().monthsShort(this, format);
+    });
+
+    addFormatToken('MMMM', 0, 0, function (format) {
+        return this.localeData().months(this, format);
+    });
+
+    // ALIASES
+
+    addUnitAlias('month', 'M');
+
+    // PRIORITY
+
+    addUnitPriority('month', 8);
+
+    // PARSING
+
+    addRegexToken('M',    match1to2);
+    addRegexToken('MM',   match1to2, match2);
+    addRegexToken('MMM',  function (isStrict, locale) {
+        return locale.monthsShortRegex(isStrict);
+    });
+    addRegexToken('MMMM', function (isStrict, locale) {
+        return locale.monthsRegex(isStrict);
+    });
+
+    addParseToken(['M', 'MM'], function (input, array) {
+        array[MONTH] = toInt(input) - 1;
+    });
+
+    addParseToken(['MMM', 'MMMM'], function (input, array, config, token) {
+        var month = config._locale.monthsParse(input, token, config._strict);
+        // if we didn't find a month name, mark the date as invalid.
+        if (month != null) {
+            array[MONTH] = month;
+        } else {
+            getParsingFlags(config).invalidMonth = input;
+        }
+    });
+
+    // LOCALES
+
+    var MONTHS_IN_FORMAT = /D[oD]?(\[[^\[\]]*\]|\s)+MMMM?/;
+    var defaultLocaleMonths = 'January_February_March_April_May_June_July_August_September_October_November_December'.split('_');
+    function localeMonths (m, format) {
+        if (!m) {
+            return isArray(this._months) ? this._months :
+                this._months['standalone'];
+        }
+        return isArray(this._months) ? this._months[m.month()] :
+            this._months[(this._months.isFormat || MONTHS_IN_FORMAT).test(format) ? 'format' : 'standalone'][m.month()];
+    }
+
+    var defaultLocaleMonthsShort = 'Jan_Feb_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec'.split('_');
+    function localeMonthsShort (m, format) {
+        if (!m) {
+            return isArray(this._monthsShort) ? this._monthsShort :
+                this._monthsShort['standalone'];
+        }
+        return isArray(this._monthsShort) ? this._monthsShort[m.month()] :
+            this._monthsShort[MONTHS_IN_FORMAT.test(format) ? 'format' : 'standalone'][m.month()];
+    }
+
+    function handleStrictParse(monthName, format, strict) {
+        var i, ii, mom, llc = monthName.toLocaleLowerCase();
+        if (!this._monthsParse) {
+            // this is not used
+            this._monthsParse = [];
+            this._longMonthsParse = [];
+            this._shortMonthsParse = [];
+            for (i = 0; i < 12; ++i) {
+                mom = createUTC([2000, i]);
+                this._shortMonthsParse[i] = this.monthsShort(mom, '').toLocaleLowerCase();
+                this._longMonthsParse[i] = this.months(mom, '').toLocaleLowerCase();
+            }
+        }
+
+        if (strict) {
+            if (format === 'MMM') {
+                ii = indexOf.call(this._shortMonthsParse, llc);
+                return ii !== -1 ? ii : null;
+            } else {
+                ii = indexOf.call(this._longMonthsParse, llc);
+                return ii !== -1 ? ii : null;
+            }
+        } else {
+            if (format === 'MMM') {
+                ii = indexOf.call(this._shortMonthsParse, llc);
+                if (ii !== -1) {
+                    return ii;
+                }
+                ii = indexOf.call(this._longMonthsParse, llc);
+                return ii !== -1 ? ii : null;
+            } else {
+                ii = indexOf.call(this._longMonthsParse, llc);
+                if (ii !== -1) {
+                    return ii;
+                }
+                ii = indexOf.call(this._shortMonthsParse, llc);
+                return ii !== -1 ? ii : null;
+            }
+        }
+    }
+
+    function localeMonthsParse (monthName, format, strict) {
+        var i, mom, regex;
+
+        if (this._monthsParseExact) {
+            return handleStrictParse.call(this, monthName, format, strict);
+        }
+
+        if (!this._monthsParse) {
+            this._monthsParse = [];
+            this._longMonthsParse = [];
+            this._shortMonthsParse = [];
+        }
+
+        // TODO: add sorting
+        // Sorting makes sure if one month (or abbr) is a prefix of another
+        // see sorting in computeMonthsParse
+        for (i = 0; i < 12; i++) {
+            // make the regex if we don't have it already
+            mom = createUTC([2000, i]);
+            if (strict && !this._longMonthsParse[i]) {
+                this._longMonthsParse[i] = new RegExp('^' + this.months(mom, '').replace('.', '') + '$', 'i');
+                this._shortMonthsParse[i] = new RegExp('^' + this.monthsShort(mom, '').replace('.', '') + '$', 'i');
+            }
+            if (!strict && !this._monthsParse[i]) {
+                regex = '^' + this.months(mom, '') + '|^' + this.monthsShort(mom, '');
+                this._monthsParse[i] = new RegExp(regex.replace('.', ''), 'i');
+            }
+            // test the regex
+            if (strict && format === 'MMMM' && this._longMonthsParse[i].test(monthName)) {
+                return i;
+            } else if (strict && format === 'MMM' && this._shortMonthsParse[i].test(monthName)) {
+                return i;
+            } else if (!strict && this._monthsParse[i].test(monthName)) {
+                return i;
+            }
+        }
+    }
+
+    // MOMENTS
+
+    function setMonth (mom, value) {
+        var dayOfMonth;
+
+        if (!mom.isValid()) {
+            // No op
+            return mom;
+        }
+
+        if (typeof value === 'string') {
+            if (/^\d+$/.test(value)) {
+                value = toInt(value);
+            } else {
+                value = mom.localeData().monthsParse(value);
+                // TODO: Another silent failure?
+                if (!isNumber(value)) {
+                    return mom;
+                }
+            }
+        }
+
+        dayOfMonth = Math.min(mom.date(), daysInMonth(mom.year(), value));
+        mom._d['set' + (mom._isUTC ? 'UTC' : '') + 'Month'](value, dayOfMonth);
+        return mom;
+    }
+
+    function getSetMonth (value) {
+        if (value != null) {
+            setMonth(this, value);
+            hooks.updateOffset(this, true);
+            return this;
+        } else {
+            return get(this, 'Month');
+        }
+    }
+
+    function getDaysInMonth () {
+        return daysInMonth(this.year(), this.month());
+    }
+
+    var defaultMonthsShortRegex = matchWord;
+    function monthsShortRegex (isStrict) {
+        if (this._monthsParseExact) {
+            if (!hasOwnProp(this, '_monthsRegex')) {
+                computeMonthsParse.call(this);
+            }
+            if (isStrict) {
+                return this._monthsShortStrictRegex;
+            } else {
+                return this._monthsShortRegex;
+            }
+        } else {
+            if (!hasOwnProp(this, '_monthsShortRegex')) {
+                this._monthsShortRegex = defaultMonthsShortRegex;
+            }
+            return this._monthsShortStrictRegex && isStrict ?
+                this._monthsShortStrictRegex : this._monthsShortRegex;
+        }
+    }
+
+    var defaultMonthsRegex = matchWord;
+    function monthsRegex (isStrict) {
+        if (this._monthsParseExact) {
+            if (!hasOwnProp(this, '_monthsRegex')) {
+                computeMonthsParse.call(this);
+            }
+            if (isStrict) {
+                return this._monthsStrictRegex;
+            } else {
+                return this._monthsRegex;
+            }
+        } else {
+            if (!hasOwnProp(this, '_monthsRegex')) {
+                this._monthsRegex = defaultMonthsRegex;
+            }
+            return this._monthsStrictRegex && isStrict ?
+                this._monthsStrictRegex : this._monthsRegex;
+        }
+    }
+
+    function computeMonthsParse () {
+        function cmpLenRev(a, b) {
+            return b.length - a.length;
+        }
+
+        var shortPieces = [], longPieces = [], mixedPieces = [],
+            i, mom;
+        for (i = 0; i < 12; i++) {
+            // make the regex if we don't have it already
+            mom = createUTC([2000, i]);
+            shortPieces.push(this.monthsShort(mom, ''));
+            longPieces.push(this.months(mom, ''));
+            mixedPieces.push(this.months(mom, ''));
+            mixedPieces.push(this.monthsShort(mom, ''));
+        }
+        // Sorting makes sure if one month (or abbr) is a prefix of another it
+        // will match the longer piece.
+        shortPieces.sort(cmpLenRev);
+        longPieces.sort(cmpLenRev);
+        mixedPieces.sort(cmpLenRev);
+        for (i = 0; i < 12; i++) {
+            shortPieces[i] = regexEscape(shortPieces[i]);
+            longPieces[i] = regexEscape(longPieces[i]);
+        }
+        for (i = 0; i < 24; i++) {
+            mixedPieces[i] = regexEscape(mixedPieces[i]);
+        }
+
+        this._monthsRegex = new RegExp('^(' + mixedPieces.join('|') + ')', 'i');
+        this._monthsShortRegex = this._monthsRegex;
+        this._monthsStrictRegex = new RegExp('^(' + longPieces.join('|') + ')', 'i');
+        this._monthsShortStrictRegex = new RegExp('^(' + shortPieces.join('|') + ')', 'i');
+    }
+
+    function createDate (y, m, d, h, M, s, ms) {
+        // can't just apply() to create a date:
+        // https://stackoverflow.com/q/181348
+        var date;
+        // the date constructor remaps years 0-99 to 1900-1999
+        if (y < 100 && y >= 0) {
+            // preserve leap years using a full 400 year cycle, then reset
+            date = new Date(y + 400, m, d, h, M, s, ms);
+            if (isFinite(date.getFullYear())) {
+                date.setFullYear(y);
+            }
+        } else {
+            date = new Date(y, m, d, h, M, s, ms);
+        }
+
+        return date;
+    }
+
+    function createUTCDate (y) {
+        var date;
+        // the Date.UTC function remaps years 0-99 to 1900-1999
+        if (y < 100 && y >= 0) {
+            var args = Array.prototype.slice.call(arguments);
+            // preserve leap years using a full 400 year cycle, then reset
+            args[0] = y + 400;
+            date = new Date(Date.UTC.apply(null, args));
+            if (isFinite(date.getUTCFullYear())) {
+                date.setUTCFullYear(y);
+            }
+        } else {
+            date = new Date(Date.UTC.apply(null, arguments));
+        }
+
+        return date;
+    }
+
+    // start-of-first-week - start-of-year
+    function firstWeekOffset(year, dow, doy) {
+        var // first-week day -- which january is always in the first week (4 for iso, 1 for other)
+            fwd = 7 + dow - doy,
+            // first-week day local weekday -- which local weekday is fwd
+            fwdlw = (7 + createUTCDate(year, 0, fwd).getUTCDay() - dow) % 7;
+
+        return -fwdlw + fwd - 1;
+    }
+
+    // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_a_date_given_the_year.2C_week_number_and_weekday
+    function dayOfYearFromWeeks(year, week, weekday, dow, doy) {
+        var localWeekday = (7 + weekday - dow) % 7,
+            weekOffset = firstWeekOffset(year, dow, doy),
+            dayOfYear = 1 + 7 * (week - 1) + localWeekday + weekOffset,
+            resYear, resDayOfYear;
+
+        if (dayOfYear <= 0) {
+            resYear = year - 1;
+            resDayOfYear = daysInYear(resYear) + dayOfYear;
+        } else if (dayOfYear > daysInYear(year)) {
+            resYear = year + 1;
+            resDayOfYear = dayOfYear - daysInYear(year);
+        } else {
+            resYear = year;
+            resDayOfYear = dayOfYear;
+        }
+
+        return {
+            year: resYear,
+            dayOfYear: resDayOfYear
+        };
+    }
+
+    function weekOfYear(mom, dow, doy) {
+        var weekOffset = firstWeekOffset(mom.year(), dow, doy),
+            week = Math.floor((mom.dayOfYear() - weekOffset - 1) / 7) + 1,
+            resWeek, resYear;
+
+        if (week < 1) {
+            resYear = mom.year() - 1;
+            resWeek = week + weeksInYear(resYear, dow, doy);
+        } else if (week > weeksInYear(mom.year(), dow, doy)) {
+            resWeek = week - weeksInYear(mom.year(), dow, doy);
+            resYear = mom.year() + 1;
+        } else {
+            resYear = mom.year();
+            resWeek = week;
+        }
+
+        return {
+            week: resWeek,
+            year: resYear
+        };
+    }
+
+    function weeksInYear(year, dow, doy) {
+        var weekOffset = firstWeekOffset(year, dow, doy),
+            weekOffsetNext = firstWeekOffset(year + 1, dow, doy);
+        return (daysInYear(year) - weekOffset + weekOffsetNext) / 7;
+    }
+
+    // FORMATTING
+
+    addFormatToken('w', ['ww', 2], 'wo', 'week');
+    addFormatToken('W', ['WW', 2], 'Wo', 'isoWeek');
+
+    // ALIASES
+
+    addUnitAlias('week', 'w');
+    addUnitAlias('isoWeek', 'W');
+
+    // PRIORITIES
+
+    addUnitPriority('week', 5);
+    addUnitPriority('isoWeek', 5);
+
+    // PARSING
+
+    addRegexToken('w',  match1to2);
+    addRegexToken('ww', match1to2, match2);
+    addRegexToken('W',  match1to2);
+    addRegexToken('WW', match1to2, match2);
+
+    addWeekParseToken(['w', 'ww', 'W', 'WW'], function (input, week, config, token) {
+        week[token.substr(0, 1)] = toInt(input);
+    });
+
+    // HELPERS
+
+    // LOCALES
+
+    function localeWeek (mom) {
+        return weekOfYear(mom, this._week.dow, this._week.doy).week;
+    }
+
+    var defaultLocaleWeek = {
+        dow : 0, // Sunday is the first day of the week.
+        doy : 6  // The week that contains Jan 6th is the first week of the year.
+    };
+
+    function localeFirstDayOfWeek () {
+        return this._week.dow;
+    }
+
+    function localeFirstDayOfYear () {
+        return this._week.doy;
+    }
+
+    // MOMENTS
+
+    function getSetWeek (input) {
+        var week = this.localeData().week(this);
+        return input == null ? week : this.add((input - week) * 7, 'd');
+    }
+
+    function getSetISOWeek (input) {
+        var week = weekOfYear(this, 1, 4).week;
+        return input == null ? week : this.add((input - week) * 7, 'd');
+    }
+
+    // FORMATTING
+
+    addFormatToken('d', 0, 'do', 'day');
+
+    addFormatToken('dd', 0, 0, function (format) {
+        return this.localeData().weekdaysMin(this, format);
+    });
+
+    addFormatToken('ddd', 0, 0, function (format) {
+        return this.localeData().weekdaysShort(this, format);
+    });
+
+    addFormatToken('dddd', 0, 0, function (format) {
+        return this.localeData().weekdays(this, format);
+    });
+
+    addFormatToken('e', 0, 0, 'weekday');
+    addFormatToken('E', 0, 0, 'isoWeekday');
+
+    // ALIASES
+
+    addUnitAlias('day', 'd');
+    addUnitAlias('weekday', 'e');
+    addUnitAlias('isoWeekday', 'E');
+
+    // PRIORITY
+    addUnitPriority('day', 11);
+    addUnitPriority('weekday', 11);
+    addUnitPriority('isoWeekday', 11);
+
+    // PARSING
+
+    addRegexToken('d',    match1to2);
+    addRegexToken('e',    match1to2);
+    addRegexToken('E',    match1to2);
+    addRegexToken('dd',   function (isStrict, locale) {
+        return locale.weekdaysMinRegex(isStrict);
+    });
+    addRegexToken('ddd',   function (isStrict, locale) {
+        return locale.weekdaysShortRegex(isStrict);
+    });
+    addRegexToken('dddd',   function (isStrict, locale) {
+        return locale.weekdaysRegex(isStrict);
+    });
+
+    addWeekParseToken(['dd', 'ddd', 'dddd'], function (input, week, config, token) {
+        var weekday = config._locale.weekdaysParse(input, token, config._strict);
+        // if we didn't get a weekday name, mark the date as invalid
+        if (weekday != null) {
+            week.d = weekday;
+        } else {
+            getParsingFlags(config).invalidWeekday = input;
+        }
+    });
+
+    addWeekParseToken(['d', 'e', 'E'], function (input, week, config, token) {
+        week[token] = toInt(input);
+    });
+
+    // HELPERS
+
+    function parseWeekday(input, locale) {
+        if (typeof input !== 'string') {
+            return input;
+        }
+
+        if (!isNaN(input)) {
+            return parseInt(input, 10);
+        }
+
+        input = locale.weekdaysParse(input);
+        if (typeof input === 'number') {
+            return input;
+        }
+
+        return null;
+    }
+
+    function parseIsoWeekday(input, locale) {
+        if (typeof input === 'string') {
+            return locale.weekdaysParse(input) % 7 || 7;
+        }
+        return isNaN(input) ? null : input;
+    }
+
+    // LOCALES
+    function shiftWeekdays (ws, n) {
+        return ws.slice(n, 7).concat(ws.slice(0, n));
+    }
+
+    var defaultLocaleWeekdays = 'Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday'.split('_');
+    function localeWeekdays (m, format) {
+        var weekdays = isArray(this._weekdays) ? this._weekdays :
+            this._weekdays[(m && m !== true && this._weekdays.isFormat.test(format)) ? 'format' : 'standalone'];
+        return (m === true) ? shiftWeekdays(weekdays, this._week.dow)
+            : (m) ? weekdays[m.day()] : weekdays;
+    }
+
+    var defaultLocaleWeekdaysShort = 'Sun_Mon_Tue_Wed_Thu_Fri_Sat'.split('_');
+    function localeWeekdaysShort (m) {
+        return (m === true) ? shiftWeekdays(this._weekdaysShort, this._week.dow)
+            : (m) ? this._weekdaysShort[m.day()] : this._weekdaysShort;
+    }
+
+    var defaultLocaleWeekdaysMin = 'Su_Mo_Tu_We_Th_Fr_Sa'.split('_');
+    function localeWeekdaysMin (m) {
+        return (m === true) ? shiftWeekdays(this._weekdaysMin, this._week.dow)
+            : (m) ? this._weekdaysMin[m.day()] : this._weekdaysMin;
+    }
+
+    function handleStrictParse$1(weekdayName, format, strict) {
+        var i, ii, mom, llc = weekdayName.toLocaleLowerCase();
+        if (!this._weekdaysParse) {
+            this._weekdaysParse = [];
+            this._shortWeekdaysParse = [];
+            this._minWeekdaysParse = [];
+
+            for (i = 0; i < 7; ++i) {
+                mom = createUTC([2000, 1]).day(i);
+                this._minWeekdaysParse[i] = this.weekdaysMin(mom, '').toLocaleLowerCase();
+                this._shortWeekdaysParse[i] = this.weekdaysShort(mom, '').toLocaleLowerCase();
+                this._weekdaysParse[i] = this.weekdays(mom, '').toLocaleLowerCase();
+            }
+        }
+
+        if (strict) {
+            if (format === 'dddd') {
+                ii = indexOf.call(this._weekdaysParse, llc);
+                return ii !== -1 ? ii : null;
+            } else if (format === 'ddd') {
+                ii = indexOf.call(this._shortWeekdaysParse, llc);
+                return ii !== -1 ? ii : null;
+            } else {
+                ii = indexOf.call(this._minWeekdaysParse, llc);
+                return ii !== -1 ? ii : null;
+            }
+        } else {
+            if (format === 'dddd') {
+                ii = indexOf.call(this._weekdaysParse, llc);
+                if (ii !== -1) {
+                    return ii;
+                }
+                ii = indexOf.call(this._shortWeekdaysParse, llc);
+                if (ii !== -1) {
+                    return ii;
+                }
+                ii = indexOf.call(this._minWeekdaysParse, llc);
+                return ii !== -1 ? ii : null;
+            } else if (format === 'ddd') {
+                ii = indexOf.call(this._shortWeekdaysParse, llc);
+                if (ii !== -1) {
+                    return ii;
+                }
+                ii = indexOf.call(this._weekdaysParse, llc);
+                if (ii !== -1) {
+                    return ii;
+                }
+                ii = indexOf.call(this._minWeekdaysParse, llc);
+                return ii !== -1 ? ii : null;
+            } else {
+                ii = indexOf.call(this._minWeekdaysParse, llc);
+                if (ii !== -1) {
+                    return ii;
+                }
+                ii = indexOf.call(this._weekdaysParse, llc);
+                if (ii !== -1) {
+                    return ii;
+                }
+                ii = indexOf.call(this._shortWeekdaysParse, llc);
+                return ii !== -1 ? ii : null;
+            }
+        }
+    }
+
+    function localeWeekdaysParse (weekdayName, format, strict) {
+        var i, mom, regex;
+
+        if (this._weekdaysParseExact) {
+            return handleStrictParse$1.call(this, weekdayName, format, strict);
+        }
+
+        if (!this._weekdaysParse) {
+            this._weekdaysParse = [];
+            this._minWeekdaysParse = [];
+            this._shortWeekdaysParse = [];
+            this._fullWeekdaysParse = [];
+        }
+
+        for (i = 0; i < 7; i++) {
+            // make the regex if we don't have it already
+
+            mom = createUTC([2000, 1]).day(i);
+            if (strict && !this._fullWeekdaysParse[i]) {
+                this._fullWeekdaysParse[i] = new RegExp('^' + this.weekdays(mom, '').replace('.', '\\.?') + '$', 'i');
+                this._shortWeekdaysParse[i] = new RegExp('^' + this.weekdaysShort(mom, '').replace('.', '\\.?') + '$', 'i');
+                this._minWeekdaysParse[i] = new RegExp('^' + this.weekdaysMin(mom, '').replace('.', '\\.?') + '$', 'i');
+            }
+            if (!this._weekdaysParse[i]) {
+                regex = '^' + this.weekdays(mom, '') + '|^' + this.weekdaysShort(mom, '') + '|^' + this.weekdaysMin(mom, '');
+                this._weekdaysParse[i] = new RegExp(regex.replace('.', ''), 'i');
+            }
+            // test the regex
+            if (strict && format === 'dddd' && this._fullWeekdaysParse[i].test(weekdayName)) {
+                return i;
+            } else if (strict && format === 'ddd' && this._shortWeekdaysParse[i].test(weekdayName)) {
+                return i;
+            } else if (strict && format === 'dd' && this._minWeekdaysParse[i].test(weekdayName)) {
+                return i;
+            } else if (!strict && this._weekdaysParse[i].test(weekdayName)) {
+                return i;
+            }
+        }
+    }
+
+    // MOMENTS
+
+    function getSetDayOfWeek (input) {
+        if (!this.isValid()) {
+            return input != null ? this : NaN;
+        }
+        var day = this._isUTC ? this._d.getUTCDay() : this._d.getDay();
+        if (input != null) {
+            input = parseWeekday(input, this.localeData());
+            return this.add(input - day, 'd');
+        } else {
+            return day;
+        }
+    }
+
+    function getSetLocaleDayOfWeek (input) {
+        if (!this.isValid()) {
+            return input != null ? this : NaN;
+        }
+        var weekday = (this.day() + 7 - this.localeData()._week.dow) % 7;
+        return input == null ? weekday : this.add(input - weekday, 'd');
+    }
+
+    function getSetISODayOfWeek (input) {
+        if (!this.isValid()) {
+            return input != null ? this : NaN;
+        }
+
+        // behaves the same as moment#day except
+        // as a getter, returns 7 instead of 0 (1-7 range instead of 0-6)
+        // as a setter, sunday should belong to the previous week.
+
+        if (input != null) {
+            var weekday = parseIsoWeekday(input, this.localeData());
+            return this.day(this.day() % 7 ? weekday : weekday - 7);
+        } else {
+            return this.day() || 7;
+        }
+    }
+
+    var defaultWeekdaysRegex = matchWord;
+    function weekdaysRegex (isStrict) {
+        if (this._weekdaysParseExact) {
+            if (!hasOwnProp(this, '_weekdaysRegex')) {
+                computeWeekdaysParse.call(this);
+            }
+            if (isStrict) {
+                return this._weekdaysStrictRegex;
+            } else {
+                return this._weekdaysRegex;
+            }
+        } else {
+            if (!hasOwnProp(this, '_weekdaysRegex')) {
+                this._weekdaysRegex = defaultWeekdaysRegex;
+            }
+            return this._weekdaysStrictRegex && isStrict ?
+                this._weekdaysStrictRegex : this._weekdaysRegex;
+        }
+    }
+
+    var defaultWeekdaysShortRegex = matchWord;
+    function weekdaysShortRegex (isStrict) {
+        if (this._weekdaysParseExact) {
+            if (!hasOwnProp(this, '_weekdaysRegex')) {
+                computeWeekdaysParse.call(this);
+            }
+            if (isStrict) {
+                return this._weekdaysShortStrictRegex;
+            } else {
+                return this._weekdaysShortRegex;
+            }
+        } else {
+            if (!hasOwnProp(this, '_weekdaysShortRegex')) {
+                this._weekdaysShortRegex = defaultWeekdaysShortRegex;
+            }
+            return this._weekdaysShortStrictRegex && isStrict ?
+                this._weekdaysShortStrictRegex : this._weekdaysShortRegex;
+        }
+    }
+
+    var defaultWeekdaysMinRegex = matchWord;
+    function weekdaysMinRegex (isStrict) {
+        if (this._weekdaysParseExact) {
+            if (!hasOwnProp(this, '_weekdaysRegex')) {
+                computeWeekdaysParse.call(this);
+            }
+            if (isStrict) {
+                return this._weekdaysMinStrictRegex;
+            } else {
+                return this._weekdaysMinRegex;
+            }
+        } else {
+            if (!hasOwnProp(this, '_weekdaysMinRegex')) {
+                this._weekdaysMinRegex = defaultWeekdaysMinRegex;
+            }
+            return this._weekdaysMinStrictRegex && isStrict ?
+                this._weekdaysMinStrictRegex : this._weekdaysMinRegex;
+        }
+    }
+
+
+    function computeWeekdaysParse () {
+        function cmpLenRev(a, b) {
+            return b.length - a.length;
+        }
+
+        var minPieces = [], shortPieces = [], longPieces = [], mixedPieces = [],
+            i, mom, minp, shortp, longp;
+        for (i = 0; i < 7; i++) {
+            // make the regex if we don't have it already
+            mom = createUTC([2000, 1]).day(i);
+            minp = this.weekdaysMin(mom, '');
+            shortp = this.weekdaysShort(mom, '');
+            longp = this.weekdays(mom, '');
+            minPieces.push(minp);
+            shortPieces.push(shortp);
+            longPieces.push(longp);
+            mixedPieces.push(minp);
+            mixedPieces.push(shortp);
+            mixedPieces.push(longp);
+        }
+        // Sorting makes sure if one weekday (or abbr) is a prefix of another it
+        // will match the longer piece.
+        minPieces.sort(cmpLenRev);
+        shortPieces.sort(cmpLenRev);
+        longPieces.sort(cmpLenRev);
+        mixedPieces.sort(cmpLenRev);
+        for (i = 0; i < 7; i++) {
+            shortPieces[i] = regexEscape(shortPieces[i]);
+            longPieces[i] = regexEscape(longPieces[i]);
+            mixedPieces[i] = regexEscape(mixedPieces[i]);
+        }
+
+        this._weekdaysRegex = new RegExp('^(' + mixedPieces.join('|') + ')', 'i');
+        this._weekdaysShortRegex = this._weekdaysRegex;
+        this._weekdaysMinRegex = this._weekdaysRegex;
+
+        this._weekdaysStrictRegex = new RegExp('^(' + longPieces.join('|') + ')', 'i');
+        this._weekdaysShortStrictRegex = new RegExp('^(' + shortPieces.join('|') + ')', 'i');
+        this._weekdaysMinStrictRegex = new RegExp('^(' + minPieces.join('|') + ')', 'i');
+    }
+
+    // FORMATTING
+
+    function hFormat() {
+        return this.hours() % 12 || 12;
+    }
+
+    function kFormat() {
+        return this.hours() || 24;
+    }
+
+    addFormatToken('H', ['HH', 2], 0, 'hour');
+    addFormatToken('h', ['hh', 2], 0, hFormat);
+    addFormatToken('k', ['kk', 2], 0, kFormat);
+
+    addFormatToken('hmm', 0, 0, function () {
+        return '' + hFormat.apply(this) + zeroFill(this.minutes(), 2);
+    });
+
+    addFormatToken('hmmss', 0, 0, function () {
+        return '' + hFormat.apply(this) + zeroFill(this.minutes(), 2) +
+            zeroFill(this.seconds(), 2);
+    });
+
+    addFormatToken('Hmm', 0, 0, function () {
+        return '' + this.hours() + zeroFill(this.minutes(), 2);
+    });
+
+    addFormatToken('Hmmss', 0, 0, function () {
+        return '' + this.hours() + zeroFill(this.minutes(), 2) +
+            zeroFill(this.seconds(), 2);
+    });
+
+    function meridiem (token, lowercase) {
+        addFormatToken(token, 0, 0, function () {
+            return this.localeData().meridiem(this.hours(), this.minutes(), lowercase);
+        });
+    }
+
+    meridiem('a', true);
+    meridiem('A', false);
+
+    // ALIASES
+
+    addUnitAlias('hour', 'h');
+
+    // PRIORITY
+    addUnitPriority('hour', 13);
+
+    // PARSING
+
+    function matchMeridiem (isStrict, locale) {
+        return locale._meridiemParse;
+    }
+
+    addRegexToken('a',  matchMeridiem);
+    addRegexToken('A',  matchMeridiem);
+    addRegexToken('H',  match1to2);
+    addRegexToken('h',  match1to2);
+    addRegexToken('k',  match1to2);
+    addRegexToken('HH', match1to2, match2);
+    addRegexToken('hh', match1to2, match2);
+    addRegexToken('kk', match1to2, match2);
+
+    addRegexToken('hmm', match3to4);
+    addRegexToken('hmmss', match5to6);
+    addRegexToken('Hmm', match3to4);
+    addRegexToken('Hmmss', match5to6);
+
+    addParseToken(['H', 'HH'], HOUR);
+    addParseToken(['k', 'kk'], function (input, array, config) {
+        var kInput = toInt(input);
+        array[HOUR] = kInput === 24 ? 0 : kInput;
+    });
+    addParseToken(['a', 'A'], function (input, array, config) {
+        config._isPm = config._locale.isPM(input);
+        config._meridiem = input;
+    });
+    addParseToken(['h', 'hh'], function (input, array, config) {
+        array[HOUR] = toInt(input);
+        getParsingFlags(config).bigHour = true;
+    });
+    addParseToken('hmm', function (input, array, config) {
+        var pos = input.length - 2;
+        array[HOUR] = toInt(input.substr(0, pos));
+        array[MINUTE] = toInt(input.substr(pos));
+        getParsingFlags(config).bigHour = true;
+    });
+    addParseToken('hmmss', function (input, array, config) {
+        var pos1 = input.length - 4;
+        var pos2 = input.length - 2;
+        array[HOUR] = toInt(input.substr(0, pos1));
+        array[MINUTE] = toInt(input.substr(pos1, 2));
+        array[SECOND] = toInt(input.substr(pos2));
+        getParsingFlags(config).bigHour = true;
+    });
+    addParseToken('Hmm', function (input, array, config) {
+        var pos = input.length - 2;
+        array[HOUR] = toInt(input.substr(0, pos));
+        array[MINUTE] = toInt(input.substr(pos));
+    });
+    addParseToken('Hmmss', function (input, array, config) {
+        var pos1 = input.length - 4;
+        var pos2 = input.length - 2;
+        array[HOUR] = toInt(input.substr(0, pos1));
+        array[MINUTE] = toInt(input.substr(pos1, 2));
+        array[SECOND] = toInt(input.substr(pos2));
+    });
+
+    // LOCALES
+
+    function localeIsPM (input) {
+        // IE8 Quirks Mode & IE7 Standards Mode do not allow accessing strings like arrays
+        // Using charAt should be more compatible.
+        return ((input + '').toLowerCase().charAt(0) === 'p');
+    }
+
+    var defaultLocaleMeridiemParse = /[ap]\.?m?\.?/i;
+    function localeMeridiem (hours, minutes, isLower) {
+        if (hours > 11) {
+            return isLower ? 'pm' : 'PM';
+        } else {
+            return isLower ? 'am' : 'AM';
+        }
+    }
+
+
+    // MOMENTS
+
+    // Setting the hour should keep the time, because the user explicitly
+    // specified which hour they want. So trying to maintain the same hour (in
+    // a new timezone) makes sense. Adding/subtracting hours does not follow
+    // this rule.
+    var getSetHour = makeGetSet('Hours', true);
+
+    var baseConfig = {
+        calendar: defaultCalendar,
+        longDateFormat: defaultLongDateFormat,
+        invalidDate: defaultInvalidDate,
+        ordinal: defaultOrdinal,
+        dayOfMonthOrdinalParse: defaultDayOfMonthOrdinalParse,
+        relativeTime: defaultRelativeTime,
+
+        months: defaultLocaleMonths,
+        monthsShort: defaultLocaleMonthsShort,
+
+        week: defaultLocaleWeek,
+
+        weekdays: defaultLocaleWeekdays,
+        weekdaysMin: defaultLocaleWeekdaysMin,
+        weekdaysShort: defaultLocaleWeekdaysShort,
+
+        meridiemParse: defaultLocaleMeridiemParse
+    };
+
+    // internal storage for locale config files
+    var locales = {};
+    var localeFamilies = {};
+    var globalLocale;
+
+    function normalizeLocale(key) {
+        return key ? key.toLowerCase().replace('_', '-') : key;
+    }
+
+    // pick the locale from the array
+    // try ['en-au', 'en-gb'] as 'en-au', 'en-gb', 'en', as in move through the list trying each
+    // substring from most specific to least, but move to the next array item if it's a more specific variant than the current root
+    function chooseLocale(names) {
+        var i = 0, j, next, locale, split;
+
+        while (i < names.length) {
+            split = normalizeLocale(names[i]).split('-');
+            j = split.length;
+            next = normalizeLocale(names[i + 1]);
+            next = next ? next.split('-') : null;
+            while (j > 0) {
+                locale = loadLocale(split.slice(0, j).join('-'));
+                if (locale) {
+                    return locale;
+                }
+                if (next && next.length >= j && compareArrays(split, next, true) >= j - 1) {
+                    //the next array item is better than a shallower substring of this one
+                    break;
+                }
+                j--;
+            }
+            i++;
+        }
+        return globalLocale;
+    }
+
+    function loadLocale(name) {
+        var oldLocale = null;
+        // TODO: Find a better way to register and load all the locales in Node
+        if (!locales[name] && (typeof module !== 'undefined') &&
+                module && module.exports) {
+            try {
+                oldLocale = globalLocale._abbr;
+                var aliasedRequire = require;
+                aliasedRequire('./locale/' + name);
+                getSetGlobalLocale(oldLocale);
+            } catch (e) {}
+        }
+        return locales[name];
+    }
+
+    // This function will load locale and then set the global locale.  If
+    // no arguments are passed in, it will simply return the current global
+    // locale key.
+    function getSetGlobalLocale (key, values) {
+        var data;
+        if (key) {
+            if (isUndefined(values)) {
+                data = getLocale(key);
+            }
+            else {
+                data = defineLocale(key, values);
+            }
+
+            if (data) {
+                // moment.duration._locale = moment._locale = data;
+                globalLocale = data;
+            }
+            else {
+                if ((typeof console !==  'undefined') && console.warn) {
+                    //warn user if arguments are passed but the locale could not be set
+                    console.warn('Locale ' + key +  ' not found. Did you forget to load it?');
+                }
+            }
+        }
+
+        return globalLocale._abbr;
+    }
+
+    function defineLocale (name, config) {
+        if (config !== null) {
+            var locale, parentConfig = baseConfig;
+            config.abbr = name;
+            if (locales[name] != null) {
+                deprecateSimple('defineLocaleOverride',
+                        'use moment.updateLocale(localeName, config) to change ' +
+                        'an existing locale. moment.defineLocale(localeName, ' +
+                        'config) should only be used for creating a new locale ' +
+                        'See http://momentjs.com/guides/#/warnings/define-locale/ for more info.');
+                parentConfig = locales[name]._config;
+            } else if (config.parentLocale != null) {
+                if (locales[config.parentLocale] != null) {
+                    parentConfig = locales[config.parentLocale]._config;
+                } else {
+                    locale = loadLocale(config.parentLocale);
+                    if (locale != null) {
+                        parentConfig = locale._config;
+                    } else {
+                        if (!localeFamilies[config.parentLocale]) {
+                            localeFamilies[config.parentLocale] = [];
+                        }
+                        localeFamilies[config.parentLocale].push({
+                            name: name,
+                            config: config
+                        });
+                        return null;
+                    }
+                }
+            }
+            locales[name] = new Locale(mergeConfigs(parentConfig, config));
+
+            if (localeFamilies[name]) {
+                localeFamilies[name].forEach(function (x) {
+                    defineLocale(x.name, x.config);
+                });
+            }
+
+            // backwards compat for now: also set the locale
+            // make sure we set the locale AFTER all child locales have been
+            // created, so we won't end up with the child locale set.
+            getSetGlobalLocale(name);
+
+
+            return locales[name];
+        } else {
+            // useful for testing
+            delete locales[name];
+            return null;
+        }
+    }
+
+    function updateLocale(name, config) {
+        if (config != null) {
+            var locale, tmpLocale, parentConfig = baseConfig;
+            // MERGE
+            tmpLocale = loadLocale(name);
+            if (tmpLocale != null) {
+                parentConfig = tmpLocale._config;
+            }
+            config = mergeConfigs(parentConfig, config);
+            locale = new Locale(config);
+            locale.parentLocale = locales[name];
+            locales[name] = locale;
+
+            // backwards compat for now: also set the locale
+            getSetGlobalLocale(name);
+        } else {
+            // pass null for config to unupdate, useful for tests
+            if (locales[name] != null) {
+                if (locales[name].parentLocale != null) {
+                    locales[name] = locales[name].parentLocale;
+                } else if (locales[name] != null) {
+                    delete locales[name];
+                }
+            }
+        }
+        return locales[name];
+    }
+
+    // returns locale data
+    function getLocale (key) {
+        var locale;
+
+        if (key && key._locale && key._locale._abbr) {
+            key = key._locale._abbr;
+        }
+
+        if (!key) {
+            return globalLocale;
+        }
+
+        if (!isArray(key)) {
+            //short-circuit everything else
+            locale = loadLocale(key);
+            if (locale) {
+                return locale;
+            }
+            key = [key];
+        }
+
+        return chooseLocale(key);
+    }
+
+    function listLocales() {
+        return keys(locales);
+    }
+
+    function checkOverflow (m) {
+        var overflow;
+        var a = m._a;
+
+        if (a && getParsingFlags(m).overflow === -2) {
+            overflow =
+                a[MONTH]       < 0 || a[MONTH]       > 11  ? MONTH :
+                a[DATE]        < 1 || a[DATE]        > daysInMonth(a[YEAR], a[MONTH]) ? DATE :
+                a[HOUR]        < 0 || a[HOUR]        > 24 || (a[HOUR] === 24 && (a[MINUTE] !== 0 || a[SECOND] !== 0 || a[MILLISECOND] !== 0)) ? HOUR :
+                a[MINUTE]      < 0 || a[MINUTE]      > 59  ? MINUTE :
+                a[SECOND]      < 0 || a[SECOND]      > 59  ? SECOND :
+                a[MILLISECOND] < 0 || a[MILLISECOND] > 999 ? MILLISECOND :
+                -1;
+
+            if (getParsingFlags(m)._overflowDayOfYear && (overflow < YEAR || overflow > DATE)) {
+                overflow = DATE;
+            }
+            if (getParsingFlags(m)._overflowWeeks && overflow === -1) {
+                overflow = WEEK;
+            }
+            if (getParsingFlags(m)._overflowWeekday && overflow === -1) {
+                overflow = WEEKDAY;
+            }
+
+            getParsingFlags(m).overflow = overflow;
+        }
+
+        return m;
+    }
+
+    // Pick the first defined of two or three arguments.
+    function defaults(a, b, c) {
+        if (a != null) {
+            return a;
+        }
+        if (b != null) {
+            return b;
+        }
+        return c;
+    }
+
+    function currentDateArray(config) {
+        // hooks is actually the exported moment object
+        var nowValue = new Date(hooks.now());
+        if (config._useUTC) {
+            return [nowValue.getUTCFullYear(), nowValue.getUTCMonth(), nowValue.getUTCDate()];
+        }
+        return [nowValue.getFullYear(), nowValue.getMonth(), nowValue.getDate()];
+    }
+
+    // convert an array to a date.
+    // the array should mirror the parameters below
+    // note: all values past the year are optional and will default to the lowest possible value.
+    // [year, month, day , hour, minute, second, millisecond]
+    function configFromArray (config) {
+        var i, date, input = [], currentDate, expectedWeekday, yearToUse;
+
+        if (config._d) {
+            return;
+        }
+
+        currentDate = currentDateArray(config);
+
+        //compute day of the year from weeks and weekdays
+        if (config._w && config._a[DATE] == null && config._a[MONTH] == null) {
+            dayOfYearFromWeekInfo(config);
+        }
+
+        //if the day of the year is set, figure out what it is
+        if (config._dayOfYear != null) {
+            yearToUse = defaults(config._a[YEAR], currentDate[YEAR]);
+
+            if (config._dayOfYear > daysInYear(yearToUse) || config._dayOfYear === 0) {
+                getParsingFlags(config)._overflowDayOfYear = true;
+            }
+
+            date = createUTCDate(yearToUse, 0, config._dayOfYear);
+            config._a[MONTH] = date.getUTCMonth();
+            config._a[DATE] = date.getUTCDate();
+        }
+
+        // Default to current date.
+        // * if no year, month, day of month are given, default to today
+        // * if day of month is given, default month and year
+        // * if month is given, default only year
+        // * if year is given, don't default anything
+        for (i = 0; i < 3 && config._a[i] == null; ++i) {
+            config._a[i] = input[i] = currentDate[i];
+        }
+
+        // Zero out whatever was not defaulted, including time
+        for (; i < 7; i++) {
+            config._a[i] = input[i] = (config._a[i] == null) ? (i === 2 ? 1 : 0) : config._a[i];
+        }
+
+        // Check for 24:00:00.000
+        if (config._a[HOUR] === 24 &&
+                config._a[MINUTE] === 0 &&
+                config._a[SECOND] === 0 &&
+                config._a[MILLISECOND] === 0) {
+            config._nextDay = true;
+            config._a[HOUR] = 0;
+        }
+
+        config._d = (config._useUTC ? createUTCDate : createDate).apply(null, input);
+        expectedWeekday = config._useUTC ? config._d.getUTCDay() : config._d.getDay();
+
+        // Apply timezone offset from input. The actual utcOffset can be changed
+        // with parseZone.
+        if (config._tzm != null) {
+            config._d.setUTCMinutes(config._d.getUTCMinutes() - config._tzm);
+        }
+
+        if (config._nextDay) {
+            config._a[HOUR] = 24;
+        }
+
+        // check for mismatching day of week
+        if (config._w && typeof config._w.d !== 'undefined' && config._w.d !== expectedWeekday) {
+            getParsingFlags(config).weekdayMismatch = true;
+        }
+    }
+
+    function dayOfYearFromWeekInfo(config) {
+        var w, weekYear, week, weekday, dow, doy, temp, weekdayOverflow;
+
+        w = config._w;
+        if (w.GG != null || w.W != null || w.E != null) {
+            dow = 1;
+            doy = 4;
+
+            // TODO: We need to take the current isoWeekYear, but that depends on
+            // how we interpret now (local, utc, fixed offset). So create
+            // a now version of current config (take local/utc/offset flags, and
+            // create now).
+            weekYear = defaults(w.GG, config._a[YEAR], weekOfYear(createLocal(), 1, 4).year);
+            week = defaults(w.W, 1);
+            weekday = defaults(w.E, 1);
+            if (weekday < 1 || weekday > 7) {
+                weekdayOverflow = true;
+            }
+        } else {
+            dow = config._locale._week.dow;
+            doy = config._locale._week.doy;
+
+            var curWeek = weekOfYear(createLocal(), dow, doy);
+
+            weekYear = defaults(w.gg, config._a[YEAR], curWeek.year);
+
+            // Default to current week.
+            week = defaults(w.w, curWeek.week);
+
+            if (w.d != null) {
+                // weekday -- low day numbers are considered next week
+                weekday = w.d;
+                if (weekday < 0 || weekday > 6) {
+                    weekdayOverflow = true;
+                }
+            } else if (w.e != null) {
+                // local weekday -- counting starts from beginning of week
+                weekday = w.e + dow;
+                if (w.e < 0 || w.e > 6) {
+                    weekdayOverflow = true;
+                }
+            } else {
+                // default to beginning of week
+                weekday = dow;
+            }
+        }
+        if (week < 1 || week > weeksInYear(weekYear, dow, doy)) {
+            getParsingFlags(config)._overflowWeeks = true;
+        } else if (weekdayOverflow != null) {
+            getParsingFlags(config)._overflowWeekday = true;
+        } else {
+            temp = dayOfYearFromWeeks(weekYear, week, weekday, dow, doy);
+            config._a[YEAR] = temp.year;
+            config._dayOfYear = temp.dayOfYear;
+        }
+    }
+
+    // iso 8601 regex
+    // 0000-00-00 0000-W00 or 0000-W00-0 + T + 00 or 00:00 or 00:00:00 or 00:00:00.000 + +00:00 or +0000 or +00)
+    var extendedIsoRegex = /^\s*((?:[+-]\d{6}|\d{4})-(?:\d\d-\d\d|W\d\d-\d|W\d\d|\d\d\d|\d\d))(?:(T| )(\d\d(?::\d\d(?::\d\d(?:[.,]\d+)?)?)?)([\+\-]\d\d(?::?\d\d)?|\s*Z)?)?$/;
+    var basicIsoRegex = /^\s*((?:[+-]\d{6}|\d{4})(?:\d\d\d\d|W\d\d\d|W\d\d|\d\d\d|\d\d))(?:(T| )(\d\d(?:\d\d(?:\d\d(?:[.,]\d+)?)?)?)([\+\-]\d\d(?::?\d\d)?|\s*Z)?)?$/;
+
+    var tzRegex = /Z|[+-]\d\d(?::?\d\d)?/;
+
+    var isoDates = [
+        ['YYYYYY-MM-DD', /[+-]\d{6}-\d\d-\d\d/],
+        ['YYYY-MM-DD', /\d{4}-\d\d-\d\d/],
+        ['GGGG-[W]WW-E', /\d{4}-W\d\d-\d/],
+        ['GGGG-[W]WW', /\d{4}-W\d\d/, false],
+        ['YYYY-DDD', /\d{4}-\d{3}/],
+        ['YYYY-MM', /\d{4}-\d\d/, false],
+        ['YYYYYYMMDD', /[+-]\d{10}/],
+        ['YYYYMMDD', /\d{8}/],
+        // YYYYMM is NOT allowed by the standard
+        ['GGGG[W]WWE', /\d{4}W\d{3}/],
+        ['GGGG[W]WW', /\d{4}W\d{2}/, false],
+        ['YYYYDDD', /\d{7}/]
+    ];
+
+    // iso time formats and regexes
+    var isoTimes = [
+        ['HH:mm:ss.SSSS', /\d\d:\d\d:\d\d\.\d+/],
+        ['HH:mm:ss,SSSS', /\d\d:\d\d:\d\d,\d+/],
+        ['HH:mm:ss', /\d\d:\d\d:\d\d/],
+        ['HH:mm', /\d\d:\d\d/],
+        ['HHmmss.SSSS', /\d\d\d\d\d\d\.\d+/],
+        ['HHmmss,SSSS', /\d\d\d\d\d\d,\d+/],
+        ['HHmmss', /\d\d\d\d\d\d/],
+        ['HHmm', /\d\d\d\d/],
+        ['HH', /\d\d/]
+    ];
+
+    var aspNetJsonRegex = /^\/?Date\((\-?\d+)/i;
+
+    // date from iso format
+    function configFromISO(config) {
+        var i, l,
+            string = config._i,
+            match = extendedIsoRegex.exec(string) || basicIsoRegex.exec(string),
+            allowTime, dateFormat, timeFormat, tzFormat;
+
+        if (match) {
+            getParsingFlags(config).iso = true;
+
+            for (i = 0, l = isoDates.length; i < l; i++) {
+                if (isoDates[i][1].exec(match[1])) {
+                    dateFormat = isoDates[i][0];
+                    allowTime = isoDates[i][2] !== false;
+                    break;
+                }
+            }
+            if (dateFormat == null) {
+                config._isValid = false;
+                return;
+            }
+            if (match[3]) {
+                for (i = 0, l = isoTimes.length; i < l; i++) {
+                    if (isoTimes[i][1].exec(match[3])) {
+                        // match[2] should be 'T' or space
+                        timeFormat = (match[2] || ' ') + isoTimes[i][0];
+                        break;
+                    }
+                }
+                if (timeFormat == null) {
+                    config._isValid = false;
+                    return;
+                }
+            }
+            if (!allowTime && timeFormat != null) {
+                config._isValid = false;
+                return;
+            }
+            if (match[4]) {
+                if (tzRegex.exec(match[4])) {
+                    tzFormat = 'Z';
+                } else {
+                    config._isValid = false;
+                    return;
+                }
+            }
+            config._f = dateFormat + (timeFormat || '') + (tzFormat || '');
+            configFromStringAndFormat(config);
+        } else {
+            config._isValid = false;
+        }
+    }
+
+    // RFC 2822 regex: For details see https://tools.ietf.org/html/rfc2822#section-3.3
+    var rfc2822 = /^(?:(Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s)?(\d{1,2})\s(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s(\d{2,4})\s(\d\d):(\d\d)(?::(\d\d))?\s(?:(UT|GMT|[ECMP][SD]T)|([Zz])|([+-]\d{4}))$/;
+
+    function extractFromRFC2822Strings(yearStr, monthStr, dayStr, hourStr, minuteStr, secondStr) {
+        var result = [
+            untruncateYear(yearStr),
+            defaultLocaleMonthsShort.indexOf(monthStr),
+            parseInt(dayStr, 10),
+            parseInt(hourStr, 10),
+            parseInt(minuteStr, 10)
+        ];
+
+        if (secondStr) {
+            result.push(parseInt(secondStr, 10));
+        }
+
+        return result;
+    }
+
+    function untruncateYear(yearStr) {
+        var year = parseInt(yearStr, 10);
+        if (year <= 49) {
+            return 2000 + year;
+        } else if (year <= 999) {
+            return 1900 + year;
+        }
+        return year;
+    }
+
+    function preprocessRFC2822(s) {
+        // Remove comments and folding whitespace and replace multiple-spaces with a single space
+        return s.replace(/\([^)]*\)|[\n\t]/g, ' ').replace(/(\s\s+)/g, ' ').replace(/^\s\s*/, '').replace(/\s\s*$/, '');
+    }
+
+    function checkWeekday(weekdayStr, parsedInput, config) {
+        if (weekdayStr) {
+            // TODO: Replace the vanilla JS Date object with an indepentent day-of-week check.
+            var weekdayProvided = defaultLocaleWeekdaysShort.indexOf(weekdayStr),
+                weekdayActual = new Date(parsedInput[0], parsedInput[1], parsedInput[2]).getDay();
+            if (weekdayProvided !== weekdayActual) {
+                getParsingFlags(config).weekdayMismatch = true;
+                config._isValid = false;
+                return false;
+            }
+        }
+        return true;
+    }
+
+    var obsOffsets = {
+        UT: 0,
+        GMT: 0,
+        EDT: -4 * 60,
+        EST: -5 * 60,
+        CDT: -5 * 60,
+        CST: -6 * 60,
+        MDT: -6 * 60,
+        MST: -7 * 60,
+        PDT: -7 * 60,
+        PST: -8 * 60
+    };
+
+    function calculateOffset(obsOffset, militaryOffset, numOffset) {
+        if (obsOffset) {
+            return obsOffsets[obsOffset];
+        } else if (militaryOffset) {
+            // the only allowed military tz is Z
+            return 0;
+        } else {
+            var hm = parseInt(numOffset, 10);
+            var m = hm % 100, h = (hm - m) / 100;
+            return h * 60 + m;
+        }
+    }
+
+    // date and time from ref 2822 format
+    function configFromRFC2822(config) {
+        var match = rfc2822.exec(preprocessRFC2822(config._i));
+        if (match) {
+            var parsedArray = extractFromRFC2822Strings(match[4], match[3], match[2], match[5], match[6], match[7]);
+            if (!checkWeekday(match[1], parsedArray, config)) {
+                return;
+            }
+
+            config._a = parsedArray;
+            config._tzm = calculateOffset(match[8], match[9], match[10]);
+
+            config._d = createUTCDate.apply(null, config._a);
+            config._d.setUTCMinutes(config._d.getUTCMinutes() - config._tzm);
+
+            getParsingFlags(config).rfc2822 = true;
+        } else {
+            config._isValid = false;
+        }
+    }
+
+    // date from iso format or fallback
+    function configFromString(config) {
+        var matched = aspNetJsonRegex.exec(config._i);
+
+        if (matched !== null) {
+            config._d = new Date(+matched[1]);
+            return;
+        }
+
+        configFromISO(config);
+        if (config._isValid === false) {
+            delete config._isValid;
+        } else {
+            return;
+        }
+
+        configFromRFC2822(config);
+        if (config._isValid === false) {
+            delete config._isValid;
+        } else {
+            return;
+        }
+
+        // Final attempt, use Input Fallback
+        hooks.createFromInputFallback(config);
+    }
+
+    hooks.createFromInputFallback = deprecate(
+        'value provided is not in a recognized RFC2822 or ISO format. moment construction falls back to js Date(), ' +
+        'which is not reliable across all browsers and versions. Non RFC2822/ISO date formats are ' +
+        'discouraged and will be removed in an upcoming major release. Please refer to ' +
+        'http://momentjs.com/guides/#/warnings/js-date/ for more info.',
+        function (config) {
+            config._d = new Date(config._i + (config._useUTC ? ' UTC' : ''));
+        }
+    );
+
+    // constant that refers to the ISO standard
+    hooks.ISO_8601 = function () {};
+
+    // constant that refers to the RFC 2822 form
+    hooks.RFC_2822 = function () {};
+
+    // date from string and format string
+    function configFromStringAndFormat(config) {
+        // TODO: Move this to another part of the creation flow to prevent circular deps
+        if (config._f === hooks.ISO_8601) {
+            configFromISO(config);
+            return;
+        }
+        if (config._f === hooks.RFC_2822) {
+            configFromRFC2822(config);
+            return;
+        }
+        config._a = [];
+        getParsingFlags(config).empty = true;
+
+        // This array is used to make a Date, either with `new Date` or `Date.UTC`
+        var string = '' + config._i,
+            i, parsedInput, tokens, token, skipped,
+            stringLength = string.length,
+            totalParsedInputLength = 0;
+
+        tokens = expandFormat(config._f, config._locale).match(formattingTokens) || [];
+
+        for (i = 0; i < tokens.length; i++) {
+            token = tokens[i];
+            parsedInput = (string.match(getParseRegexForToken(token, config)) || [])[0];
+            // console.log('token', token, 'parsedInput', parsedInput,
+            //         'regex', getParseRegexForToken(token, config));
+            if (parsedInput) {
+                skipped = string.substr(0, string.indexOf(parsedInput));
+                if (skipped.length > 0) {
+                    getParsingFlags(config).unusedInput.push(skipped);
+                }
+                string = string.slice(string.indexOf(parsedInput) + parsedInput.length);
+                totalParsedInputLength += parsedInput.length;
+            }
+            // don't parse if it's not a known token
+            if (formatTokenFunctions[token]) {
+                if (parsedInput) {
+                    getParsingFlags(config).empty = false;
+                }
+                else {
+                    getParsingFlags(config).unusedTokens.push(token);
+                }
+                addTimeToArrayFromToken(token, parsedInput, config);
+            }
+            else if (config._strict && !parsedInput) {
+                getParsingFlags(config).unusedTokens.push(token);
+            }
+        }
+
+        // add remaining unparsed input length to the string
+        getParsingFlags(config).charsLeftOver = stringLength - totalParsedInputLength;
+        if (string.length > 0) {
+            getParsingFlags(config).unusedInput.push(string);
+        }
+
+        // clear _12h flag if hour is <= 12
+        if (config._a[HOUR] <= 12 &&
+            getParsingFlags(config).bigHour === true &&
+            config._a[HOUR] > 0) {
+            getParsingFlags(config).bigHour = undefined;
+        }
+
+        getParsingFlags(config).parsedDateParts = config._a.slice(0);
+        getParsingFlags(config).meridiem = config._meridiem;
+        // handle meridiem
+        config._a[HOUR] = meridiemFixWrap(config._locale, config._a[HOUR], config._meridiem);
+
+        configFromArray(config);
+        checkOverflow(config);
+    }
+
+
+    function meridiemFixWrap (locale, hour, meridiem) {
+        var isPm;
+
+        if (meridiem == null) {
+            // nothing to do
+            return hour;
+        }
+        if (locale.meridiemHour != null) {
+            return locale.meridiemHour(hour, meridiem);
+        } else if (locale.isPM != null) {
+            // Fallback
+            isPm = locale.isPM(meridiem);
+            if (isPm && hour < 12) {
+                hour += 12;
+            }
+            if (!isPm && hour === 12) {
+                hour = 0;
+            }
+            return hour;
+        } else {
+            // this is not supposed to happen
+            return hour;
+        }
+    }
+
+    // date from string and array of format strings
+    function configFromStringAndArray(config) {
+        var tempConfig,
+            bestMoment,
+
+            scoreToBeat,
+            i,
+            currentScore;
+
+        if (config._f.length === 0) {
+            getParsingFlags(config).invalidFormat = true;
+            config._d = new Date(NaN);
+            return;
+        }
+
+        for (i = 0; i < config._f.length; i++) {
+            currentScore = 0;
+            tempConfig = copyConfig({}, config);
+            if (config._useUTC != null) {
+                tempConfig._useUTC = config._useUTC;
+            }
+            tempConfig._f = config._f[i];
+            configFromStringAndFormat(tempConfig);
+
+            if (!isValid(tempConfig)) {
+                continue;
+            }
+
+            // if there is any input that was not parsed add a penalty for that format
+            currentScore += getParsingFlags(tempConfig).charsLeftOver;
+
+            //or tokens
+            currentScore += getParsingFlags(tempConfig).unusedTokens.length * 10;
+
+            getParsingFlags(tempConfig).score = currentScore;
+
+            if (scoreToBeat == null || currentScore < scoreToBeat) {
+                scoreToBeat = currentScore;
+                bestMoment = tempConfig;
+            }
+        }
+
+        extend(config, bestMoment || tempConfig);
+    }
+
+    function configFromObject(config) {
+        if (config._d) {
+            return;
+        }
+
+        var i = normalizeObjectUnits(config._i);
+        config._a = map([i.year, i.month, i.day || i.date, i.hour, i.minute, i.second, i.millisecond], function (obj) {
+            return obj && parseInt(obj, 10);
+        });
+
+        configFromArray(config);
+    }
+
+    function createFromConfig (config) {
+        var res = new Moment(checkOverflow(prepareConfig(config)));
+        if (res._nextDay) {
+            // Adding is smart enough around DST
+            res.add(1, 'd');
+            res._nextDay = undefined;
+        }
+
+        return res;
+    }
+
+    function prepareConfig (config) {
+        var input = config._i,
+            format = config._f;
+
+        config._locale = config._locale || getLocale(config._l);
+
+        if (input === null || (format === undefined && input === '')) {
+            return createInvalid({nullInput: true});
+        }
+
+        if (typeof input === 'string') {
+            config._i = input = config._locale.preparse(input);
+        }
+
+        if (isMoment(input)) {
+            return new Moment(checkOverflow(input));
+        } else if (isDate(input)) {
+            config._d = input;
+        } else if (isArray(format)) {
+            configFromStringAndArray(config);
+        } else if (format) {
+            configFromStringAndFormat(config);
+        }  else {
+            configFromInput(config);
+        }
+
+        if (!isValid(config)) {
+            config._d = null;
+        }
+
+        return config;
+    }
+
+    function configFromInput(config) {
+        var input = config._i;
+        if (isUndefined(input)) {
+            config._d = new Date(hooks.now());
+        } else if (isDate(input)) {
+            config._d = new Date(input.valueOf());
+        } else if (typeof input === 'string') {
+            configFromString(config);
+        } else if (isArray(input)) {
+            config._a = map(input.slice(0), function (obj) {
+                return parseInt(obj, 10);
+            });
+            configFromArray(config);
+        } else if (isObject(input)) {
+            configFromObject(config);
+        } else if (isNumber(input)) {
+            // from milliseconds
+            config._d = new Date(input);
+        } else {
+            hooks.createFromInputFallback(config);
+        }
+    }
+
+    function createLocalOrUTC (input, format, locale, strict, isUTC) {
+        var c = {};
+
+        if (locale === true || locale === false) {
+            strict = locale;
+            locale = undefined;
+        }
+
+        if ((isObject(input) && isObjectEmpty(input)) ||
+                (isArray(input) && input.length === 0)) {
+            input = undefined;
+        }
+        // object construction must be done this way.
+        // https://github.com/moment/moment/issues/1423
+        c._isAMomentObject = true;
+        c._useUTC = c._isUTC = isUTC;
+        c._l = locale;
+        c._i = input;
+        c._f = format;
+        c._strict = strict;
+
+        return createFromConfig(c);
+    }
+
+    function createLocal (input, format, locale, strict) {
+        return createLocalOrUTC(input, format, locale, strict, false);
+    }
+
+    var prototypeMin = deprecate(
+        'moment().min is deprecated, use moment.max instead. http://momentjs.com/guides/#/warnings/min-max/',
+        function () {
+            var other = createLocal.apply(null, arguments);
+            if (this.isValid() && other.isValid()) {
+                return other < this ? this : other;
+            } else {
+                return createInvalid();
+            }
+        }
+    );
+
+    var prototypeMax = deprecate(
+        'moment().max is deprecated, use moment.min instead. http://momentjs.com/guides/#/warnings/min-max/',
+        function () {
+            var other = createLocal.apply(null, arguments);
+            if (this.isValid() && other.isValid()) {
+                return other > this ? this : other;
+            } else {
+                return createInvalid();
+            }
+        }
+    );
+
+    // Pick a moment m from moments so that m[fn](other) is true for all
+    // other. This relies on the function fn to be transitive.
+    //
+    // moments should either be an array of moment objects or an array, whose
+    // first element is an array of moment objects.
+    function pickBy(fn, moments) {
+        var res, i;
+        if (moments.length === 1 && isArray(moments[0])) {
+            moments = moments[0];
+        }
+        if (!moments.length) {
+            return createLocal();
+        }
+        res = moments[0];
+        for (i = 1; i < moments.length; ++i) {
+            if (!moments[i].isValid() || moments[i][fn](res)) {
+                res = moments[i];
+            }
+        }
+        return res;
+    }
+
+    // TODO: Use [].sort instead?
+    function min () {
+        var args = [].slice.call(arguments, 0);
+
+        return pickBy('isBefore', args);
+    }
+
+    function max () {
+        var args = [].slice.call(arguments, 0);
+
+        return pickBy('isAfter', args);
+    }
+
+    var now = function () {
+        return Date.now ? Date.now() : +(new Date());
+    };
+
+    var ordering = ['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute', 'second', 'millisecond'];
+
+    function isDurationValid(m) {
+        for (var key in m) {
+            if (!(indexOf.call(ordering, key) !== -1 && (m[key] == null || !isNaN(m[key])))) {
+                return false;
+            }
+        }
+
+        var unitHasDecimal = false;
+        for (var i = 0; i < ordering.length; ++i) {
+            if (m[ordering[i]]) {
+                if (unitHasDecimal) {
+                    return false; // only allow non-integers for smallest unit
+                }
+                if (parseFloat(m[ordering[i]]) !== toInt(m[ordering[i]])) {
+                    unitHasDecimal = true;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    function isValid$1() {
+        return this._isValid;
+    }
+
+    function createInvalid$1() {
+        return createDuration(NaN);
+    }
+
+    function Duration (duration) {
+        var normalizedInput = normalizeObjectUnits(duration),
+            years = normalizedInput.year || 0,
+            quarters = normalizedInput.quarter || 0,
+            months = normalizedInput.month || 0,
+            weeks = normalizedInput.week || normalizedInput.isoWeek || 0,
+            days = normalizedInput.day || 0,
+            hours = normalizedInput.hour || 0,
+            minutes = normalizedInput.minute || 0,
+            seconds = normalizedInput.second || 0,
+            milliseconds = normalizedInput.millisecond || 0;
+
+        this._isValid = isDurationValid(normalizedInput);
+
+        // representation for dateAddRemove
+        this._milliseconds = +milliseconds +
+            seconds * 1e3 + // 1000
+            minutes * 6e4 + // 1000 * 60
+            hours * 1000 * 60 * 60; //using 1000 * 60 * 60 instead of 36e5 to avoid floating point rounding errors https://github.com/moment/moment/issues/2978
+        // Because of dateAddRemove treats 24 hours as different from a
+        // day when working around DST, we need to store them separately
+        this._days = +days +
+            weeks * 7;
+        // It is impossible to translate months into days without knowing
+        // which months you are are talking about, so we have to store
+        // it separately.
+        this._months = +months +
+            quarters * 3 +
+            years * 12;
+
+        this._data = {};
+
+        this._locale = getLocale();
+
+        this._bubble();
+    }
+
+    function isDuration (obj) {
+        return obj instanceof Duration;
+    }
+
+    function absRound (number) {
+        if (number < 0) {
+            return Math.round(-1 * number) * -1;
+        } else {
+            return Math.round(number);
+        }
+    }
+
+    // FORMATTING
+
+    function offset (token, separator) {
+        addFormatToken(token, 0, 0, function () {
+            var offset = this.utcOffset();
+            var sign = '+';
+            if (offset < 0) {
+                offset = -offset;
+                sign = '-';
+            }
+            return sign + zeroFill(~~(offset / 60), 2) + separator + zeroFill(~~(offset) % 60, 2);
+        });
+    }
+
+    offset('Z', ':');
+    offset('ZZ', '');
+
+    // PARSING
+
+    addRegexToken('Z',  matchShortOffset);
+    addRegexToken('ZZ', matchShortOffset);
+    addParseToken(['Z', 'ZZ'], function (input, array, config) {
+        config._useUTC = true;
+        config._tzm = offsetFromString(matchShortOffset, input);
+    });
+
+    // HELPERS
+
+    // timezone chunker
+    // '+10:00' > ['10',  '00']
+    // '-1530'  > ['-15', '30']
+    var chunkOffset = /([\+\-]|\d\d)/gi;
+
+    function offsetFromString(matcher, string) {
+        var matches = (string || '').match(matcher);
+
+        if (matches === null) {
+            return null;
+        }
+
+        var chunk   = matches[matches.length - 1] || [];
+        var parts   = (chunk + '').match(chunkOffset) || ['-', 0, 0];
+        var minutes = +(parts[1] * 60) + toInt(parts[2]);
+
+        return minutes === 0 ?
+          0 :
+          parts[0] === '+' ? minutes : -minutes;
+    }
+
+    // Return a moment from input, that is local/utc/zone equivalent to model.
+    function cloneWithOffset(input, model) {
+        var res, diff;
+        if (model._isUTC) {
+            res = model.clone();
+            diff = (isMoment(input) || isDate(input) ? input.valueOf() : createLocal(input).valueOf()) - res.valueOf();
+            // Use low-level api, because this fn is low-level api.
+            res._d.setTime(res._d.valueOf() + diff);
+            hooks.updateOffset(res, false);
+            return res;
+        } else {
+            return createLocal(input).local();
+        }
+    }
+
+    function getDateOffset (m) {
+        // On Firefox.24 Date#getTimezoneOffset returns a floating point.
+        // https://github.com/moment/moment/pull/1871
+        return -Math.round(m._d.getTimezoneOffset() / 15) * 15;
+    }
+
+    // HOOKS
+
+    // This function will be called whenever a moment is mutated.
+    // It is intended to keep the offset in sync with the timezone.
+    hooks.updateOffset = function () {};
+
+    // MOMENTS
+
+    // keepLocalTime = true means only change the timezone, without
+    // affecting the local hour. So 5:31:26 +0300 --[utcOffset(2, true)]-->
+    // 5:31:26 +0200 It is possible that 5:31:26 doesn't exist with offset
+    // +0200, so we adjust the time as needed, to be valid.
+    //
+    // Keeping the time actually adds/subtracts (one hour)
+    // from the actual represented time. That is why we call updateOffset
+    // a second time. In case it wants us to change the offset again
+    // _changeInProgress == true case, then we have to adjust, because
+    // there is no such time in the given timezone.
+    function getSetOffset (input, keepLocalTime, keepMinutes) {
+        var offset = this._offset || 0,
+            localAdjust;
+        if (!this.isValid()) {
+            return input != null ? this : NaN;
+        }
+        if (input != null) {
+            if (typeof input === 'string') {
+                input = offsetFromString(matchShortOffset, input);
+                if (input === null) {
+                    return this;
+                }
+            } else if (Math.abs(input) < 16 && !keepMinutes) {
+                input = input * 60;
+            }
+            if (!this._isUTC && keepLocalTime) {
+                localAdjust = getDateOffset(this);
+            }
+            this._offset = input;
+            this._isUTC = true;
+            if (localAdjust != null) {
+                this.add(localAdjust, 'm');
+            }
+            if (offset !== input) {
+                if (!keepLocalTime || this._changeInProgress) {
+                    addSubtract(this, createDuration(input - offset, 'm'), 1, false);
+                } else if (!this._changeInProgress) {
+                    this._changeInProgress = true;
+                    hooks.updateOffset(this, true);
+                    this._changeInProgress = null;
+                }
+            }
+            return this;
+        } else {
+            return this._isUTC ? offset : getDateOffset(this);
+        }
+    }
+
+    function getSetZone (input, keepLocalTime) {
+        if (input != null) {
+            if (typeof input !== 'string') {
+                input = -input;
+            }
+
+            this.utcOffset(input, keepLocalTime);
+
+            return this;
+        } else {
+            return -this.utcOffset();
+        }
+    }
+
+    function setOffsetToUTC (keepLocalTime) {
+        return this.utcOffset(0, keepLocalTime);
+    }
+
+    function setOffsetToLocal (keepLocalTime) {
+        if (this._isUTC) {
+            this.utcOffset(0, keepLocalTime);
+            this._isUTC = false;
+
+            if (keepLocalTime) {
+                this.subtract(getDateOffset(this), 'm');
+            }
+        }
+        return this;
+    }
+
+    function setOffsetToParsedOffset () {
+        if (this._tzm != null) {
+            this.utcOffset(this._tzm, false, true);
+        } else if (typeof this._i === 'string') {
+            var tZone = offsetFromString(matchOffset, this._i);
+            if (tZone != null) {
+                this.utcOffset(tZone);
+            }
+            else {
+                this.utcOffset(0, true);
+            }
+        }
+        return this;
+    }
+
+    function hasAlignedHourOffset (input) {
+        if (!this.isValid()) {
+            return false;
+        }
+        input = input ? createLocal(input).utcOffset() : 0;
+
+        return (this.utcOffset() - input) % 60 === 0;
+    }
+
+    function isDaylightSavingTime () {
+        return (
+            this.utcOffset() > this.clone().month(0).utcOffset() ||
+            this.utcOffset() > this.clone().month(5).utcOffset()
+        );
+    }
+
+    function isDaylightSavingTimeShifted () {
+        if (!isUndefined(this._isDSTShifted)) {
+            return this._isDSTShifted;
+        }
+
+        var c = {};
+
+        copyConfig(c, this);
+        c = prepareConfig(c);
+
+        if (c._a) {
+            var other = c._isUTC ? createUTC(c._a) : createLocal(c._a);
+            this._isDSTShifted = this.isValid() &&
+                compareArrays(c._a, other.toArray()) > 0;
+        } else {
+            this._isDSTShifted = false;
+        }
+
+        return this._isDSTShifted;
+    }
+
+    function isLocal () {
+        return this.isValid() ? !this._isUTC : false;
+    }
+
+    function isUtcOffset () {
+        return this.isValid() ? this._isUTC : false;
+    }
+
+    function isUtc () {
+        return this.isValid() ? this._isUTC && this._offset === 0 : false;
+    }
+
+    // ASP.NET json date format regex
+    var aspNetRegex = /^(\-|\+)?(?:(\d*)[. ])?(\d+)\:(\d+)(?:\:(\d+)(\.\d*)?)?$/;
+
+    // from http://docs.closure-library.googlecode.com/git/closure_goog_date_date.js.source.html
+    // somewhat more in line with 4.4.3.2 2004 spec, but allows decimal anywhere
+    // and further modified to allow for strings containing both week and day
+    var isoRegex = /^(-|\+)?P(?:([-+]?[0-9,.]*)Y)?(?:([-+]?[0-9,.]*)M)?(?:([-+]?[0-9,.]*)W)?(?:([-+]?[0-9,.]*)D)?(?:T(?:([-+]?[0-9,.]*)H)?(?:([-+]?[0-9,.]*)M)?(?:([-+]?[0-9,.]*)S)?)?$/;
+
+    function createDuration (input, key) {
+        var duration = input,
+            // matching against regexp is expensive, do it on demand
+            match = null,
+            sign,
+            ret,
+            diffRes;
+
+        if (isDuration(input)) {
+            duration = {
+                ms : input._milliseconds,
+                d  : input._days,
+                M  : input._months
+            };
+        } else if (isNumber(input)) {
+            duration = {};
+            if (key) {
+                duration[key] = input;
+            } else {
+                duration.milliseconds = input;
+            }
+        } else if (!!(match = aspNetRegex.exec(input))) {
+            sign = (match[1] === '-') ? -1 : 1;
+            duration = {
+                y  : 0,
+                d  : toInt(match[DATE])                         * sign,
+                h  : toInt(match[HOUR])                         * sign,
+                m  : toInt(match[MINUTE])                       * sign,
+                s  : toInt(match[SECOND])                       * sign,
+                ms : toInt(absRound(match[MILLISECOND] * 1000)) * sign // the millisecond decimal point is included in the match
+            };
+        } else if (!!(match = isoRegex.exec(input))) {
+            sign = (match[1] === '-') ? -1 : 1;
+            duration = {
+                y : parseIso(match[2], sign),
+                M : parseIso(match[3], sign),
+                w : parseIso(match[4], sign),
+                d : parseIso(match[5], sign),
+                h : parseIso(match[6], sign),
+                m : parseIso(match[7], sign),
+                s : parseIso(match[8], sign)
+            };
+        } else if (duration == null) {// checks for null or undefined
+            duration = {};
+        } else if (typeof duration === 'object' && ('from' in duration || 'to' in duration)) {
+            diffRes = momentsDifference(createLocal(duration.from), createLocal(duration.to));
+
+            duration = {};
+            duration.ms = diffRes.milliseconds;
+            duration.M = diffRes.months;
+        }
+
+        ret = new Duration(duration);
+
+        if (isDuration(input) && hasOwnProp(input, '_locale')) {
+            ret._locale = input._locale;
+        }
+
+        return ret;
+    }
+
+    createDuration.fn = Duration.prototype;
+    createDuration.invalid = createInvalid$1;
+
+    function parseIso (inp, sign) {
+        // We'd normally use ~~inp for this, but unfortunately it also
+        // converts floats to ints.
+        // inp may be undefined, so careful calling replace on it.
+        var res = inp && parseFloat(inp.replace(',', '.'));
+        // apply sign while we're at it
+        return (isNaN(res) ? 0 : res) * sign;
+    }
+
+    function positiveMomentsDifference(base, other) {
+        var res = {};
+
+        res.months = other.month() - base.month() +
+            (other.year() - base.year()) * 12;
+        if (base.clone().add(res.months, 'M').isAfter(other)) {
+            --res.months;
+        }
+
+        res.milliseconds = +other - +(base.clone().add(res.months, 'M'));
+
+        return res;
+    }
+
+    function momentsDifference(base, other) {
+        var res;
+        if (!(base.isValid() && other.isValid())) {
+            return {milliseconds: 0, months: 0};
+        }
+
+        other = cloneWithOffset(other, base);
+        if (base.isBefore(other)) {
+            res = positiveMomentsDifference(base, other);
+        } else {
+            res = positiveMomentsDifference(other, base);
+            res.milliseconds = -res.milliseconds;
+            res.months = -res.months;
+        }
+
+        return res;
+    }
+
+    // TODO: remove 'name' arg after deprecation is removed
+    function createAdder(direction, name) {
+        return function (val, period) {
+            var dur, tmp;
+            //invert the arguments, but complain about it
+            if (period !== null && !isNaN(+period)) {
+                deprecateSimple(name, 'moment().' + name  + '(period, number) is deprecated. Please use moment().' + name + '(number, period). ' +
+                'See http://momentjs.com/guides/#/warnings/add-inverted-param/ for more info.');
+                tmp = val; val = period; period = tmp;
+            }
+
+            val = typeof val === 'string' ? +val : val;
+            dur = createDuration(val, period);
+            addSubtract(this, dur, direction);
+            return this;
+        };
+    }
+
+    function addSubtract (mom, duration, isAdding, updateOffset) {
+        var milliseconds = duration._milliseconds,
+            days = absRound(duration._days),
+            months = absRound(duration._months);
+
+        if (!mom.isValid()) {
+            // No op
+            return;
+        }
+
+        updateOffset = updateOffset == null ? true : updateOffset;
+
+        if (months) {
+            setMonth(mom, get(mom, 'Month') + months * isAdding);
+        }
+        if (days) {
+            set$1(mom, 'Date', get(mom, 'Date') + days * isAdding);
+        }
+        if (milliseconds) {
+            mom._d.setTime(mom._d.valueOf() + milliseconds * isAdding);
+        }
+        if (updateOffset) {
+            hooks.updateOffset(mom, days || months);
+        }
+    }
+
+    var add      = createAdder(1, 'add');
+    var subtract = createAdder(-1, 'subtract');
+
+    function getCalendarFormat(myMoment, now) {
+        var diff = myMoment.diff(now, 'days', true);
+        return diff < -6 ? 'sameElse' :
+                diff < -1 ? 'lastWeek' :
+                diff < 0 ? 'lastDay' :
+                diff < 1 ? 'sameDay' :
+                diff < 2 ? 'nextDay' :
+                diff < 7 ? 'nextWeek' : 'sameElse';
+    }
+
+    function calendar$1 (time, formats) {
+        // We want to compare the start of today, vs this.
+        // Getting start-of-today depends on whether we're local/utc/offset or not.
+        var now = time || createLocal(),
+            sod = cloneWithOffset(now, this).startOf('day'),
+            format = hooks.calendarFormat(this, sod) || 'sameElse';
+
+        var output = formats && (isFunction(formats[format]) ? formats[format].call(this, now) : formats[format]);
+
+        return this.format(output || this.localeData().calendar(format, this, createLocal(now)));
+    }
+
+    function clone () {
+        return new Moment(this);
+    }
+
+    function isAfter (input, units) {
+        var localInput = isMoment(input) ? input : createLocal(input);
+        if (!(this.isValid() && localInput.isValid())) {
+            return false;
+        }
+        units = normalizeUnits(units) || 'millisecond';
+        if (units === 'millisecond') {
+            return this.valueOf() > localInput.valueOf();
+        } else {
+            return localInput.valueOf() < this.clone().startOf(units).valueOf();
+        }
+    }
+
+    function isBefore (input, units) {
+        var localInput = isMoment(input) ? input : createLocal(input);
+        if (!(this.isValid() && localInput.isValid())) {
+            return false;
+        }
+        units = normalizeUnits(units) || 'millisecond';
+        if (units === 'millisecond') {
+            return this.valueOf() < localInput.valueOf();
+        } else {
+            return this.clone().endOf(units).valueOf() < localInput.valueOf();
+        }
+    }
+
+    function isBetween (from, to, units, inclusivity) {
+        var localFrom = isMoment(from) ? from : createLocal(from),
+            localTo = isMoment(to) ? to : createLocal(to);
+        if (!(this.isValid() && localFrom.isValid() && localTo.isValid())) {
+            return false;
+        }
+        inclusivity = inclusivity || '()';
+        return (inclusivity[0] === '(' ? this.isAfter(localFrom, units) : !this.isBefore(localFrom, units)) &&
+            (inclusivity[1] === ')' ? this.isBefore(localTo, units) : !this.isAfter(localTo, units));
+    }
+
+    function isSame (input, units) {
+        var localInput = isMoment(input) ? input : createLocal(input),
+            inputMs;
+        if (!(this.isValid() && localInput.isValid())) {
+            return false;
+        }
+        units = normalizeUnits(units) || 'millisecond';
+        if (units === 'millisecond') {
+            return this.valueOf() === localInput.valueOf();
+        } else {
+            inputMs = localInput.valueOf();
+            return this.clone().startOf(units).valueOf() <= inputMs && inputMs <= this.clone().endOf(units).valueOf();
+        }
+    }
+
+    function isSameOrAfter (input, units) {
+        return this.isSame(input, units) || this.isAfter(input, units);
+    }
+
+    function isSameOrBefore (input, units) {
+        return this.isSame(input, units) || this.isBefore(input, units);
+    }
+
+    function diff (input, units, asFloat) {
+        var that,
+            zoneDelta,
+            output;
+
+        if (!this.isValid()) {
+            return NaN;
+        }
+
+        that = cloneWithOffset(input, this);
+
+        if (!that.isValid()) {
+            return NaN;
+        }
+
+        zoneDelta = (that.utcOffset() - this.utcOffset()) * 6e4;
+
+        units = normalizeUnits(units);
+
+        switch (units) {
+            case 'year': output = monthDiff(this, that) / 12; break;
+            case 'month': output = monthDiff(this, that); break;
+            case 'quarter': output = monthDiff(this, that) / 3; break;
+            case 'second': output = (this - that) / 1e3; break; // 1000
+            case 'minute': output = (this - that) / 6e4; break; // 1000 * 60
+            case 'hour': output = (this - that) / 36e5; break; // 1000 * 60 * 60
+            case 'day': output = (this - that - zoneDelta) / 864e5; break; // 1000 * 60 * 60 * 24, negate dst
+            case 'week': output = (this - that - zoneDelta) / 6048e5; break; // 1000 * 60 * 60 * 24 * 7, negate dst
+            default: output = this - that;
+        }
+
+        return asFloat ? output : absFloor(output);
+    }
+
+    function monthDiff (a, b) {
+        // difference in months
+        var wholeMonthDiff = ((b.year() - a.year()) * 12) + (b.month() - a.month()),
+            // b is in (anchor - 1 month, anchor + 1 month)
+            anchor = a.clone().add(wholeMonthDiff, 'months'),
+            anchor2, adjust;
+
+        if (b - anchor < 0) {
+            anchor2 = a.clone().add(wholeMonthDiff - 1, 'months');
+            // linear across the month
+            adjust = (b - anchor) / (anchor - anchor2);
+        } else {
+            anchor2 = a.clone().add(wholeMonthDiff + 1, 'months');
+            // linear across the month
+            adjust = (b - anchor) / (anchor2 - anchor);
+        }
+
+        //check for negative zero, return zero if negative zero
+        return -(wholeMonthDiff + adjust) || 0;
+    }
+
+    hooks.defaultFormat = 'YYYY-MM-DDTHH:mm:ssZ';
+    hooks.defaultFormatUtc = 'YYYY-MM-DDTHH:mm:ss[Z]';
+
+    function toString () {
+        return this.clone().locale('en').format('ddd MMM DD YYYY HH:mm:ss [GMT]ZZ');
+    }
+
+    function toISOString(keepOffset) {
+        if (!this.isValid()) {
+            return null;
+        }
+        var utc = keepOffset !== true;
+        var m = utc ? this.clone().utc() : this;
+        if (m.year() < 0 || m.year() > 9999) {
+            return formatMoment(m, utc ? 'YYYYYY-MM-DD[T]HH:mm:ss.SSS[Z]' : 'YYYYYY-MM-DD[T]HH:mm:ss.SSSZ');
+        }
+        if (isFunction(Date.prototype.toISOString)) {
+            // native implementation is ~50x faster, use it when we can
+            if (utc) {
+                return this.toDate().toISOString();
+            } else {
+                return new Date(this.valueOf() + this.utcOffset() * 60 * 1000).toISOString().replace('Z', formatMoment(m, 'Z'));
+            }
+        }
+        return formatMoment(m, utc ? 'YYYY-MM-DD[T]HH:mm:ss.SSS[Z]' : 'YYYY-MM-DD[T]HH:mm:ss.SSSZ');
+    }
+
+    /**
+     * Return a human readable representation of a moment that can
+     * also be evaluated to get a new moment which is the same
+     *
+     * @link https://nodejs.org/dist/latest/docs/api/util.html#util_custom_inspect_function_on_objects
+     */
+    function inspect () {
+        if (!this.isValid()) {
+            return 'moment.invalid(/* ' + this._i + ' */)';
+        }
+        var func = 'moment';
+        var zone = '';
+        if (!this.isLocal()) {
+            func = this.utcOffset() === 0 ? 'moment.utc' : 'moment.parseZone';
+            zone = 'Z';
+        }
+        var prefix = '[' + func + '("]';
+        var year = (0 <= this.year() && this.year() <= 9999) ? 'YYYY' : 'YYYYYY';
+        var datetime = '-MM-DD[T]HH:mm:ss.SSS';
+        var suffix = zone + '[")]';
+
+        return this.format(prefix + year + datetime + suffix);
+    }
+
+    function format (inputString) {
+        if (!inputString) {
+            inputString = this.isUtc() ? hooks.defaultFormatUtc : hooks.defaultFormat;
+        }
+        var output = formatMoment(this, inputString);
+        return this.localeData().postformat(output);
+    }
+
+    function from (time, withoutSuffix) {
+        if (this.isValid() &&
+                ((isMoment(time) && time.isValid()) ||
+                 createLocal(time).isValid())) {
+            return createDuration({to: this, from: time}).locale(this.locale()).humanize(!withoutSuffix);
+        } else {
+            return this.localeData().invalidDate();
+        }
+    }
+
+    function fromNow (withoutSuffix) {
+        return this.from(createLocal(), withoutSuffix);
+    }
+
+    function to (time, withoutSuffix) {
+        if (this.isValid() &&
+                ((isMoment(time) && time.isValid()) ||
+                 createLocal(time).isValid())) {
+            return createDuration({from: this, to: time}).locale(this.locale()).humanize(!withoutSuffix);
+        } else {
+            return this.localeData().invalidDate();
+        }
+    }
+
+    function toNow (withoutSuffix) {
+        return this.to(createLocal(), withoutSuffix);
+    }
+
+    // If passed a locale key, it will set the locale for this
+    // instance.  Otherwise, it will return the locale configuration
+    // variables for this instance.
+    function locale (key) {
+        var newLocaleData;
+
+        if (key === undefined) {
+            return this._locale._abbr;
+        } else {
+            newLocaleData = getLocale(key);
+            if (newLocaleData != null) {
+                this._locale = newLocaleData;
+            }
+            return this;
+        }
+    }
+
+    var lang = deprecate(
+        'moment().lang() is deprecated. Instead, use moment().localeData() to get the language configuration. Use moment().locale() to change languages.',
+        function (key) {
+            if (key === undefined) {
+                return this.localeData();
+            } else {
+                return this.locale(key);
+            }
+        }
+    );
+
+    function localeData () {
+        return this._locale;
+    }
+
+    var MS_PER_SECOND = 1000;
+    var MS_PER_MINUTE = 60 * MS_PER_SECOND;
+    var MS_PER_HOUR = 60 * MS_PER_MINUTE;
+    var MS_PER_400_YEARS = (365 * 400 + 97) * 24 * MS_PER_HOUR;
+
+    // actual modulo - handles negative numbers (for dates before 1970):
+    function mod$1(dividend, divisor) {
+        return (dividend % divisor + divisor) % divisor;
+    }
+
+    function localStartOfDate(y, m, d) {
+        // the date constructor remaps years 0-99 to 1900-1999
+        if (y < 100 && y >= 0) {
+            // preserve leap years using a full 400 year cycle, then reset
+            return new Date(y + 400, m, d) - MS_PER_400_YEARS;
+        } else {
+            return new Date(y, m, d).valueOf();
+        }
+    }
+
+    function utcStartOfDate(y, m, d) {
+        // Date.UTC remaps years 0-99 to 1900-1999
+        if (y < 100 && y >= 0) {
+            // preserve leap years using a full 400 year cycle, then reset
+            return Date.UTC(y + 400, m, d) - MS_PER_400_YEARS;
+        } else {
+            return Date.UTC(y, m, d);
+        }
+    }
+
+    function startOf (units) {
+        var time;
+        units = normalizeUnits(units);
+        if (units === undefined || units === 'millisecond' || !this.isValid()) {
+            return this;
+        }
+
+        var startOfDate = this._isUTC ? utcStartOfDate : localStartOfDate;
+
+        switch (units) {
+            case 'year':
+                time = startOfDate(this.year(), 0, 1);
+                break;
+            case 'quarter':
+                time = startOfDate(this.year(), this.month() - this.month() % 3, 1);
+                break;
+            case 'month':
+                time = startOfDate(this.year(), this.month(), 1);
+                break;
+            case 'week':
+                time = startOfDate(this.year(), this.month(), this.date() - this.weekday());
+                break;
+            case 'isoWeek':
+                time = startOfDate(this.year(), this.month(), this.date() - (this.isoWeekday() - 1));
+                break;
+            case 'day':
+            case 'date':
+                time = startOfDate(this.year(), this.month(), this.date());
+                break;
+            case 'hour':
+                time = this._d.valueOf();
+                time -= mod$1(time + (this._isUTC ? 0 : this.utcOffset() * MS_PER_MINUTE), MS_PER_HOUR);
+                break;
+            case 'minute':
+                time = this._d.valueOf();
+                time -= mod$1(time, MS_PER_MINUTE);
+                break;
+            case 'second':
+                time = this._d.valueOf();
+                time -= mod$1(time, MS_PER_SECOND);
+                break;
+        }
+
+        this._d.setTime(time);
+        hooks.updateOffset(this, true);
+        return this;
+    }
+
+    function endOf (units) {
+        var time;
+        units = normalizeUnits(units);
+        if (units === undefined || units === 'millisecond' || !this.isValid()) {
+            return this;
+        }
+
+        var startOfDate = this._isUTC ? utcStartOfDate : localStartOfDate;
+
+        switch (units) {
+            case 'year':
+                time = startOfDate(this.year() + 1, 0, 1) - 1;
+                break;
+            case 'quarter':
+                time = startOfDate(this.year(), this.month() - this.month() % 3 + 3, 1) - 1;
+                break;
+            case 'month':
+                time = startOfDate(this.year(), this.month() + 1, 1) - 1;
+                break;
+            case 'week':
+                time = startOfDate(this.year(), this.month(), this.date() - this.weekday() + 7) - 1;
+                break;
+            case 'isoWeek':
+                time = startOfDate(this.year(), this.month(), this.date() - (this.isoWeekday() - 1) + 7) - 1;
+                break;
+            case 'day':
+            case 'date':
+                time = startOfDate(this.year(), this.month(), this.date() + 1) - 1;
+                break;
+            case 'hour':
+                time = this._d.valueOf();
+                time += MS_PER_HOUR - mod$1(time + (this._isUTC ? 0 : this.utcOffset() * MS_PER_MINUTE), MS_PER_HOUR) - 1;
+                break;
+            case 'minute':
+                time = this._d.valueOf();
+                time += MS_PER_MINUTE - mod$1(time, MS_PER_MINUTE) - 1;
+                break;
+            case 'second':
+                time = this._d.valueOf();
+                time += MS_PER_SECOND - mod$1(time, MS_PER_SECOND) - 1;
+                break;
+        }
+
+        this._d.setTime(time);
+        hooks.updateOffset(this, true);
+        return this;
+    }
+
+    function valueOf () {
+        return this._d.valueOf() - ((this._offset || 0) * 60000);
+    }
+
+    function unix () {
+        return Math.floor(this.valueOf() / 1000);
+    }
+
+    function toDate () {
+        return new Date(this.valueOf());
+    }
+
+    function toArray () {
+        var m = this;
+        return [m.year(), m.month(), m.date(), m.hour(), m.minute(), m.second(), m.millisecond()];
+    }
+
+    function toObject () {
+        var m = this;
+        return {
+            years: m.year(),
+            months: m.month(),
+            date: m.date(),
+            hours: m.hours(),
+            minutes: m.minutes(),
+            seconds: m.seconds(),
+            milliseconds: m.milliseconds()
+        };
+    }
+
+    function toJSON () {
+        // new Date(NaN).toJSON() === null
+        return this.isValid() ? this.toISOString() : null;
+    }
+
+    function isValid$2 () {
+        return isValid(this);
+    }
+
+    function parsingFlags () {
+        return extend({}, getParsingFlags(this));
+    }
+
+    function invalidAt () {
+        return getParsingFlags(this).overflow;
+    }
+
+    function creationData() {
+        return {
+            input: this._i,
+            format: this._f,
+            locale: this._locale,
+            isUTC: this._isUTC,
+            strict: this._strict
+        };
+    }
+
+    // FORMATTING
+
+    addFormatToken(0, ['gg', 2], 0, function () {
+        return this.weekYear() % 100;
+    });
+
+    addFormatToken(0, ['GG', 2], 0, function () {
+        return this.isoWeekYear() % 100;
+    });
+
+    function addWeekYearFormatToken (token, getter) {
+        addFormatToken(0, [token, token.length], 0, getter);
+    }
+
+    addWeekYearFormatToken('gggg',     'weekYear');
+    addWeekYearFormatToken('ggggg',    'weekYear');
+    addWeekYearFormatToken('GGGG',  'isoWeekYear');
+    addWeekYearFormatToken('GGGGG', 'isoWeekYear');
+
+    // ALIASES
+
+    addUnitAlias('weekYear', 'gg');
+    addUnitAlias('isoWeekYear', 'GG');
+
+    // PRIORITY
+
+    addUnitPriority('weekYear', 1);
+    addUnitPriority('isoWeekYear', 1);
+
+
+    // PARSING
+
+    addRegexToken('G',      matchSigned);
+    addRegexToken('g',      matchSigned);
+    addRegexToken('GG',     match1to2, match2);
+    addRegexToken('gg',     match1to2, match2);
+    addRegexToken('GGGG',   match1to4, match4);
+    addRegexToken('gggg',   match1to4, match4);
+    addRegexToken('GGGGG',  match1to6, match6);
+    addRegexToken('ggggg',  match1to6, match6);
+
+    addWeekParseToken(['gggg', 'ggggg', 'GGGG', 'GGGGG'], function (input, week, config, token) {
+        week[token.substr(0, 2)] = toInt(input);
+    });
+
+    addWeekParseToken(['gg', 'GG'], function (input, week, config, token) {
+        week[token] = hooks.parseTwoDigitYear(input);
+    });
+
+    // MOMENTS
+
+    function getSetWeekYear (input) {
+        return getSetWeekYearHelper.call(this,
+                input,
+                this.week(),
+                this.weekday(),
+                this.localeData()._week.dow,
+                this.localeData()._week.doy);
+    }
+
+    function getSetISOWeekYear (input) {
+        return getSetWeekYearHelper.call(this,
+                input, this.isoWeek(), this.isoWeekday(), 1, 4);
+    }
+
+    function getISOWeeksInYear () {
+        return weeksInYear(this.year(), 1, 4);
+    }
+
+    function getWeeksInYear () {
+        var weekInfo = this.localeData()._week;
+        return weeksInYear(this.year(), weekInfo.dow, weekInfo.doy);
+    }
+
+    function getSetWeekYearHelper(input, week, weekday, dow, doy) {
+        var weeksTarget;
+        if (input == null) {
+            return weekOfYear(this, dow, doy).year;
+        } else {
+            weeksTarget = weeksInYear(input, dow, doy);
+            if (week > weeksTarget) {
+                week = weeksTarget;
+            }
+            return setWeekAll.call(this, input, week, weekday, dow, doy);
+        }
+    }
+
+    function setWeekAll(weekYear, week, weekday, dow, doy) {
+        var dayOfYearData = dayOfYearFromWeeks(weekYear, week, weekday, dow, doy),
+            date = createUTCDate(dayOfYearData.year, 0, dayOfYearData.dayOfYear);
+
+        this.year(date.getUTCFullYear());
+        this.month(date.getUTCMonth());
+        this.date(date.getUTCDate());
+        return this;
+    }
+
+    // FORMATTING
+
+    addFormatToken('Q', 0, 'Qo', 'quarter');
+
+    // ALIASES
+
+    addUnitAlias('quarter', 'Q');
+
+    // PRIORITY
+
+    addUnitPriority('quarter', 7);
+
+    // PARSING
+
+    addRegexToken('Q', match1);
+    addParseToken('Q', function (input, array) {
+        array[MONTH] = (toInt(input) - 1) * 3;
+    });
+
+    // MOMENTS
+
+    function getSetQuarter (input) {
+        return input == null ? Math.ceil((this.month() + 1) / 3) : this.month((input - 1) * 3 + this.month() % 3);
+    }
+
+    // FORMATTING
+
+    addFormatToken('D', ['DD', 2], 'Do', 'date');
+
+    // ALIASES
+
+    addUnitAlias('date', 'D');
+
+    // PRIORITY
+    addUnitPriority('date', 9);
+
+    // PARSING
+
+    addRegexToken('D',  match1to2);
+    addRegexToken('DD', match1to2, match2);
+    addRegexToken('Do', function (isStrict, locale) {
+        // TODO: Remove "ordinalParse" fallback in next major release.
+        return isStrict ?
+          (locale._dayOfMonthOrdinalParse || locale._ordinalParse) :
+          locale._dayOfMonthOrdinalParseLenient;
+    });
+
+    addParseToken(['D', 'DD'], DATE);
+    addParseToken('Do', function (input, array) {
+        array[DATE] = toInt(input.match(match1to2)[0]);
+    });
+
+    // MOMENTS
+
+    var getSetDayOfMonth = makeGetSet('Date', true);
+
+    // FORMATTING
+
+    addFormatToken('DDD', ['DDDD', 3], 'DDDo', 'dayOfYear');
+
+    // ALIASES
+
+    addUnitAlias('dayOfYear', 'DDD');
+
+    // PRIORITY
+    addUnitPriority('dayOfYear', 4);
+
+    // PARSING
+
+    addRegexToken('DDD',  match1to3);
+    addRegexToken('DDDD', match3);
+    addParseToken(['DDD', 'DDDD'], function (input, array, config) {
+        config._dayOfYear = toInt(input);
+    });
+
+    // HELPERS
+
+    // MOMENTS
+
+    function getSetDayOfYear (input) {
+        var dayOfYear = Math.round((this.clone().startOf('day') - this.clone().startOf('year')) / 864e5) + 1;
+        return input == null ? dayOfYear : this.add((input - dayOfYear), 'd');
+    }
+
+    // FORMATTING
+
+    addFormatToken('m', ['mm', 2], 0, 'minute');
+
+    // ALIASES
+
+    addUnitAlias('minute', 'm');
+
+    // PRIORITY
+
+    addUnitPriority('minute', 14);
+
+    // PARSING
+
+    addRegexToken('m',  match1to2);
+    addRegexToken('mm', match1to2, match2);
+    addParseToken(['m', 'mm'], MINUTE);
+
+    // MOMENTS
+
+    var getSetMinute = makeGetSet('Minutes', false);
+
+    // FORMATTING
+
+    addFormatToken('s', ['ss', 2], 0, 'second');
+
+    // ALIASES
+
+    addUnitAlias('second', 's');
+
+    // PRIORITY
+
+    addUnitPriority('second', 15);
+
+    // PARSING
+
+    addRegexToken('s',  match1to2);
+    addRegexToken('ss', match1to2, match2);
+    addParseToken(['s', 'ss'], SECOND);
+
+    // MOMENTS
+
+    var getSetSecond = makeGetSet('Seconds', false);
+
+    // FORMATTING
+
+    addFormatToken('S', 0, 0, function () {
+        return ~~(this.millisecond() / 100);
+    });
+
+    addFormatToken(0, ['SS', 2], 0, function () {
+        return ~~(this.millisecond() / 10);
+    });
+
+    addFormatToken(0, ['SSS', 3], 0, 'millisecond');
+    addFormatToken(0, ['SSSS', 4], 0, function () {
+        return this.millisecond() * 10;
+    });
+    addFormatToken(0, ['SSSSS', 5], 0, function () {
+        return this.millisecond() * 100;
+    });
+    addFormatToken(0, ['SSSSSS', 6], 0, function () {
+        return this.millisecond() * 1000;
+    });
+    addFormatToken(0, ['SSSSSSS', 7], 0, function () {
+        return this.millisecond() * 10000;
+    });
+    addFormatToken(0, ['SSSSSSSS', 8], 0, function () {
+        return this.millisecond() * 100000;
+    });
+    addFormatToken(0, ['SSSSSSSSS', 9], 0, function () {
+        return this.millisecond() * 1000000;
+    });
+
+
+    // ALIASES
+
+    addUnitAlias('millisecond', 'ms');
+
+    // PRIORITY
+
+    addUnitPriority('millisecond', 16);
+
+    // PARSING
+
+    addRegexToken('S',    match1to3, match1);
+    addRegexToken('SS',   match1to3, match2);
+    addRegexToken('SSS',  match1to3, match3);
+
+    var token;
+    for (token = 'SSSS'; token.length <= 9; token += 'S') {
+        addRegexToken(token, matchUnsigned);
+    }
+
+    function parseMs(input, array) {
+        array[MILLISECOND] = toInt(('0.' + input) * 1000);
+    }
+
+    for (token = 'S'; token.length <= 9; token += 'S') {
+        addParseToken(token, parseMs);
+    }
+    // MOMENTS
+
+    var getSetMillisecond = makeGetSet('Milliseconds', false);
+
+    // FORMATTING
+
+    addFormatToken('z',  0, 0, 'zoneAbbr');
+    addFormatToken('zz', 0, 0, 'zoneName');
+
+    // MOMENTS
+
+    function getZoneAbbr () {
+        return this._isUTC ? 'UTC' : '';
+    }
+
+    function getZoneName () {
+        return this._isUTC ? 'Coordinated Universal Time' : '';
+    }
+
+    var proto = Moment.prototype;
+
+    proto.add               = add;
+    proto.calendar          = calendar$1;
+    proto.clone             = clone;
+    proto.diff              = diff;
+    proto.endOf             = endOf;
+    proto.format            = format;
+    proto.from              = from;
+    proto.fromNow           = fromNow;
+    proto.to                = to;
+    proto.toNow             = toNow;
+    proto.get               = stringGet;
+    proto.invalidAt         = invalidAt;
+    proto.isAfter           = isAfter;
+    proto.isBefore          = isBefore;
+    proto.isBetween         = isBetween;
+    proto.isSame            = isSame;
+    proto.isSameOrAfter     = isSameOrAfter;
+    proto.isSameOrBefore    = isSameOrBefore;
+    proto.isValid           = isValid$2;
+    proto.lang              = lang;
+    proto.locale            = locale;
+    proto.localeData        = localeData;
+    proto.max               = prototypeMax;
+    proto.min               = prototypeMin;
+    proto.parsingFlags      = parsingFlags;
+    proto.set               = stringSet;
+    proto.startOf           = startOf;
+    proto.subtract          = subtract;
+    proto.toArray           = toArray;
+    proto.toObject          = toObject;
+    proto.toDate            = toDate;
+    proto.toISOString       = toISOString;
+    proto.inspect           = inspect;
+    proto.toJSON            = toJSON;
+    proto.toString          = toString;
+    proto.unix              = unix;
+    proto.valueOf           = valueOf;
+    proto.creationData      = creationData;
+    proto.year       = getSetYear;
+    proto.isLeapYear = getIsLeapYear;
+    proto.weekYear    = getSetWeekYear;
+    proto.isoWeekYear = getSetISOWeekYear;
+    proto.quarter = proto.quarters = getSetQuarter;
+    proto.month       = getSetMonth;
+    proto.daysInMonth = getDaysInMonth;
+    proto.week           = proto.weeks        = getSetWeek;
+    proto.isoWeek        = proto.isoWeeks     = getSetISOWeek;
+    proto.weeksInYear    = getWeeksInYear;
+    proto.isoWeeksInYear = getISOWeeksInYear;
+    proto.date       = getSetDayOfMonth;
+    proto.day        = proto.days             = getSetDayOfWeek;
+    proto.weekday    = getSetLocaleDayOfWeek;
+    proto.isoWeekday = getSetISODayOfWeek;
+    proto.dayOfYear  = getSetDayOfYear;
+    proto.hour = proto.hours = getSetHour;
+    proto.minute = proto.minutes = getSetMinute;
+    proto.second = proto.seconds = getSetSecond;
+    proto.millisecond = proto.milliseconds = getSetMillisecond;
+    proto.utcOffset            = getSetOffset;
+    proto.utc                  = setOffsetToUTC;
+    proto.local                = setOffsetToLocal;
+    proto.parseZone            = setOffsetToParsedOffset;
+    proto.hasAlignedHourOffset = hasAlignedHourOffset;
+    proto.isDST                = isDaylightSavingTime;
+    proto.isLocal              = isLocal;
+    proto.isUtcOffset          = isUtcOffset;
+    proto.isUtc                = isUtc;
+    proto.isUTC                = isUtc;
+    proto.zoneAbbr = getZoneAbbr;
+    proto.zoneName = getZoneName;
+    proto.dates  = deprecate('dates accessor is deprecated. Use date instead.', getSetDayOfMonth);
+    proto.months = deprecate('months accessor is deprecated. Use month instead', getSetMonth);
+    proto.years  = deprecate('years accessor is deprecated. Use year instead', getSetYear);
+    proto.zone   = deprecate('moment().zone is deprecated, use moment().utcOffset instead. http://momentjs.com/guides/#/warnings/zone/', getSetZone);
+    proto.isDSTShifted = deprecate('isDSTShifted is deprecated. See http://momentjs.com/guides/#/warnings/dst-shifted/ for more information', isDaylightSavingTimeShifted);
+
+    function createUnix (input) {
+        return createLocal(input * 1000);
+    }
+
+    function createInZone () {
+        return createLocal.apply(null, arguments).parseZone();
+    }
+
+    function preParsePostFormat (string) {
+        return string;
+    }
+
+    var proto$1 = Locale.prototype;
+
+    proto$1.calendar        = calendar;
+    proto$1.longDateFormat  = longDateFormat;
+    proto$1.invalidDate     = invalidDate;
+    proto$1.ordinal         = ordinal;
+    proto$1.preparse        = preParsePostFormat;
+    proto$1.postformat      = preParsePostFormat;
+    proto$1.relativeTime    = relativeTime;
+    proto$1.pastFuture      = pastFuture;
+    proto$1.set             = set;
+
+    proto$1.months            =        localeMonths;
+    proto$1.monthsShort       =        localeMonthsShort;
+    proto$1.monthsParse       =        localeMonthsParse;
+    proto$1.monthsRegex       = monthsRegex;
+    proto$1.monthsShortRegex  = monthsShortRegex;
+    proto$1.week = localeWeek;
+    proto$1.firstDayOfYear = localeFirstDayOfYear;
+    proto$1.firstDayOfWeek = localeFirstDayOfWeek;
+
+    proto$1.weekdays       =        localeWeekdays;
+    proto$1.weekdaysMin    =        localeWeekdaysMin;
+    proto$1.weekdaysShort  =        localeWeekdaysShort;
+    proto$1.weekdaysParse  =        localeWeekdaysParse;
+
+    proto$1.weekdaysRegex       =        weekdaysRegex;
+    proto$1.weekdaysShortRegex  =        weekdaysShortRegex;
+    proto$1.weekdaysMinRegex    =        weekdaysMinRegex;
+
+    proto$1.isPM = localeIsPM;
+    proto$1.meridiem = localeMeridiem;
+
+    function get$1 (format, index, field, setter) {
+        var locale = getLocale();
+        var utc = createUTC().set(setter, index);
+        return locale[field](utc, format);
+    }
+
+    function listMonthsImpl (format, index, field) {
+        if (isNumber(format)) {
+            index = format;
+            format = undefined;
+        }
+
+        format = format || '';
+
+        if (index != null) {
+            return get$1(format, index, field, 'month');
+        }
+
+        var i;
+        var out = [];
+        for (i = 0; i < 12; i++) {
+            out[i] = get$1(format, i, field, 'month');
+        }
+        return out;
+    }
+
+    // ()
+    // (5)
+    // (fmt, 5)
+    // (fmt)
+    // (true)
+    // (true, 5)
+    // (true, fmt, 5)
+    // (true, fmt)
+    function listWeekdaysImpl (localeSorted, format, index, field) {
+        if (typeof localeSorted === 'boolean') {
+            if (isNumber(format)) {
+                index = format;
+                format = undefined;
+            }
+
+            format = format || '';
+        } else {
+            format = localeSorted;
+            index = format;
+            localeSorted = false;
+
+            if (isNumber(format)) {
+                index = format;
+                format = undefined;
+            }
+
+            format = format || '';
+        }
+
+        var locale = getLocale(),
+            shift = localeSorted ? locale._week.dow : 0;
+
+        if (index != null) {
+            return get$1(format, (index + shift) % 7, field, 'day');
+        }
+
+        var i;
+        var out = [];
+        for (i = 0; i < 7; i++) {
+            out[i] = get$1(format, (i + shift) % 7, field, 'day');
+        }
+        return out;
+    }
+
+    function listMonths (format, index) {
+        return listMonthsImpl(format, index, 'months');
+    }
+
+    function listMonthsShort (format, index) {
+        return listMonthsImpl(format, index, 'monthsShort');
+    }
+
+    function listWeekdays (localeSorted, format, index) {
+        return listWeekdaysImpl(localeSorted, format, index, 'weekdays');
+    }
+
+    function listWeekdaysShort (localeSorted, format, index) {
+        return listWeekdaysImpl(localeSorted, format, index, 'weekdaysShort');
+    }
+
+    function listWeekdaysMin (localeSorted, format, index) {
+        return listWeekdaysImpl(localeSorted, format, index, 'weekdaysMin');
+    }
+
+    getSetGlobalLocale('en', {
+        dayOfMonthOrdinalParse: /\d{1,2}(th|st|nd|rd)/,
+        ordinal : function (number) {
+            var b = number % 10,
+                output = (toInt(number % 100 / 10) === 1) ? 'th' :
+                (b === 1) ? 'st' :
+                (b === 2) ? 'nd' :
+                (b === 3) ? 'rd' : 'th';
+            return number + output;
+        }
+    });
+
+    // Side effect imports
+
+    hooks.lang = deprecate('moment.lang is deprecated. Use moment.locale instead.', getSetGlobalLocale);
+    hooks.langData = deprecate('moment.langData is deprecated. Use moment.localeData instead.', getLocale);
+
+    var mathAbs = Math.abs;
+
+    function abs () {
+        var data           = this._data;
+
+        this._milliseconds = mathAbs(this._milliseconds);
+        this._days         = mathAbs(this._days);
+        this._months       = mathAbs(this._months);
+
+        data.milliseconds  = mathAbs(data.milliseconds);
+        data.seconds       = mathAbs(data.seconds);
+        data.minutes       = mathAbs(data.minutes);
+        data.hours         = mathAbs(data.hours);
+        data.months        = mathAbs(data.months);
+        data.years         = mathAbs(data.years);
+
+        return this;
+    }
+
+    function addSubtract$1 (duration, input, value, direction) {
+        var other = createDuration(input, value);
+
+        duration._milliseconds += direction * other._milliseconds;
+        duration._days         += direction * other._days;
+        duration._months       += direction * other._months;
+
+        return duration._bubble();
+    }
+
+    // supports only 2.0-style add(1, 's') or add(duration)
+    function add$1 (input, value) {
+        return addSubtract$1(this, input, value, 1);
+    }
+
+    // supports only 2.0-style subtract(1, 's') or subtract(duration)
+    function subtract$1 (input, value) {
+        return addSubtract$1(this, input, value, -1);
+    }
+
+    function absCeil (number) {
+        if (number < 0) {
+            return Math.floor(number);
+        } else {
+            return Math.ceil(number);
+        }
+    }
+
+    function bubble () {
+        var milliseconds = this._milliseconds;
+        var days         = this._days;
+        var months       = this._months;
+        var data         = this._data;
+        var seconds, minutes, hours, years, monthsFromDays;
+
+        // if we have a mix of positive and negative values, bubble down first
+        // check: https://github.com/moment/moment/issues/2166
+        if (!((milliseconds >= 0 && days >= 0 && months >= 0) ||
+                (milliseconds <= 0 && days <= 0 && months <= 0))) {
+            milliseconds += absCeil(monthsToDays(months) + days) * 864e5;
+            days = 0;
+            months = 0;
+        }
+
+        // The following code bubbles up values, see the tests for
+        // examples of what that means.
+        data.milliseconds = milliseconds % 1000;
+
+        seconds           = absFloor(milliseconds / 1000);
+        data.seconds      = seconds % 60;
+
+        minutes           = absFloor(seconds / 60);
+        data.minutes      = minutes % 60;
+
+        hours             = absFloor(minutes / 60);
+        data.hours        = hours % 24;
+
+        days += absFloor(hours / 24);
+
+        // convert days to months
+        monthsFromDays = absFloor(daysToMonths(days));
+        months += monthsFromDays;
+        days -= absCeil(monthsToDays(monthsFromDays));
+
+        // 12 months -> 1 year
+        years = absFloor(months / 12);
+        months %= 12;
+
+        data.days   = days;
+        data.months = months;
+        data.years  = years;
+
+        return this;
+    }
+
+    function daysToMonths (days) {
+        // 400 years have 146097 days (taking into account leap year rules)
+        // 400 years have 12 months === 4800
+        return days * 4800 / 146097;
+    }
+
+    function monthsToDays (months) {
+        // the reverse of daysToMonths
+        return months * 146097 / 4800;
+    }
+
+    function as (units) {
+        if (!this.isValid()) {
+            return NaN;
+        }
+        var days;
+        var months;
+        var milliseconds = this._milliseconds;
+
+        units = normalizeUnits(units);
+
+        if (units === 'month' || units === 'quarter' || units === 'year') {
+            days = this._days + milliseconds / 864e5;
+            months = this._months + daysToMonths(days);
+            switch (units) {
+                case 'month':   return months;
+                case 'quarter': return months / 3;
+                case 'year':    return months / 12;
+            }
+        } else {
+            // handle milliseconds separately because of floating point math errors (issue #1867)
+            days = this._days + Math.round(monthsToDays(this._months));
+            switch (units) {
+                case 'week'   : return days / 7     + milliseconds / 6048e5;
+                case 'day'    : return days         + milliseconds / 864e5;
+                case 'hour'   : return days * 24    + milliseconds / 36e5;
+                case 'minute' : return days * 1440  + milliseconds / 6e4;
+                case 'second' : return days * 86400 + milliseconds / 1000;
+                // Math.floor prevents floating point math errors here
+                case 'millisecond': return Math.floor(days * 864e5) + milliseconds;
+                default: throw new Error('Unknown unit ' + units);
+            }
+        }
+    }
+
+    // TODO: Use this.as('ms')?
+    function valueOf$1 () {
+        if (!this.isValid()) {
+            return NaN;
+        }
+        return (
+            this._milliseconds +
+            this._days * 864e5 +
+            (this._months % 12) * 2592e6 +
+            toInt(this._months / 12) * 31536e6
+        );
+    }
+
+    function makeAs (alias) {
+        return function () {
+            return this.as(alias);
+        };
+    }
+
+    var asMilliseconds = makeAs('ms');
+    var asSeconds      = makeAs('s');
+    var asMinutes      = makeAs('m');
+    var asHours        = makeAs('h');
+    var asDays         = makeAs('d');
+    var asWeeks        = makeAs('w');
+    var asMonths       = makeAs('M');
+    var asQuarters     = makeAs('Q');
+    var asYears        = makeAs('y');
+
+    function clone$1 () {
+        return createDuration(this);
+    }
+
+    function get$2 (units) {
+        units = normalizeUnits(units);
+        return this.isValid() ? this[units + 's']() : NaN;
+    }
+
+    function makeGetter(name) {
+        return function () {
+            return this.isValid() ? this._data[name] : NaN;
+        };
+    }
+
+    var milliseconds = makeGetter('milliseconds');
+    var seconds      = makeGetter('seconds');
+    var minutes      = makeGetter('minutes');
+    var hours        = makeGetter('hours');
+    var days         = makeGetter('days');
+    var months       = makeGetter('months');
+    var years        = makeGetter('years');
+
+    function weeks () {
+        return absFloor(this.days() / 7);
+    }
+
+    var round = Math.round;
+    var thresholds = {
+        ss: 44,         // a few seconds to seconds
+        s : 45,         // seconds to minute
+        m : 45,         // minutes to hour
+        h : 22,         // hours to day
+        d : 26,         // days to month
+        M : 11          // months to year
+    };
+
+    // helper function for moment.fn.from, moment.fn.fromNow, and moment.duration.fn.humanize
+    function substituteTimeAgo(string, number, withoutSuffix, isFuture, locale) {
+        return locale.relativeTime(number || 1, !!withoutSuffix, string, isFuture);
+    }
+
+    function relativeTime$1 (posNegDuration, withoutSuffix, locale) {
+        var duration = createDuration(posNegDuration).abs();
+        var seconds  = round(duration.as('s'));
+        var minutes  = round(duration.as('m'));
+        var hours    = round(duration.as('h'));
+        var days     = round(duration.as('d'));
+        var months   = round(duration.as('M'));
+        var years    = round(duration.as('y'));
+
+        var a = seconds <= thresholds.ss && ['s', seconds]  ||
+                seconds < thresholds.s   && ['ss', seconds] ||
+                minutes <= 1             && ['m']           ||
+                minutes < thresholds.m   && ['mm', minutes] ||
+                hours   <= 1             && ['h']           ||
+                hours   < thresholds.h   && ['hh', hours]   ||
+                days    <= 1             && ['d']           ||
+                days    < thresholds.d   && ['dd', days]    ||
+                months  <= 1             && ['M']           ||
+                months  < thresholds.M   && ['MM', months]  ||
+                years   <= 1             && ['y']           || ['yy', years];
+
+        a[2] = withoutSuffix;
+        a[3] = +posNegDuration > 0;
+        a[4] = locale;
+        return substituteTimeAgo.apply(null, a);
+    }
+
+    // This function allows you to set the rounding function for relative time strings
+    function getSetRelativeTimeRounding (roundingFunction) {
+        if (roundingFunction === undefined) {
+            return round;
+        }
+        if (typeof(roundingFunction) === 'function') {
+            round = roundingFunction;
+            return true;
+        }
+        return false;
+    }
+
+    // This function allows you to set a threshold for relative time strings
+    function getSetRelativeTimeThreshold (threshold, limit) {
+        if (thresholds[threshold] === undefined) {
+            return false;
+        }
+        if (limit === undefined) {
+            return thresholds[threshold];
+        }
+        thresholds[threshold] = limit;
+        if (threshold === 's') {
+            thresholds.ss = limit - 1;
+        }
+        return true;
+    }
+
+    function humanize (withSuffix) {
+        if (!this.isValid()) {
+            return this.localeData().invalidDate();
+        }
+
+        var locale = this.localeData();
+        var output = relativeTime$1(this, !withSuffix, locale);
+
+        if (withSuffix) {
+            output = locale.pastFuture(+this, output);
+        }
+
+        return locale.postformat(output);
+    }
+
+    var abs$1 = Math.abs;
+
+    function sign(x) {
+        return ((x > 0) - (x < 0)) || +x;
+    }
+
+    function toISOString$1() {
+        // for ISO strings we do not use the normal bubbling rules:
+        //  * milliseconds bubble up until they become hours
+        //  * days do not bubble at all
+        //  * months bubble up until they become years
+        // This is because there is no context-free conversion between hours and days
+        // (think of clock changes)
+        // and also not between days and months (28-31 days per month)
+        if (!this.isValid()) {
+            return this.localeData().invalidDate();
+        }
+
+        var seconds = abs$1(this._milliseconds) / 1000;
+        var days         = abs$1(this._days);
+        var months       = abs$1(this._months);
+        var minutes, hours, years;
+
+        // 3600 seconds -> 60 minutes -> 1 hour
+        minutes           = absFloor(seconds / 60);
+        hours             = absFloor(minutes / 60);
+        seconds %= 60;
+        minutes %= 60;
+
+        // 12 months -> 1 year
+        years  = absFloor(months / 12);
+        months %= 12;
+
+
+        // inspired by https://github.com/dordille/moment-isoduration/blob/master/moment.isoduration.js
+        var Y = years;
+        var M = months;
+        var D = days;
+        var h = hours;
+        var m = minutes;
+        var s = seconds ? seconds.toFixed(3).replace(/\.?0+$/, '') : '';
+        var total = this.asSeconds();
+
+        if (!total) {
+            // this is the same as C#'s (Noda) and python (isodate)...
+            // but not other JS (goog.date)
+            return 'P0D';
+        }
+
+        var totalSign = total < 0 ? '-' : '';
+        var ymSign = sign(this._months) !== sign(total) ? '-' : '';
+        var daysSign = sign(this._days) !== sign(total) ? '-' : '';
+        var hmsSign = sign(this._milliseconds) !== sign(total) ? '-' : '';
+
+        return totalSign + 'P' +
+            (Y ? ymSign + Y + 'Y' : '') +
+            (M ? ymSign + M + 'M' : '') +
+            (D ? daysSign + D + 'D' : '') +
+            ((h || m || s) ? 'T' : '') +
+            (h ? hmsSign + h + 'H' : '') +
+            (m ? hmsSign + m + 'M' : '') +
+            (s ? hmsSign + s + 'S' : '');
+    }
+
+    var proto$2 = Duration.prototype;
+
+    proto$2.isValid        = isValid$1;
+    proto$2.abs            = abs;
+    proto$2.add            = add$1;
+    proto$2.subtract       = subtract$1;
+    proto$2.as             = as;
+    proto$2.asMilliseconds = asMilliseconds;
+    proto$2.asSeconds      = asSeconds;
+    proto$2.asMinutes      = asMinutes;
+    proto$2.asHours        = asHours;
+    proto$2.asDays         = asDays;
+    proto$2.asWeeks        = asWeeks;
+    proto$2.asMonths       = asMonths;
+    proto$2.asQuarters     = asQuarters;
+    proto$2.asYears        = asYears;
+    proto$2.valueOf        = valueOf$1;
+    proto$2._bubble        = bubble;
+    proto$2.clone          = clone$1;
+    proto$2.get            = get$2;
+    proto$2.milliseconds   = milliseconds;
+    proto$2.seconds        = seconds;
+    proto$2.minutes        = minutes;
+    proto$2.hours          = hours;
+    proto$2.days           = days;
+    proto$2.weeks          = weeks;
+    proto$2.months         = months;
+    proto$2.years          = years;
+    proto$2.humanize       = humanize;
+    proto$2.toISOString    = toISOString$1;
+    proto$2.toString       = toISOString$1;
+    proto$2.toJSON         = toISOString$1;
+    proto$2.locale         = locale;
+    proto$2.localeData     = localeData;
+
+    proto$2.toIsoString = deprecate('toIsoString() is deprecated. Please use toISOString() instead (notice the capitals)', toISOString$1);
+    proto$2.lang = lang;
+
+    // Side effect imports
+
+    // FORMATTING
+
+    addFormatToken('X', 0, 0, 'unix');
+    addFormatToken('x', 0, 0, 'valueOf');
+
+    // PARSING
+
+    addRegexToken('x', matchSigned);
+    addRegexToken('X', matchTimestamp);
+    addParseToken('X', function (input, array, config) {
+        config._d = new Date(parseFloat(input, 10) * 1000);
+    });
+    addParseToken('x', function (input, array, config) {
+        config._d = new Date(toInt(input));
+    });
+
+    // Side effect imports
+
+
+    hooks.version = '2.24.0';
+
+    setHookCallback(createLocal);
+
+    hooks.fn                    = proto;
+    hooks.min                   = min;
+    hooks.max                   = max;
+    hooks.now                   = now;
+    hooks.utc                   = createUTC;
+    hooks.unix                  = createUnix;
+    hooks.months                = listMonths;
+    hooks.isDate                = isDate;
+    hooks.locale                = getSetGlobalLocale;
+    hooks.invalid               = createInvalid;
+    hooks.duration              = createDuration;
+    hooks.isMoment              = isMoment;
+    hooks.weekdays              = listWeekdays;
+    hooks.parseZone             = createInZone;
+    hooks.localeData            = getLocale;
+    hooks.isDuration            = isDuration;
+    hooks.monthsShort           = listMonthsShort;
+    hooks.weekdaysMin           = listWeekdaysMin;
+    hooks.defineLocale          = defineLocale;
+    hooks.updateLocale          = updateLocale;
+    hooks.locales               = listLocales;
+    hooks.weekdaysShort         = listWeekdaysShort;
+    hooks.normalizeUnits        = normalizeUnits;
+    hooks.relativeTimeRounding  = getSetRelativeTimeRounding;
+    hooks.relativeTimeThreshold = getSetRelativeTimeThreshold;
+    hooks.calendarFormat        = getCalendarFormat;
+    hooks.prototype             = proto;
+
+    // currently HTML5 input type only supports 24-hour formats
+    hooks.HTML5_FMT = {
+        DATETIME_LOCAL: 'YYYY-MM-DDTHH:mm',             // <input type="datetime-local" />
+        DATETIME_LOCAL_SECONDS: 'YYYY-MM-DDTHH:mm:ss',  // <input type="datetime-local" step="1" />
+        DATETIME_LOCAL_MS: 'YYYY-MM-DDTHH:mm:ss.SSS',   // <input type="datetime-local" step="0.001" />
+        DATE: 'YYYY-MM-DD',                             // <input type="date" />
+        TIME: 'HH:mm',                                  // <input type="time" />
+        TIME_SECONDS: 'HH:mm:ss',                       // <input type="time" step="1" />
+        TIME_MS: 'HH:mm:ss.SSS',                        // <input type="time" step="0.001" />
+        WEEK: 'GGGG-[W]WW',                             // <input type="week" />
+        MONTH: 'YYYY-MM'                                // <input type="month" />
+    };
+
+    return hooks;
+
+})));
+
+},{}],"../node_modules/dexie/dist/dexie.es.js":[function(require,module,exports) {
+var global = arguments[3];
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function (obj) { return typeof obj; }; } else { _typeof = function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+/*
+ * Dexie.js - a minimalistic wrapper for IndexedDB
+ * ===============================================
+ *
+ * By David Fahlander, david.fahlander@gmail.com
+ *
+ * Version {version}, {date}
+ *
+ * http://dexie.org
+ *
+ * Apache License Version 2.0, January 2004, http://www.apache.org/licenses/
+ */
+var keys = Object.keys;
+var isArray = Array.isArray;
+
+var _global = typeof self !== 'undefined' ? self : typeof window !== 'undefined' ? window : global;
+
+function extend(obj, extension) {
+  if (_typeof(extension) !== 'object') return obj;
+  keys(extension).forEach(function (key) {
+    obj[key] = extension[key];
+  });
+  return obj;
+}
+
+var getProto = Object.getPrototypeOf;
+var _hasOwn = {}.hasOwnProperty;
+
+function hasOwn(obj, prop) {
+  return _hasOwn.call(obj, prop);
+}
+
+function props(proto, extension) {
+  if (typeof extension === 'function') extension = extension(getProto(proto));
+  keys(extension).forEach(function (key) {
+    setProp(proto, key, extension[key]);
+  });
+}
+
+var defineProperty = Object.defineProperty;
+
+function setProp(obj, prop, functionOrGetSet, options) {
+  defineProperty(obj, prop, extend(functionOrGetSet && hasOwn(functionOrGetSet, "get") && typeof functionOrGetSet.get === 'function' ? {
+    get: functionOrGetSet.get,
+    set: functionOrGetSet.set,
+    configurable: true
+  } : {
+    value: functionOrGetSet,
+    configurable: true,
+    writable: true
+  }, options));
+}
+
+function derive(Child) {
+  return {
+    from: function (Parent) {
+      Child.prototype = Object.create(Parent.prototype);
+      setProp(Child.prototype, "constructor", Child);
+      return {
+        extend: props.bind(null, Child.prototype)
+      };
+    }
+  };
+}
+
+var getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
+
+function getPropertyDescriptor(obj, prop) {
+  var pd = getOwnPropertyDescriptor(obj, prop),
+      proto;
+  return pd || (proto = getProto(obj)) && getPropertyDescriptor(proto, prop);
+}
+
+var _slice = [].slice;
+
+function slice(args, start, end) {
+  return _slice.call(args, start, end);
+}
+
+function override(origFunc, overridedFactory) {
+  return overridedFactory(origFunc);
+}
+
+function assert(b) {
+  if (!b) throw new Error("Assertion Failed");
+}
+
+function asap(fn) {
+  if (_global.setImmediate) setImmediate(fn);else setTimeout(fn, 0);
+}
+/** Generate an object (hash map) based on given array.
+ * @param extractor Function taking an array item and its index and returning an array of 2 items ([key, value]) to
+ *        instert on the resulting object for each item in the array. If this function returns a falsy value, the
+ *        current item wont affect the resulting object.
+ */
+
+
+function arrayToObject(array, extractor) {
+  return array.reduce(function (result, item, i) {
+    var nameAndValue = extractor(item, i);
+    if (nameAndValue) result[nameAndValue[0]] = nameAndValue[1];
+    return result;
+  }, {});
+}
+
+function trycatcher(fn, reject) {
+  return function () {
+    try {
+      fn.apply(this, arguments);
+    } catch (e) {
+      reject(e);
+    }
+  };
+}
+
+function tryCatch(fn, onerror, args) {
+  try {
+    fn.apply(null, args);
+  } catch (ex) {
+    onerror && onerror(ex);
+  }
+}
+
+function getByKeyPath(obj, keyPath) {
+  // http://www.w3.org/TR/IndexedDB/#steps-for-extracting-a-key-from-a-value-using-a-key-path
+  if (hasOwn(obj, keyPath)) return obj[keyPath]; // This line is moved from last to first for optimization purpose.
+
+  if (!keyPath) return obj;
+
+  if (typeof keyPath !== 'string') {
+    var rv = [];
+
+    for (var i = 0, l = keyPath.length; i < l; ++i) {
+      var val = getByKeyPath(obj, keyPath[i]);
+      rv.push(val);
+    }
+
+    return rv;
+  }
+
+  var period = keyPath.indexOf('.');
+
+  if (period !== -1) {
+    var innerObj = obj[keyPath.substr(0, period)];
+    return innerObj === undefined ? undefined : getByKeyPath(innerObj, keyPath.substr(period + 1));
+  }
+
+  return undefined;
+}
+
+function setByKeyPath(obj, keyPath, value) {
+  if (!obj || keyPath === undefined) return;
+  if ('isFrozen' in Object && Object.isFrozen(obj)) return;
+
+  if (typeof keyPath !== 'string' && 'length' in keyPath) {
+    assert(typeof value !== 'string' && 'length' in value);
+
+    for (var i = 0, l = keyPath.length; i < l; ++i) {
+      setByKeyPath(obj, keyPath[i], value[i]);
+    }
+  } else {
+    var period = keyPath.indexOf('.');
+
+    if (period !== -1) {
+      var currentKeyPath = keyPath.substr(0, period);
+      var remainingKeyPath = keyPath.substr(period + 1);
+      if (remainingKeyPath === "") {
+        if (value === undefined) delete obj[currentKeyPath];else obj[currentKeyPath] = value;
+      } else {
+        var innerObj = obj[currentKeyPath];
+        if (!innerObj) innerObj = obj[currentKeyPath] = {};
+        setByKeyPath(innerObj, remainingKeyPath, value);
+      }
+    } else {
+      if (value === undefined) delete obj[keyPath];else obj[keyPath] = value;
+    }
+  }
+}
+
+function delByKeyPath(obj, keyPath) {
+  if (typeof keyPath === 'string') setByKeyPath(obj, keyPath, undefined);else if ('length' in keyPath) [].map.call(keyPath, function (kp) {
+    setByKeyPath(obj, kp, undefined);
+  });
+}
+
+function shallowClone(obj) {
+  var rv = {};
+
+  for (var m in obj) {
+    if (hasOwn(obj, m)) rv[m] = obj[m];
+  }
+
+  return rv;
+}
+
+var concat = [].concat;
+
+function flatten(a) {
+  return concat.apply([], a);
+} //https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
+
+
+var intrinsicTypes = "Boolean,String,Date,RegExp,Blob,File,FileList,ArrayBuffer,DataView,Uint8ClampedArray,ImageData,Map,Set".split(',').concat(flatten([8, 16, 32, 64].map(function (num) {
+  return ["Int", "Uint", "Float"].map(function (t) {
+    return t + num + "Array";
+  });
+}))).filter(function (t) {
+  return _global[t];
+}).map(function (t) {
+  return _global[t];
+});
+
+function deepClone(any) {
+  if (!any || _typeof(any) !== 'object') return any;
+  var rv;
+
+  if (isArray(any)) {
+    rv = [];
+
+    for (var i = 0, l = any.length; i < l; ++i) {
+      rv.push(deepClone(any[i]));
+    }
+  } else if (intrinsicTypes.indexOf(any.constructor) >= 0) {
+    rv = any;
+  } else {
+    rv = any.constructor ? Object.create(any.constructor.prototype) : {};
+
+    for (var prop in any) {
+      if (hasOwn(any, prop)) {
+        rv[prop] = deepClone(any[prop]);
+      }
+    }
+  }
+
+  return rv;
+}
+
+function getObjectDiff(a, b, rv, prfx) {
+  // Compares objects a and b and produces a diff object.
+  rv = rv || {};
+  prfx = prfx || '';
+  keys(a).forEach(function (prop) {
+    if (!hasOwn(b, prop)) rv[prfx + prop] = undefined; // Property removed
+    else {
+        var ap = a[prop],
+            bp = b[prop];
+        if (_typeof(ap) === 'object' && _typeof(bp) === 'object' && ap && bp && // Now compare constructors are same (not equal because wont work in Safari)
+        '' + ap.constructor === '' + bp.constructor) // Same type of object but its properties may have changed
+          getObjectDiff(ap, bp, rv, prfx + prop + ".");else if (ap !== bp) rv[prfx + prop] = b[prop]; // Primitive value changed
+      }
+  });
+  keys(b).forEach(function (prop) {
+    if (!hasOwn(a, prop)) {
+      rv[prfx + prop] = b[prop]; // Property added
+    }
+  });
+  return rv;
+} // If first argument is iterable or array-like, return it as an array
+
+
+var iteratorSymbol = typeof Symbol !== 'undefined' && Symbol.iterator;
+var getIteratorOf = iteratorSymbol ? function (x) {
+  var i;
+  return x != null && (i = x[iteratorSymbol]) && i.apply(x);
+} : function () {
+  return null;
+};
+var NO_CHAR_ARRAY = {}; // Takes one or several arguments and returns an array based on the following criteras:
+// * If several arguments provided, return arguments converted to an array in a way that
+//   still allows javascript engine to optimize the code.
+// * If single argument is an array, return a clone of it.
+// * If this-pointer equals NO_CHAR_ARRAY, don't accept strings as valid iterables as a special
+//   case to the two bullets below.
+// * If single argument is an iterable, convert it to an array and return the resulting array.
+// * If single argument is array-like (has length of type number), convert it to an array.
+
+function getArrayOf(arrayLike) {
+  var i, a, x, it;
+
+  if (arguments.length === 1) {
+    if (isArray(arrayLike)) return arrayLike.slice();
+    if (this === NO_CHAR_ARRAY && typeof arrayLike === 'string') return [arrayLike];
+
+    if (it = getIteratorOf(arrayLike)) {
+      a = [];
+
+      while (x = it.next(), !x.done) {
+        a.push(x.value);
+      }
+
+      return a;
+    }
+
+    if (arrayLike == null) return [arrayLike];
+    i = arrayLike.length;
+
+    if (typeof i === 'number') {
+      a = new Array(i);
+
+      while (i--) {
+        a[i] = arrayLike[i];
+      }
+
+      return a;
+    }
+
+    return [arrayLike];
+  }
+
+  i = arguments.length;
+  a = new Array(i);
+
+  while (i--) {
+    a[i] = arguments[i];
+  }
+
+  return a;
+} // By default, debug will be true only if platform is a web platform and its page is served from localhost.
+// When debug = true, error's stacks will contain asyncronic long stacks.
+
+
+var debug = typeof location !== 'undefined' && // By default, use debug mode if served from localhost.
+/^(http|https):\/\/(localhost|127\.0\.0\.1)/.test(location.href);
+
+function setDebug(value, filter) {
+  debug = value;
+  libraryFilter = filter;
+}
+
+var libraryFilter = function () {
+  return true;
+};
+
+var NEEDS_THROW_FOR_STACK = !new Error("").stack;
+
+function getErrorWithStack() {
+  "use strict";
+
+  if (NEEDS_THROW_FOR_STACK) try {
+    // Doing something naughty in strict mode here to trigger a specific error
+    // that can be explicitely ignored in debugger's exception settings.
+    // If we'd just throw new Error() here, IE's debugger's exception settings
+    // will just consider it as "exception thrown by javascript code" which is
+    // something you wouldn't want it to ignore.
+    getErrorWithStack.arguments;
+    throw new Error(); // Fallback if above line don't throw.
+  } catch (e) {
+    return e;
+  }
+  return new Error();
+}
+
+function prettyStack(exception, numIgnoredFrames) {
+  var stack = exception.stack;
+  if (!stack) return "";
+  numIgnoredFrames = numIgnoredFrames || 0;
+  if (stack.indexOf(exception.name) === 0) numIgnoredFrames += (exception.name + exception.message).split('\n').length;
+  return stack.split('\n').slice(numIgnoredFrames).filter(libraryFilter).map(function (frame) {
+    return "\n" + frame;
+  }).join('');
+}
+
+function deprecated(what, fn) {
+  return function () {
+    console.warn(what + " is deprecated. See https://github.com/dfahlander/Dexie.js/wiki/Deprecations. " + prettyStack(getErrorWithStack(), 1));
+    return fn.apply(this, arguments);
+  };
+}
+
+var dexieErrorNames = ['Modify', 'Bulk', 'OpenFailed', 'VersionChange', 'Schema', 'Upgrade', 'InvalidTable', 'MissingAPI', 'NoSuchDatabase', 'InvalidArgument', 'SubTransaction', 'Unsupported', 'Internal', 'DatabaseClosed', 'PrematureCommit', 'ForeignAwait'];
+var idbDomErrorNames = ['Unknown', 'Constraint', 'Data', 'TransactionInactive', 'ReadOnly', 'Version', 'NotFound', 'InvalidState', 'InvalidAccess', 'Abort', 'Timeout', 'QuotaExceeded', 'Syntax', 'DataClone'];
+var errorList = dexieErrorNames.concat(idbDomErrorNames);
+var defaultTexts = {
+  VersionChanged: "Database version changed by other database connection",
+  DatabaseClosed: "Database has been closed",
+  Abort: "Transaction aborted",
+  TransactionInactive: "Transaction has already completed or failed"
+}; //
+// DexieError - base class of all out exceptions.
+//
+
+function DexieError(name, msg) {
+  // Reason we don't use ES6 classes is because:
+  // 1. It bloats transpiled code and increases size of minified code.
+  // 2. It doesn't give us much in this case.
+  // 3. It would require sub classes to call super(), which
+  //    is not needed when deriving from Error.
+  this._e = getErrorWithStack();
+  this.name = name;
+  this.message = msg;
+}
+
+derive(DexieError).from(Error).extend({
+  stack: {
+    get: function () {
+      return this._stack || (this._stack = this.name + ": " + this.message + prettyStack(this._e, 2));
+    }
+  },
+  toString: function () {
+    return this.name + ": " + this.message;
+  }
+});
+
+function getMultiErrorMessage(msg, failures) {
+  return msg + ". Errors: " + failures.map(function (f) {
+    return f.toString();
+  }).filter(function (v, i, s) {
+    return s.indexOf(v) === i;
+  }) // Only unique error strings
+  .join('\n');
+} //
+// ModifyError - thrown in Collection.modify()
+// Specific constructor because it contains members failures and failedKeys.
+//
+
+
+function ModifyError(msg, failures, successCount, failedKeys) {
+  this._e = getErrorWithStack();
+  this.failures = failures;
+  this.failedKeys = failedKeys;
+  this.successCount = successCount;
+}
+
+derive(ModifyError).from(DexieError);
+
+function BulkError(msg, failures) {
+  this._e = getErrorWithStack();
+  this.name = "BulkError";
+  this.failures = failures;
+  this.message = getMultiErrorMessage(msg, failures);
+}
+
+derive(BulkError).from(DexieError); //
+//
+// Dynamically generate error names and exception classes based
+// on the names in errorList.
+//
+//
+// Map of {ErrorName -> ErrorName + "Error"}
+
+var errnames = errorList.reduce(function (obj, name) {
+  return obj[name] = name + "Error", obj;
+}, {}); // Need an alias for DexieError because we're gonna create subclasses with the same name.
+
+var BaseException = DexieError; // Map of {ErrorName -> exception constructor}
+
+var exceptions = errorList.reduce(function (obj, name) {
+  // Let the name be "DexieError" because this name may
+  // be shown in call stack and when debugging. DexieError is
+  // the most true name because it derives from DexieError,
+  // and we cannot change Function.name programatically without
+  // dynamically create a Function object, which would be considered
+  // 'eval-evil'.
+  var fullName = name + "Error";
+
+  function DexieError(msgOrInner, inner) {
+    this._e = getErrorWithStack();
+    this.name = fullName;
+
+    if (!msgOrInner) {
+      this.message = defaultTexts[name] || fullName;
+      this.inner = null;
+    } else if (typeof msgOrInner === 'string') {
+      this.message = msgOrInner;
+      this.inner = inner || null;
+    } else if (_typeof(msgOrInner) === 'object') {
+      this.message = msgOrInner.name + " " + msgOrInner.message;
+      this.inner = msgOrInner;
+    }
+  }
+
+  derive(DexieError).from(BaseException);
+  obj[name] = DexieError;
+  return obj;
+}, {}); // Use ECMASCRIPT standard exceptions where applicable:
+
+exceptions.Syntax = SyntaxError;
+exceptions.Type = TypeError;
+exceptions.Range = RangeError;
+var exceptionMap = idbDomErrorNames.reduce(function (obj, name) {
+  obj[name + "Error"] = exceptions[name];
+  return obj;
+}, {});
+
+function mapError(domError, message) {
+  if (!domError || domError instanceof DexieError || domError instanceof TypeError || domError instanceof SyntaxError || !domError.name || !exceptionMap[domError.name]) return domError;
+  var rv = new exceptionMap[domError.name](message || domError.message, domError);
+
+  if ("stack" in domError) {
+    // Derive stack from inner exception if it has a stack
+    setProp(rv, "stack", {
+      get: function () {
+        return this.inner.stack;
+      }
+    });
+  }
+
+  return rv;
+}
+
+var fullNameExceptions = errorList.reduce(function (obj, name) {
+  if (["Syntax", "Type", "Range"].indexOf(name) === -1) obj[name + "Error"] = exceptions[name];
+  return obj;
+}, {});
+fullNameExceptions.ModifyError = ModifyError;
+fullNameExceptions.DexieError = DexieError;
+fullNameExceptions.BulkError = BulkError;
+
+function nop() {}
+
+function mirror(val) {
+  return val;
+}
+
+function pureFunctionChain(f1, f2) {
+  // Enables chained events that takes ONE argument and returns it to the next function in chain.
+  // This pattern is used in the hook("reading") event.
+  if (f1 == null || f1 === mirror) return f2;
+  return function (val) {
+    return f2(f1(val));
+  };
+}
+
+function callBoth(on1, on2) {
+  return function () {
+    on1.apply(this, arguments);
+    on2.apply(this, arguments);
+  };
+}
+
+function hookCreatingChain(f1, f2) {
+  // Enables chained events that takes several arguments and may modify first argument by making a modification and then returning the same instance.
+  // This pattern is used in the hook("creating") event.
+  if (f1 === nop) return f2;
+  return function () {
+    var res = f1.apply(this, arguments);
+    if (res !== undefined) arguments[0] = res;
+    var onsuccess = this.onsuccess,
+        // In case event listener has set this.onsuccess
+    onerror = this.onerror; // In case event listener has set this.onerror
+
+    this.onsuccess = null;
+    this.onerror = null;
+    var res2 = f2.apply(this, arguments);
+    if (onsuccess) this.onsuccess = this.onsuccess ? callBoth(onsuccess, this.onsuccess) : onsuccess;
+    if (onerror) this.onerror = this.onerror ? callBoth(onerror, this.onerror) : onerror;
+    return res2 !== undefined ? res2 : res;
+  };
+}
+
+function hookDeletingChain(f1, f2) {
+  if (f1 === nop) return f2;
+  return function () {
+    f1.apply(this, arguments);
+    var onsuccess = this.onsuccess,
+        // In case event listener has set this.onsuccess
+    onerror = this.onerror; // In case event listener has set this.onerror
+
+    this.onsuccess = this.onerror = null;
+    f2.apply(this, arguments);
+    if (onsuccess) this.onsuccess = this.onsuccess ? callBoth(onsuccess, this.onsuccess) : onsuccess;
+    if (onerror) this.onerror = this.onerror ? callBoth(onerror, this.onerror) : onerror;
+  };
+}
+
+function hookUpdatingChain(f1, f2) {
+  if (f1 === nop) return f2;
+  return function (modifications) {
+    var res = f1.apply(this, arguments);
+    extend(modifications, res); // If f1 returns new modifications, extend caller's modifications with the result before calling next in chain.
+
+    var onsuccess = this.onsuccess,
+        // In case event listener has set this.onsuccess
+    onerror = this.onerror; // In case event listener has set this.onerror
+
+    this.onsuccess = null;
+    this.onerror = null;
+    var res2 = f2.apply(this, arguments);
+    if (onsuccess) this.onsuccess = this.onsuccess ? callBoth(onsuccess, this.onsuccess) : onsuccess;
+    if (onerror) this.onerror = this.onerror ? callBoth(onerror, this.onerror) : onerror;
+    return res === undefined ? res2 === undefined ? undefined : res2 : extend(res, res2);
+  };
+}
+
+function reverseStoppableEventChain(f1, f2) {
+  if (f1 === nop) return f2;
+  return function () {
+    if (f2.apply(this, arguments) === false) return false;
+    return f1.apply(this, arguments);
+  };
+}
+
+function promisableChain(f1, f2) {
+  if (f1 === nop) return f2;
+  return function () {
+    var res = f1.apply(this, arguments);
+
+    if (res && typeof res.then === 'function') {
+      var thiz = this,
+          i = arguments.length,
+          args = new Array(i);
+
+      while (i--) {
+        args[i] = arguments[i];
+      }
+
+      return res.then(function () {
+        return f2.apply(thiz, args);
+      });
+    }
+
+    return f2.apply(this, arguments);
+  };
+}
+/*
+ * Copyright (c) 2014-2017 David Fahlander
+ * Apache License Version 2.0, January 2004, http://www.apache.org/licenses/LICENSE-2.0
+ */
+//
+// Promise and Zone (PSD) for Dexie library
+//
+// I started out writing this Promise class by copying promise-light (https://github.com/taylorhakes/promise-light) by
+// https://github.com/taylorhakes - an A+ and ECMASCRIPT 6 compliant Promise implementation.
+//
+// In previous versions this was fixed by not calling setTimeout when knowing that the resolve() or reject() came from another
+// tick. In Dexie v1.4.0, I've rewritten the Promise class entirely. Just some fragments of promise-light is left. I use
+// another strategy now that simplifies everything a lot: to always execute callbacks in a new micro-task, but have an own micro-task
+// engine that is indexedDB compliant across all browsers.
+// Promise class has also been optimized a lot with inspiration from bluebird - to avoid closures as much as possible.
+// Also with inspiration from bluebird, asyncronic stacks in debug mode.
+//
+// Specific non-standard features of this Promise class:
+// * Custom zone support (a.k.a. PSD) with ability to keep zones also when using native promises as well as
+//   native async / await.
+// * Promise.follow() method built upon the custom zone engine, that allows user to track all promises created from current stack frame
+//   and below + all promises that those promises creates or awaits.
+// * Detect any unhandled promise in a PSD-scope (PSD.onunhandled). 
+//
+// David Fahlander, https://github.com/dfahlander
+//
+// Just a pointer that only this module knows about.
+// Used in Promise constructor to emulate a private constructor.
+
+
+var INTERNAL = {}; // Async stacks (long stacks) must not grow infinitely.
+
+var LONG_STACKS_CLIP_LIMIT = 100;
+var MAX_LONG_STACKS = 20;
+var ZONE_ECHO_LIMIT = 7;
+
+var nativePromiseInstanceAndProto = function () {
+  try {
+    // Be able to patch native async functions
+    return new Function("let F=async ()=>{},p=F();return [p,Object.getPrototypeOf(p),Promise.resolve(),F.constructor];")();
+  } catch (e) {
+    var P = _global.Promise;
+    return P ? [P.resolve(), P.prototype, P.resolve()] : [];
+  }
+}();
+
+var resolvedNativePromise = nativePromiseInstanceAndProto[0];
+var nativePromiseProto = nativePromiseInstanceAndProto[1];
+var resolvedGlobalPromise = nativePromiseInstanceAndProto[2];
+var nativePromiseThen = nativePromiseProto && nativePromiseProto.then;
+var NativePromise = resolvedNativePromise && resolvedNativePromise.constructor;
+var AsyncFunction = nativePromiseInstanceAndProto[3];
+var patchGlobalPromise = !!resolvedGlobalPromise;
+var stack_being_generated = false;
+/* The default function used only for the very first promise in a promise chain.
+   As soon as then promise is resolved or rejected, all next tasks will be executed in micro ticks
+   emulated in this module. For indexedDB compatibility, this means that every method needs to
+   execute at least one promise before doing an indexedDB operation. Dexie will always call
+   db.ready().then() for every operation to make sure the indexedDB event is started in an
+   indexedDB-compatible emulated micro task loop.
+*/
+
+var schedulePhysicalTick = resolvedGlobalPromise ? function () {
+  resolvedGlobalPromise.then(physicalTick);
+} : _global.setImmediate ? // setImmediate supported. Those modern platforms also supports Function.bind().
+setImmediate.bind(null, physicalTick) : _global.MutationObserver ? // MutationObserver supported
+function () {
+  var hiddenDiv = document.createElement("div");
+  new MutationObserver(function () {
+    physicalTick();
+    hiddenDiv = null;
+  }).observe(hiddenDiv, {
+    attributes: true
+  });
+  hiddenDiv.setAttribute('i', '1');
+} : // No support for setImmediate or MutationObserver. No worry, setTimeout is only called
+// once time. Every tick that follows will be our emulated micro tick.
+// Could have uses setTimeout.bind(null, 0, physicalTick) if it wasnt for that FF13 and below has a bug 
+function () {
+  setTimeout(physicalTick, 0);
+}; // Configurable through Promise.scheduler.
+// Don't export because it would be unsafe to let unknown
+// code call it unless they do try..catch within their callback.
+// This function can be retrieved through getter of Promise.scheduler though,
+// but users must not do Promise.scheduler = myFuncThatThrowsException
+
+var asap$1 = function (callback, args) {
+  microtickQueue.push([callback, args]);
+
+  if (needsNewPhysicalTick) {
+    schedulePhysicalTick();
+    needsNewPhysicalTick = false;
+  }
+};
+
+var isOutsideMicroTick = true;
+var needsNewPhysicalTick = true;
+var unhandledErrors = [];
+var rejectingErrors = [];
+var currentFulfiller = null;
+var rejectionMapper = mirror; // Remove in next major when removing error mapping of DOMErrors and DOMExceptions
+
+var globalPSD = {
+  id: 'global',
+  global: true,
+  ref: 0,
+  unhandleds: [],
+  onunhandled: globalError,
+  pgp: false,
+  env: {},
+  finalize: function () {
+    this.unhandleds.forEach(function (uh) {
+      try {
+        globalError(uh[0], uh[1]);
+      } catch (e) {}
+    });
+  }
+};
+var PSD = globalPSD;
+var microtickQueue = []; // Callbacks to call in this or next physical tick.
+
+var numScheduledCalls = 0; // Number of listener-calls left to do in this physical tick.
+
+var tickFinalizers = []; // Finalizers to call when there are no more async calls scheduled within current physical tick.
+
+function Promise(fn) {
+  if (_typeof(this) !== 'object') throw new TypeError('Promises must be constructed via new');
+  this._listeners = [];
+  this.onuncatched = nop; // Deprecate in next major. Not needed. Better to use global error handler.
+  // A library may set `promise._lib = true;` after promise is created to make resolve() or reject()
+  // execute the microtask engine implicitely within the call to resolve() or reject().
+  // To remain A+ compliant, a library must only set `_lib=true` if it can guarantee that the stack
+  // only contains library code when calling resolve() or reject().
+  // RULE OF THUMB: ONLY set _lib = true for promises explicitely resolving/rejecting directly from
+  // global scope (event handler, timer etc)!
+
+  this._lib = false; // Current async scope
+
+  var psd = this._PSD = PSD;
+
+  if (debug) {
+    this._stackHolder = getErrorWithStack();
+    this._prev = null;
+    this._numPrev = 0; // Number of previous promises (for long stacks)
+  }
+
+  if (typeof fn !== 'function') {
+    if (fn !== INTERNAL) throw new TypeError('Not a function'); // Private constructor (INTERNAL, state, value).
+    // Used internally by Promise.resolve() and Promise.reject().
+
+    this._state = arguments[1];
+    this._value = arguments[2];
+    if (this._state === false) handleRejection(this, this._value); // Map error, set stack and addPossiblyUnhandledError().
+
+    return;
+  }
+
+  this._state = null; // null (=pending), false (=rejected) or true (=resolved)
+
+  this._value = null; // error or result
+
+  ++psd.ref; // Refcounting current scope
+
+  executePromiseTask(this, fn);
+} // Prepare a property descriptor to put onto Promise.prototype.then
+
+
+var thenProp = {
+  get: function () {
+    var psd = PSD,
+        microTaskId = totalEchoes;
+
+    function then(onFulfilled, onRejected) {
+      var _this = this;
+
+      var possibleAwait = !psd.global && (psd !== PSD || microTaskId !== totalEchoes);
+      if (possibleAwait) decrementExpectedAwaits();
+      var rv = new Promise(function (resolve, reject) {
+        propagateToListener(_this, new Listener(nativeAwaitCompatibleWrap(onFulfilled, psd, possibleAwait), nativeAwaitCompatibleWrap(onRejected, psd, possibleAwait), resolve, reject, psd));
+      });
+      debug && linkToPreviousPromise(rv, this);
+      return rv;
+    }
+
+    then.prototype = INTERNAL; // For idempotense, see setter below.
+
+    return then;
+  },
+  // Be idempotent and allow another framework (such as zone.js or another instance of a Dexie.Promise module) to replace Promise.prototype.then
+  // and when that framework wants to restore the original property, we must identify that and restore the original property descriptor.
+  set: function (value) {
+    setProp(this, 'then', value && value.prototype === INTERNAL ? thenProp : // Restore to original property descriptor.
+    {
+      get: function () {
+        return value; // Getter returning provided value (behaves like value is just changed)
+      },
+      set: thenProp.set // Keep a setter that is prepared to restore original.
+
+    });
+  }
+};
+props(Promise.prototype, {
+  then: thenProp,
+  _then: function (onFulfilled, onRejected) {
+    // A little tinier version of then() that don't have to create a resulting promise.
+    propagateToListener(this, new Listener(null, null, onFulfilled, onRejected, PSD));
+  },
+  catch: function (onRejected) {
+    if (arguments.length === 1) return this.then(null, onRejected); // First argument is the Error type to catch
+
+    var type = arguments[0],
+        handler = arguments[1];
+    return typeof type === 'function' ? this.then(null, function (err) {
+      // Catching errors by its constructor type (similar to java / c++ / c#)
+      // Sample: promise.catch(TypeError, function (e) { ... });
+      return err instanceof type ? handler(err) : PromiseReject(err);
+    }) : this.then(null, function (err) {
+      // Catching errors by the error.name property. Makes sense for indexedDB where error type
+      // is always DOMError but where e.name tells the actual error type.
+      // Sample: promise.catch('ConstraintError', function (e) { ... });
+      return err && err.name === type ? handler(err) : PromiseReject(err);
+    });
+  },
+  finally: function (onFinally) {
+    return this.then(function (value) {
+      onFinally();
+      return value;
+    }, function (err) {
+      onFinally();
+      return PromiseReject(err);
+    });
+  },
+  stack: {
+    get: function () {
+      if (this._stack) return this._stack;
+
+      try {
+        stack_being_generated = true;
+        var stacks = getStack(this, [], MAX_LONG_STACKS);
+        var stack = stacks.join("\nFrom previous: ");
+        if (this._state !== null) this._stack = stack; // Stack may be updated on reject.
+
+        return stack;
+      } finally {
+        stack_being_generated = false;
+      }
+    }
+  },
+  timeout: function (ms, msg) {
+    var _this = this;
+
+    return ms < Infinity ? new Promise(function (resolve, reject) {
+      var handle = setTimeout(function () {
+        return reject(new exceptions.Timeout(msg));
+      }, ms);
+
+      _this.then(resolve, reject).finally(clearTimeout.bind(null, handle));
+    }) : this;
+  }
+});
+if (typeof Symbol !== 'undefined' && Symbol.toStringTag) setProp(Promise.prototype, Symbol.toStringTag, 'Promise'); // Now that Promise.prototype is defined, we have all it takes to set globalPSD.env.
+// Environment globals snapshotted on leaving global zone
+
+globalPSD.env = snapShot();
+
+function Listener(onFulfilled, onRejected, resolve, reject, zone) {
+  this.onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : null;
+  this.onRejected = typeof onRejected === 'function' ? onRejected : null;
+  this.resolve = resolve;
+  this.reject = reject;
+  this.psd = zone;
+} // Promise Static Properties
+
+
+props(Promise, {
+  all: function () {
+    var values = getArrayOf.apply(null, arguments) // Supports iterables, implicit arguments and array-like.
+    .map(onPossibleParallellAsync); // Handle parallell async/awaits 
+
+    return new Promise(function (resolve, reject) {
+      if (values.length === 0) resolve([]);
+      var remaining = values.length;
+      values.forEach(function (a, i) {
+        return Promise.resolve(a).then(function (x) {
+          values[i] = x;
+          if (! --remaining) resolve(values);
+        }, reject);
+      });
+    });
+  },
+  resolve: function (value) {
+    if (value instanceof Promise) return value;
+    if (value && typeof value.then === 'function') return new Promise(function (resolve, reject) {
+      value.then(resolve, reject);
+    });
+    var rv = new Promise(INTERNAL, true, value);
+    linkToPreviousPromise(rv, currentFulfiller);
+    return rv;
+  },
+  reject: PromiseReject,
+  race: function () {
+    var values = getArrayOf.apply(null, arguments).map(onPossibleParallellAsync);
+    return new Promise(function (resolve, reject) {
+      values.map(function (value) {
+        return Promise.resolve(value).then(resolve, reject);
+      });
+    });
+  },
+  PSD: {
+    get: function () {
+      return PSD;
+    },
+    set: function (value) {
+      return PSD = value;
+    }
+  },
+  //totalEchoes: {get: ()=>totalEchoes},
+  //task: {get: ()=>task},
+  newPSD: newScope,
+  usePSD: usePSD,
+  scheduler: {
+    get: function () {
+      return asap$1;
+    },
+    set: function (value) {
+      asap$1 = value;
+    }
+  },
+  rejectionMapper: {
+    get: function () {
+      return rejectionMapper;
+    },
+    set: function (value) {
+      rejectionMapper = value;
+    } // Map reject failures
+
+  },
+  follow: function (fn, zoneProps) {
+    return new Promise(function (resolve, reject) {
+      return newScope(function (resolve, reject) {
+        var psd = PSD;
+        psd.unhandleds = []; // For unhandled standard- or 3rd party Promises. Checked at psd.finalize()
+
+        psd.onunhandled = reject; // Triggered directly on unhandled promises of this library.
+
+        psd.finalize = callBoth(function () {
+          var _this = this; // Unhandled standard or 3rd part promises are put in PSD.unhandleds and
+          // examined upon scope completion while unhandled rejections in this Promise
+          // will trigger directly through psd.onunhandled
+
+
+          run_at_end_of_this_or_next_physical_tick(function () {
+            _this.unhandleds.length === 0 ? resolve() : reject(_this.unhandleds[0]);
+          });
+        }, psd.finalize);
+        fn();
+      }, zoneProps, resolve, reject);
+    });
+  }
+});
+/**
+* Take a potentially misbehaving resolver function and make sure
+* onFulfilled and onRejected are only called once.
+*
+* Makes no guarantees about asynchrony.
+*/
+
+function executePromiseTask(promise, fn) {
+  // Promise Resolution Procedure:
+  // https://github.com/promises-aplus/promises-spec#the-promise-resolution-procedure
+  try {
+    fn(function (value) {
+      if (promise._state !== null) return; // Already settled
+
+      if (value === promise) throw new TypeError('A promise cannot be resolved with itself.');
+      var shouldExecuteTick = promise._lib && beginMicroTickScope();
+
+      if (value && typeof value.then === 'function') {
+        executePromiseTask(promise, function (resolve, reject) {
+          value instanceof Promise ? value._then(resolve, reject) : value.then(resolve, reject);
+        });
+      } else {
+        promise._state = true;
+        promise._value = value;
+        propagateAllListeners(promise);
+      }
+
+      if (shouldExecuteTick) endMicroTickScope();
+    }, handleRejection.bind(null, promise)); // If Function.bind is not supported. Exception is handled in catch below
+  } catch (ex) {
+    handleRejection(promise, ex);
+  }
+}
+
+function handleRejection(promise, reason) {
+  rejectingErrors.push(reason);
+  if (promise._state !== null) return;
+  var shouldExecuteTick = promise._lib && beginMicroTickScope();
+  reason = rejectionMapper(reason);
+  promise._state = false;
+  promise._value = reason;
+  debug && reason !== null && _typeof(reason) === 'object' && !reason._promise && tryCatch(function () {
+    var origProp = getPropertyDescriptor(reason, "stack");
+    reason._promise = promise;
+    setProp(reason, "stack", {
+      get: function () {
+        return stack_being_generated ? origProp && (origProp.get ? origProp.get.apply(reason) : origProp.value) : promise.stack;
+      }
+    });
+  }); // Add the failure to a list of possibly uncaught errors
+
+  addPossiblyUnhandledError(promise);
+  propagateAllListeners(promise);
+  if (shouldExecuteTick) endMicroTickScope();
+}
+
+function propagateAllListeners(promise) {
+  //debug && linkToPreviousPromise(promise);
+  var listeners = promise._listeners;
+  promise._listeners = [];
+
+  for (var i = 0, len = listeners.length; i < len; ++i) {
+    propagateToListener(promise, listeners[i]);
+  }
+
+  var psd = promise._PSD;
+  --psd.ref || psd.finalize(); // if psd.ref reaches zero, call psd.finalize();
+
+  if (numScheduledCalls === 0) {
+    // If numScheduledCalls is 0, it means that our stack is not in a callback of a scheduled call,
+    // and that no deferreds where listening to this rejection or success.
+    // Since there is a risk that our stack can contain application code that may
+    // do stuff after this code is finished that may generate new calls, we cannot
+    // call finalizers here.
+    ++numScheduledCalls;
+    asap$1(function () {
+      if (--numScheduledCalls === 0) finalizePhysicalTick(); // Will detect unhandled errors
+    }, []);
+  }
+}
+
+function propagateToListener(promise, listener) {
+  if (promise._state === null) {
+    promise._listeners.push(listener);
+
+    return;
+  }
+
+  var cb = promise._state ? listener.onFulfilled : listener.onRejected;
+
+  if (cb === null) {
+    // This Listener doesnt have a listener for the event being triggered (onFulfilled or onReject) so lets forward the event to any eventual listeners on the Promise instance returned by then() or catch()
+    return (promise._state ? listener.resolve : listener.reject)(promise._value);
+  }
+
+  ++listener.psd.ref;
+  ++numScheduledCalls;
+  asap$1(callListener, [cb, promise, listener]);
+}
+
+function callListener(cb, promise, listener) {
+  try {
+    // Set static variable currentFulfiller to the promise that is being fullfilled,
+    // so that we connect the chain of promises (for long stacks support)
+    currentFulfiller = promise; // Call callback and resolve our listener with it's return value.
+
+    var ret,
+        value = promise._value;
+
+    if (promise._state) {
+      // cb is onResolved
+      ret = cb(value);
+    } else {
+      // cb is onRejected
+      if (rejectingErrors.length) rejectingErrors = [];
+      ret = cb(value);
+      if (rejectingErrors.indexOf(value) === -1) markErrorAsHandled(promise); // Callback didnt do Promise.reject(err) nor reject(err) onto another promise.
+    }
+
+    listener.resolve(ret);
+  } catch (e) {
+    // Exception thrown in callback. Reject our listener.
+    listener.reject(e);
+  } finally {
+    // Restore env and currentFulfiller.
+    currentFulfiller = null;
+    if (--numScheduledCalls === 0) finalizePhysicalTick();
+    --listener.psd.ref || listener.psd.finalize();
+  }
+}
+
+function getStack(promise, stacks, limit) {
+  if (stacks.length === limit) return stacks;
+  var stack = "";
+
+  if (promise._state === false) {
+    var failure = promise._value,
+        errorName,
+        message;
+
+    if (failure != null) {
+      errorName = failure.name || "Error";
+      message = failure.message || failure;
+      stack = prettyStack(failure, 0);
+    } else {
+      errorName = failure; // If error is undefined or null, show that.
+
+      message = "";
+    }
+
+    stacks.push(errorName + (message ? ": " + message : "") + stack);
+  }
+
+  if (debug) {
+    stack = prettyStack(promise._stackHolder, 2);
+    if (stack && stacks.indexOf(stack) === -1) stacks.push(stack);
+    if (promise._prev) getStack(promise._prev, stacks, limit);
+  }
+
+  return stacks;
+}
+
+function linkToPreviousPromise(promise, prev) {
+  // Support long stacks by linking to previous completed promise.
+  var numPrev = prev ? prev._numPrev + 1 : 0;
+
+  if (numPrev < LONG_STACKS_CLIP_LIMIT) {
+    promise._prev = prev;
+    promise._numPrev = numPrev;
+  }
+}
+/* The callback to schedule with setImmediate() or setTimeout().
+   It runs a virtual microtick and executes any callback registered in microtickQueue.
+ */
+
+
+function physicalTick() {
+  beginMicroTickScope() && endMicroTickScope();
+}
+
+function beginMicroTickScope() {
+  var wasRootExec = isOutsideMicroTick;
+  isOutsideMicroTick = false;
+  needsNewPhysicalTick = false;
+  return wasRootExec;
+}
+/* Executes micro-ticks without doing try..catch.
+   This can be possible because we only use this internally and
+   the registered functions are exception-safe (they do try..catch
+   internally before calling any external method). If registering
+   functions in the microtickQueue that are not exception-safe, this
+   would destroy the framework and make it instable. So we don't export
+   our asap method.
+*/
+
+
+function endMicroTickScope() {
+  var callbacks, i, l;
+
+  do {
+    while (microtickQueue.length > 0) {
+      callbacks = microtickQueue;
+      microtickQueue = [];
+      l = callbacks.length;
+
+      for (i = 0; i < l; ++i) {
+        var item = callbacks[i];
+        item[0].apply(null, item[1]);
+      }
+    }
+  } while (microtickQueue.length > 0);
+
+  isOutsideMicroTick = true;
+  needsNewPhysicalTick = true;
+}
+
+function finalizePhysicalTick() {
+  var unhandledErrs = unhandledErrors;
+  unhandledErrors = [];
+  unhandledErrs.forEach(function (p) {
+    p._PSD.onunhandled.call(null, p._value, p);
+  });
+  var finalizers = tickFinalizers.slice(0); // Clone first because finalizer may remove itself from list.
+
+  var i = finalizers.length;
+
+  while (i) {
+    finalizers[--i]();
+  }
+}
+
+function run_at_end_of_this_or_next_physical_tick(fn) {
+  function finalizer() {
+    fn();
+    tickFinalizers.splice(tickFinalizers.indexOf(finalizer), 1);
+  }
+
+  tickFinalizers.push(finalizer);
+  ++numScheduledCalls;
+  asap$1(function () {
+    if (--numScheduledCalls === 0) finalizePhysicalTick();
+  }, []);
+}
+
+function addPossiblyUnhandledError(promise) {
+  // Only add to unhandledErrors if not already there. The first one to add to this list
+  // will be upon the first rejection so that the root cause (first promise in the
+  // rejection chain) is the one listed.
+  if (!unhandledErrors.some(function (p) {
+    return p._value === promise._value;
+  })) unhandledErrors.push(promise);
+}
+
+function markErrorAsHandled(promise) {
+  // Called when a reject handled is actually being called.
+  // Search in unhandledErrors for any promise whos _value is this promise_value (list
+  // contains only rejected promises, and only one item per error)
+  var i = unhandledErrors.length;
+
+  while (i) {
+    if (unhandledErrors[--i]._value === promise._value) {
+      // Found a promise that failed with this same error object pointer,
+      // Remove that since there is a listener that actually takes care of it.
+      unhandledErrors.splice(i, 1);
+      return;
+    }
+  }
+}
+
+function PromiseReject(reason) {
+  return new Promise(INTERNAL, false, reason);
+}
+
+function wrap(fn, errorCatcher) {
+  var psd = PSD;
+  return function () {
+    var wasRootExec = beginMicroTickScope(),
+        outerScope = PSD;
 
     try {
-      window.addEventListener("test", null, Object.defineProperty({}, "passive", {
-        get: function () {
-          return g = !0, !0;
-        }
-      }));
-    } catch (e) {}
-
-    function y(e) {
-      var t, r;
-
-      if (e.touches) {
-        var o = v(e.touches, 1)[0];
-        t = o.pageX, r = o.pageY;
-      } else t = e.pageX, r = e.pageY;
-
-      return {
-        x: t,
-        y: r
-      };
+      switchToZone(psd, true);
+      return fn.apply(this, arguments);
+    } catch (e) {
+      errorCatcher && errorCatcher(e);
+    } finally {
+      switchToZone(outerScope, false);
+      if (wasRootExec) endMicroTickScope();
     }
+  };
+} //
+// variables used for native await support
+//
 
-    function w(e, t, r) {
-      return Math.min(Math.max(e, t), r);
+
+var task = {
+  awaits: 0,
+  echoes: 0,
+  id: 0
+}; // The ongoing macro-task when using zone-echoing.
+
+var taskCounter = 0; // ID counter for macro tasks.
+
+var zoneStack = []; // Stack of left zones to restore asynchronically.
+
+var zoneEchoes = 0; // zoneEchoes is a must in order to persist zones between native await expressions.
+
+var totalEchoes = 0; // ID counter for micro-tasks. Used to detect possible native await in our Promise.prototype.then.
+
+var zone_id_counter = 0;
+
+function newScope(fn, props$$1, a1, a2) {
+  var parent = PSD,
+      psd = Object.create(parent);
+  psd.parent = parent;
+  psd.ref = 0;
+  psd.global = false;
+  psd.id = ++zone_id_counter; // Prepare for promise patching (done in usePSD):
+
+  var globalEnv = globalPSD.env;
+  psd.env = patchGlobalPromise ? {
+    Promise: Promise,
+    PromiseProp: {
+      value: Promise,
+      configurable: true,
+      writable: true
+    },
+    all: Promise.all,
+    race: Promise.race,
+    resolve: Promise.resolve,
+    reject: Promise.reject,
+    nthen: getPatchedPromiseThen(globalEnv.nthen, psd),
+    gthen: getPatchedPromiseThen(globalEnv.gthen, psd) // global then
+
+  } : {};
+  if (props$$1) extend(psd, props$$1); // unhandleds and onunhandled should not be specifically set here.
+  // Leave them on parent prototype.
+  // unhandleds.push(err) will push to parent's prototype
+  // onunhandled() will call parents onunhandled (with this scope's this-pointer though!)
+
+  ++parent.ref;
+
+  psd.finalize = function () {
+    --this.parent.ref || this.parent.finalize();
+  };
+
+  var rv = usePSD(psd, fn, a1, a2);
+  if (psd.ref === 0) psd.finalize();
+  return rv;
+} // Function to call if scopeFunc returns NativePromise
+// Also for each NativePromise in the arguments to Promise.all()
+
+
+function incrementExpectedAwaits() {
+  if (!task.id) task.id = ++taskCounter;
+  ++task.awaits;
+  task.echoes += ZONE_ECHO_LIMIT;
+  return task.id;
+} // Function to call when 'then' calls back on a native promise where onAwaitExpected() had been called.
+// Also call this when a native await calls then method on a promise. In that case, don't supply
+// sourceTaskId because we already know it refers to current task.
+
+
+function decrementExpectedAwaits(sourceTaskId) {
+  if (!task.awaits || sourceTaskId && sourceTaskId !== task.id) return;
+  if (--task.awaits === 0) task.id = 0;
+  task.echoes = task.awaits * ZONE_ECHO_LIMIT; // Will reset echoes to 0 if awaits is 0.
+} // Call from Promise.all() and Promise.race()
+
+
+function onPossibleParallellAsync(possiblePromise) {
+  if (task.echoes && possiblePromise && possiblePromise.constructor === NativePromise) {
+    incrementExpectedAwaits();
+    return possiblePromise.then(function (x) {
+      decrementExpectedAwaits();
+      return x;
+    }, function (e) {
+      decrementExpectedAwaits();
+      return rejection(e);
+    });
+  }
+
+  return possiblePromise;
+}
+
+function zoneEnterEcho(targetZone) {
+  ++totalEchoes;
+
+  if (!task.echoes || --task.echoes === 0) {
+    task.echoes = task.id = 0; // Cancel zone echoing.
+  }
+
+  zoneStack.push(PSD);
+  switchToZone(targetZone, true);
+}
+
+function zoneLeaveEcho() {
+  var zone = zoneStack[zoneStack.length - 1];
+  zoneStack.pop();
+  switchToZone(zone, false);
+}
+
+function switchToZone(targetZone, bEnteringZone) {
+  var currentZone = PSD;
+
+  if (bEnteringZone ? task.echoes && (!zoneEchoes++ || targetZone !== PSD) : zoneEchoes && (! --zoneEchoes || targetZone !== PSD)) {
+    // Enter or leave zone asynchronically as well, so that tasks initiated during current tick
+    // will be surrounded by the zone when they are invoked.
+    enqueueNativeMicroTask(bEnteringZone ? zoneEnterEcho.bind(null, targetZone) : zoneLeaveEcho);
+  }
+
+  if (targetZone === PSD) return;
+  PSD = targetZone; // The actual zone switch occurs at this line.
+  // Snapshot on every leave from global zone.
+
+  if (currentZone === globalPSD) globalPSD.env = snapShot();
+
+  if (patchGlobalPromise) {
+    // Let's patch the global and native Promises (may be same or may be different)
+    var GlobalPromise = globalPSD.env.Promise; // Swich environments (may be PSD-zone or the global zone. Both apply.)
+
+    var targetEnv = targetZone.env; // Change Promise.prototype.then for native and global Promise (they MAY differ on polyfilled environments, but both can be accessed)
+    // Must be done on each zone change because the patched method contains targetZone in its closure.
+
+    nativePromiseProto.then = targetEnv.nthen;
+    GlobalPromise.prototype.then = targetEnv.gthen;
+
+    if (currentZone.global || targetZone.global) {
+      // Leaving or entering global zone. It's time to patch / restore global Promise.
+      // Set this Promise to window.Promise so that transiled async functions will work on Firefox, Safari and IE, as well as with Zonejs and angular.
+      Object.defineProperty(_global, 'Promise', targetEnv.PromiseProp); // Support Promise.all() etc to work indexedDB-safe also when people are including es6-promise as a module (they might
+      // not be accessing global.Promise but a local reference to it)
+
+      GlobalPromise.all = targetEnv.all;
+      GlobalPromise.race = targetEnv.race;
+      GlobalPromise.resolve = targetEnv.resolve;
+      GlobalPromise.reject = targetEnv.reject;
     }
+  }
+}
 
-    function C(e) {
-      return e && e.width && e.height && !isNaN(e.width) && !isNaN(e.height);
+function snapShot() {
+  var GlobalPromise = _global.Promise;
+  return patchGlobalPromise ? {
+    Promise: GlobalPromise,
+    PromiseProp: Object.getOwnPropertyDescriptor(_global, "Promise"),
+    all: GlobalPromise.all,
+    race: GlobalPromise.race,
+    resolve: GlobalPromise.resolve,
+    reject: GlobalPromise.reject,
+    nthen: nativePromiseProto.then,
+    gthen: GlobalPromise.prototype.then
+  } : {};
+}
+
+function usePSD(psd, fn, a1, a2, a3) {
+  var outerScope = PSD;
+
+  try {
+    switchToZone(psd, true);
+    return fn(a1, a2, a3);
+  } finally {
+    switchToZone(outerScope, false);
+  }
+}
+
+function enqueueNativeMicroTask(job) {
+  //
+  // Precondition: nativePromiseThen !== undefined
+  //
+  nativePromiseThen.call(resolvedNativePromise, job);
+}
+
+function nativeAwaitCompatibleWrap(fn, zone, possibleAwait) {
+  return typeof fn !== 'function' ? fn : function () {
+    var outerZone = PSD;
+    if (possibleAwait) incrementExpectedAwaits();
+    switchToZone(zone, true);
+
+    try {
+      return fn.apply(this, arguments);
+    } finally {
+      switchToZone(outerZone, false);
     }
+  };
+}
 
-    function x(e) {
-      return "n" === e ? "s" : "ne" === e ? "sw" : "e" === e ? "w" : "se" === e ? "nw" : "s" === e ? "n" : "sw" === e ? "ne" : "w" === e ? "e" : "nw" === e ? "se" : e;
-    }
+function getPatchedPromiseThen(origThen, zone) {
+  return function (onResolved, onRejected) {
+    return origThen.call(this, nativeAwaitCompatibleWrap(onResolved, zone, false), nativeAwaitCompatibleWrap(onRejected, zone, false));
+  };
+}
 
-    function O(e, t, r) {
-      if (isNaN(e.aspect)) return console.warn("`crop.aspect` should be a number in order to make an aspect crop", e), e;
-      var o = l({
-        unit: "px",
-        x: 0,
-        y: 0
-      }, e);
-      return e.width && (o.height = o.width / e.aspect), e.height && (o.width = o.height * e.aspect), o.y + o.height > r && (o.height = r - o.y, o.width = o.height * e.aspect), o.x + o.width > t && (o.width = t - o.x, o.height = o.width / e.aspect), o;
-    }
+var UNHANDLEDREJECTION = "unhandledrejection";
 
-    function b(e, t, r) {
-      return "%" === e.unit ? e : {
-        unit: "%",
-        aspect: e.aspect,
-        x: e.x / t * 100,
-        y: e.y / r * 100,
-        width: e.width / t * 100,
-        height: e.height / r * 100
-      };
-    }
+function globalError(err, promise) {
+  var rv;
 
-    function S(e, t, r) {
-      return e.unit ? "px" === e.unit ? e : {
-        unit: "px",
-        aspect: e.aspect,
-        x: e.x * t / 100,
-        y: e.y * r / 100,
-        width: e.width * t / 100,
-        height: e.height * r / 100
-      } : l({}, e, {
-        unit: "px"
+  try {
+    rv = promise.onuncatched(err);
+  } catch (e) {}
+
+  if (rv !== false) try {
+    var event,
+        eventData = {
+      promise: promise,
+      reason: err
+    };
+
+    if (_global.document && document.createEvent) {
+      event = document.createEvent('Event');
+      event.initEvent(UNHANDLEDREJECTION, true, true);
+      extend(event, eventData);
+    } else if (_global.CustomEvent) {
+      event = new CustomEvent(UNHANDLEDREJECTION, {
+        detail: eventData
       });
+      extend(event, eventData);
     }
 
-    function D(e, t, r) {
-      if (!e) return e;
-      var o = e,
-          n = e.x + e.width > t,
-          i = e.y + e.height > r;
-      return n && i ? o = {
-        unit: "px",
-        x: 0,
-        y: 0,
-        width: t > e.width ? e.width : t,
-        height: r > e.height ? e.height : r
-      } : n ? o = l({}, e, {
-        x: 0,
-        width: t > e.width ? e.width : t
-      }) : i && (o = l({}, e, {
-        y: 0,
-        height: r > e.height ? e.height : r
-      })), o.aspect && function (e, t, r) {
-        return !!(!e.width && e.height || e.width && !e.height) || e.y + e.height > r || e.x + e.width > t || e.width / e.aspect < e.height - 1 || e.width / e.aspect > e.height + 1 || e.height * e.aspect < e.width - 1 || e.height * e.aspect > e.width + 1;
-      }(o, t, r) ? O(o, t, r) : o;
+    if (event && _global.dispatchEvent) {
+      dispatchEvent(event);
+      if (!_global.PromiseRejectionEvent && _global.onunhandledrejection) // No native support for PromiseRejectionEvent but user has set window.onunhandledrejection. Manually call it.
+        try {
+          _global.onunhandledrejection(event);
+        } catch (_) {}
     }
 
-    function E(e, t, r, o) {
-      var n = S(t, r, o),
-          i = S(e, r, o),
-          a = l({}, n);
-      if (!n.aspect) return n.x < 0 ? (a.x = 0, a.width += n.x) : n.x + n.width > r && (a.width = r - n.x), n.y + n.height > o && (a.height = o - n.y), a;
-      var s = !1;
-      n.x < 0 ? (a.x = 0, a.width += n.x, a.height = a.width / n.aspect, s = !0) : n.x + n.width > r && (a.width = r - n.x, a.height = a.width / n.aspect, s = !0), s && i.y > a.y && (a.y = n.y + (n.height - a.height));
-      var c = !1;
-      return a.y + a.height > o && (a.height = o - n.y, a.width = a.height * n.aspect, c = !0), c && i.x > a.x && (a.x = n.x + (n.width - a.width)), a;
+    if (!event.defaultPrevented) {
+      console.warn("Unhandled rejection: " + (err.stack || err));
     }
+  } catch (e) {}
+}
 
-    var R = function (e) {
-      function t() {
-        var e, r, o, n;
-        !function (e, t) {
-          if (!(e instanceof t)) throw new TypeError("Cannot call a class as a function");
-        }(this, t);
+var rejection = Promise.reject;
 
-        for (var i = arguments.length, a = new Array(i), s = 0; s < i; s++) a[s] = arguments[s];
+function Events(ctx) {
+  var evs = {};
 
-        return o = this, n = (e = d(t)).call.apply(e, [this].concat(a)), r = !n || "object" !== c(n) && "function" != typeof n ? p(o) : n, m(p(r), "window", "undefined" != typeof window ? window : {}), m(p(r), "document", "undefined" != typeof document ? document : {}), m(p(r), "state", {}), m(p(r), "onCropMouseTouchDown", function (e) {
-          var t = r.props,
-              o = t.crop,
-              n = t.disabled,
-              i = r.mediaDimensions,
-              a = S(o, i.width, i.height);
+  var rv = function (eventName, subscriber) {
+    if (subscriber) {
+      // Subscribe. If additional arguments than just the subscriber was provided, forward them as well.
+      var i = arguments.length,
+          args = new Array(i - 1);
 
-          if (!n) {
-            e.preventDefault();
-            var s = y(e);
-            r.componentRef.setActive ? r.componentRef.setActive({
-              preventScroll: !0
-            }) : r.componentRef.focus({
-              preventScroll: !0
-            });
-            var c,
-                h = e.target.dataset.ord,
-                d = "nw" === h || "w" === h || "sw" === h,
-                p = "nw" === h || "n" === h || "ne" === h;
-            a.aspect && (c = r.getElementOffset(r.cropSelectRef)), r.evData = {
-              clientStartX: s.x,
-              clientStartY: s.y,
-              cropStartWidth: a.width,
-              cropStartHeight: a.height,
-              cropStartX: d ? a.x + a.width : a.x,
-              cropStartY: p ? a.y + a.height : a.y,
-              xInversed: d,
-              yInversed: p,
-              xCrossOver: d,
-              yCrossOver: p,
-              startXCrossOver: d,
-              startYCrossOver: p,
-              isResize: e.target.dataset.ord,
-              ord: h,
-              cropOffset: c
-            }, r.mouseDownOnCrop = !0, r.setState({
-              cropIsActive: !0
-            });
-          }
-        }), m(p(r), "onComponentMouseTouchDown", function (e) {
-          var t = r.props,
-              o = t.crop,
-              n = t.disabled,
-              i = t.locked,
-              a = t.keepSelection,
-              s = t.onChange,
-              c = r.mediaWrapperRef.firstChild;
-
-          if (e.target === c && c.contains(e.target) && !(n || i || a && C(o))) {
-            e.preventDefault();
-            var h = y(e);
-            r.componentRef.setActive ? r.componentRef.setActive({
-              preventScroll: !0
-            }) : r.componentRef.focus({
-              preventScroll: !0
-            });
-            var d = r.getElementOffset(r.mediaWrapperRef),
-                p = h.x - d.left,
-                u = h.y - d.top,
-                f = {
-              unit: "px",
-              aspect: o ? o.aspect : void 0,
-              x: p,
-              y: u,
-              width: 0,
-              height: 0
-            };
-            r.evData = {
-              clientStartX: h.x,
-              clientStartY: h.y,
-              cropStartWidth: f.width,
-              cropStartHeight: f.height,
-              cropStartX: f.x,
-              cropStartY: f.y,
-              xInversed: !1,
-              yInversed: !1,
-              xCrossOver: !1,
-              yCrossOver: !1,
-              startXCrossOver: !1,
-              startYCrossOver: !1,
-              isResize: !0,
-              ord: "nw"
-            }, r.mouseDownOnCrop = !0;
-            var l = r.mediaDimensions,
-                m = l.width,
-                v = l.height;
-            s(S(f, m, v), b(f, m, v)), r.setState({
-              cropIsActive: !0,
-              newCropIsBeingDrawn: !0
-            });
-          }
-        }), m(p(r), "onDocMouseTouchMove", function (e) {
-          var t = r.props,
-              o = t.crop,
-              n = t.disabled,
-              i = t.onChange,
-              a = t.onDragStart;
-
-          if (!n && r.mouseDownOnCrop) {
-            e.preventDefault(), r.dragStarted || (r.dragStarted = !0, a(e));
-            var s,
-                c = p(r).evData,
-                h = y(e);
-
-            if (c.isResize && o.aspect && c.cropOffset && (h.y = r.straightenYPath(h.x)), c.xDiff = h.x - c.clientStartX, c.yDiff = h.y - c.clientStartY, (s = c.isResize ? r.resizeCrop() : r.dragCrop()) !== o) {
-              var d = r.mediaDimensions,
-                  u = d.width,
-                  f = d.height;
-              i(S(s, u, f), b(s, u, f));
-            }
-          }
-        }), m(p(r), "onComponentKeyDown", function (e) {
-          var o = r.props,
-              n = o.crop,
-              i = o.disabled,
-              a = o.onChange,
-              s = o.onComplete;
-
-          if (!i) {
-            var c = e.key,
-                h = !1;
-
-            if (C(n)) {
-              var d = r.makeNewCrop(),
-                  p = e.shiftKey ? t.nudgeStepLarge : t.nudgeStep;
-
-              if ("ArrowLeft" === c ? (d.x -= p, h = !0) : "ArrowRight" === c ? (d.x += p, h = !0) : "ArrowUp" === c ? (d.y -= p, h = !0) : "ArrowDown" === c && (d.y += p, h = !0), h) {
-                e.preventDefault();
-                var u = r.mediaDimensions,
-                    f = u.width,
-                    l = u.height;
-                d.x = w(d.x, 0, f - d.width), d.y = w(d.y, 0, l - d.height);
-                var m = S(d, f, l),
-                    v = b(d, f, l);
-                a(m, v), s(m, v);
-              }
-            }
-          }
-        }), m(p(r), "onDocMouseTouchEnd", function (e) {
-          var t = r.props,
-              o = t.crop,
-              n = t.disabled,
-              i = t.onComplete,
-              a = t.onDragEnd;
-
-          if (!n && r.mouseDownOnCrop) {
-            r.mouseDownOnCrop = !1, r.dragStarted = !1;
-            var s = r.mediaDimensions,
-                c = s.width,
-                h = s.height;
-            a(e), i(S(o, c, h), b(o, c, h)), r.setState({
-              cropIsActive: !1,
-              newCropIsBeingDrawn: !1
-            });
-          }
-        }), m(p(r), "onMediaLoaded", function () {
-          var e = r.props,
-              t = e.onComplete,
-              o = e.onChange,
-              n = r.createNewCrop(),
-              i = n.pixelCrop,
-              a = n.percentCrop;
-          o(i, a), t(i, a);
-        }), r;
+      while (--i) {
+        args[i - 1] = arguments[i];
       }
 
-      var r, o, i;
-      return function (e, t) {
-        if ("function" != typeof t && null !== t) throw new TypeError("Super expression must either be null or a function");
-        e.prototype = Object.create(t && t.prototype, {
-          constructor: {
-            value: e,
-            writable: !0,
-            configurable: !0
-          }
-        }), t && u(e, t);
-      }(t, e), r = t, (o = [{
-        key: "componentDidMount",
-        value: function () {
-          if (this.document.addEventListener) {
-            var e = !!g && {
-              passive: !1
-            };
-            this.document.addEventListener("mousemove", this.onDocMouseTouchMove, e), this.document.addEventListener("touchmove", this.onDocMouseTouchMove, e), this.document.addEventListener("mouseup", this.onDocMouseTouchEnd, e), this.document.addEventListener("touchend", this.onDocMouseTouchEnd, e), this.document.addEventListener("touchcancel", this.onDocMouseTouchEnd, e), this.componentRef.addEventListener("medialoaded", this.onMediaLoaded);
-          }
-        }
-      }, {
-        key: "componentWillUnmount",
-        value: function () {
-          this.document.removeEventListener && (this.document.removeEventListener("mousemove", this.onDocMouseTouchMove), this.document.removeEventListener("touchmove", this.onDocMouseTouchMove), this.document.removeEventListener("mouseup", this.onDocMouseTouchEnd), this.document.removeEventListener("touchend", this.onDocMouseTouchEnd), this.document.removeEventListener("touchcancel", this.onDocMouseTouchEnd), this.componentRef.removeEventListener("medialoaded", this.onMediaLoaded));
-        }
-      }, {
-        key: "componentDidUpdate",
-        value: function (e) {
-          if (e.crop !== this.props.crop && this.imageRef) {
-            var t = this.imageRef,
-                r = t.width,
-                o = t.height,
-                n = this.makeNewCrop(),
-                i = D(n, r, o);
+      evs[eventName].subscribe.apply(null, args);
+      return ctx;
+    } else if (typeof eventName === 'string') {
+      // Return interface allowing to fire or unsubscribe from event
+      return evs[eventName];
+    }
+  };
 
-            if (n !== i) {
-              var a = S(i, r, o),
-                  s = b(i, r, o);
-              this.props.onChange(a, s), this.props.onComplete(a, s);
-            }
-          }
-        }
-      }, {
-        key: "createNewCrop",
-        value: function () {
-          var e = this.mediaDimensions,
-              t = e.width,
-              r = e.height,
-              o = D(this.makeNewCrop(), t, r);
-          return {
-            pixelCrop: S(o, t, r),
-            percentCrop: b(o, t, r)
-          };
-        }
-      }, {
-        key: "onImageLoad",
-        value: function (e) {
-          var t = this.props,
-              r = t.onComplete,
-              o = t.onChange;
+  rv.addEventType = add;
 
-          if (!1 !== (0, t.onImageLoaded)(e)) {
-            var n = this.createNewCrop(),
-                i = n.pixelCrop,
-                a = n.percentCrop;
-            o(i, a), r(i, a);
-          }
-        }
-      }, {
-        key: "getDocumentOffset",
-        value: function () {
-          var e = this.document.documentElement || {},
-              t = e.clientTop,
-              r = void 0 === t ? 0 : t,
-              o = e.clientLeft;
-          return {
-            clientTop: r,
-            clientLeft: void 0 === o ? 0 : o
-          };
-        }
-      }, {
-        key: "getWindowOffset",
-        value: function () {
-          var e = this.window,
-              t = e.pageYOffset,
-              r = void 0 === t ? 0 : t,
-              o = e.pageXOffset;
-          return {
-            pageYOffset: r,
-            pageXOffset: void 0 === o ? 0 : o
-          };
-        }
-      }, {
-        key: "getElementOffset",
-        value: function (e) {
-          var t = e.getBoundingClientRect(),
-              r = this.getDocumentOffset(),
-              o = this.getWindowOffset();
-          return {
-            top: t.top + o.pageYOffset - r.clientTop,
-            left: t.left + o.pageXOffset - r.clientLeft
-          };
-        }
-      }, {
-        key: "getCropStyle",
-        value: function () {
-          var e = this.makeNewCrop(this.props.crop ? this.props.crop.unit : "px");
-          return {
-            top: "".concat(e.y).concat(e.unit),
-            left: "".concat(e.x).concat(e.unit),
-            width: "".concat(e.width).concat(e.unit),
-            height: "".concat(e.height).concat(e.unit)
-          };
-        }
-      }, {
-        key: "getNewSize",
-        value: function () {
-          var e,
-              t = this.props,
-              r = t.crop,
-              o = t.minWidth,
-              n = t.maxWidth,
-              i = t.minHeight,
-              a = t.maxHeight,
-              s = this.evData,
-              c = this.mediaDimensions,
-              h = c.width,
-              d = c.height,
-              p = s.cropStartWidth + s.xDiff;
-          return s.xCrossOver && (p = Math.abs(p)), p = w(p, o, n || h), e = r.aspect ? p / r.aspect : s.cropStartHeight + s.yDiff, s.yCrossOver && (e = Math.min(Math.abs(e), s.cropStartY)), e = w(e, i, a || d), r.aspect && (p = w(e * r.aspect, 0, h)), {
-            width: p,
-            height: e
-          };
-        }
-      }, {
-        key: "dragCrop",
-        value: function () {
-          var e = this.makeNewCrop(),
-              t = this.evData,
-              r = this.mediaDimensions,
-              o = r.width,
-              n = r.height;
-          return e.x = w(t.cropStartX + t.xDiff, 0, o - e.width), e.y = w(t.cropStartY + t.yDiff, 0, n - e.height), e;
-        }
-      }, {
-        key: "resizeCrop",
-        value: function () {
-          var e = this.evData,
-              r = this.makeNewCrop(),
-              o = e.ord;
-          e.xInversed && (e.xDiff -= 2 * e.cropStartWidth, e.xDiffPc -= 2 * e.cropStartWidth), e.yInversed && (e.yDiff -= 2 * e.cropStartHeight, e.yDiffPc -= 2 * e.cropStartHeight);
-          var n = this.getNewSize(),
-              i = e.cropStartX,
-              a = e.cropStartY;
-          e.xCrossOver && (i = r.x + (r.width - n.width)), e.yCrossOver && (a = !1 === e.lastYCrossover ? r.y - n.height : r.y + (r.height - n.height));
-          var s = this.mediaDimensions,
-              c = s.width,
-              h = s.height,
-              d = E(this.props.crop, {
-            unit: r.unit,
-            x: i,
-            y: a,
-            width: n.width,
-            height: n.height,
-            aspect: r.aspect
-          }, c, h);
-          return r.aspect || t.xyOrds.indexOf(o) > -1 ? (r.x = d.x, r.y = d.y, r.width = d.width, r.height = d.height) : t.xOrds.indexOf(o) > -1 ? (r.x = d.x, r.width = d.width) : t.yOrds.indexOf(o) > -1 && (r.y = d.y, r.height = d.height), e.lastYCrossover = e.yCrossOver, this.crossOverCheck(), r;
-        }
-      }, {
-        key: "straightenYPath",
-        value: function (e) {
-          var t,
-              r,
-              o = this.evData,
-              n = o.ord,
-              i = o.cropOffset,
-              a = o.cropStartWidth,
-              s = o.cropStartHeight;
-          return "nw" === n || "se" === n ? (t = s / a, r = i.top - i.left * t) : (t = -s / a, r = i.top + (s - i.left * t)), t * e + r;
-        }
-      }, {
-        key: "createCropSelection",
-        value: function () {
-          var e = this,
-              t = this.props,
-              r = t.disabled,
-              o = t.locked,
-              i = t.renderSelectionAddon,
-              a = t.ruleOfThirds,
-              s = this.getCropStyle();
-          return n.a.createElement("div", {
-            ref: function (t) {
-              return e.cropSelectRef = t;
-            },
-            style: s,
-            className: "ReactCrop__crop-selection",
-            onMouseDown: this.onCropMouseTouchDown,
-            onTouchStart: this.onCropMouseTouchDown,
-            tabIndex: "0"
-          }, !r && !o && n.a.createElement("div", {
-            className: "ReactCrop__drag-elements"
-          }, n.a.createElement("div", {
-            className: "ReactCrop__drag-bar ord-n",
-            "data-ord": "n"
-          }), n.a.createElement("div", {
-            className: "ReactCrop__drag-bar ord-e",
-            "data-ord": "e"
-          }), n.a.createElement("div", {
-            className: "ReactCrop__drag-bar ord-s",
-            "data-ord": "s"
-          }), n.a.createElement("div", {
-            className: "ReactCrop__drag-bar ord-w",
-            "data-ord": "w"
-          }), n.a.createElement("div", {
-            className: "ReactCrop__drag-handle ord-nw",
-            "data-ord": "nw"
-          }), n.a.createElement("div", {
-            className: "ReactCrop__drag-handle ord-n",
-            "data-ord": "n"
-          }), n.a.createElement("div", {
-            className: "ReactCrop__drag-handle ord-ne",
-            "data-ord": "ne"
-          }), n.a.createElement("div", {
-            className: "ReactCrop__drag-handle ord-e",
-            "data-ord": "e"
-          }), n.a.createElement("div", {
-            className: "ReactCrop__drag-handle ord-se",
-            "data-ord": "se"
-          }), n.a.createElement("div", {
-            className: "ReactCrop__drag-handle ord-s",
-            "data-ord": "s"
-          }), n.a.createElement("div", {
-            className: "ReactCrop__drag-handle ord-sw",
-            "data-ord": "sw"
-          }), n.a.createElement("div", {
-            className: "ReactCrop__drag-handle ord-w",
-            "data-ord": "w"
-          })), i && n.a.createElement("div", {
-            className: "ReactCrop__selection-addon",
-            onMouseDown: function (e) {
-              return e.stopPropagation();
-            }
-          }, i(this.state)), a && n.a.createElement(n.a.Fragment, null, n.a.createElement("div", {
-            className: "ReactCrop__rule-of-thirds-hz"
-          }), n.a.createElement("div", {
-            className: "ReactCrop__rule-of-thirds-vt"
-          })));
-        }
-      }, {
-        key: "makeNewCrop",
-        value: function () {
-          var e = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : "px",
-              r = l({}, t.defaultCrop, {}, this.props.crop),
-              o = this.mediaDimensions,
-              n = o.width,
-              i = o.height;
-          return "px" === e ? S(r, n, i) : b(r, n, i);
-        }
-      }, {
-        key: "crossOverCheck",
-        value: function () {
-          var e = this.evData,
-              t = this.props,
-              r = t.minWidth,
-              o = t.minHeight;
-          !r && (!e.xCrossOver && -Math.abs(e.cropStartWidth) - e.xDiff >= 0 || e.xCrossOver && -Math.abs(e.cropStartWidth) - e.xDiff <= 0) && (e.xCrossOver = !e.xCrossOver), !o && (!e.yCrossOver && -Math.abs(e.cropStartHeight) - e.yDiff >= 0 || e.yCrossOver && -Math.abs(e.cropStartHeight) - e.yDiff <= 0) && (e.yCrossOver = !e.yCrossOver);
-          var n = e.xCrossOver !== e.startXCrossOver,
-              i = e.yCrossOver !== e.startYCrossOver;
-          e.inversedXOrd = !!n && x(e.ord), e.inversedYOrd = !!i && x(e.ord);
-        }
-      }, {
-        key: "render",
-        value: function () {
-          var e = this,
-              t = this.props,
-              r = t.children,
-              o = t.circularCrop,
-              i = t.className,
-              a = t.crossorigin,
-              c = t.crop,
-              h = t.disabled,
-              d = t.locked,
-              p = t.imageAlt,
-              u = t.onImageError,
-              f = t.renderComponent,
-              l = t.src,
-              m = t.style,
-              v = t.imageStyle,
-              g = t.ruleOfThirds,
-              y = this.state,
-              w = y.cropIsActive,
-              x = y.newCropIsBeingDrawn,
-              O = C(c) && this.componentRef ? this.createCropSelection() : null,
-              b = function () {
-            for (var e, t = 0, r = ""; t < arguments.length;) (e = s(arguments[t++])) && (r && (r += " "), r += e);
+  for (var i = 1, l = arguments.length; i < l; ++i) {
+    add(arguments[i]);
+  }
 
-            return r;
-          }("ReactCrop", i, {
-            "ReactCrop--active": w,
-            "ReactCrop--disabled": h,
-            "ReactCrop--locked": d,
-            "ReactCrop--new-crop": x,
-            "ReactCrop--fixed-aspect": c && c.aspect,
-            "ReactCrop--crop-invisible": c && w && (!c.width || !c.height),
-            "ReactCrop--circular-crop": c && o,
-            "ReactCrop--rule-of-thirds": c && g
-          });
+  return rv;
 
-          return n.a.createElement("div", {
-            ref: function (t) {
-              e.componentRef = t;
-            },
-            className: b,
-            style: m,
-            onTouchStart: this.onComponentMouseTouchDown,
-            onMouseDown: this.onComponentMouseTouchDown,
-            tabIndex: "0",
-            onKeyDown: this.onComponentKeyDown
-          }, n.a.createElement("div", {
-            ref: function (t) {
-              e.mediaWrapperRef = t;
-            }
-          }, f || n.a.createElement("img", {
-            ref: function (t) {
-              return e.imageRef = t;
-            },
-            crossOrigin: a,
-            className: "ReactCrop__image",
-            style: v,
-            src: l,
-            onLoad: function (t) {
-              return e.onImageLoad(t.target);
-            },
-            onError: u,
-            alt: p
-          })), r, O);
+  function add(eventName, chainFunction, defaultFunction) {
+    if (_typeof(eventName) === 'object') return addConfiguredEvents(eventName);
+    if (!chainFunction) chainFunction = reverseStoppableEventChain;
+    if (!defaultFunction) defaultFunction = nop;
+    var context = {
+      subscribers: [],
+      fire: defaultFunction,
+      subscribe: function (cb) {
+        if (context.subscribers.indexOf(cb) === -1) {
+          context.subscribers.push(cb);
+          context.fire = chainFunction(context.fire, cb);
         }
-      }, {
-        key: "mediaDimensions",
-        get: function () {
-          var e = this.mediaWrapperRef;
-          return {
-            width: e.clientWidth,
-            height: e.clientHeight
-          };
-        }
-      }]) && h(r.prototype, o), i && h(r, i), t;
-    }(o.PureComponent);
-
-    R.xOrds = ["e", "w"], R.yOrds = ["n", "s"], R.xyOrds = ["nw", "ne", "se", "sw"], R.nudgeStep = .2, R.nudgeStepLarge = 2, R.defaultCrop = {
-      x: 0,
-      y: 0,
-      width: 0,
-      height: 0,
-      unit: "px"
-    }, R.propTypes = {
-      className: a.a.string,
-      children: a.a.oneOfType([a.a.arrayOf(a.a.node), a.a.node]),
-      circularCrop: a.a.bool,
-      crop: a.a.shape({
-        aspect: a.a.number,
-        x: a.a.number,
-        y: a.a.number,
-        width: a.a.number,
-        height: a.a.number,
-        unit: a.a.oneOf(["px", "%"])
-      }),
-      crossorigin: a.a.string,
-      disabled: a.a.bool,
-      locked: a.a.bool,
-      imageAlt: a.a.string,
-      imageStyle: a.a.shape({}),
-      keepSelection: a.a.bool,
-      minWidth: a.a.number,
-      minHeight: a.a.number,
-      maxWidth: a.a.number,
-      maxHeight: a.a.number,
-      onChange: a.a.func.isRequired,
-      onImageError: a.a.func,
-      onComplete: a.a.func,
-      onImageLoaded: a.a.func,
-      onDragStart: a.a.func,
-      onDragEnd: a.a.func,
-      src: a.a.string.isRequired,
-      style: a.a.shape({}),
-      renderComponent: a.a.node,
-      renderSelectionAddon: a.a.func,
-      ruleOfThirds: a.a.bool
-    }, R.defaultProps = {
-      circularCrop: !1,
-      className: void 0,
-      crop: void 0,
-      crossorigin: void 0,
-      disabled: !1,
-      locked: !1,
-      imageAlt: "",
-      maxWidth: void 0,
-      maxHeight: void 0,
-      minWidth: 0,
-      minHeight: 0,
-      keepSelection: !1,
-      onComplete: function () {},
-      onImageError: function () {},
-      onImageLoaded: function () {},
-      onDragStart: function () {},
-      onDragEnd: function () {},
-      children: void 0,
-      style: void 0,
-      renderComponent: void 0,
-      imageStyle: void 0,
-      renderSelectionAddon: void 0,
-      ruleOfThirds: !1
+      },
+      unsubscribe: function (cb) {
+        context.subscribers = context.subscribers.filter(function (fn) {
+          return fn !== cb;
+        });
+        context.fire = context.subscribers.reduce(chainFunction, defaultFunction);
+      }
     };
-  }]);
+    evs[eventName] = rv[eventName] = context;
+    return context;
+  }
+
+  function addConfiguredEvents(cfg) {
+    // events(this, {reading: [functionChain, nop]});
+    keys(cfg).forEach(function (eventName) {
+      var args = cfg[eventName];
+
+      if (isArray(args)) {
+        add(eventName, cfg[eventName][0], cfg[eventName][1]);
+      } else if (args === 'asap') {
+        // Rather than approaching event subscription using a functional approach, we here do it in a for-loop where subscriber is executed in its own stack
+        // enabling that any exception that occur wont disturb the initiator and also not nescessary be catched and forgotten.
+        var context = add(eventName, mirror, function fire() {
+          // Optimazation-safe cloning of arguments into args.
+          var i = arguments.length,
+              args = new Array(i);
+
+          while (i--) {
+            args[i] = arguments[i];
+          } // All each subscriber:
+
+
+          context.subscribers.forEach(function (fn) {
+            asap(function fireEvent() {
+              fn.apply(null, args);
+            });
+          });
+        });
+      } else throw new exceptions.InvalidArgument("Invalid event config");
+    });
+  }
+}
+/*
+ * Dexie.js - a minimalistic wrapper for IndexedDB
+ * ===============================================
+ *
+ * Copyright (c) 2014-2017 David Fahlander
+ *
+ * Version {version}, {date}
+ *
+ * http://dexie.org
+ *
+ * Apache License Version 2.0, January 2004, http://www.apache.org/licenses/LICENSE-2.0
+ *
+ */
+
+
+var DEXIE_VERSION = '{version}';
+var maxString = String.fromCharCode(65535);
+
+var maxKey = function () {
+  try {
+    IDBKeyRange.only([[]]);
+    return [[]];
+  } catch (e) {
+    return maxString;
+  }
+}();
+
+var minKey = -Infinity;
+var INVALID_KEY_ARGUMENT = "Invalid key provided. Keys must be of type string, number, Date or Array<string | number | Date>.";
+var STRING_EXPECTED = "String expected.";
+var connections = [];
+var isIEOrEdge = typeof navigator !== 'undefined' && /(MSIE|Trident|Edge)/.test(navigator.userAgent);
+var hasIEDeleteObjectStoreBug = isIEOrEdge;
+var hangsOnDeleteLargeKeyRange = isIEOrEdge;
+
+var dexieStackFrameFilter = function (frame) {
+  return !/(dexie\.js|dexie\.min\.js)/.test(frame);
+};
+
+var dbNamesDB; // Global database for backing Dexie.getDatabaseNames() on browser without indexedDB.webkitGetDatabaseNames() 
+// Init debug
+
+setDebug(debug, dexieStackFrameFilter);
+
+function Dexie(dbName, options) {
+  /// <param name="options" type="Object" optional="true">Specify only if you wich to control which addons that should run on this instance</param>
+  var deps = Dexie.dependencies;
+  var opts = extend({
+    // Default Options
+    addons: Dexie.addons,
+    autoOpen: true,
+    indexedDB: deps.indexedDB,
+    IDBKeyRange: deps.IDBKeyRange // Backend IDBKeyRange api. Default to browser env.
+
+  }, options);
+  var addons = opts.addons,
+      autoOpen = opts.autoOpen,
+      indexedDB = opts.indexedDB,
+      IDBKeyRange = opts.IDBKeyRange;
+  var globalSchema = this._dbSchema = {};
+  var versions = [];
+  var dbStoreNames = [];
+  var allTables = {}; ///<var type="IDBDatabase" />
+
+  var idbdb = null; // Instance of IDBDatabase
+
+  var dbOpenError = null;
+  var isBeingOpened = false;
+  var onReadyBeingFired = null;
+  var openComplete = false;
+  var READONLY = "readonly",
+      READWRITE = "readwrite";
+  var db = this;
+  var dbReadyResolve,
+      dbReadyPromise = new Promise(function (resolve) {
+    dbReadyResolve = resolve;
+  }),
+      cancelOpen,
+      openCanceller = new Promise(function (_, reject) {
+    cancelOpen = reject;
+  });
+  var autoSchema = true;
+  var hasNativeGetDatabaseNames = !!getNativeGetDatabaseNamesFn(indexedDB),
+      hasGetAll;
+
+  function init() {
+    // Default subscribers to "versionchange" and "blocked".
+    // Can be overridden by custom handlers. If custom handlers return false, these default
+    // behaviours will be prevented.
+    db.on("versionchange", function (ev) {
+      // Default behavior for versionchange event is to close database connection.
+      // Caller can override this behavior by doing db.on("versionchange", function(){ return false; });
+      // Let's not block the other window from making it's delete() or open() call.
+      // NOTE! This event is never fired in IE,Edge or Safari.
+      if (ev.newVersion > 0) console.warn("Another connection wants to upgrade database '" + db.name + "'. Closing db now to resume the upgrade.");else console.warn("Another connection wants to delete database '" + db.name + "'. Closing db now to resume the delete request.");
+      db.close(); // In many web applications, it would be recommended to force window.reload()
+      // when this event occurs. To do that, subscribe to the versionchange event
+      // and call window.location.reload(true) if ev.newVersion > 0 (not a deletion)
+      // The reason for this is that your current web app obviously has old schema code that needs
+      // to be updated. Another window got a newer version of the app and needs to upgrade DB but
+      // your window is blocking it unless we close it here.
+    });
+    db.on("blocked", function (ev) {
+      if (!ev.newVersion || ev.newVersion < ev.oldVersion) console.warn("Dexie.delete('" + db.name + "') was blocked");else console.warn("Upgrade '" + db.name + "' blocked by other connection holding version " + ev.oldVersion / 10);
+    });
+  } //
+  //
+  //
+  // ------------------------- Versioning Framework---------------------------
+  //
+  //
+  //
+
+
+  this.version = function (versionNumber) {
+    /// <param name="versionNumber" type="Number"></param>
+    /// <returns type="Version"></returns>
+    if (idbdb || isBeingOpened) throw new exceptions.Schema("Cannot add version when database is open");
+    this.verno = Math.max(this.verno, versionNumber);
+    var versionInstance = versions.filter(function (v) {
+      return v._cfg.version === versionNumber;
+    })[0];
+    if (versionInstance) return versionInstance;
+    versionInstance = new Version(versionNumber);
+    versions.push(versionInstance);
+    versions.sort(lowerVersionFirst); // Disable autoschema mode, as at least one version is specified.
+
+    autoSchema = false;
+    return versionInstance;
+  };
+
+  function Version(versionNumber) {
+    this._cfg = {
+      version: versionNumber,
+      storesSource: null,
+      dbschema: {},
+      tables: {},
+      contentUpgrade: null
+    };
+    this.stores({}); // Derive earlier schemas by default.
+  }
+
+  extend(Version.prototype, {
+    stores: function (stores) {
+      /// <summary>
+      ///   Defines the schema for a particular version
+      /// </summary>
+      /// <param name="stores" type="Object">
+      /// Example: <br/>
+      ///   {users: "id++,first,last,&amp;username,*email", <br/>
+      ///   passwords: "id++,&amp;username"}<br/>
+      /// <br/>
+      /// Syntax: {Table: "[primaryKey][++],[&amp;][*]index1,[&amp;][*]index2,..."}<br/><br/>
+      /// Special characters:<br/>
+      ///  "&amp;"  means unique key, <br/>
+      ///  "*"  means value is multiEntry, <br/>
+      ///  "++" means auto-increment and only applicable for primary key <br/>
+      /// </param>
+      this._cfg.storesSource = this._cfg.storesSource ? extend(this._cfg.storesSource, stores) : stores; // Derive stores from earlier versions if they are not explicitely specified as null or a new syntax.
+
+      var storesSpec = {};
+      versions.forEach(function (version) {
+        extend(storesSpec, version._cfg.storesSource);
+      });
+      var dbschema = this._cfg.dbschema = {};
+
+      this._parseStoresSpec(storesSpec, dbschema); // Update the latest schema to this version
+      // Update API
+
+
+      globalSchema = db._dbSchema = dbschema;
+      removeTablesApi([allTables, db, Transaction.prototype]); // Keep Transaction.prototype even though it should be depr.
+
+      setApiOnPlace([allTables, db, Transaction.prototype, this._cfg.tables], keys(dbschema), dbschema);
+      dbStoreNames = keys(dbschema);
+      return this;
+    },
+    upgrade: function (upgradeFunction) {
+      this._cfg.contentUpgrade = upgradeFunction;
+      return this;
+    },
+    _parseStoresSpec: function (stores, outSchema) {
+      keys(stores).forEach(function (tableName) {
+        if (stores[tableName] !== null) {
+          var instanceTemplate = {};
+          var indexes = parseIndexSyntax(stores[tableName]);
+          var primKey = indexes.shift();
+          if (primKey.multi) throw new exceptions.Schema("Primary key cannot be multi-valued");
+          if (primKey.keyPath) setByKeyPath(instanceTemplate, primKey.keyPath, primKey.auto ? 0 : primKey.keyPath);
+          indexes.forEach(function (idx) {
+            if (idx.auto) throw new exceptions.Schema("Only primary key can be marked as autoIncrement (++)");
+            if (!idx.keyPath) throw new exceptions.Schema("Index must have a name and cannot be an empty string");
+            setByKeyPath(instanceTemplate, idx.keyPath, idx.compound ? idx.keyPath.map(function () {
+              return "";
+            }) : "");
+          });
+          outSchema[tableName] = new TableSchema(tableName, primKey, indexes, instanceTemplate);
+        }
+      });
+    }
+  });
+
+  function runUpgraders(oldVersion, idbtrans, reject) {
+    var trans = db._createTransaction(READWRITE, dbStoreNames, globalSchema);
+
+    trans.create(idbtrans);
+
+    trans._completion.catch(reject);
+
+    var rejectTransaction = trans._reject.bind(trans);
+
+    newScope(function () {
+      PSD.trans = trans;
+
+      if (oldVersion === 0) {
+        // Create tables:
+        keys(globalSchema).forEach(function (tableName) {
+          createTable(idbtrans, tableName, globalSchema[tableName].primKey, globalSchema[tableName].indexes);
+        });
+        Promise.follow(function () {
+          return db.on.populate.fire(trans);
+        }).catch(rejectTransaction);
+      } else updateTablesAndIndexes(oldVersion, trans, idbtrans).catch(rejectTransaction);
+    });
+  }
+
+  function updateTablesAndIndexes(oldVersion, trans, idbtrans) {
+    // Upgrade version to version, step-by-step from oldest to newest version.
+    // Each transaction object will contain the table set that was current in that version (but also not-yet-deleted tables from its previous version)
+    var queue = [];
+    var oldVersionStruct = versions.filter(function (version) {
+      return version._cfg.version === oldVersion;
+    })[0];
+    if (!oldVersionStruct) throw new exceptions.Upgrade("Dexie specification of currently installed DB version is missing");
+    globalSchema = db._dbSchema = oldVersionStruct._cfg.dbschema;
+    var anyContentUpgraderHasRun = false;
+    var versToRun = versions.filter(function (v) {
+      return v._cfg.version > oldVersion;
+    });
+    versToRun.forEach(function (version) {
+      /// <param name="version" type="Version"></param>
+      queue.push(function () {
+        var oldSchema = globalSchema;
+        var newSchema = version._cfg.dbschema;
+        adjustToExistingIndexNames(oldSchema, idbtrans);
+        adjustToExistingIndexNames(newSchema, idbtrans);
+        globalSchema = db._dbSchema = newSchema;
+        var diff = getSchemaDiff(oldSchema, newSchema); // Add tables           
+
+        diff.add.forEach(function (tuple) {
+          createTable(idbtrans, tuple[0], tuple[1].primKey, tuple[1].indexes);
+        }); // Change tables
+
+        diff.change.forEach(function (change) {
+          if (change.recreate) {
+            throw new exceptions.Upgrade("Not yet support for changing primary key");
+          } else {
+            var store = idbtrans.objectStore(change.name); // Add indexes
+
+            change.add.forEach(function (idx) {
+              addIndex(store, idx);
+            }); // Update indexes
+
+            change.change.forEach(function (idx) {
+              store.deleteIndex(idx.name);
+              addIndex(store, idx);
+            }); // Delete indexes
+
+            change.del.forEach(function (idxName) {
+              store.deleteIndex(idxName);
+            });
+          }
+        });
+
+        if (version._cfg.contentUpgrade) {
+          anyContentUpgraderHasRun = true;
+          return Promise.follow(function () {
+            version._cfg.contentUpgrade(trans);
+          });
+        }
+      });
+      queue.push(function (idbtrans) {
+        if (!anyContentUpgraderHasRun || !hasIEDeleteObjectStoreBug) {
+          var newSchema = version._cfg.dbschema; // Delete old tables
+
+          deleteRemovedTables(newSchema, idbtrans);
+        }
+      });
+    }); // Now, create a queue execution engine
+
+    function runQueue() {
+      return queue.length ? Promise.resolve(queue.shift()(trans.idbtrans)).then(runQueue) : Promise.resolve();
+    }
+
+    return runQueue().then(function () {
+      createMissingTables(globalSchema, idbtrans); // At last, make sure to create any missing tables. (Needed by addons that add stores to DB without specifying version)
+    });
+  }
+
+  function getSchemaDiff(oldSchema, newSchema) {
+    var diff = {
+      del: [],
+      add: [],
+      change: [] // Array of {name: tableName, recreate: newDefinition, del: delIndexNames, add: newIndexDefs, change: changedIndexDefs}
+
+    };
+
+    for (var table in oldSchema) {
+      if (!newSchema[table]) diff.del.push(table);
+    }
+
+    for (table in newSchema) {
+      var oldDef = oldSchema[table],
+          newDef = newSchema[table];
+
+      if (!oldDef) {
+        diff.add.push([table, newDef]);
+      } else {
+        var change = {
+          name: table,
+          def: newDef,
+          recreate: false,
+          del: [],
+          add: [],
+          change: []
+        };
+
+        if (oldDef.primKey.src !== newDef.primKey.src) {
+          // Primary key has changed. Remove and re-add table.
+          change.recreate = true;
+          diff.change.push(change);
+        } else {
+          // Same primary key. Just find out what differs:
+          var oldIndexes = oldDef.idxByName;
+          var newIndexes = newDef.idxByName;
+
+          for (var idxName in oldIndexes) {
+            if (!newIndexes[idxName]) change.del.push(idxName);
+          }
+
+          for (idxName in newIndexes) {
+            var oldIdx = oldIndexes[idxName],
+                newIdx = newIndexes[idxName];
+            if (!oldIdx) change.add.push(newIdx);else if (oldIdx.src !== newIdx.src) change.change.push(newIdx);
+          }
+
+          if (change.del.length > 0 || change.add.length > 0 || change.change.length > 0) {
+            diff.change.push(change);
+          }
+        }
+      }
+    }
+
+    return diff;
+  }
+
+  function createTable(idbtrans, tableName, primKey, indexes) {
+    /// <param name="idbtrans" type="IDBTransaction"></param>
+    var store = idbtrans.db.createObjectStore(tableName, primKey.keyPath ? {
+      keyPath: primKey.keyPath,
+      autoIncrement: primKey.auto
+    } : {
+      autoIncrement: primKey.auto
+    });
+    indexes.forEach(function (idx) {
+      addIndex(store, idx);
+    });
+    return store;
+  }
+
+  function createMissingTables(newSchema, idbtrans) {
+    keys(newSchema).forEach(function (tableName) {
+      if (!idbtrans.db.objectStoreNames.contains(tableName)) {
+        createTable(idbtrans, tableName, newSchema[tableName].primKey, newSchema[tableName].indexes);
+      }
+    });
+  }
+
+  function deleteRemovedTables(newSchema, idbtrans) {
+    for (var i = 0; i < idbtrans.db.objectStoreNames.length; ++i) {
+      var storeName = idbtrans.db.objectStoreNames[i];
+
+      if (newSchema[storeName] == null) {
+        idbtrans.db.deleteObjectStore(storeName);
+      }
+    }
+  }
+
+  function addIndex(store, idx) {
+    store.createIndex(idx.name, idx.keyPath, {
+      unique: idx.unique,
+      multiEntry: idx.multi
+    });
+  } //
+  //
+  //      Dexie Protected API
+  //
+  //
+
+
+  this._allTables = allTables;
+
+  this._createTransaction = function (mode, storeNames, dbschema, parentTransaction) {
+    return new Transaction(mode, storeNames, dbschema, parentTransaction);
+  };
+  /* Generate a temporary transaction when db operations are done outside a transaction scope.
+  */
+
+
+  function tempTransaction(mode, storeNames, fn) {
+    if (!openComplete && !PSD.letThrough) {
+      if (!isBeingOpened) {
+        if (!autoOpen) return rejection(new exceptions.DatabaseClosed());
+        db.open().catch(nop); // Open in background. If if fails, it will be catched by the final promise anyway.
+      }
+
+      return dbReadyPromise.then(function () {
+        return tempTransaction(mode, storeNames, fn);
+      });
+    } else {
+      var trans = db._createTransaction(mode, storeNames, globalSchema);
+
+      try {
+        trans.create();
+      } catch (ex) {
+        return rejection(ex);
+      }
+
+      return trans._promise(mode, function (resolve, reject) {
+        return newScope(function () {
+          PSD.trans = trans;
+          return fn(resolve, reject, trans);
+        });
+      }).then(function (result) {
+        // Instead of resolving value directly, wait with resolving it until transaction has completed.
+        // Otherwise the data would not be in the DB if requesting it in the then() operation.
+        // Specifically, to ensure that the following expression will work:
+        //
+        //   db.friends.put({name: "Arne"}).then(function () {
+        //       db.friends.where("name").equals("Arne").count(function(count) {
+        //           assert (count === 1);
+        //       });
+        //   });
+        //
+        return trans._completion.then(function () {
+          return result;
+        });
+      });
+      /*.catch(err => { // Don't do this as of now. If would affect bulk- and modify methods in a way that could be more intuitive. But wait! Maybe change in next major.
+      trans._reject(err);
+      return rejection(err);
+      });*/
+    }
+  }
+
+  this._whenReady = function (fn) {
+    return openComplete || PSD.letThrough ? fn() : new Promise(function (resolve, reject) {
+      if (!isBeingOpened) {
+        if (!autoOpen) {
+          reject(new exceptions.DatabaseClosed());
+          return;
+        }
+
+        db.open().catch(nop); // Open in background. If if fails, it will be catched by the final promise anyway.
+      }
+
+      dbReadyPromise.then(resolve, reject);
+    }).then(fn);
+  }; //
+  //
+  //
+  //
+  //      Dexie API
+  //
+  //
+  //
+
+
+  this.verno = 0;
+
+  this.open = function () {
+    if (isBeingOpened || idbdb) return dbReadyPromise.then(function () {
+      return dbOpenError ? rejection(dbOpenError) : db;
+    });
+    debug && (openCanceller._stackHolder = getErrorWithStack()); // Let stacks point to when open() was called rather than where new Dexie() was called.
+
+    isBeingOpened = true;
+    dbOpenError = null;
+    openComplete = false; // Function pointers to call when the core opening process completes.
+
+    var resolveDbReady = dbReadyResolve,
+        // upgradeTransaction to abort on failure.
+    upgradeTransaction = null;
+    return Promise.race([openCanceller, new Promise(function (resolve, reject) {
+      // Multiply db.verno with 10 will be needed to workaround upgrading bug in IE:
+      // IE fails when deleting objectStore after reading from it.
+      // A future version of Dexie.js will stopover an intermediate version to workaround this.
+      // At that point, we want to be backward compatible. Could have been multiplied with 2, but by using 10, it is easier to map the number to the real version number.
+      // If no API, throw!
+      if (!indexedDB) throw new exceptions.MissingAPI("indexedDB API not found. If using IE10+, make sure to run your code on a server URL " + "(not locally). If using old Safari versions, make sure to include indexedDB polyfill.");
+      var req = autoSchema ? indexedDB.open(dbName) : indexedDB.open(dbName, Math.round(db.verno * 10));
+      if (!req) throw new exceptions.MissingAPI("IndexedDB API not available"); // May happen in Safari private mode, see https://github.com/dfahlander/Dexie.js/issues/134
+
+      req.onerror = eventRejectHandler(reject);
+      req.onblocked = wrap(fireOnBlocked);
+      req.onupgradeneeded = wrap(function (e) {
+        upgradeTransaction = req.transaction;
+
+        if (autoSchema && !db._allowEmptyDB) {
+          // Caller did not specify a version or schema. Doing that is only acceptable for opening alread existing databases.
+          // If onupgradeneeded is called it means database did not exist. Reject the open() promise and make sure that we
+          // do not create a new database by accident here.
+          req.onerror = preventDefault; // Prohibit onabort error from firing before we're done!
+
+          upgradeTransaction.abort(); // Abort transaction (would hope that this would make DB disappear but it doesnt.)
+          // Close database and delete it.
+
+          req.result.close();
+          var delreq = indexedDB.deleteDatabase(dbName); // The upgrade transaction is atomic, and javascript is single threaded - meaning that there is no risk that we delete someone elses database here!
+
+          delreq.onsuccess = delreq.onerror = wrap(function () {
+            reject(new exceptions.NoSuchDatabase("Database " + dbName + " doesnt exist"));
+          });
+        } else {
+          upgradeTransaction.onerror = eventRejectHandler(reject);
+          var oldVer = e.oldVersion > Math.pow(2, 62) ? 0 : e.oldVersion; // Safari 8 fix.
+
+          runUpgraders(oldVer / 10, upgradeTransaction, reject, req);
+        }
+      }, reject);
+      req.onsuccess = wrap(function () {
+        // Core opening procedure complete. Now let's just record some stuff.
+        upgradeTransaction = null;
+        idbdb = req.result;
+        connections.push(db); // Used for emulating versionchange event on IE/Edge/Safari.
+
+        if (autoSchema) readGlobalSchema();else if (idbdb.objectStoreNames.length > 0) {
+          try {
+            adjustToExistingIndexNames(globalSchema, idbdb.transaction(safariMultiStoreFix(idbdb.objectStoreNames), READONLY));
+          } catch (e) {// Safari may bail out if > 1 store names. However, this shouldnt be a showstopper. Issue #120.
+          }
+        }
+        idbdb.onversionchange = wrap(function (ev) {
+          db._vcFired = true; // detect implementations that not support versionchange (IE/Edge/Safari)
+
+          db.on("versionchange").fire(ev);
+        });
+
+        if (!hasNativeGetDatabaseNames && dbName !== '__dbnames') {
+          dbNamesDB.dbnames.put({
+            name: dbName
+          }).catch(nop);
+        }
+
+        resolve();
+      }, reject);
+    })]).then(function () {
+      // Before finally resolving the dbReadyPromise and this promise,
+      // call and await all on('ready') subscribers:
+      // Dexie.vip() makes subscribers able to use the database while being opened.
+      // This is a must since these subscribers take part of the opening procedure.
+      onReadyBeingFired = [];
+      return Promise.resolve(Dexie.vip(db.on.ready.fire)).then(function fireRemainders() {
+        if (onReadyBeingFired.length > 0) {
+          // In case additional subscribers to db.on('ready') were added during the time db.on.ready.fire was executed.
+          var remainders = onReadyBeingFired.reduce(promisableChain, nop);
+          onReadyBeingFired = [];
+          return Promise.resolve(Dexie.vip(remainders)).then(fireRemainders);
+        }
+      });
+    }).finally(function () {
+      onReadyBeingFired = null;
+    }).then(function () {
+      // Resolve the db.open() with the db instance.
+      isBeingOpened = false;
+      return db;
+    }).catch(function (err) {
+      try {
+        // Did we fail within onupgradeneeded? Make sure to abort the upgrade transaction so it doesnt commit.
+        upgradeTransaction && upgradeTransaction.abort();
+      } catch (e) {}
+
+      isBeingOpened = false; // Set before calling db.close() so that it doesnt reject openCanceller again (leads to unhandled rejection event).
+
+      db.close(); // Closes and resets idbdb, removes connections, resets dbReadyPromise and openCanceller so that a later db.open() is fresh.
+      // A call to db.close() may have made on-ready subscribers fail. Use dbOpenError if set, since err could be a follow-up error on that.
+
+      dbOpenError = err; // Record the error. It will be used to reject further promises of db operations.
+
+      return rejection(dbOpenError);
+    }).finally(function () {
+      openComplete = true;
+      resolveDbReady(); // dbReadyPromise is resolved no matter if open() rejects or resolved. It's just to wake up waiters.
+    });
+  };
+
+  this.close = function () {
+    var idx = connections.indexOf(db);
+    if (idx >= 0) connections.splice(idx, 1);
+
+    if (idbdb) {
+      try {
+        idbdb.close();
+      } catch (e) {}
+
+      idbdb = null;
+    }
+
+    autoOpen = false;
+    dbOpenError = new exceptions.DatabaseClosed();
+    if (isBeingOpened) cancelOpen(dbOpenError); // Reset dbReadyPromise promise:
+
+    dbReadyPromise = new Promise(function (resolve) {
+      dbReadyResolve = resolve;
+    });
+    openCanceller = new Promise(function (_, reject) {
+      cancelOpen = reject;
+    });
+  };
+
+  this.delete = function () {
+    var hasArguments = arguments.length > 0;
+    return new Promise(function (resolve, reject) {
+      if (hasArguments) throw new exceptions.InvalidArgument("Arguments not allowed in db.delete()");
+
+      if (isBeingOpened) {
+        dbReadyPromise.then(doDelete);
+      } else {
+        doDelete();
+      }
+
+      function doDelete() {
+        db.close();
+        var req = indexedDB.deleteDatabase(dbName);
+        req.onsuccess = wrap(function () {
+          if (!hasNativeGetDatabaseNames) {
+            dbNamesDB.dbnames.delete(dbName).catch(nop);
+          }
+
+          resolve();
+        });
+        req.onerror = eventRejectHandler(reject);
+        req.onblocked = fireOnBlocked;
+      }
+    });
+  };
+
+  this.backendDB = function () {
+    return idbdb;
+  };
+
+  this.isOpen = function () {
+    return idbdb !== null;
+  };
+
+  this.hasBeenClosed = function () {
+    return dbOpenError && dbOpenError instanceof exceptions.DatabaseClosed;
+  };
+
+  this.hasFailed = function () {
+    return dbOpenError !== null;
+  };
+
+  this.dynamicallyOpened = function () {
+    return autoSchema;
+  }; //
+  // Properties
+  //
+
+
+  this.name = dbName; // db.tables - an array of all Table instances.
+
+  props(this, {
+    tables: {
+      get: function () {
+        /// <returns type="Array" elementType="Table" />
+        return keys(allTables).map(function (name) {
+          return allTables[name];
+        });
+      }
+    }
+  }); //
+  // Events
+  //
+
+  this.on = Events(this, "populate", "blocked", "versionchange", {
+    ready: [promisableChain, nop]
+  });
+  this.on.ready.subscribe = override(this.on.ready.subscribe, function (subscribe) {
+    return function (subscriber, bSticky) {
+      Dexie.vip(function () {
+        if (openComplete) {
+          // Database already open. Call subscriber asap.
+          if (!dbOpenError) Promise.resolve().then(subscriber); // bSticky: Also subscribe to future open sucesses (after close / reopen) 
+
+          if (bSticky) subscribe(subscriber);
+        } else if (onReadyBeingFired) {
+          // db.on('ready') subscribers are currently being executed and have not yet resolved or rejected
+          onReadyBeingFired.push(subscriber);
+          if (bSticky) subscribe(subscriber);
+        } else {
+          // Database not yet open. Subscribe to it.
+          subscribe(subscriber); // If bSticky is falsy, make sure to unsubscribe subscriber when fired once.
+
+          if (!bSticky) subscribe(function unsubscribe() {
+            db.on.ready.unsubscribe(subscriber);
+            db.on.ready.unsubscribe(unsubscribe);
+          });
+        }
+      });
+    };
+  });
+
+  this.transaction = function () {
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="mode" type="String">"r" for readonly, or "rw" for readwrite</param>
+    /// <param name="tableInstances">Table instance, Array of Table instances, String or String Array of object stores to include in the transaction</param>
+    /// <param name="scopeFunc" type="Function">Function to execute with transaction</param>
+    var args = extractTransactionArgs.apply(this, arguments);
+    return this._transaction.apply(this, args);
+  };
+
+  function extractTransactionArgs(mode, _tableArgs_, scopeFunc) {
+    // Let table arguments be all arguments between mode and last argument.
+    var i = arguments.length;
+    if (i < 2) throw new exceptions.InvalidArgument("Too few arguments"); // Prevent optimzation killer (https://github.com/petkaantonov/bluebird/wiki/Optimization-killers#32-leaking-arguments)
+    // and clone arguments except the first one into local var 'args'.
+
+    var args = new Array(i - 1);
+
+    while (--i) {
+      args[i - 1] = arguments[i];
+    } // Let scopeFunc be the last argument and pop it so that args now only contain the table arguments.
+
+
+    scopeFunc = args.pop();
+    var tables = flatten(args); // Support using array as middle argument, or a mix of arrays and non-arrays.
+
+    return [mode, tables, scopeFunc];
+  }
+
+  this._transaction = function (mode, tables, scopeFunc) {
+    var parentTransaction = PSD.trans; // Check if parent transactions is bound to this db instance, and if caller wants to reuse it
+
+    if (!parentTransaction || parentTransaction.db !== db || mode.indexOf('!') !== -1) parentTransaction = null;
+    var onlyIfCompatible = mode.indexOf('?') !== -1;
+    mode = mode.replace('!', '').replace('?', ''); // Ok. Will change arguments[0] as well but we wont touch arguments henceforth.
+
+    try {
+      //
+      // Get storeNames from arguments. Either through given table instances, or through given table names.
+      //
+      var storeNames = tables.map(function (table) {
+        var storeName = table instanceof Table ? table.name : table;
+        if (typeof storeName !== 'string') throw new TypeError("Invalid table argument to Dexie.transaction(). Only Table or String are allowed");
+        return storeName;
+      }); //
+      // Resolve mode. Allow shortcuts "r" and "rw".
+      //
+
+      if (mode == "r" || mode == READONLY) mode = READONLY;else if (mode == "rw" || mode == READWRITE) mode = READWRITE;else throw new exceptions.InvalidArgument("Invalid transaction mode: " + mode);
+
+      if (parentTransaction) {
+        // Basic checks
+        if (parentTransaction.mode === READONLY && mode === READWRITE) {
+          if (onlyIfCompatible) {
+            // Spawn new transaction instead.
+            parentTransaction = null;
+          } else throw new exceptions.SubTransaction("Cannot enter a sub-transaction with READWRITE mode when parent transaction is READONLY");
+        }
+
+        if (parentTransaction) {
+          storeNames.forEach(function (storeName) {
+            if (parentTransaction && parentTransaction.storeNames.indexOf(storeName) === -1) {
+              if (onlyIfCompatible) {
+                // Spawn new transaction instead.
+                parentTransaction = null;
+              } else throw new exceptions.SubTransaction("Table " + storeName + " not included in parent transaction.");
+            }
+          });
+        }
+
+        if (onlyIfCompatible && parentTransaction && !parentTransaction.active) {
+          // '?' mode should not keep using an inactive transaction.
+          parentTransaction = null;
+        }
+      }
+    } catch (e) {
+      return parentTransaction ? parentTransaction._promise(null, function (_, reject) {
+        reject(e);
+      }) : rejection(e);
+    } // If this is a sub-transaction, lock the parent and then launch the sub-transaction.
+
+
+    return parentTransaction ? parentTransaction._promise(mode, enterTransactionScope, "lock") : PSD.trans ? // no parent transaction despite PSD.trans exists. Make sure also
+    // that the zone we create is not a sub-zone of current, because
+    // Promise.follow() should not wait for it if so.
+    usePSD(PSD.transless, function () {
+      return db._whenReady(enterTransactionScope);
+    }) : db._whenReady(enterTransactionScope);
+
+    function enterTransactionScope() {
+      return Promise.resolve().then(function () {
+        // Keep a pointer to last non-transactional PSD to use if someone calls Dexie.ignoreTransaction().
+        var transless = PSD.transless || PSD; // Our transaction.
+        //return new Promise((resolve, reject) => {
+
+        var trans = db._createTransaction(mode, storeNames, globalSchema, parentTransaction); // Let the transaction instance be part of a Promise-specific data (PSD) value.
+
+
+        var zoneProps = {
+          trans: trans,
+          transless: transless
+        };
+
+        if (parentTransaction) {
+          // Emulate transaction commit awareness for inner transaction (must 'commit' when the inner transaction has no more operations ongoing)
+          trans.idbtrans = parentTransaction.idbtrans;
+        } else {
+          trans.create(); // Create the backend transaction so that complete() or error() will trigger even if no operation is made upon it.
+        } // Support for native async await.
+
+
+        if (scopeFunc.constructor === AsyncFunction) {
+          incrementExpectedAwaits();
+        }
+
+        var returnValue;
+        var promiseFollowed = Promise.follow(function () {
+          // Finally, call the scope function with our table and transaction arguments.
+          returnValue = scopeFunc.call(trans, trans);
+
+          if (returnValue) {
+            if (returnValue.constructor === NativePromise) {
+              var decrementor = decrementExpectedAwaits.bind(null, null);
+              returnValue.then(decrementor, decrementor);
+            } else if (typeof returnValue.next === 'function' && typeof returnValue.throw === 'function') {
+              // scopeFunc returned an iterator with throw-support. Handle yield as await.
+              returnValue = awaitIterator(returnValue);
+            }
+          }
+        }, zoneProps);
+        return (returnValue && typeof returnValue.then === 'function' ? // Promise returned. User uses promise-style transactions.
+        Promise.resolve(returnValue).then(function (x) {
+          return trans.active ? x // Transaction still active. Continue.
+          : rejection(new exceptions.PrematureCommit("Transaction committed too early. See http://bit.ly/2kdckMn"));
+        }) // No promise returned. Wait for all outstanding promises before continuing. 
+        : promiseFollowed.then(function () {
+          return returnValue;
+        })).then(function (x) {
+          // sub transactions don't react to idbtrans.oncomplete. We must trigger a completion:
+          if (parentTransaction) trans._resolve(); // wait for trans._completion
+          // (if root transaction, this means 'complete' event. If sub-transaction, we've just fired it ourselves)
+
+          return trans._completion.then(function () {
+            return x;
+          });
+        }).catch(function (e) {
+          trans._reject(e); // Yes, above then-handler were maybe not called because of an unhandled rejection in scopeFunc!
+
+
+          return rejection(e);
+        });
+      });
+    }
+  };
+
+  this.table = function (tableName) {
+    /// <returns type="Table"></returns>
+    if (!hasOwn(allTables, tableName)) {
+      throw new exceptions.InvalidTable("Table " + tableName + " does not exist");
+    }
+
+    return allTables[tableName];
+  }; //
+  //
+  //
+  // Table Class
+  //
+  //
+  //
+
+
+  function Table(name, tableSchema, optionalTrans) {
+    /// <param name="name" type="String"></param>
+    this.name = name;
+    this.schema = tableSchema;
+    this._tx = optionalTrans;
+    this.hook = allTables[name] ? allTables[name].hook : Events(null, {
+      "creating": [hookCreatingChain, nop],
+      "reading": [pureFunctionChain, mirror],
+      "updating": [hookUpdatingChain, nop],
+      "deleting": [hookDeletingChain, nop]
+    });
+  }
+
+  function BulkErrorHandlerCatchAll(errorList, done, supportHooks) {
+    return (supportHooks ? hookedEventRejectHandler : eventRejectHandler)(function (e) {
+      errorList.push(e);
+      done && done();
+    });
+  }
+
+  function bulkDelete(idbstore, trans, keysOrTuples, hasDeleteHook, deletingHook) {
+    // If hasDeleteHook, keysOrTuples must be an array of tuples: [[key1, value2],[key2,value2],...],
+    // else keysOrTuples must be just an array of keys: [key1, key2, ...].
+    return new Promise(function (resolve, reject) {
+      var len = keysOrTuples.length,
+          lastItem = len - 1;
+      if (len === 0) return resolve();
+
+      if (!hasDeleteHook) {
+        for (var i = 0; i < len; ++i) {
+          var req = idbstore.delete(keysOrTuples[i]);
+          req.onerror = eventRejectHandler(reject);
+          if (i === lastItem) req.onsuccess = wrap(function () {
+            return resolve();
+          });
+        }
+      } else {
+        var hookCtx,
+            errorHandler = hookedEventRejectHandler(reject),
+            successHandler = hookedEventSuccessHandler(null);
+        tryCatch(function () {
+          for (var i = 0; i < len; ++i) {
+            hookCtx = {
+              onsuccess: null,
+              onerror: null
+            };
+            var tuple = keysOrTuples[i];
+            deletingHook.call(hookCtx, tuple[0], tuple[1], trans);
+            var req = idbstore.delete(tuple[0]);
+            req._hookCtx = hookCtx;
+            req.onerror = errorHandler;
+            if (i === lastItem) req.onsuccess = hookedEventSuccessHandler(resolve);else req.onsuccess = successHandler;
+          }
+        }, function (err) {
+          hookCtx.onerror && hookCtx.onerror(err);
+          throw err;
+        });
+      }
+    });
+  }
+
+  props(Table.prototype, {
+    //
+    // Table Protected Methods
+    //
+    _trans: function getTransaction(mode, fn, writeLocked) {
+      var trans = this._tx || PSD.trans;
+      return trans && trans.db === db ? trans === PSD.trans ? trans._promise(mode, fn, writeLocked) : newScope(function () {
+        return trans._promise(mode, fn, writeLocked);
+      }, {
+        trans: trans,
+        transless: PSD.transless || PSD
+      }) : tempTransaction(mode, [this.name], fn);
+    },
+    _idbstore: function getIDBObjectStore(mode, fn, writeLocked) {
+      var tableName = this.name;
+
+      function supplyIdbStore(resolve, reject, trans) {
+        if (trans.storeNames.indexOf(tableName) === -1) throw new exceptions.NotFound("Table" + tableName + " not part of transaction");
+        return fn(resolve, reject, trans.idbtrans.objectStore(tableName), trans);
+      }
+
+      return this._trans(mode, supplyIdbStore, writeLocked);
+    },
+    //
+    // Table Public Methods
+    //
+    get: function (keyOrCrit, cb) {
+      if (keyOrCrit && keyOrCrit.constructor === Object) return this.where(keyOrCrit).first(cb);
+      var self = this;
+      return this._idbstore(READONLY, function (resolve, reject, idbstore) {
+        var req = idbstore.get(keyOrCrit);
+        req.onerror = eventRejectHandler(reject);
+        req.onsuccess = wrap(function () {
+          resolve(self.hook.reading.fire(req.result));
+        }, reject);
+      }).then(cb);
+    },
+    where: function (indexOrCrit) {
+      if (typeof indexOrCrit === 'string') return new WhereClause(this, indexOrCrit);
+      if (isArray(indexOrCrit)) return new WhereClause(this, "[" + indexOrCrit.join('+') + "]"); // indexOrCrit is an object map of {[keyPath]:value} 
+
+      var keyPaths = keys(indexOrCrit);
+      if (keyPaths.length === 1) // Only one critera. This was the easy case:
+        return this.where(keyPaths[0]).equals(indexOrCrit[keyPaths[0]]); // Multiple criterias.
+      // Let's try finding a compound index that matches all keyPaths in
+      // arbritary order:
+
+      var compoundIndex = this.schema.indexes.concat(this.schema.primKey).filter(function (ix) {
+        return ix.compound && keyPaths.every(function (keyPath) {
+          return ix.keyPath.indexOf(keyPath) >= 0;
+        }) && ix.keyPath.every(function (keyPath) {
+          return keyPaths.indexOf(keyPath) >= 0;
+        });
+      })[0];
+      if (compoundIndex && maxKey !== maxString) // Cool! We found such compound index
+        // and this browser supports compound indexes (maxKey !== maxString)!
+        return this.where(compoundIndex.name).equals(compoundIndex.keyPath.map(function (kp) {
+          return indexOrCrit[kp];
+        }));
+      if (!compoundIndex) console.warn("The query " + JSON.stringify(indexOrCrit) + " on " + this.name + " would benefit of a " + ("compound index [" + keyPaths.join('+') + "]")); // Ok, now let's fallback to finding at least one matching index
+      // and filter the rest.
+
+      var idxByName = this.schema.idxByName;
+      var simpleIndex = keyPaths.reduce(function (r, keyPath) {
+        return [r[0] || idxByName[keyPath], r[0] || !idxByName[keyPath] ? combine(r[1], function (x) {
+          return '' + getByKeyPath(x, keyPath) == '' + indexOrCrit[keyPath];
+        }) : r[1]];
+      }, [null, null]);
+      var idx = simpleIndex[0];
+      return idx ? this.where(idx.name).equals(indexOrCrit[idx.keyPath]).filter(simpleIndex[1]) : compoundIndex ? this.filter(simpleIndex[1]) : // Has compound but browser bad. Allow filter.
+      this.where(keyPaths).equals(''); // No index at all. Fail lazily.
+    },
+    count: function (cb) {
+      return this.toCollection().count(cb);
+    },
+    offset: function (offset) {
+      return this.toCollection().offset(offset);
+    },
+    limit: function (numRows) {
+      return this.toCollection().limit(numRows);
+    },
+    reverse: function () {
+      return this.toCollection().reverse();
+    },
+    filter: function (filterFunction) {
+      return this.toCollection().and(filterFunction);
+    },
+    each: function (fn) {
+      return this.toCollection().each(fn);
+    },
+    toArray: function (cb) {
+      return this.toCollection().toArray(cb);
+    },
+    orderBy: function (index) {
+      return new Collection(new WhereClause(this, isArray(index) ? "[" + index.join('+') + "]" : index));
+    },
+    toCollection: function () {
+      return new Collection(new WhereClause(this));
+    },
+    mapToClass: function (constructor, structure) {
+      /// <summary>
+      ///     Map table to a javascript constructor function. Objects returned from the database will be instances of this class, making
+      ///     it possible to the instanceOf operator as well as extending the class using constructor.prototype.method = function(){...}.
+      /// </summary>
+      /// <param name="constructor">Constructor function representing the class.</param>
+      /// <param name="structure" optional="true">Helps IDE code completion by knowing the members that objects contain and not just the indexes. Also
+      /// know what type each member has. Example: {name: String, emailAddresses: [String], password}</param>
+      this.schema.mappedClass = constructor;
+      var instanceTemplate = Object.create(constructor.prototype);
+
+      if (structure) {
+        // structure and instanceTemplate is for IDE code competion only while constructor.prototype is for actual inheritance.
+        applyStructure(instanceTemplate, structure);
+      }
+
+      this.schema.instanceTemplate = instanceTemplate; // Now, subscribe to the when("reading") event to make all objects that come out from this table inherit from given class
+      // no matter which method to use for reading (Table.get() or Table.where(...)... )
+
+      var readHook = function (obj) {
+        if (!obj) return obj; // No valid object. (Value is null). Return as is.
+        // Create a new object that derives from constructor:
+
+        var res = Object.create(constructor.prototype); // Clone members:
+
+        for (var m in obj) {
+          if (hasOwn(obj, m)) try {
+            res[m] = obj[m];
+          } catch (_) {}
+        }
+
+        return res;
+      };
+
+      if (this.schema.readHook) {
+        this.hook.reading.unsubscribe(this.schema.readHook);
+      }
+
+      this.schema.readHook = readHook;
+      this.hook("reading", readHook);
+      return constructor;
+    },
+    defineClass: function (structure) {
+      /// <summary>
+      ///     Define all members of the class that represents the table. This will help code completion of when objects are read from the database
+      ///     as well as making it possible to extend the prototype of the returned constructor function.
+      /// </summary>
+      /// <param name="structure">Helps IDE code completion by knowing the members that objects contain and not just the indexes. Also
+      /// know what type each member has. Example: {name: String, emailAddresses: [String], properties: {shoeSize: Number}}</param>
+      return this.mapToClass(Dexie.defineClass(structure), structure);
+    },
+    bulkDelete: function (keys$$1) {
+      if (this.hook.deleting.fire === nop) {
+        return this._idbstore(READWRITE, function (resolve, reject, idbstore, trans) {
+          resolve(bulkDelete(idbstore, trans, keys$$1, false, nop));
+        });
+      } else {
+        return this.where(':id').anyOf(keys$$1).delete().then(function () {}); // Resolve with undefined.
+      }
+    },
+    bulkPut: function (objects, keys$$1) {
+      var _this = this;
+
+      return this._idbstore(READWRITE, function (resolve, reject, idbstore) {
+        if (!idbstore.keyPath && !_this.schema.primKey.auto && !keys$$1) throw new exceptions.InvalidArgument("bulkPut() with non-inbound keys requires keys array in second argument");
+        if (idbstore.keyPath && keys$$1) throw new exceptions.InvalidArgument("bulkPut(): keys argument invalid on tables with inbound keys");
+        if (keys$$1 && keys$$1.length !== objects.length) throw new exceptions.InvalidArgument("Arguments objects and keys must have the same length");
+        if (objects.length === 0) return resolve(); // Caller provided empty list.
+
+        var done = function (result) {
+          if (errorList.length === 0) resolve(result);else reject(new BulkError(_this.name + ".bulkPut(): " + errorList.length + " of " + numObjs + " operations failed", errorList));
+        };
+
+        var req,
+            errorList = [],
+            errorHandler,
+            numObjs = objects.length,
+            table = _this;
+
+        if (_this.hook.creating.fire === nop && _this.hook.updating.fire === nop) {
+          //
+          // Standard Bulk (no 'creating' or 'updating' hooks to care about)
+          //
+          errorHandler = BulkErrorHandlerCatchAll(errorList);
+
+          for (var i = 0, l = objects.length; i < l; ++i) {
+            req = keys$$1 ? idbstore.put(objects[i], keys$$1[i]) : idbstore.put(objects[i]);
+            req.onerror = errorHandler;
+          } // Only need to catch success or error on the last operation
+          // according to the IDB spec.
+
+
+          req.onerror = BulkErrorHandlerCatchAll(errorList, done);
+          req.onsuccess = eventSuccessHandler(done);
+        } else {
+          var effectiveKeys = keys$$1 || idbstore.keyPath && objects.map(function (o) {
+            return getByKeyPath(o, idbstore.keyPath);
+          }); // Generate map of {[key]: object}
+
+          var objectLookup = effectiveKeys && arrayToObject(effectiveKeys, function (key, i) {
+            return key != null && [key, objects[i]];
+          });
+          var promise = !effectiveKeys ? // Auto-incremented key-less objects only without any keys argument.
+          table.bulkAdd(objects) : // Keys provided. Either as inbound in provided objects, or as a keys argument.
+          // Begin with updating those that exists in DB:
+          table.where(':id').anyOf(effectiveKeys.filter(function (key) {
+            return key != null;
+          })).modify(function () {
+            this.value = objectLookup[this.primKey];
+            objectLookup[this.primKey] = null; // Mark as "don't add this"
+          }).catch(ModifyError, function (e) {
+            errorList = e.failures; // No need to concat here. These are the first errors added.
+          }).then(function () {
+            // Now, let's examine which items didnt exist so we can add them:
+            var objsToAdd = [],
+                keysToAdd = keys$$1 && []; // Iterate backwards. Why? Because if same key was used twice, just add the last one.
+
+            for (var i = effectiveKeys.length - 1; i >= 0; --i) {
+              var key = effectiveKeys[i];
+
+              if (key == null || objectLookup[key]) {
+                objsToAdd.push(objects[i]);
+                keys$$1 && keysToAdd.push(key);
+                if (key != null) objectLookup[key] = null; // Mark as "dont add again"
+              }
+            } // The items are in reverse order so reverse them before adding.
+            // Could be important in order to get auto-incremented keys the way the caller
+            // would expect. Could have used unshift instead of push()/reverse(),
+            // but: http://jsperf.com/unshift-vs-reverse
+
+
+            objsToAdd.reverse();
+            keys$$1 && keysToAdd.reverse();
+            return table.bulkAdd(objsToAdd, keysToAdd);
+          }).then(function (lastAddedKey) {
+            // Resolve with key of the last object in given arguments to bulkPut():
+            var lastEffectiveKey = effectiveKeys[effectiveKeys.length - 1]; // Key was provided.
+
+            return lastEffectiveKey != null ? lastEffectiveKey : lastAddedKey;
+          });
+          promise.then(done).catch(BulkError, function (e) {
+            // Concat failure from ModifyError and reject using our 'done' method.
+            errorList = errorList.concat(e.failures);
+            done();
+          }).catch(reject);
+        }
+      }, "locked"); // If called from transaction scope, lock transaction til all steps are done.
+    },
+    bulkAdd: function (objects, keys$$1) {
+      var self = this,
+          creatingHook = this.hook.creating.fire;
+      return this._idbstore(READWRITE, function (resolve, reject, idbstore, trans) {
+        if (!idbstore.keyPath && !self.schema.primKey.auto && !keys$$1) throw new exceptions.InvalidArgument("bulkAdd() with non-inbound keys requires keys array in second argument");
+        if (idbstore.keyPath && keys$$1) throw new exceptions.InvalidArgument("bulkAdd(): keys argument invalid on tables with inbound keys");
+        if (keys$$1 && keys$$1.length !== objects.length) throw new exceptions.InvalidArgument("Arguments objects and keys must have the same length");
+        if (objects.length === 0) return resolve(); // Caller provided empty list.
+
+        function done(result) {
+          if (errorList.length === 0) resolve(result);else reject(new BulkError(self.name + ".bulkAdd(): " + errorList.length + " of " + numObjs + " operations failed", errorList));
+        }
+
+        var req,
+            errorList = [],
+            errorHandler,
+            successHandler,
+            numObjs = objects.length;
+
+        if (creatingHook !== nop) {
+          //
+          // There are subscribers to hook('creating')
+          // Must behave as documented.
+          //
+          var keyPath = idbstore.keyPath,
+              hookCtx;
+          errorHandler = BulkErrorHandlerCatchAll(errorList, null, true);
+          successHandler = hookedEventSuccessHandler(null);
+          tryCatch(function () {
+            for (var i = 0, l = objects.length; i < l; ++i) {
+              hookCtx = {
+                onerror: null,
+                onsuccess: null
+              };
+              var key = keys$$1 && keys$$1[i];
+              var obj = objects[i],
+                  effectiveKey = keys$$1 ? key : keyPath ? getByKeyPath(obj, keyPath) : undefined,
+                  keyToUse = creatingHook.call(hookCtx, effectiveKey, obj, trans);
+
+              if (effectiveKey == null && keyToUse != null) {
+                if (keyPath) {
+                  obj = deepClone(obj);
+                  setByKeyPath(obj, keyPath, keyToUse);
+                } else {
+                  key = keyToUse;
+                }
+              }
+
+              req = key != null ? idbstore.add(obj, key) : idbstore.add(obj);
+              req._hookCtx = hookCtx;
+
+              if (i < l - 1) {
+                req.onerror = errorHandler;
+                if (hookCtx.onsuccess) req.onsuccess = successHandler;
+              }
+            }
+          }, function (err) {
+            hookCtx.onerror && hookCtx.onerror(err);
+            throw err;
+          });
+          req.onerror = BulkErrorHandlerCatchAll(errorList, done, true);
+          req.onsuccess = hookedEventSuccessHandler(done);
+        } else {
+          //
+          // Standard Bulk (no 'creating' hook to care about)
+          //
+          errorHandler = BulkErrorHandlerCatchAll(errorList);
+
+          for (var i = 0, l = objects.length; i < l; ++i) {
+            req = keys$$1 ? idbstore.add(objects[i], keys$$1[i]) : idbstore.add(objects[i]);
+            req.onerror = errorHandler;
+          } // Only need to catch success or error on the last operation
+          // according to the IDB spec.
+
+
+          req.onerror = BulkErrorHandlerCatchAll(errorList, done);
+          req.onsuccess = eventSuccessHandler(done);
+        }
+      });
+    },
+    add: function (obj, key) {
+      /// <summary>
+      ///   Add an object to the database. In case an object with same primary key already exists, the object will not be added.
+      /// </summary>
+      /// <param name="obj" type="Object">A javascript object to insert</param>
+      /// <param name="key" optional="true">Primary key</param>
+      var creatingHook = this.hook.creating.fire;
+      return this._idbstore(READWRITE, function (resolve, reject, idbstore, trans) {
+        var hookCtx = {
+          onsuccess: null,
+          onerror: null
+        };
+
+        if (creatingHook !== nop) {
+          var effectiveKey = key != null ? key : idbstore.keyPath ? getByKeyPath(obj, idbstore.keyPath) : undefined;
+          var keyToUse = creatingHook.call(hookCtx, effectiveKey, obj, trans); // Allow subscribers to when("creating") to generate the key.
+
+          if (effectiveKey == null && keyToUse != null) {
+            if (idbstore.keyPath) setByKeyPath(obj, idbstore.keyPath, keyToUse);else key = keyToUse;
+          }
+        }
+
+        try {
+          var req = key != null ? idbstore.add(obj, key) : idbstore.add(obj);
+          req._hookCtx = hookCtx;
+          req.onerror = hookedEventRejectHandler(reject);
+          req.onsuccess = hookedEventSuccessHandler(function (result) {
+            // TODO: Remove these two lines in next major release (2.0?)
+            // It's no good practice to have side effects on provided parameters
+            var keyPath = idbstore.keyPath;
+            if (keyPath) setByKeyPath(obj, keyPath, result);
+            resolve(result);
+          });
+        } catch (e) {
+          if (hookCtx.onerror) hookCtx.onerror(e);
+          throw e;
+        }
+      });
+    },
+    put: function (obj, key) {
+      var _this = this; /// <summary>
+      ///   Add an object to the database but in case an object with same primary key alread exists, the existing one will get updated.
+      /// </summary>
+      /// <param name="obj" type="Object">A javascript object to insert or update</param>
+      /// <param name="key" optional="true">Primary key</param>
+
+
+      var creatingHook = this.hook.creating.fire,
+          updatingHook = this.hook.updating.fire;
+
+      if (creatingHook !== nop || updatingHook !== nop) {
+        //
+        // People listens to when("creating") or when("updating") events!
+        // We must know whether the put operation results in an CREATE or UPDATE.
+        //
+        var keyPath = this.schema.primKey.keyPath;
+        var effectiveKey = key !== undefined ? key : keyPath && getByKeyPath(obj, keyPath);
+        if (effectiveKey == null) return this.add(obj); // Since key is optional, make sure we get it from obj if not provided
+        // Primary key exist. Lock transaction and try modifying existing. If nothing modified, call add().
+        // clone obj before this async call. If caller modifies obj the line after put(), the IDB spec requires that it should not affect operation.
+
+        obj = deepClone(obj);
+        return this._trans(READWRITE, function () {
+          return _this.where(":id").equals(effectiveKey).modify(function () {
+            // Replace extisting value with our object
+            // CRUD event firing handled in Collection.modify()
+            this.value = obj;
+          }).then(function (count) {
+            return count === 0 ? _this.add(obj, key) : effectiveKey;
+          });
+        }, "locked"); // Lock needed because operation is splitted into modify() and add().
+      } else {
+        // Use the standard IDB put() method.
+        return this._idbstore(READWRITE, function (resolve, reject, idbstore) {
+          var req = key !== undefined ? idbstore.put(obj, key) : idbstore.put(obj);
+          req.onerror = eventRejectHandler(reject);
+          req.onsuccess = wrap(function (ev) {
+            var keyPath = idbstore.keyPath;
+            if (keyPath) setByKeyPath(obj, keyPath, ev.target.result);
+            resolve(req.result);
+          });
+        });
+      }
+    },
+    'delete': function (key) {
+      /// <param name="key">Primary key of the object to delete</param>
+      if (this.hook.deleting.subscribers.length) {
+        // People listens to when("deleting") event. Must implement delete using Collection.delete() that will
+        // call the CRUD event. Only Collection.delete() will know whether an object was actually deleted.
+        return this.where(":id").equals(key).delete();
+      } else {
+        // No one listens. Use standard IDB delete() method.
+        return this._idbstore(READWRITE, function (resolve, reject, idbstore) {
+          var req = idbstore.delete(key);
+          req.onerror = eventRejectHandler(reject);
+          req.onsuccess = wrap(function () {
+            resolve(req.result);
+          });
+        });
+      }
+    },
+    clear: function () {
+      if (this.hook.deleting.subscribers.length) {
+        // People listens to when("deleting") event. Must implement delete using Collection.delete() that will
+        // call the CRUD event. Only Collection.delete() will knows which objects that are actually deleted.
+        return this.toCollection().delete();
+      } else {
+        return this._idbstore(READWRITE, function (resolve, reject, idbstore) {
+          var req = idbstore.clear();
+          req.onerror = eventRejectHandler(reject);
+          req.onsuccess = wrap(function () {
+            resolve(req.result);
+          });
+        });
+      }
+    },
+    update: function (keyOrObject, modifications) {
+      if (_typeof(modifications) !== 'object' || isArray(modifications)) throw new exceptions.InvalidArgument("Modifications must be an object.");
+
+      if (_typeof(keyOrObject) === 'object' && !isArray(keyOrObject)) {
+        // object to modify. Also modify given object with the modifications:
+        keys(modifications).forEach(function (keyPath) {
+          setByKeyPath(keyOrObject, keyPath, modifications[keyPath]);
+        });
+        var key = getByKeyPath(keyOrObject, this.schema.primKey.keyPath);
+        if (key === undefined) return rejection(new exceptions.InvalidArgument("Given object does not contain its primary key"));
+        return this.where(":id").equals(key).modify(modifications);
+      } else {
+        // key to modify
+        return this.where(":id").equals(keyOrObject).modify(modifications);
+      }
+    }
+  }); //
+  //
+  //
+  // Transaction Class
+  //
+  //
+  //
+
+  function Transaction(mode, storeNames, dbschema, parent) {
+    var _this = this; /// <summary>
+    ///    Transaction class. Represents a database transaction. All operations on db goes through a Transaction.
+    /// </summary>
+    /// <param name="mode" type="String">Any of "readwrite" or "readonly"</param>
+    /// <param name="storeNames" type="Array">Array of table names to operate on</param>
+
+
+    this.db = db;
+    this.mode = mode;
+    this.storeNames = storeNames;
+    this.idbtrans = null;
+    this.on = Events(this, "complete", "error", "abort");
+    this.parent = parent || null;
+    this.active = true;
+    this._reculock = 0;
+    this._blockedFuncs = [];
+    this._resolve = null;
+    this._reject = null;
+    this._waitingFor = null;
+    this._waitingQueue = null;
+    this._spinCount = 0; // Just for debugging waitFor()
+
+    this._completion = new Promise(function (resolve, reject) {
+      _this._resolve = resolve;
+      _this._reject = reject;
+    });
+
+    this._completion.then(function () {
+      _this.active = false;
+
+      _this.on.complete.fire();
+    }, function (e) {
+      var wasActive = _this.active;
+      _this.active = false;
+
+      _this.on.error.fire(e);
+
+      _this.parent ? _this.parent._reject(e) : wasActive && _this.idbtrans && _this.idbtrans.abort();
+      return rejection(e); // Indicate we actually DO NOT catch this error.
+    });
+  }
+
+  props(Transaction.prototype, {
+    //
+    // Transaction Protected Methods (not required by API users, but needed internally and eventually by dexie extensions)
+    //
+    _lock: function () {
+      assert(!PSD.global); // Locking and unlocking reuires to be within a PSD scope.
+      // Temporary set all requests into a pending queue if they are called before database is ready.
+
+      ++this._reculock; // Recursive read/write lock pattern using PSD (Promise Specific Data) instead of TLS (Thread Local Storage)
+
+      if (this._reculock === 1 && !PSD.global) PSD.lockOwnerFor = this;
+      return this;
+    },
+    _unlock: function () {
+      assert(!PSD.global); // Locking and unlocking reuires to be within a PSD scope.
+
+      if (--this._reculock === 0) {
+        if (!PSD.global) PSD.lockOwnerFor = null;
+
+        while (this._blockedFuncs.length > 0 && !this._locked()) {
+          var fnAndPSD = this._blockedFuncs.shift();
+
+          try {
+            usePSD(fnAndPSD[1], fnAndPSD[0]);
+          } catch (e) {}
+        }
+      }
+
+      return this;
+    },
+    _locked: function () {
+      // Checks if any write-lock is applied on this transaction.
+      // To simplify the Dexie API for extension implementations, we support recursive locks.
+      // This is accomplished by using "Promise Specific Data" (PSD).
+      // PSD data is bound to a Promise and any child Promise emitted through then() or resolve( new Promise() ).
+      // PSD is local to code executing on top of the call stacks of any of any code executed by Promise():
+      //         * callback given to the Promise() constructor  (function (resolve, reject){...})
+      //         * callbacks given to then()/catch()/finally() methods (function (value){...})
+      // If creating a new independant Promise instance from within a Promise call stack, the new Promise will derive the PSD from the call stack of the parent Promise.
+      // Derivation is done so that the inner PSD __proto__ points to the outer PSD.
+      // PSD.lockOwnerFor will point to current transaction object if the currently executing PSD scope owns the lock.
+      return this._reculock && PSD.lockOwnerFor !== this;
+    },
+    create: function (idbtrans) {
+      var _this = this;
+
+      if (!this.mode) return this;
+      assert(!this.idbtrans);
+
+      if (!idbtrans && !idbdb) {
+        switch (dbOpenError && dbOpenError.name) {
+          case "DatabaseClosedError":
+            // Errors where it is no difference whether it was caused by the user operation or an earlier call to db.open()
+            throw new exceptions.DatabaseClosed(dbOpenError);
+
+          case "MissingAPIError":
+            // Errors where it is no difference whether it was caused by the user operation or an earlier call to db.open()
+            throw new exceptions.MissingAPI(dbOpenError.message, dbOpenError);
+
+          default:
+            // Make it clear that the user operation was not what caused the error - the error had occurred earlier on db.open()!
+            throw new exceptions.OpenFailed(dbOpenError);
+        }
+      }
+
+      if (!this.active) throw new exceptions.TransactionInactive();
+      assert(this._completion._state === null);
+      idbtrans = this.idbtrans = idbtrans || idbdb.transaction(safariMultiStoreFix(this.storeNames), this.mode);
+      idbtrans.onerror = wrap(function (ev) {
+        preventDefault(ev); // Prohibit default bubbling to window.error
+
+        _this._reject(idbtrans.error);
+      });
+      idbtrans.onabort = wrap(function (ev) {
+        preventDefault(ev);
+        _this.active && _this._reject(new exceptions.Abort(idbtrans.error));
+        _this.active = false;
+
+        _this.on("abort").fire(ev);
+      });
+      idbtrans.oncomplete = wrap(function () {
+        _this.active = false;
+
+        _this._resolve();
+      });
+      return this;
+    },
+    _promise: function (mode, fn, bWriteLock) {
+      var _this = this;
+
+      if (mode === READWRITE && this.mode !== READWRITE) return rejection(new exceptions.ReadOnly("Transaction is readonly"));
+      if (!this.active) return rejection(new exceptions.TransactionInactive());
+
+      if (this._locked()) {
+        return new Promise(function (resolve, reject) {
+          _this._blockedFuncs.push([function () {
+            _this._promise(mode, fn, bWriteLock).then(resolve, reject);
+          }, PSD]);
+        });
+      } else if (bWriteLock) {
+        return newScope(function () {
+          var p = new Promise(function (resolve, reject) {
+            _this._lock();
+
+            var rv = fn(resolve, reject, _this);
+            if (rv && rv.then) rv.then(resolve, reject);
+          });
+          p.finally(function () {
+            return _this._unlock();
+          });
+          p._lib = true;
+          return p;
+        });
+      } else {
+        var p = new Promise(function (resolve, reject) {
+          var rv = fn(resolve, reject, _this);
+          if (rv && rv.then) rv.then(resolve, reject);
+        });
+        p._lib = true;
+        return p;
+      }
+    },
+    _root: function () {
+      return this.parent ? this.parent._root() : this;
+    },
+    waitFor: function (promise) {
+      // Always operate on the root transaction (in case this is a sub stransaction)
+      var root = this._root(); // For stability reasons, convert parameter to promise no matter what type is passed to waitFor().
+      // (We must be able to call .then() on it.)
+
+
+      promise = Promise.resolve(promise);
+
+      if (root._waitingFor) {
+        // Already called waitFor(). Wait for both to complete.
+        root._waitingFor = root._waitingFor.then(function () {
+          return promise;
+        });
+      } else {
+        // We're not in waiting state. Start waiting state.
+        root._waitingFor = promise;
+        root._waitingQueue = []; // Start interacting with indexedDB until promise completes:
+
+        var store = root.idbtrans.objectStore(root.storeNames[0]);
+
+        (function spin() {
+          ++root._spinCount; // For debugging only
+
+          while (root._waitingQueue.length) {
+            root._waitingQueue.shift()();
+          }
+
+          if (root._waitingFor) store.get(-Infinity).onsuccess = spin;
+        })();
+      }
+
+      var currentWaitPromise = root._waitingFor;
+      return new Promise(function (resolve, reject) {
+        promise.then(function (res) {
+          return root._waitingQueue.push(wrap(resolve.bind(null, res)));
+        }, function (err) {
+          return root._waitingQueue.push(wrap(reject.bind(null, err)));
+        }).finally(function () {
+          if (root._waitingFor === currentWaitPromise) {
+            // No one added a wait after us. Safe to stop the spinning.
+            root._waitingFor = null;
+          }
+        });
+      });
+    },
+    //
+    // Transaction Public Properties and Methods
+    //
+    abort: function () {
+      this.active && this._reject(new exceptions.Abort());
+      this.active = false;
+    },
+    tables: {
+      get: deprecated("Transaction.tables", function () {
+        return allTables;
+      })
+    },
+    table: function (name) {
+      var table = db.table(name); // Don't check that table is part of transaction. It must fail lazily!
+
+      return new Table(name, table.schema, this);
+    }
+  }); //
+  //
+  //
+  // WhereClause
+  //
+  //
+  //
+
+  function WhereClause(table, index, orCollection) {
+    /// <param name="table" type="Table"></param>
+    /// <param name="index" type="String" optional="true"></param>
+    /// <param name="orCollection" type="Collection" optional="true"></param>
+    this._ctx = {
+      table: table,
+      index: index === ":id" ? null : index,
+      or: orCollection
+    };
+  }
+
+  props(WhereClause.prototype, function () {
+    // WhereClause private methods
+    function fail(collectionOrWhereClause, err, T) {
+      var collection = collectionOrWhereClause instanceof WhereClause ? new Collection(collectionOrWhereClause) : collectionOrWhereClause;
+      collection._ctx.error = T ? new T(err) : new TypeError(err);
+      return collection;
+    }
+
+    function emptyCollection(whereClause) {
+      return new Collection(whereClause, function () {
+        return IDBKeyRange.only("");
+      }).limit(0);
+    }
+
+    function upperFactory(dir) {
+      return dir === "next" ? function (s) {
+        return s.toUpperCase();
+      } : function (s) {
+        return s.toLowerCase();
+      };
+    }
+
+    function lowerFactory(dir) {
+      return dir === "next" ? function (s) {
+        return s.toLowerCase();
+      } : function (s) {
+        return s.toUpperCase();
+      };
+    }
+
+    function nextCasing(key, lowerKey, upperNeedle, lowerNeedle, cmp, dir) {
+      var length = Math.min(key.length, lowerNeedle.length);
+      var llp = -1;
+
+      for (var i = 0; i < length; ++i) {
+        var lwrKeyChar = lowerKey[i];
+
+        if (lwrKeyChar !== lowerNeedle[i]) {
+          if (cmp(key[i], upperNeedle[i]) < 0) return key.substr(0, i) + upperNeedle[i] + upperNeedle.substr(i + 1);
+          if (cmp(key[i], lowerNeedle[i]) < 0) return key.substr(0, i) + lowerNeedle[i] + upperNeedle.substr(i + 1);
+          if (llp >= 0) return key.substr(0, llp) + lowerKey[llp] + upperNeedle.substr(llp + 1);
+          return null;
+        }
+
+        if (cmp(key[i], lwrKeyChar) < 0) llp = i;
+      }
+
+      if (length < lowerNeedle.length && dir === "next") return key + upperNeedle.substr(key.length);
+      if (length < key.length && dir === "prev") return key.substr(0, upperNeedle.length);
+      return llp < 0 ? null : key.substr(0, llp) + lowerNeedle[llp] + upperNeedle.substr(llp + 1);
+    }
+
+    function addIgnoreCaseAlgorithm(whereClause, match, needles, suffix) {
+      /// <param name="needles" type="Array" elementType="String"></param>
+      var upper,
+          lower,
+          compare,
+          upperNeedles,
+          lowerNeedles,
+          direction,
+          nextKeySuffix,
+          needlesLen = needles.length;
+
+      if (!needles.every(function (s) {
+        return typeof s === 'string';
+      })) {
+        return fail(whereClause, STRING_EXPECTED);
+      }
+
+      function initDirection(dir) {
+        upper = upperFactory(dir);
+        lower = lowerFactory(dir);
+        compare = dir === "next" ? simpleCompare : simpleCompareReverse;
+        var needleBounds = needles.map(function (needle) {
+          return {
+            lower: lower(needle),
+            upper: upper(needle)
+          };
+        }).sort(function (a, b) {
+          return compare(a.lower, b.lower);
+        });
+        upperNeedles = needleBounds.map(function (nb) {
+          return nb.upper;
+        });
+        lowerNeedles = needleBounds.map(function (nb) {
+          return nb.lower;
+        });
+        direction = dir;
+        nextKeySuffix = dir === "next" ? "" : suffix;
+      }
+
+      initDirection("next");
+      var c = new Collection(whereClause, function () {
+        return IDBKeyRange.bound(upperNeedles[0], lowerNeedles[needlesLen - 1] + suffix);
+      });
+
+      c._ondirectionchange = function (direction) {
+        // This event onlys occur before filter is called the first time.
+        initDirection(direction);
+      };
+
+      var firstPossibleNeedle = 0;
+
+      c._addAlgorithm(function (cursor, advance, resolve) {
+        /// <param name="cursor" type="IDBCursor"></param>
+        /// <param name="advance" type="Function"></param>
+        /// <param name="resolve" type="Function"></param>
+        var key = cursor.key;
+        if (typeof key !== 'string') return false;
+        var lowerKey = lower(key);
+
+        if (match(lowerKey, lowerNeedles, firstPossibleNeedle)) {
+          return true;
+        } else {
+          var lowestPossibleCasing = null;
+
+          for (var i = firstPossibleNeedle; i < needlesLen; ++i) {
+            var casing = nextCasing(key, lowerKey, upperNeedles[i], lowerNeedles[i], compare, direction);
+            if (casing === null && lowestPossibleCasing === null) firstPossibleNeedle = i + 1;else if (lowestPossibleCasing === null || compare(lowestPossibleCasing, casing) > 0) {
+              lowestPossibleCasing = casing;
+            }
+          }
+
+          if (lowestPossibleCasing !== null) {
+            advance(function () {
+              cursor.continue(lowestPossibleCasing + nextKeySuffix);
+            });
+          } else {
+            advance(resolve);
+          }
+
+          return false;
+        }
+      });
+
+      return c;
+    } //
+    // WhereClause public methods
+    //
+
+
+    return {
+      between: function (lower, upper, includeLower, includeUpper) {
+        /// <summary>
+        ///     Filter out records whose where-field lays between given lower and upper values. Applies to Strings, Numbers and Dates.
+        /// </summary>
+        /// <param name="lower"></param>
+        /// <param name="upper"></param>
+        /// <param name="includeLower" optional="true">Whether items that equals lower should be included. Default true.</param>
+        /// <param name="includeUpper" optional="true">Whether items that equals upper should be included. Default false.</param>
+        /// <returns type="Collection"></returns>
+        includeLower = includeLower !== false; // Default to true
+
+        includeUpper = includeUpper === true; // Default to false
+
+        try {
+          if (cmp(lower, upper) > 0 || cmp(lower, upper) === 0 && (includeLower || includeUpper) && !(includeLower && includeUpper)) return emptyCollection(this); // Workaround for idiotic W3C Specification that DataError must be thrown if lower > upper. The natural result would be to return an empty collection.
+
+          return new Collection(this, function () {
+            return IDBKeyRange.bound(lower, upper, !includeLower, !includeUpper);
+          });
+        } catch (e) {
+          return fail(this, INVALID_KEY_ARGUMENT);
+        }
+      },
+      equals: function (value) {
+        return new Collection(this, function () {
+          return IDBKeyRange.only(value);
+        });
+      },
+      above: function (value) {
+        return new Collection(this, function () {
+          return IDBKeyRange.lowerBound(value, true);
+        });
+      },
+      aboveOrEqual: function (value) {
+        return new Collection(this, function () {
+          return IDBKeyRange.lowerBound(value);
+        });
+      },
+      below: function (value) {
+        return new Collection(this, function () {
+          return IDBKeyRange.upperBound(value, true);
+        });
+      },
+      belowOrEqual: function (value) {
+        return new Collection(this, function () {
+          return IDBKeyRange.upperBound(value);
+        });
+      },
+      startsWith: function (str) {
+        /// <param name="str" type="String"></param>
+        if (typeof str !== 'string') return fail(this, STRING_EXPECTED);
+        return this.between(str, str + maxString, true, true);
+      },
+      startsWithIgnoreCase: function (str) {
+        /// <param name="str" type="String"></param>
+        if (str === "") return this.startsWith(str);
+        return addIgnoreCaseAlgorithm(this, function (x, a) {
+          return x.indexOf(a[0]) === 0;
+        }, [str], maxString);
+      },
+      equalsIgnoreCase: function (str) {
+        /// <param name="str" type="String"></param>
+        return addIgnoreCaseAlgorithm(this, function (x, a) {
+          return x === a[0];
+        }, [str], "");
+      },
+      anyOfIgnoreCase: function () {
+        var set = getArrayOf.apply(NO_CHAR_ARRAY, arguments);
+        if (set.length === 0) return emptyCollection(this);
+        return addIgnoreCaseAlgorithm(this, function (x, a) {
+          return a.indexOf(x) !== -1;
+        }, set, "");
+      },
+      startsWithAnyOfIgnoreCase: function () {
+        var set = getArrayOf.apply(NO_CHAR_ARRAY, arguments);
+        if (set.length === 0) return emptyCollection(this);
+        return addIgnoreCaseAlgorithm(this, function (x, a) {
+          return a.some(function (n) {
+            return x.indexOf(n) === 0;
+          });
+        }, set, maxString);
+      },
+      anyOf: function () {
+        var set = getArrayOf.apply(NO_CHAR_ARRAY, arguments);
+        var compare = ascending;
+
+        try {
+          set.sort(compare);
+        } catch (e) {
+          return fail(this, INVALID_KEY_ARGUMENT);
+        }
+
+        if (set.length === 0) return emptyCollection(this);
+        var c = new Collection(this, function () {
+          return IDBKeyRange.bound(set[0], set[set.length - 1]);
+        });
+
+        c._ondirectionchange = function (direction) {
+          compare = direction === "next" ? ascending : descending;
+          set.sort(compare);
+        };
+
+        var i = 0;
+
+        c._addAlgorithm(function (cursor, advance, resolve) {
+          var key = cursor.key;
+
+          while (compare(key, set[i]) > 0) {
+            // The cursor has passed beyond this key. Check next.
+            ++i;
+
+            if (i === set.length) {
+              // There is no next. Stop searching.
+              advance(resolve);
+              return false;
+            }
+          }
+
+          if (compare(key, set[i]) === 0) {
+            // The current cursor value should be included and we should continue a single step in case next item has the same key or possibly our next key in set.
+            return true;
+          } else {
+            // cursor.key not yet at set[i]. Forward cursor to the next key to hunt for.
+            advance(function () {
+              cursor.continue(set[i]);
+            });
+            return false;
+          }
+        });
+
+        return c;
+      },
+      notEqual: function (value) {
+        return this.inAnyRange([[minKey, value], [value, maxKey]], {
+          includeLowers: false,
+          includeUppers: false
+        });
+      },
+      noneOf: function () {
+        var set = getArrayOf.apply(NO_CHAR_ARRAY, arguments);
+        if (set.length === 0) return new Collection(this); // Return entire collection.
+
+        try {
+          set.sort(ascending);
+        } catch (e) {
+          return fail(this, INVALID_KEY_ARGUMENT);
+        } // Transform ["a","b","c"] to a set of ranges for between/above/below: [[minKey,"a"], ["a","b"], ["b","c"], ["c",maxKey]]
+
+
+        var ranges = set.reduce(function (res, val) {
+          return res ? res.concat([[res[res.length - 1][1], val]]) : [[minKey, val]];
+        }, null);
+        ranges.push([set[set.length - 1], maxKey]);
+        return this.inAnyRange(ranges, {
+          includeLowers: false,
+          includeUppers: false
+        });
+      },
+
+      /** Filter out values withing given set of ranges.
+      * Example, give children and elders a rebate of 50%:
+      *
+      *   db.friends.where('age').inAnyRange([[0,18],[65,Infinity]]).modify({Rebate: 1/2});
+      *
+      * @param {(string|number|Date|Array)[][]} ranges
+      * @param {{includeLowers: boolean, includeUppers: boolean}} options
+      */
+      inAnyRange: function (ranges, options) {
+        if (ranges.length === 0) return emptyCollection(this);
+
+        if (!ranges.every(function (range) {
+          return range[0] !== undefined && range[1] !== undefined && ascending(range[0], range[1]) <= 0;
+        })) {
+          return fail(this, "First argument to inAnyRange() must be an Array of two-value Arrays [lower,upper] where upper must not be lower than lower", exceptions.InvalidArgument);
+        }
+
+        var includeLowers = !options || options.includeLowers !== false; // Default to true
+
+        var includeUppers = options && options.includeUppers === true; // Default to false
+
+        function addRange(ranges, newRange) {
+          for (var i = 0, l = ranges.length; i < l; ++i) {
+            var range = ranges[i];
+
+            if (cmp(newRange[0], range[1]) < 0 && cmp(newRange[1], range[0]) > 0) {
+              range[0] = min(range[0], newRange[0]);
+              range[1] = max(range[1], newRange[1]);
+              break;
+            }
+          }
+
+          if (i === l) ranges.push(newRange);
+          return ranges;
+        }
+
+        var sortDirection = ascending;
+
+        function rangeSorter(a, b) {
+          return sortDirection(a[0], b[0]);
+        } // Join overlapping ranges
+
+
+        var set;
+
+        try {
+          set = ranges.reduce(addRange, []);
+          set.sort(rangeSorter);
+        } catch (ex) {
+          return fail(this, INVALID_KEY_ARGUMENT);
+        }
+
+        var i = 0;
+        var keyIsBeyondCurrentEntry = includeUppers ? function (key) {
+          return ascending(key, set[i][1]) > 0;
+        } : function (key) {
+          return ascending(key, set[i][1]) >= 0;
+        };
+        var keyIsBeforeCurrentEntry = includeLowers ? function (key) {
+          return descending(key, set[i][0]) > 0;
+        } : function (key) {
+          return descending(key, set[i][0]) >= 0;
+        };
+
+        function keyWithinCurrentRange(key) {
+          return !keyIsBeyondCurrentEntry(key) && !keyIsBeforeCurrentEntry(key);
+        }
+
+        var checkKey = keyIsBeyondCurrentEntry;
+        var c = new Collection(this, function () {
+          return IDBKeyRange.bound(set[0][0], set[set.length - 1][1], !includeLowers, !includeUppers);
+        });
+
+        c._ondirectionchange = function (direction) {
+          if (direction === "next") {
+            checkKey = keyIsBeyondCurrentEntry;
+            sortDirection = ascending;
+          } else {
+            checkKey = keyIsBeforeCurrentEntry;
+            sortDirection = descending;
+          }
+
+          set.sort(rangeSorter);
+        };
+
+        c._addAlgorithm(function (cursor, advance, resolve) {
+          var key = cursor.key;
+
+          while (checkKey(key)) {
+            // The cursor has passed beyond this key. Check next.
+            ++i;
+
+            if (i === set.length) {
+              // There is no next. Stop searching.
+              advance(resolve);
+              return false;
+            }
+          }
+
+          if (keyWithinCurrentRange(key)) {
+            // The current cursor value should be included and we should continue a single step in case next item has the same key or possibly our next key in set.
+            return true;
+          } else if (cmp(key, set[i][1]) === 0 || cmp(key, set[i][0]) === 0) {
+            // includeUpper or includeLower is false so keyWithinCurrentRange() returns false even though we are at range border.
+            // Continue to next key but don't include this one.
+            return false;
+          } else {
+            // cursor.key not yet at set[i]. Forward cursor to the next key to hunt for.
+            advance(function () {
+              if (sortDirection === ascending) cursor.continue(set[i][0]);else cursor.continue(set[i][1]);
+            });
+            return false;
+          }
+        });
+
+        return c;
+      },
+      startsWithAnyOf: function () {
+        var set = getArrayOf.apply(NO_CHAR_ARRAY, arguments);
+
+        if (!set.every(function (s) {
+          return typeof s === 'string';
+        })) {
+          return fail(this, "startsWithAnyOf() only works with strings");
+        }
+
+        if (set.length === 0) return emptyCollection(this);
+        return this.inAnyRange(set.map(function (str) {
+          return [str, str + maxString];
+        }));
+      }
+    };
+  }); //
+  //
+  //
+  // Collection Class
+  //
+  //
+  //
+
+  function Collection(whereClause, keyRangeGenerator) {
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="whereClause" type="WhereClause">Where clause instance</param>
+    /// <param name="keyRangeGenerator" value="function(){ return IDBKeyRange.bound(0,1);}" optional="true"></param>
+    var keyRange = null,
+        error = null;
+    if (keyRangeGenerator) try {
+      keyRange = keyRangeGenerator();
+    } catch (ex) {
+      error = ex;
+    }
+    var whereCtx = whereClause._ctx,
+        table = whereCtx.table;
+    this._ctx = {
+      table: table,
+      index: whereCtx.index,
+      isPrimKey: !whereCtx.index || table.schema.primKey.keyPath && whereCtx.index === table.schema.primKey.name,
+      range: keyRange,
+      keysOnly: false,
+      dir: "next",
+      unique: "",
+      algorithm: null,
+      filter: null,
+      replayFilter: null,
+      justLimit: true,
+      isMatch: null,
+      offset: 0,
+      limit: Infinity,
+      error: error,
+      or: whereCtx.or,
+      valueMapper: table.hook.reading.fire
+    };
+  }
+
+  function isPlainKeyRange(ctx, ignoreLimitFilter) {
+    return !(ctx.filter || ctx.algorithm || ctx.or) && (ignoreLimitFilter ? ctx.justLimit : !ctx.replayFilter);
+  }
+
+  props(Collection.prototype, function () {
+    //
+    // Collection Private Functions
+    //
+    function addFilter(ctx, fn) {
+      ctx.filter = combine(ctx.filter, fn);
+    }
+
+    function addReplayFilter(ctx, factory, isLimitFilter) {
+      var curr = ctx.replayFilter;
+      ctx.replayFilter = curr ? function () {
+        return combine(curr(), factory());
+      } : factory;
+      ctx.justLimit = isLimitFilter && !curr;
+    }
+
+    function addMatchFilter(ctx, fn) {
+      ctx.isMatch = combine(ctx.isMatch, fn);
+    }
+    /** @param ctx {
+     *      isPrimKey: boolean,
+     *      table: Table,
+     *      index: string
+     * }
+     * @param store IDBObjectStore
+     **/
+
+
+    function getIndexOrStore(ctx, store) {
+      if (ctx.isPrimKey) return store;
+      var indexSpec = ctx.table.schema.idxByName[ctx.index];
+      if (!indexSpec) throw new exceptions.Schema("KeyPath " + ctx.index + " on object store " + store.name + " is not indexed");
+      return store.index(indexSpec.name);
+    }
+    /** @param ctx {
+     *      isPrimKey: boolean,
+     *      table: Table,
+     *      index: string,
+     *      keysOnly: boolean,
+     *      range?: IDBKeyRange,
+     *      dir: "next" | "prev"
+     * }
+     */
+
+
+    function openCursor(ctx, store) {
+      var idxOrStore = getIndexOrStore(ctx, store);
+      return ctx.keysOnly && 'openKeyCursor' in idxOrStore ? idxOrStore.openKeyCursor(ctx.range || null, ctx.dir + ctx.unique) : idxOrStore.openCursor(ctx.range || null, ctx.dir + ctx.unique);
+    }
+
+    function iter(ctx, fn, resolve, reject, idbstore) {
+      var filter = ctx.replayFilter ? combine(ctx.filter, ctx.replayFilter()) : ctx.filter;
+
+      if (!ctx.or) {
+        iterate(openCursor(ctx, idbstore), combine(ctx.algorithm, filter), fn, resolve, reject, !ctx.keysOnly && ctx.valueMapper);
+      } else (function () {
+        var set = {};
+        var resolved = 0;
+
+        function resolveboth() {
+          if (++resolved === 2) resolve(); // Seems like we just support or btwn max 2 expressions, but there are no limit because we do recursion.
+        }
+
+        function union(item, cursor, advance) {
+          if (!filter || filter(cursor, advance, resolveboth, reject)) {
+            var primaryKey = cursor.primaryKey;
+            var key = '' + primaryKey;
+            if (key === '[object ArrayBuffer]') key = '' + new Uint8Array(primaryKey);
+
+            if (!hasOwn(set, key)) {
+              set[key] = true;
+              fn(item, cursor, advance);
+            }
+          }
+        }
+
+        ctx.or._iterate(union, resolveboth, reject, idbstore);
+
+        iterate(openCursor(ctx, idbstore), ctx.algorithm, union, resolveboth, reject, !ctx.keysOnly && ctx.valueMapper);
+      })();
+    }
+
+    return {
+      //
+      // Collection Protected Functions
+      //
+      _read: function (fn, cb) {
+        var ctx = this._ctx;
+        return ctx.error ? ctx.table._trans(null, rejection.bind(null, ctx.error)) : ctx.table._idbstore(READONLY, fn).then(cb);
+      },
+      _write: function (fn) {
+        var ctx = this._ctx;
+        return ctx.error ? ctx.table._trans(null, rejection.bind(null, ctx.error)) : ctx.table._idbstore(READWRITE, fn, "locked"); // When doing write operations on collections, always lock the operation so that upcoming operations gets queued.
+      },
+      _addAlgorithm: function (fn) {
+        var ctx = this._ctx;
+        ctx.algorithm = combine(ctx.algorithm, fn);
+      },
+      _iterate: function (fn, resolve, reject, idbstore) {
+        return iter(this._ctx, fn, resolve, reject, idbstore);
+      },
+      clone: function (props$$1) {
+        var rv = Object.create(this.constructor.prototype),
+            ctx = Object.create(this._ctx);
+        if (props$$1) extend(ctx, props$$1);
+        rv._ctx = ctx;
+        return rv;
+      },
+      raw: function () {
+        this._ctx.valueMapper = null;
+        return this;
+      },
+      //
+      // Collection Public methods
+      //
+      each: function (fn) {
+        var ctx = this._ctx;
+        return this._read(function (resolve, reject, idbstore) {
+          iter(ctx, fn, resolve, reject, idbstore);
+        });
+      },
+      count: function (cb) {
+        var ctx = this._ctx;
+
+        if (isPlainKeyRange(ctx, true)) {
+          // This is a plain key range. We can use the count() method if the index.
+          return this._read(function (resolve, reject, idbstore) {
+            var idx = getIndexOrStore(ctx, idbstore);
+            var req = ctx.range ? idx.count(ctx.range) : idx.count();
+            req.onerror = eventRejectHandler(reject);
+
+            req.onsuccess = function (e) {
+              resolve(Math.min(e.target.result, ctx.limit));
+            };
+          }, cb);
+        } else {
+          // Algorithms, filters or expressions are applied. Need to count manually.
+          var count = 0;
+          return this._read(function (resolve, reject, idbstore) {
+            iter(ctx, function () {
+              ++count;
+              return false;
+            }, function () {
+              resolve(count);
+            }, reject, idbstore);
+          }, cb);
+        }
+      },
+      sortBy: function (keyPath, cb) {
+        /// <param name="keyPath" type="String"></param>
+        var parts = keyPath.split('.').reverse(),
+            lastPart = parts[0],
+            lastIndex = parts.length - 1;
+
+        function getval(obj, i) {
+          if (i) return getval(obj[parts[i]], i - 1);
+          return obj[lastPart];
+        }
+
+        var order = this._ctx.dir === "next" ? 1 : -1;
+
+        function sorter(a, b) {
+          var aVal = getval(a, lastIndex),
+              bVal = getval(b, lastIndex);
+          return aVal < bVal ? -order : aVal > bVal ? order : 0;
+        }
+
+        return this.toArray(function (a) {
+          return a.sort(sorter);
+        }).then(cb);
+      },
+      toArray: function (cb) {
+        var ctx = this._ctx;
+        return this._read(function (resolve, reject, idbstore) {
+          if (hasGetAll && ctx.dir === 'next' && isPlainKeyRange(ctx, true) && ctx.limit > 0) {
+            // Special optimation if we could use IDBObjectStore.getAll() or
+            // IDBKeyRange.getAll():
+            var readingHook = ctx.table.hook.reading.fire;
+            var idxOrStore = getIndexOrStore(ctx, idbstore);
+            var req = ctx.limit < Infinity ? idxOrStore.getAll(ctx.range, ctx.limit) : idxOrStore.getAll(ctx.range);
+            req.onerror = eventRejectHandler(reject);
+            req.onsuccess = readingHook === mirror ? eventSuccessHandler(resolve) : eventSuccessHandler(function (res) {
+              try {
+                resolve(res.map(readingHook));
+              } catch (e) {
+                reject(e);
+              }
+            });
+          } else {
+            // Getting array through a cursor.
+            var a = [];
+            iter(ctx, function (item) {
+              a.push(item);
+            }, function arrayComplete() {
+              resolve(a);
+            }, reject, idbstore);
+          }
+        }, cb);
+      },
+      offset: function (offset) {
+        var ctx = this._ctx;
+        if (offset <= 0) return this;
+        ctx.offset += offset; // For count()
+
+        if (isPlainKeyRange(ctx)) {
+          addReplayFilter(ctx, function () {
+            var offsetLeft = offset;
+            return function (cursor, advance) {
+              if (offsetLeft === 0) return true;
+
+              if (offsetLeft === 1) {
+                --offsetLeft;
+                return false;
+              }
+
+              advance(function () {
+                cursor.advance(offsetLeft);
+                offsetLeft = 0;
+              });
+              return false;
+            };
+          });
+        } else {
+          addReplayFilter(ctx, function () {
+            var offsetLeft = offset;
+            return function () {
+              return --offsetLeft < 0;
+            };
+          });
+        }
+
+        return this;
+      },
+      limit: function (numRows) {
+        this._ctx.limit = Math.min(this._ctx.limit, numRows); // For count()
+
+        addReplayFilter(this._ctx, function () {
+          var rowsLeft = numRows;
+          return function (cursor, advance, resolve) {
+            if (--rowsLeft <= 0) advance(resolve); // Stop after this item has been included
+
+            return rowsLeft >= 0; // If numRows is already below 0, return false because then 0 was passed to numRows initially. Otherwise we wouldnt come here.
+          };
+        }, true);
+        return this;
+      },
+      until: function (filterFunction, bIncludeStopEntry) {
+        addFilter(this._ctx, function (cursor, advance, resolve) {
+          if (filterFunction(cursor.value)) {
+            advance(resolve);
+            return bIncludeStopEntry;
+          } else {
+            return true;
+          }
+        });
+        return this;
+      },
+      first: function (cb) {
+        return this.limit(1).toArray(function (a) {
+          return a[0];
+        }).then(cb);
+      },
+      last: function (cb) {
+        return this.reverse().first(cb);
+      },
+      filter: function (filterFunction) {
+        /// <param name="jsFunctionFilter" type="Function">function(val){return true/false}</param>
+        addFilter(this._ctx, function (cursor) {
+          return filterFunction(cursor.value);
+        }); // match filters not used in Dexie.js but can be used by 3rd part libraries to test a
+        // collection for a match without querying DB. Used by Dexie.Observable.
+
+        addMatchFilter(this._ctx, filterFunction);
+        return this;
+      },
+      and: function (filterFunction) {
+        return this.filter(filterFunction);
+      },
+      or: function (indexName) {
+        return new WhereClause(this._ctx.table, indexName, this);
+      },
+      reverse: function () {
+        this._ctx.dir = this._ctx.dir === "prev" ? "next" : "prev";
+        if (this._ondirectionchange) this._ondirectionchange(this._ctx.dir);
+        return this;
+      },
+      desc: function () {
+        return this.reverse();
+      },
+      eachKey: function (cb) {
+        var ctx = this._ctx;
+        ctx.keysOnly = !ctx.isMatch;
+        return this.each(function (val, cursor) {
+          cb(cursor.key, cursor);
+        });
+      },
+      eachUniqueKey: function (cb) {
+        this._ctx.unique = "unique";
+        return this.eachKey(cb);
+      },
+      eachPrimaryKey: function (cb) {
+        var ctx = this._ctx;
+        ctx.keysOnly = !ctx.isMatch;
+        return this.each(function (val, cursor) {
+          cb(cursor.primaryKey, cursor);
+        });
+      },
+      keys: function (cb) {
+        var ctx = this._ctx;
+        ctx.keysOnly = !ctx.isMatch;
+        var a = [];
+        return this.each(function (item, cursor) {
+          a.push(cursor.key);
+        }).then(function () {
+          return a;
+        }).then(cb);
+      },
+      primaryKeys: function (cb) {
+        var ctx = this._ctx;
+
+        if (hasGetAll && ctx.dir === 'next' && isPlainKeyRange(ctx, true) && ctx.limit > 0) {
+          // Special optimation if we could use IDBObjectStore.getAllKeys() or
+          // IDBKeyRange.getAllKeys():
+          return this._read(function (resolve, reject, idbstore) {
+            var idxOrStore = getIndexOrStore(ctx, idbstore);
+            var req = ctx.limit < Infinity ? idxOrStore.getAllKeys(ctx.range, ctx.limit) : idxOrStore.getAllKeys(ctx.range);
+            req.onerror = eventRejectHandler(reject);
+            req.onsuccess = eventSuccessHandler(resolve);
+          }).then(cb);
+        }
+
+        ctx.keysOnly = !ctx.isMatch;
+        var a = [];
+        return this.each(function (item, cursor) {
+          a.push(cursor.primaryKey);
+        }).then(function () {
+          return a;
+        }).then(cb);
+      },
+      uniqueKeys: function (cb) {
+        this._ctx.unique = "unique";
+        return this.keys(cb);
+      },
+      firstKey: function (cb) {
+        return this.limit(1).keys(function (a) {
+          return a[0];
+        }).then(cb);
+      },
+      lastKey: function (cb) {
+        return this.reverse().firstKey(cb);
+      },
+      distinct: function () {
+        var ctx = this._ctx,
+            idx = ctx.index && ctx.table.schema.idxByName[ctx.index];
+        if (!idx || !idx.multi) return this; // distinct() only makes differencies on multiEntry indexes.
+
+        var set = {};
+        addFilter(this._ctx, function (cursor) {
+          var strKey = cursor.primaryKey.toString(); // Converts any Date to String, String to String, Number to String and Array to comma-separated string
+
+          var found = hasOwn(set, strKey);
+          set[strKey] = true;
+          return !found;
+        });
+        return this;
+      },
+      //
+      // Methods that mutate storage
+      //
+      modify: function (changes) {
+        var self = this,
+            ctx = this._ctx,
+            hook = ctx.table.hook,
+            updatingHook = hook.updating.fire,
+            deletingHook = hook.deleting.fire;
+        return this._write(function (resolve, reject, idbstore, trans) {
+          var modifyer;
+
+          if (typeof changes === 'function') {
+            // Changes is a function that may update, add or delete propterties or even require a deletion the object itself (delete this.item)
+            if (updatingHook === nop && deletingHook === nop) {
+              // Noone cares about what is being changed. Just let the modifier function be the given argument as is.
+              modifyer = changes;
+            } else {
+              // People want to know exactly what is being modified or deleted.
+              // Let modifyer be a proxy function that finds out what changes the caller is actually doing
+              // and call the hooks accordingly!
+              modifyer = function (item) {
+                var origItem = deepClone(item); // Clone the item first so we can compare laters.
+
+                if (changes.call(this, item, this) === false) return false; // Call the real modifyer function (If it returns false explicitely, it means it dont want to modify anyting on this object)
+
+                if (!hasOwn(this, "value")) {
+                  // The real modifyer function requests a deletion of the object. Inform the deletingHook that a deletion is taking place.
+                  deletingHook.call(this, this.primKey, item, trans);
+                } else {
+                  // No deletion. Check what was changed
+                  var objectDiff = getObjectDiff(origItem, this.value);
+                  var additionalChanges = updatingHook.call(this, objectDiff, this.primKey, origItem, trans);
+
+                  if (additionalChanges) {
+                    // Hook want to apply additional modifications. Make sure to fullfill the will of the hook.
+                    item = this.value;
+                    keys(additionalChanges).forEach(function (keyPath) {
+                      setByKeyPath(item, keyPath, additionalChanges[keyPath]); // Adding {keyPath: undefined} means that the keyPath should be deleted. Handled by setByKeyPath
+                    });
+                  }
+                }
+              };
+            }
+          } else if (updatingHook === nop) {
+            // changes is a set of {keyPath: value} and no one is listening to the updating hook.
+            var keyPaths = keys(changes);
+            var numKeys = keyPaths.length;
+
+            modifyer = function (item) {
+              var anythingModified = false;
+
+              for (var i = 0; i < numKeys; ++i) {
+                var keyPath = keyPaths[i],
+                    val = changes[keyPath];
+
+                if (getByKeyPath(item, keyPath) !== val) {
+                  setByKeyPath(item, keyPath, val); // Adding {keyPath: undefined} means that the keyPath should be deleted. Handled by setByKeyPath
+
+                  anythingModified = true;
+                }
+              }
+
+              return anythingModified;
+            };
+          } else {
+            // changes is a set of {keyPath: value} and people are listening to the updating hook so we need to call it and
+            // allow it to add additional modifications to make.
+            var origChanges = changes;
+            changes = shallowClone(origChanges); // Let's work with a clone of the changes keyPath/value set so that we can restore it in case a hook extends it.
+
+            modifyer = function (item) {
+              var anythingModified = false;
+              var additionalChanges = updatingHook.call(this, changes, this.primKey, deepClone(item), trans);
+              if (additionalChanges) extend(changes, additionalChanges);
+              keys(changes).forEach(function (keyPath) {
+                var val = changes[keyPath];
+
+                if (getByKeyPath(item, keyPath) !== val) {
+                  setByKeyPath(item, keyPath, val);
+                  anythingModified = true;
+                }
+              });
+              if (additionalChanges) changes = shallowClone(origChanges); // Restore original changes for next iteration
+
+              return anythingModified;
+            };
+          }
+
+          var count = 0;
+          var successCount = 0;
+          var iterationComplete = false;
+          var failures = [];
+          var failKeys = [];
+          var currentKey = null;
+
+          function modifyItem(item, cursor) {
+            currentKey = cursor.primaryKey;
+            var thisContext = {
+              primKey: cursor.primaryKey,
+              value: item,
+              onsuccess: null,
+              onerror: null
+            };
+
+            function onerror(e) {
+              failures.push(e);
+              failKeys.push(thisContext.primKey);
+              checkFinished();
+              return true; // Catch these errors and let a final rejection decide whether or not to abort entire transaction
+            }
+
+            if (modifyer.call(thisContext, item, thisContext) !== false) {
+              var bDelete = !hasOwn(thisContext, "value");
+              ++count;
+              tryCatch(function () {
+                var req = bDelete ? cursor.delete() : cursor.update(thisContext.value);
+                req._hookCtx = thisContext;
+                req.onerror = hookedEventRejectHandler(onerror);
+                req.onsuccess = hookedEventSuccessHandler(function () {
+                  ++successCount;
+                  checkFinished();
+                });
+              }, onerror);
+            } else if (thisContext.onsuccess) {
+              // Hook will expect either onerror or onsuccess to always be called!
+              thisContext.onsuccess(thisContext.value);
+            }
+          }
+
+          function doReject(e) {
+            if (e) {
+              failures.push(e);
+              failKeys.push(currentKey);
+            }
+
+            return reject(new ModifyError("Error modifying one or more objects", failures, successCount, failKeys));
+          }
+
+          function checkFinished() {
+            if (iterationComplete && successCount + failures.length === count) {
+              if (failures.length > 0) doReject();else resolve(successCount);
+            }
+          }
+
+          self.clone().raw()._iterate(modifyItem, function () {
+            iterationComplete = true;
+            checkFinished();
+          }, doReject, idbstore);
+        });
+      },
+      'delete': function () {
+        var _this = this;
+
+        var ctx = this._ctx,
+            range = ctx.range,
+            deletingHook = ctx.table.hook.deleting.fire,
+            hasDeleteHook = deletingHook !== nop;
+
+        if (!hasDeleteHook && isPlainKeyRange(ctx) && (ctx.isPrimKey && !hangsOnDeleteLargeKeyRange || !range)) {
+          // May use IDBObjectStore.delete(IDBKeyRange) in this case (Issue #208)
+          // For chromium, this is the way most optimized version.
+          // For IE/Edge, this could hang the indexedDB engine and make operating system instable
+          // (https://gist.github.com/dfahlander/5a39328f029de18222cf2125d56c38f7)
+          return this._write(function (resolve, reject, idbstore) {
+            // Our API contract is to return a count of deleted items, so we have to count() before delete().
+            var onerror = eventRejectHandler(reject),
+                countReq = range ? idbstore.count(range) : idbstore.count();
+            countReq.onerror = onerror;
+
+            countReq.onsuccess = function () {
+              var count = countReq.result;
+              tryCatch(function () {
+                var delReq = range ? idbstore.delete(range) : idbstore.clear();
+                delReq.onerror = onerror;
+
+                delReq.onsuccess = function () {
+                  return resolve(count);
+                };
+              }, function (err) {
+                return reject(err);
+              });
+            };
+          });
+        } // Default version to use when collection is not a vanilla IDBKeyRange on the primary key.
+        // Divide into chunks to not starve RAM.
+        // If has delete hook, we will have to collect not just keys but also objects, so it will use
+        // more memory and need lower chunk size.
+
+
+        var CHUNKSIZE = hasDeleteHook ? 2000 : 10000;
+        return this._write(function (resolve, reject, idbstore, trans) {
+          var totalCount = 0; // Clone collection and change its table and set a limit of CHUNKSIZE on the cloned Collection instance.
+
+          var collection = _this.clone({
+            keysOnly: !ctx.isMatch && !hasDeleteHook
+          }) // load just keys (unless filter() or and() or deleteHook has subscribers)
+          .distinct() // In case multiEntry is used, never delete same key twice because resulting count
+          .limit(CHUNKSIZE).raw(); // Don't filter through reading-hooks (like mapped classes etc)
+
+
+          var keysOrTuples = []; // We're gonna do things on as many chunks that are needed.
+          // Use recursion of nextChunk function:
+
+          var nextChunk = function () {
+            return collection.each(hasDeleteHook ? function (val, cursor) {
+              // Somebody subscribes to hook('deleting'). Collect all primary keys and their values,
+              // so that the hook can be called with its values in bulkDelete().
+              keysOrTuples.push([cursor.primaryKey, cursor.value]);
+            } : function (val, cursor) {
+              // No one subscribes to hook('deleting'). Collect only primary keys:
+              keysOrTuples.push(cursor.primaryKey);
+            }).then(function () {
+              // Chromium deletes faster when doing it in sort order.
+              hasDeleteHook ? keysOrTuples.sort(function (a, b) {
+                return ascending(a[0], b[0]);
+              }) : keysOrTuples.sort(ascending);
+              return bulkDelete(idbstore, trans, keysOrTuples, hasDeleteHook, deletingHook);
+            }).then(function () {
+              var count = keysOrTuples.length;
+              totalCount += count;
+              keysOrTuples = [];
+              return count < CHUNKSIZE ? totalCount : nextChunk();
+            });
+          };
+
+          resolve(nextChunk());
+        });
+      }
+    };
+  }); //
+  //
+  //
+  // ------------------------- Help functions ---------------------------
+  //
+  //
+  //
+
+  function lowerVersionFirst(a, b) {
+    return a._cfg.version - b._cfg.version;
+  }
+
+  function setApiOnPlace(objs, tableNames, dbschema) {
+    tableNames.forEach(function (tableName) {
+      var schema = dbschema[tableName];
+      objs.forEach(function (obj) {
+        if (!(tableName in obj)) {
+          if (obj === Transaction.prototype || obj instanceof Transaction) {
+            // obj is a Transaction prototype (or prototype of a subclass to Transaction)
+            // Make the API a getter that returns this.table(tableName)
+            setProp(obj, tableName, {
+              get: function () {
+                return this.table(tableName);
+              }
+            });
+          } else {
+            // Table will not be bound to a transaction (will use Dexie.currentTransaction)
+            obj[tableName] = new Table(tableName, schema);
+          }
+        }
+      });
+    });
+  }
+
+  function removeTablesApi(objs) {
+    objs.forEach(function (obj) {
+      for (var key in obj) {
+        if (obj[key] instanceof Table) delete obj[key];
+      }
+    });
+  }
+
+  function iterate(req, filter, fn, resolve, reject, valueMapper) {
+    // Apply valueMapper (hook('reading') or mappped class)
+    var mappedFn = valueMapper ? function (x, c, a) {
+      return fn(valueMapper(x), c, a);
+    } : fn; // Wrap fn with PSD and microtick stuff from Promise.
+
+    var wrappedFn = wrap(mappedFn, reject);
+    if (!req.onerror) req.onerror = eventRejectHandler(reject);
+
+    if (filter) {
+      req.onsuccess = trycatcher(function filter_record() {
+        var cursor = req.result;
+
+        if (cursor) {
+          var c = function () {
+            cursor.continue();
+          };
+
+          if (filter(cursor, function (advancer) {
+            c = advancer;
+          }, resolve, reject)) wrappedFn(cursor.value, cursor, function (advancer) {
+            c = advancer;
+          });
+          c();
+        } else {
+          resolve();
+        }
+      }, reject);
+    } else {
+      req.onsuccess = trycatcher(function filter_record() {
+        var cursor = req.result;
+
+        if (cursor) {
+          var c = function () {
+            cursor.continue();
+          };
+
+          wrappedFn(cursor.value, cursor, function (advancer) {
+            c = advancer;
+          });
+          c();
+        } else {
+          resolve();
+        }
+      }, reject);
+    }
+  }
+
+  function parseIndexSyntax(indexes) {
+    /// <param name="indexes" type="String"></param>
+    /// <returns type="Array" elementType="IndexSpec"></returns>
+    var rv = [];
+    indexes.split(',').forEach(function (index) {
+      index = index.trim();
+      var name = index.replace(/([&*]|\+\+)/g, ""); // Remove "&", "++" and "*"
+      // Let keyPath of "[a+b]" be ["a","b"]:
+
+      var keyPath = /^\[/.test(name) ? name.match(/^\[(.*)\]$/)[1].split('+') : name;
+      rv.push(new IndexSpec(name, keyPath || null, /\&/.test(index), /\*/.test(index), /\+\+/.test(index), isArray(keyPath), /\./.test(index)));
+    });
+    return rv;
+  }
+
+  function cmp(key1, key2) {
+    return indexedDB.cmp(key1, key2);
+  }
+
+  function min(a, b) {
+    return cmp(a, b) < 0 ? a : b;
+  }
+
+  function max(a, b) {
+    return cmp(a, b) > 0 ? a : b;
+  }
+
+  function ascending(a, b) {
+    return indexedDB.cmp(a, b);
+  }
+
+  function descending(a, b) {
+    return indexedDB.cmp(b, a);
+  }
+
+  function simpleCompare(a, b) {
+    return a < b ? -1 : a === b ? 0 : 1;
+  }
+
+  function simpleCompareReverse(a, b) {
+    return a > b ? -1 : a === b ? 0 : 1;
+  }
+
+  function combine(filter1, filter2) {
+    return filter1 ? filter2 ? function () {
+      return filter1.apply(this, arguments) && filter2.apply(this, arguments);
+    } : filter1 : filter2;
+  }
+
+  function readGlobalSchema() {
+    db.verno = idbdb.version / 10;
+    db._dbSchema = globalSchema = {};
+    dbStoreNames = slice(idbdb.objectStoreNames, 0);
+    if (dbStoreNames.length === 0) return; // Database contains no stores.
+
+    var trans = idbdb.transaction(safariMultiStoreFix(dbStoreNames), 'readonly');
+    dbStoreNames.forEach(function (storeName) {
+      var store = trans.objectStore(storeName),
+          keyPath = store.keyPath,
+          dotted = keyPath && typeof keyPath === 'string' && keyPath.indexOf('.') !== -1;
+      var primKey = new IndexSpec(keyPath, keyPath || "", false, false, !!store.autoIncrement, keyPath && typeof keyPath !== 'string', dotted);
+      var indexes = [];
+
+      for (var j = 0; j < store.indexNames.length; ++j) {
+        var idbindex = store.index(store.indexNames[j]);
+        keyPath = idbindex.keyPath;
+        dotted = keyPath && typeof keyPath === 'string' && keyPath.indexOf('.') !== -1;
+        var index = new IndexSpec(idbindex.name, keyPath, !!idbindex.unique, !!idbindex.multiEntry, false, keyPath && typeof keyPath !== 'string', dotted);
+        indexes.push(index);
+      }
+
+      globalSchema[storeName] = new TableSchema(storeName, primKey, indexes, {});
+    });
+    setApiOnPlace([allTables], keys(globalSchema), globalSchema);
+  }
+
+  function adjustToExistingIndexNames(schema, idbtrans) {
+    /// <summary>
+    /// Issue #30 Problem with existing db - adjust to existing index names when migrating from non-dexie db
+    /// </summary>
+    /// <param name="schema" type="Object">Map between name and TableSchema</param>
+    /// <param name="idbtrans" type="IDBTransaction"></param>
+    var storeNames = idbtrans.db.objectStoreNames;
+
+    for (var i = 0; i < storeNames.length; ++i) {
+      var storeName = storeNames[i];
+      var store = idbtrans.objectStore(storeName);
+      hasGetAll = 'getAll' in store;
+
+      for (var j = 0; j < store.indexNames.length; ++j) {
+        var indexName = store.indexNames[j];
+        var keyPath = store.index(indexName).keyPath;
+        var dexieName = typeof keyPath === 'string' ? keyPath : "[" + slice(keyPath).join('+') + "]";
+
+        if (schema[storeName]) {
+          var indexSpec = schema[storeName].idxByName[dexieName];
+          if (indexSpec) indexSpec.name = indexName;
+        }
+      }
+    } // Bug with getAll() on Safari ver<604 on Workers only, see discussion following PR #579
+
+
+    if (/Safari/.test(navigator.userAgent) && !/(Chrome\/|Edge\/)/.test(navigator.userAgent) && _global.WorkerGlobalScope && _global instanceof _global.WorkerGlobalScope && [].concat(navigator.userAgent.match(/Safari\/(\d*)/))[1] < 604) {
+      hasGetAll = false;
+    }
+  }
+
+  function fireOnBlocked(ev) {
+    db.on("blocked").fire(ev); // Workaround (not fully*) for missing "versionchange" event in IE,Edge and Safari:
+
+    connections.filter(function (c) {
+      return c.name === db.name && c !== db && !c._vcFired;
+    }).map(function (c) {
+      return c.on("versionchange").fire(ev);
+    });
+  }
+
+  extend(this, {
+    Collection: Collection,
+    Table: Table,
+    Transaction: Transaction,
+    Version: Version,
+    WhereClause: WhereClause
+  });
+  init();
+  addons.forEach(function (fn) {
+    fn(db);
+  });
+}
+
+function parseType(type) {
+  if (typeof type === 'function') {
+    return new type();
+  } else if (isArray(type)) {
+    return [parseType(type[0])];
+  } else if (type && _typeof(type) === 'object') {
+    var rv = {};
+    applyStructure(rv, type);
+    return rv;
+  } else {
+    return type;
+  }
+}
+
+function applyStructure(obj, structure) {
+  keys(structure).forEach(function (member) {
+    var value = parseType(structure[member]);
+    obj[member] = value;
+  });
+  return obj;
+}
+
+function hookedEventSuccessHandler(resolve) {
+  // wrap() is needed when calling hooks because the rare scenario of:
+  //  * hook does a db operation that fails immediately (IDB throws exception)
+  //    For calling db operations on correct transaction, wrap makes sure to set PSD correctly.
+  //    wrap() will also execute in a virtual tick.
+  //  * If not wrapped in a virtual tick, direct exception will launch a new physical tick.
+  //  * If this was the last event in the bulk, the promise will resolve after a physical tick
+  //    and the transaction will have committed already.
+  // If no hook, the virtual tick will be executed in the reject()/resolve of the final promise,
+  // because it is always marked with _lib = true when created using Transaction._promise().
+  return wrap(function (event) {
+    var req = event.target,
+        ctx = req._hookCtx,
+        // Contains the hook error handler. Put here instead of closure to boost performance.
+    result = ctx.value || req.result,
+        // Pass the object value on updates. The result from IDB is the primary key.
+    hookSuccessHandler = ctx && ctx.onsuccess;
+    hookSuccessHandler && hookSuccessHandler(result);
+    resolve && resolve(result);
+  }, resolve);
+}
+
+function eventRejectHandler(reject) {
+  return wrap(function (event) {
+    preventDefault(event);
+    reject(event.target.error);
+    return false;
+  });
+}
+
+function eventSuccessHandler(resolve) {
+  return wrap(function (event) {
+    resolve(event.target.result);
+  });
+}
+
+function hookedEventRejectHandler(reject) {
+  return wrap(function (event) {
+    // See comment on hookedEventSuccessHandler() why wrap() is needed only when supporting hooks.
+    var req = event.target,
+        err = req.error,
+        ctx = req._hookCtx,
+        // Contains the hook error handler. Put here instead of closure to boost performance.
+    hookErrorHandler = ctx && ctx.onerror;
+    hookErrorHandler && hookErrorHandler(err);
+    preventDefault(event);
+    reject(err);
+    return false;
+  });
+}
+
+function preventDefault(event) {
+  if (event.stopPropagation) event.stopPropagation();
+  if (event.preventDefault) event.preventDefault();
+}
+
+function awaitIterator(iterator) {
+  var callNext = function (result) {
+    return iterator.next(result);
+  },
+      doThrow = function (error) {
+    return iterator.throw(error);
+  },
+      onSuccess = step(callNext),
+      onError = step(doThrow);
+
+  function step(getNext) {
+    return function (val) {
+      var next = getNext(val),
+          value = next.value;
+      return next.done ? value : !value || typeof value.then !== 'function' ? isArray(value) ? Promise.all(value).then(onSuccess, onError) : onSuccess(value) : value.then(onSuccess, onError);
+    };
+  }
+
+  return step(callNext)();
+} //
+// IndexSpec struct
+//
+
+
+function IndexSpec(name, keyPath, unique, multi, auto, compound, dotted) {
+  /// <param name="name" type="String"></param>
+  /// <param name="keyPath" type="String"></param>
+  /// <param name="unique" type="Boolean"></param>
+  /// <param name="multi" type="Boolean"></param>
+  /// <param name="auto" type="Boolean"></param>
+  /// <param name="compound" type="Boolean"></param>
+  /// <param name="dotted" type="Boolean"></param>
+  this.name = name;
+  this.keyPath = keyPath;
+  this.unique = unique;
+  this.multi = multi;
+  this.auto = auto;
+  this.compound = compound;
+  this.dotted = dotted;
+  var keyPathSrc = typeof keyPath === 'string' ? keyPath : keyPath && '[' + [].join.call(keyPath, '+') + ']';
+  this.src = (unique ? '&' : '') + (multi ? '*' : '') + (auto ? "++" : "") + keyPathSrc;
+} //
+// TableSchema struct
+//
+
+
+function TableSchema(name, primKey, indexes, instanceTemplate) {
+  /// <param name="name" type="String"></param>
+  /// <param name="primKey" type="IndexSpec"></param>
+  /// <param name="indexes" type="Array" elementType="IndexSpec"></param>
+  /// <param name="instanceTemplate" type="Object"></param>
+  this.name = name;
+  this.primKey = primKey || new IndexSpec();
+  this.indexes = indexes || [new IndexSpec()];
+  this.instanceTemplate = instanceTemplate;
+  this.mappedClass = null;
+  this.idxByName = arrayToObject(indexes, function (index) {
+    return [index.name, index];
+  });
+}
+
+function safariMultiStoreFix(storeNames) {
+  return storeNames.length === 1 ? storeNames[0] : storeNames;
+}
+
+function getNativeGetDatabaseNamesFn(indexedDB) {
+  var fn = indexedDB && (indexedDB.getDatabaseNames || indexedDB.webkitGetDatabaseNames);
+  return fn && fn.bind(indexedDB);
+} // Export Error classes
+
+
+props(Dexie, fullNameExceptions); // Dexie.XXXError = class XXXError {...};
+//
+// Static methods and properties
+// 
+
+props(Dexie, {
+  //
+  // Static delete() method.
+  //
+  delete: function (databaseName) {
+    var db = new Dexie(databaseName),
+        promise = db.delete();
+
+    promise.onblocked = function (fn) {
+      db.on("blocked", fn);
+      return this;
+    };
+
+    return promise;
+  },
+  //
+  // Static exists() method.
+  //
+  exists: function (name) {
+    return new Dexie(name).open().then(function (db) {
+      db.close();
+      return true;
+    }).catch(Dexie.NoSuchDatabaseError, function () {
+      return false;
+    });
+  },
+  //
+  // Static method for retrieving a list of all existing databases at current host.
+  //
+  getDatabaseNames: function (cb) {
+    var getDatabaseNames = getNativeGetDatabaseNamesFn(Dexie.dependencies.indexedDB);
+    return getDatabaseNames ? new Promise(function (resolve, reject) {
+      var req = getDatabaseNames();
+
+      req.onsuccess = function (event) {
+        resolve(slice(event.target.result, 0)); // Converst DOMStringList to Array<String>
+      };
+
+      req.onerror = eventRejectHandler(reject);
+    }).then(cb) : dbNamesDB.dbnames.toCollection().primaryKeys(cb);
+  },
+  defineClass: function () {
+    // Default constructor able to copy given properties into this object.
+    function Class(properties) {
+      /// <param name="properties" type="Object" optional="true">Properties to initialize object with.
+      /// </param>
+      if (properties) extend(this, properties);
+    }
+
+    return Class;
+  },
+  applyStructure: applyStructure,
+  ignoreTransaction: function (scopeFunc) {
+    // In case caller is within a transaction but needs to create a separate transaction.
+    // Example of usage:
+    //
+    // Let's say we have a logger function in our app. Other application-logic should be unaware of the
+    // logger function and not need to include the 'logentries' table in all transaction it performs.
+    // The logging should always be done in a separate transaction and not be dependant on the current
+    // running transaction context. Then you could use Dexie.ignoreTransaction() to run code that starts a new transaction.
+    //
+    //     Dexie.ignoreTransaction(function() {
+    //         db.logentries.add(newLogEntry);
+    //     });
+    //
+    // Unless using Dexie.ignoreTransaction(), the above example would try to reuse the current transaction
+    // in current Promise-scope.
+    //
+    // An alternative to Dexie.ignoreTransaction() would be setImmediate() or setTimeout(). The reason we still provide an
+    // API for this because
+    //  1) The intention of writing the statement could be unclear if using setImmediate() or setTimeout().
+    //  2) setTimeout() would wait unnescessary until firing. This is however not the case with setImmediate().
+    //  3) setImmediate() is not supported in the ES standard.
+    //  4) You might want to keep other PSD state that was set in a parent PSD, such as PSD.letThrough.
+    return PSD.trans ? usePSD(PSD.transless, scopeFunc) : // Use the closest parent that was non-transactional.
+    scopeFunc(); // No need to change scope because there is no ongoing transaction.
+  },
+  vip: function (fn) {
+    // To be used by subscribers to the on('ready') event.
+    // This will let caller through to access DB even when it is blocked while the db.ready() subscribers are firing.
+    // This would have worked automatically if we were certain that the Provider was using Dexie.Promise for all asyncronic operations. The promise PSD
+    // from the provider.connect() call would then be derived all the way to when provider would call localDatabase.applyChanges(). But since
+    // the provider more likely is using non-promise async APIs or other thenable implementations, we cannot assume that.
+    // Note that this method is only useful for on('ready') subscribers that is returning a Promise from the event. If not using vip()
+    // the database could deadlock since it wont open until the returned Promise is resolved, and any non-VIPed operation started by
+    // the caller will not resolve until database is opened.
+    return newScope(function () {
+      PSD.letThrough = true; // Make sure we are let through if still blocking db due to onready is firing.
+
+      return fn();
+    });
+  },
+  async: function (generatorFn) {
+    return function () {
+      try {
+        var rv = awaitIterator(generatorFn.apply(this, arguments));
+        if (!rv || typeof rv.then !== 'function') return Promise.resolve(rv);
+        return rv;
+      } catch (e) {
+        return rejection(e);
+      }
+    };
+  },
+  spawn: function (generatorFn, args, thiz) {
+    try {
+      var rv = awaitIterator(generatorFn.apply(thiz, args || []));
+      if (!rv || typeof rv.then !== 'function') return Promise.resolve(rv);
+      return rv;
+    } catch (e) {
+      return rejection(e);
+    }
+  },
+  // Dexie.currentTransaction property
+  currentTransaction: {
+    get: function () {
+      return PSD.trans || null;
+    }
+  },
+  waitFor: function (promiseOrFunction, optionalTimeout) {
+    // If a function is provided, invoke it and pass the returning value to Transaction.waitFor()
+    var promise = Promise.resolve(typeof promiseOrFunction === 'function' ? Dexie.ignoreTransaction(promiseOrFunction) : promiseOrFunction).timeout(optionalTimeout || 60000); // Default the timeout to one minute. Caller may specify Infinity if required.       
+    // Run given promise on current transaction. If no current transaction, just return a Dexie promise based
+    // on given value.
+
+    return PSD.trans ? PSD.trans.waitFor(promise) : promise;
+  },
+  // Export our Promise implementation since it can be handy as a standalone Promise implementation
+  Promise: Promise,
+  // Dexie.debug proptery:
+  // Dexie.debug = false
+  // Dexie.debug = true
+  // Dexie.debug = "dexie" - don't hide dexie's stack frames.
+  debug: {
+    get: function () {
+      return debug;
+    },
+    set: function (value) {
+      setDebug(value, value === 'dexie' ? function () {
+        return true;
+      } : dexieStackFrameFilter);
+    }
+  },
+  // Export our derive/extend/override methodology
+  derive: derive,
+  extend: extend,
+  props: props,
+  override: override,
+  // Export our Events() function - can be handy as a toolkit
+  Events: Events,
+  // Utilities
+  getByKeyPath: getByKeyPath,
+  setByKeyPath: setByKeyPath,
+  delByKeyPath: delByKeyPath,
+  shallowClone: shallowClone,
+  deepClone: deepClone,
+  getObjectDiff: getObjectDiff,
+  asap: asap,
+  maxKey: maxKey,
+  minKey: minKey,
+  // Addon registry
+  addons: [],
+  // Global DB connection list
+  connections: connections,
+  MultiModifyError: exceptions.Modify,
+  errnames: errnames,
+  // Export other static classes
+  IndexSpec: IndexSpec,
+  TableSchema: TableSchema,
+  //
+  // Dependencies
+  //
+  // These will automatically work in browsers with indexedDB support, or where an indexedDB polyfill has been included.
+  //
+  // In node.js, however, these properties must be set "manually" before instansiating a new Dexie().
+  // For node.js, you need to require indexeddb-js or similar and then set these deps.
+  //
+  dependencies: function () {
+    try {
+      return {
+        // Required:
+        indexedDB: _global.indexedDB || _global.mozIndexedDB || _global.webkitIndexedDB || _global.msIndexedDB,
+        IDBKeyRange: _global.IDBKeyRange || _global.webkitIDBKeyRange
+      };
+    } catch (e) {
+      return {
+        indexedDB: null,
+        IDBKeyRange: null
+      };
+    }
+  }(),
+  // API Version Number: Type Number, make sure to always set a version number that can be comparable correctly. Example: 0.9, 0.91, 0.92, 1.0, 1.01, 1.1, 1.2, 1.21, etc.
+  semVer: DEXIE_VERSION,
+  version: DEXIE_VERSION.split('.').map(function (n) {
+    return parseInt(n);
+  }).reduce(function (p, c, i) {
+    return p + c / Math.pow(10, i * 2);
+  }),
+  // https://github.com/dfahlander/Dexie.js/issues/186
+  // typescript compiler tsc in mode ts-->es5 & commonJS, will expect require() to return
+  // x.default. Workaround: Set Dexie.default = Dexie.
+  default: Dexie,
+  // Make it possible to import {Dexie} (non-default import)
+  // Reason 1: May switch to that in future.
+  // Reason 2: We declare it both default and named exported in d.ts to make it possible
+  // to let addons extend the Dexie interface with Typescript 2.1 (works only when explicitely
+  // exporting the symbol, not just default exporting)
+  Dexie: Dexie
+}); // Map DOMErrors and DOMExceptions to corresponding Dexie errors. May change in Dexie v2.0.
+
+Promise.rejectionMapper = mapError; // Initialize dbNamesDB (won't ever be opened on chromium browsers')
+
+dbNamesDB = new Dexie('__dbnames');
+dbNamesDB.version(1).stores({
+  dbnames: 'name'
 });
-},{"react":"../node_modules/react/index.js"}],"../node_modules/@babel/runtime/helpers/esm/objectWithoutProperties.js":[function(require,module,exports) {
+
+(function () {
+  // Migrate from Dexie 1.x database names stored in localStorage:
+  var DBNAMES = 'Dexie.DatabaseNames';
+
+  try {
+    if ((typeof localStorage === "undefined" ? "undefined" : _typeof(localStorage)) !== undefined && _global.document !== undefined) {
+      // Have localStorage and is not executing in a worker. Lets migrate from Dexie 1.x.
+      JSON.parse(localStorage.getItem(DBNAMES) || "[]").forEach(function (name) {
+        return dbNamesDB.dbnames.put({
+          name: name
+        }).catch(nop);
+      });
+      localStorage.removeItem(DBNAMES);
+    }
+  } catch (_e) {}
+})();
+
+var _default = Dexie;
+exports.default = _default;
+},{}],"db.jsx":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _dexie = _interopRequireDefault(require("dexie"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var DB = new _dexie.default("illuminatus");
+DB.version(1).stores({
+  state: "++id"
+});
+var _default = DB;
+exports.default = _default;
+},{"dexie":"../node_modules/dexie/dist/dexie.es.js"}],"../node_modules/@babel/runtime/helpers/esm/objectWithoutProperties.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43924,9564 +52579,7 @@ exports.NonceProvider = NonceProvider;
 var index = (0, _chunkB36baf1aBrowserEsm.m)(_reactSelectCac0a5aeBrowserEsm.S);
 var _default = index;
 exports.default = _default;
-},{"@babel/runtime/helpers/esm/objectWithoutProperties":"../node_modules/@babel/runtime/helpers/esm/objectWithoutProperties.js","@babel/runtime/helpers/esm/extends":"../node_modules/@babel/runtime/helpers/esm/extends.js","@babel/runtime/helpers/esm/toConsumableArray":"../node_modules/@babel/runtime/helpers/esm/toConsumableArray.js","@babel/runtime/helpers/esm/objectSpread":"../node_modules/@babel/runtime/helpers/esm/objectSpread.js","@babel/runtime/helpers/esm/classCallCheck":"../node_modules/@babel/runtime/helpers/esm/classCallCheck.js","@babel/runtime/helpers/esm/createClass":"../node_modules/@babel/runtime/helpers/esm/createClass.js","@babel/runtime/helpers/esm/possibleConstructorReturn":"../node_modules/@babel/runtime/helpers/esm/possibleConstructorReturn.js","@babel/runtime/helpers/esm/getPrototypeOf":"../node_modules/@babel/runtime/helpers/esm/getPrototypeOf.js","@babel/runtime/helpers/esm/inherits":"../node_modules/@babel/runtime/helpers/esm/inherits.js","@babel/runtime/helpers/esm/assertThisInitialized":"../node_modules/@babel/runtime/helpers/esm/assertThisInitialized.js","@babel/runtime/helpers/esm/defineProperty":"../node_modules/@babel/runtime/helpers/esm/defineProperty.js","react":"../node_modules/react/index.js","memoize-one":"../node_modules/memoize-one/dist/memoize-one.esm.js","@emotion/core":"../node_modules/@emotion/core/dist/core.browser.esm.js","react-dom":"../node_modules/react-dom/index.js","prop-types":"../node_modules/prop-types/index.js","@babel/runtime/helpers/esm/typeof":"../node_modules/@babel/runtime/helpers/esm/typeof.js","./chunk-39d3fda8.browser.esm.js":"../node_modules/react-select/dist/chunk-39d3fda8.browser.esm.js","./chunk-80640036.browser.esm.js":"../node_modules/react-select/dist/chunk-80640036.browser.esm.js","./base/dist/react-select-cac0a5ae.browser.esm.js":"../node_modules/react-select/dist/base/dist/react-select-cac0a5ae.browser.esm.js","@emotion/css":"../node_modules/@emotion/css/dist/css.browser.esm.js","@babel/runtime/helpers/esm/taggedTemplateLiteral":"../node_modules/@babel/runtime/helpers/esm/taggedTemplateLiteral.js","react-input-autosize":"../node_modules/react-input-autosize/lib/AutosizeInput.js","./chunk-b36baf1a.browser.esm.js":"../node_modules/react-select/dist/chunk-b36baf1a.browser.esm.js","@emotion/cache":"../node_modules/@emotion/cache/dist/cache.browser.esm.js"}],"../node_modules/dexie/dist/dexie.es.js":[function(require,module,exports) {
-var global = arguments[3];
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-
-function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function (obj) { return typeof obj; }; } else { _typeof = function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
-
-/*
- * Dexie.js - a minimalistic wrapper for IndexedDB
- * ===============================================
- *
- * By David Fahlander, david.fahlander@gmail.com
- *
- * Version {version}, {date}
- *
- * http://dexie.org
- *
- * Apache License Version 2.0, January 2004, http://www.apache.org/licenses/
- */
-var keys = Object.keys;
-var isArray = Array.isArray;
-
-var _global = typeof self !== 'undefined' ? self : typeof window !== 'undefined' ? window : global;
-
-function extend(obj, extension) {
-  if (_typeof(extension) !== 'object') return obj;
-  keys(extension).forEach(function (key) {
-    obj[key] = extension[key];
-  });
-  return obj;
-}
-
-var getProto = Object.getPrototypeOf;
-var _hasOwn = {}.hasOwnProperty;
-
-function hasOwn(obj, prop) {
-  return _hasOwn.call(obj, prop);
-}
-
-function props(proto, extension) {
-  if (typeof extension === 'function') extension = extension(getProto(proto));
-  keys(extension).forEach(function (key) {
-    setProp(proto, key, extension[key]);
-  });
-}
-
-var defineProperty = Object.defineProperty;
-
-function setProp(obj, prop, functionOrGetSet, options) {
-  defineProperty(obj, prop, extend(functionOrGetSet && hasOwn(functionOrGetSet, "get") && typeof functionOrGetSet.get === 'function' ? {
-    get: functionOrGetSet.get,
-    set: functionOrGetSet.set,
-    configurable: true
-  } : {
-    value: functionOrGetSet,
-    configurable: true,
-    writable: true
-  }, options));
-}
-
-function derive(Child) {
-  return {
-    from: function (Parent) {
-      Child.prototype = Object.create(Parent.prototype);
-      setProp(Child.prototype, "constructor", Child);
-      return {
-        extend: props.bind(null, Child.prototype)
-      };
-    }
-  };
-}
-
-var getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
-
-function getPropertyDescriptor(obj, prop) {
-  var pd = getOwnPropertyDescriptor(obj, prop),
-      proto;
-  return pd || (proto = getProto(obj)) && getPropertyDescriptor(proto, prop);
-}
-
-var _slice = [].slice;
-
-function slice(args, start, end) {
-  return _slice.call(args, start, end);
-}
-
-function override(origFunc, overridedFactory) {
-  return overridedFactory(origFunc);
-}
-
-function assert(b) {
-  if (!b) throw new Error("Assertion Failed");
-}
-
-function asap(fn) {
-  if (_global.setImmediate) setImmediate(fn);else setTimeout(fn, 0);
-}
-/** Generate an object (hash map) based on given array.
- * @param extractor Function taking an array item and its index and returning an array of 2 items ([key, value]) to
- *        instert on the resulting object for each item in the array. If this function returns a falsy value, the
- *        current item wont affect the resulting object.
- */
-
-
-function arrayToObject(array, extractor) {
-  return array.reduce(function (result, item, i) {
-    var nameAndValue = extractor(item, i);
-    if (nameAndValue) result[nameAndValue[0]] = nameAndValue[1];
-    return result;
-  }, {});
-}
-
-function trycatcher(fn, reject) {
-  return function () {
-    try {
-      fn.apply(this, arguments);
-    } catch (e) {
-      reject(e);
-    }
-  };
-}
-
-function tryCatch(fn, onerror, args) {
-  try {
-    fn.apply(null, args);
-  } catch (ex) {
-    onerror && onerror(ex);
-  }
-}
-
-function getByKeyPath(obj, keyPath) {
-  // http://www.w3.org/TR/IndexedDB/#steps-for-extracting-a-key-from-a-value-using-a-key-path
-  if (hasOwn(obj, keyPath)) return obj[keyPath]; // This line is moved from last to first for optimization purpose.
-
-  if (!keyPath) return obj;
-
-  if (typeof keyPath !== 'string') {
-    var rv = [];
-
-    for (var i = 0, l = keyPath.length; i < l; ++i) {
-      var val = getByKeyPath(obj, keyPath[i]);
-      rv.push(val);
-    }
-
-    return rv;
-  }
-
-  var period = keyPath.indexOf('.');
-
-  if (period !== -1) {
-    var innerObj = obj[keyPath.substr(0, period)];
-    return innerObj === undefined ? undefined : getByKeyPath(innerObj, keyPath.substr(period + 1));
-  }
-
-  return undefined;
-}
-
-function setByKeyPath(obj, keyPath, value) {
-  if (!obj || keyPath === undefined) return;
-  if ('isFrozen' in Object && Object.isFrozen(obj)) return;
-
-  if (typeof keyPath !== 'string' && 'length' in keyPath) {
-    assert(typeof value !== 'string' && 'length' in value);
-
-    for (var i = 0, l = keyPath.length; i < l; ++i) {
-      setByKeyPath(obj, keyPath[i], value[i]);
-    }
-  } else {
-    var period = keyPath.indexOf('.');
-
-    if (period !== -1) {
-      var currentKeyPath = keyPath.substr(0, period);
-      var remainingKeyPath = keyPath.substr(period + 1);
-      if (remainingKeyPath === "") {
-        if (value === undefined) delete obj[currentKeyPath];else obj[currentKeyPath] = value;
-      } else {
-        var innerObj = obj[currentKeyPath];
-        if (!innerObj) innerObj = obj[currentKeyPath] = {};
-        setByKeyPath(innerObj, remainingKeyPath, value);
-      }
-    } else {
-      if (value === undefined) delete obj[keyPath];else obj[keyPath] = value;
-    }
-  }
-}
-
-function delByKeyPath(obj, keyPath) {
-  if (typeof keyPath === 'string') setByKeyPath(obj, keyPath, undefined);else if ('length' in keyPath) [].map.call(keyPath, function (kp) {
-    setByKeyPath(obj, kp, undefined);
-  });
-}
-
-function shallowClone(obj) {
-  var rv = {};
-
-  for (var m in obj) {
-    if (hasOwn(obj, m)) rv[m] = obj[m];
-  }
-
-  return rv;
-}
-
-var concat = [].concat;
-
-function flatten(a) {
-  return concat.apply([], a);
-} //https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
-
-
-var intrinsicTypes = "Boolean,String,Date,RegExp,Blob,File,FileList,ArrayBuffer,DataView,Uint8ClampedArray,ImageData,Map,Set".split(',').concat(flatten([8, 16, 32, 64].map(function (num) {
-  return ["Int", "Uint", "Float"].map(function (t) {
-    return t + num + "Array";
-  });
-}))).filter(function (t) {
-  return _global[t];
-}).map(function (t) {
-  return _global[t];
-});
-
-function deepClone(any) {
-  if (!any || _typeof(any) !== 'object') return any;
-  var rv;
-
-  if (isArray(any)) {
-    rv = [];
-
-    for (var i = 0, l = any.length; i < l; ++i) {
-      rv.push(deepClone(any[i]));
-    }
-  } else if (intrinsicTypes.indexOf(any.constructor) >= 0) {
-    rv = any;
-  } else {
-    rv = any.constructor ? Object.create(any.constructor.prototype) : {};
-
-    for (var prop in any) {
-      if (hasOwn(any, prop)) {
-        rv[prop] = deepClone(any[prop]);
-      }
-    }
-  }
-
-  return rv;
-}
-
-function getObjectDiff(a, b, rv, prfx) {
-  // Compares objects a and b and produces a diff object.
-  rv = rv || {};
-  prfx = prfx || '';
-  keys(a).forEach(function (prop) {
-    if (!hasOwn(b, prop)) rv[prfx + prop] = undefined; // Property removed
-    else {
-        var ap = a[prop],
-            bp = b[prop];
-        if (_typeof(ap) === 'object' && _typeof(bp) === 'object' && ap && bp && // Now compare constructors are same (not equal because wont work in Safari)
-        '' + ap.constructor === '' + bp.constructor) // Same type of object but its properties may have changed
-          getObjectDiff(ap, bp, rv, prfx + prop + ".");else if (ap !== bp) rv[prfx + prop] = b[prop]; // Primitive value changed
-      }
-  });
-  keys(b).forEach(function (prop) {
-    if (!hasOwn(a, prop)) {
-      rv[prfx + prop] = b[prop]; // Property added
-    }
-  });
-  return rv;
-} // If first argument is iterable or array-like, return it as an array
-
-
-var iteratorSymbol = typeof Symbol !== 'undefined' && Symbol.iterator;
-var getIteratorOf = iteratorSymbol ? function (x) {
-  var i;
-  return x != null && (i = x[iteratorSymbol]) && i.apply(x);
-} : function () {
-  return null;
-};
-var NO_CHAR_ARRAY = {}; // Takes one or several arguments and returns an array based on the following criteras:
-// * If several arguments provided, return arguments converted to an array in a way that
-//   still allows javascript engine to optimize the code.
-// * If single argument is an array, return a clone of it.
-// * If this-pointer equals NO_CHAR_ARRAY, don't accept strings as valid iterables as a special
-//   case to the two bullets below.
-// * If single argument is an iterable, convert it to an array and return the resulting array.
-// * If single argument is array-like (has length of type number), convert it to an array.
-
-function getArrayOf(arrayLike) {
-  var i, a, x, it;
-
-  if (arguments.length === 1) {
-    if (isArray(arrayLike)) return arrayLike.slice();
-    if (this === NO_CHAR_ARRAY && typeof arrayLike === 'string') return [arrayLike];
-
-    if (it = getIteratorOf(arrayLike)) {
-      a = [];
-
-      while (x = it.next(), !x.done) {
-        a.push(x.value);
-      }
-
-      return a;
-    }
-
-    if (arrayLike == null) return [arrayLike];
-    i = arrayLike.length;
-
-    if (typeof i === 'number') {
-      a = new Array(i);
-
-      while (i--) {
-        a[i] = arrayLike[i];
-      }
-
-      return a;
-    }
-
-    return [arrayLike];
-  }
-
-  i = arguments.length;
-  a = new Array(i);
-
-  while (i--) {
-    a[i] = arguments[i];
-  }
-
-  return a;
-} // By default, debug will be true only if platform is a web platform and its page is served from localhost.
-// When debug = true, error's stacks will contain asyncronic long stacks.
-
-
-var debug = typeof location !== 'undefined' && // By default, use debug mode if served from localhost.
-/^(http|https):\/\/(localhost|127\.0\.0\.1)/.test(location.href);
-
-function setDebug(value, filter) {
-  debug = value;
-  libraryFilter = filter;
-}
-
-var libraryFilter = function () {
-  return true;
-};
-
-var NEEDS_THROW_FOR_STACK = !new Error("").stack;
-
-function getErrorWithStack() {
-  "use strict";
-
-  if (NEEDS_THROW_FOR_STACK) try {
-    // Doing something naughty in strict mode here to trigger a specific error
-    // that can be explicitely ignored in debugger's exception settings.
-    // If we'd just throw new Error() here, IE's debugger's exception settings
-    // will just consider it as "exception thrown by javascript code" which is
-    // something you wouldn't want it to ignore.
-    getErrorWithStack.arguments;
-    throw new Error(); // Fallback if above line don't throw.
-  } catch (e) {
-    return e;
-  }
-  return new Error();
-}
-
-function prettyStack(exception, numIgnoredFrames) {
-  var stack = exception.stack;
-  if (!stack) return "";
-  numIgnoredFrames = numIgnoredFrames || 0;
-  if (stack.indexOf(exception.name) === 0) numIgnoredFrames += (exception.name + exception.message).split('\n').length;
-  return stack.split('\n').slice(numIgnoredFrames).filter(libraryFilter).map(function (frame) {
-    return "\n" + frame;
-  }).join('');
-}
-
-function deprecated(what, fn) {
-  return function () {
-    console.warn(what + " is deprecated. See https://github.com/dfahlander/Dexie.js/wiki/Deprecations. " + prettyStack(getErrorWithStack(), 1));
-    return fn.apply(this, arguments);
-  };
-}
-
-var dexieErrorNames = ['Modify', 'Bulk', 'OpenFailed', 'VersionChange', 'Schema', 'Upgrade', 'InvalidTable', 'MissingAPI', 'NoSuchDatabase', 'InvalidArgument', 'SubTransaction', 'Unsupported', 'Internal', 'DatabaseClosed', 'PrematureCommit', 'ForeignAwait'];
-var idbDomErrorNames = ['Unknown', 'Constraint', 'Data', 'TransactionInactive', 'ReadOnly', 'Version', 'NotFound', 'InvalidState', 'InvalidAccess', 'Abort', 'Timeout', 'QuotaExceeded', 'Syntax', 'DataClone'];
-var errorList = dexieErrorNames.concat(idbDomErrorNames);
-var defaultTexts = {
-  VersionChanged: "Database version changed by other database connection",
-  DatabaseClosed: "Database has been closed",
-  Abort: "Transaction aborted",
-  TransactionInactive: "Transaction has already completed or failed"
-}; //
-// DexieError - base class of all out exceptions.
-//
-
-function DexieError(name, msg) {
-  // Reason we don't use ES6 classes is because:
-  // 1. It bloats transpiled code and increases size of minified code.
-  // 2. It doesn't give us much in this case.
-  // 3. It would require sub classes to call super(), which
-  //    is not needed when deriving from Error.
-  this._e = getErrorWithStack();
-  this.name = name;
-  this.message = msg;
-}
-
-derive(DexieError).from(Error).extend({
-  stack: {
-    get: function () {
-      return this._stack || (this._stack = this.name + ": " + this.message + prettyStack(this._e, 2));
-    }
-  },
-  toString: function () {
-    return this.name + ": " + this.message;
-  }
-});
-
-function getMultiErrorMessage(msg, failures) {
-  return msg + ". Errors: " + failures.map(function (f) {
-    return f.toString();
-  }).filter(function (v, i, s) {
-    return s.indexOf(v) === i;
-  }) // Only unique error strings
-  .join('\n');
-} //
-// ModifyError - thrown in Collection.modify()
-// Specific constructor because it contains members failures and failedKeys.
-//
-
-
-function ModifyError(msg, failures, successCount, failedKeys) {
-  this._e = getErrorWithStack();
-  this.failures = failures;
-  this.failedKeys = failedKeys;
-  this.successCount = successCount;
-}
-
-derive(ModifyError).from(DexieError);
-
-function BulkError(msg, failures) {
-  this._e = getErrorWithStack();
-  this.name = "BulkError";
-  this.failures = failures;
-  this.message = getMultiErrorMessage(msg, failures);
-}
-
-derive(BulkError).from(DexieError); //
-//
-// Dynamically generate error names and exception classes based
-// on the names in errorList.
-//
-//
-// Map of {ErrorName -> ErrorName + "Error"}
-
-var errnames = errorList.reduce(function (obj, name) {
-  return obj[name] = name + "Error", obj;
-}, {}); // Need an alias for DexieError because we're gonna create subclasses with the same name.
-
-var BaseException = DexieError; // Map of {ErrorName -> exception constructor}
-
-var exceptions = errorList.reduce(function (obj, name) {
-  // Let the name be "DexieError" because this name may
-  // be shown in call stack and when debugging. DexieError is
-  // the most true name because it derives from DexieError,
-  // and we cannot change Function.name programatically without
-  // dynamically create a Function object, which would be considered
-  // 'eval-evil'.
-  var fullName = name + "Error";
-
-  function DexieError(msgOrInner, inner) {
-    this._e = getErrorWithStack();
-    this.name = fullName;
-
-    if (!msgOrInner) {
-      this.message = defaultTexts[name] || fullName;
-      this.inner = null;
-    } else if (typeof msgOrInner === 'string') {
-      this.message = msgOrInner;
-      this.inner = inner || null;
-    } else if (_typeof(msgOrInner) === 'object') {
-      this.message = msgOrInner.name + " " + msgOrInner.message;
-      this.inner = msgOrInner;
-    }
-  }
-
-  derive(DexieError).from(BaseException);
-  obj[name] = DexieError;
-  return obj;
-}, {}); // Use ECMASCRIPT standard exceptions where applicable:
-
-exceptions.Syntax = SyntaxError;
-exceptions.Type = TypeError;
-exceptions.Range = RangeError;
-var exceptionMap = idbDomErrorNames.reduce(function (obj, name) {
-  obj[name + "Error"] = exceptions[name];
-  return obj;
-}, {});
-
-function mapError(domError, message) {
-  if (!domError || domError instanceof DexieError || domError instanceof TypeError || domError instanceof SyntaxError || !domError.name || !exceptionMap[domError.name]) return domError;
-  var rv = new exceptionMap[domError.name](message || domError.message, domError);
-
-  if ("stack" in domError) {
-    // Derive stack from inner exception if it has a stack
-    setProp(rv, "stack", {
-      get: function () {
-        return this.inner.stack;
-      }
-    });
-  }
-
-  return rv;
-}
-
-var fullNameExceptions = errorList.reduce(function (obj, name) {
-  if (["Syntax", "Type", "Range"].indexOf(name) === -1) obj[name + "Error"] = exceptions[name];
-  return obj;
-}, {});
-fullNameExceptions.ModifyError = ModifyError;
-fullNameExceptions.DexieError = DexieError;
-fullNameExceptions.BulkError = BulkError;
-
-function nop() {}
-
-function mirror(val) {
-  return val;
-}
-
-function pureFunctionChain(f1, f2) {
-  // Enables chained events that takes ONE argument and returns it to the next function in chain.
-  // This pattern is used in the hook("reading") event.
-  if (f1 == null || f1 === mirror) return f2;
-  return function (val) {
-    return f2(f1(val));
-  };
-}
-
-function callBoth(on1, on2) {
-  return function () {
-    on1.apply(this, arguments);
-    on2.apply(this, arguments);
-  };
-}
-
-function hookCreatingChain(f1, f2) {
-  // Enables chained events that takes several arguments and may modify first argument by making a modification and then returning the same instance.
-  // This pattern is used in the hook("creating") event.
-  if (f1 === nop) return f2;
-  return function () {
-    var res = f1.apply(this, arguments);
-    if (res !== undefined) arguments[0] = res;
-    var onsuccess = this.onsuccess,
-        // In case event listener has set this.onsuccess
-    onerror = this.onerror; // In case event listener has set this.onerror
-
-    this.onsuccess = null;
-    this.onerror = null;
-    var res2 = f2.apply(this, arguments);
-    if (onsuccess) this.onsuccess = this.onsuccess ? callBoth(onsuccess, this.onsuccess) : onsuccess;
-    if (onerror) this.onerror = this.onerror ? callBoth(onerror, this.onerror) : onerror;
-    return res2 !== undefined ? res2 : res;
-  };
-}
-
-function hookDeletingChain(f1, f2) {
-  if (f1 === nop) return f2;
-  return function () {
-    f1.apply(this, arguments);
-    var onsuccess = this.onsuccess,
-        // In case event listener has set this.onsuccess
-    onerror = this.onerror; // In case event listener has set this.onerror
-
-    this.onsuccess = this.onerror = null;
-    f2.apply(this, arguments);
-    if (onsuccess) this.onsuccess = this.onsuccess ? callBoth(onsuccess, this.onsuccess) : onsuccess;
-    if (onerror) this.onerror = this.onerror ? callBoth(onerror, this.onerror) : onerror;
-  };
-}
-
-function hookUpdatingChain(f1, f2) {
-  if (f1 === nop) return f2;
-  return function (modifications) {
-    var res = f1.apply(this, arguments);
-    extend(modifications, res); // If f1 returns new modifications, extend caller's modifications with the result before calling next in chain.
-
-    var onsuccess = this.onsuccess,
-        // In case event listener has set this.onsuccess
-    onerror = this.onerror; // In case event listener has set this.onerror
-
-    this.onsuccess = null;
-    this.onerror = null;
-    var res2 = f2.apply(this, arguments);
-    if (onsuccess) this.onsuccess = this.onsuccess ? callBoth(onsuccess, this.onsuccess) : onsuccess;
-    if (onerror) this.onerror = this.onerror ? callBoth(onerror, this.onerror) : onerror;
-    return res === undefined ? res2 === undefined ? undefined : res2 : extend(res, res2);
-  };
-}
-
-function reverseStoppableEventChain(f1, f2) {
-  if (f1 === nop) return f2;
-  return function () {
-    if (f2.apply(this, arguments) === false) return false;
-    return f1.apply(this, arguments);
-  };
-}
-
-function promisableChain(f1, f2) {
-  if (f1 === nop) return f2;
-  return function () {
-    var res = f1.apply(this, arguments);
-
-    if (res && typeof res.then === 'function') {
-      var thiz = this,
-          i = arguments.length,
-          args = new Array(i);
-
-      while (i--) {
-        args[i] = arguments[i];
-      }
-
-      return res.then(function () {
-        return f2.apply(thiz, args);
-      });
-    }
-
-    return f2.apply(this, arguments);
-  };
-}
-/*
- * Copyright (c) 2014-2017 David Fahlander
- * Apache License Version 2.0, January 2004, http://www.apache.org/licenses/LICENSE-2.0
- */
-//
-// Promise and Zone (PSD) for Dexie library
-//
-// I started out writing this Promise class by copying promise-light (https://github.com/taylorhakes/promise-light) by
-// https://github.com/taylorhakes - an A+ and ECMASCRIPT 6 compliant Promise implementation.
-//
-// In previous versions this was fixed by not calling setTimeout when knowing that the resolve() or reject() came from another
-// tick. In Dexie v1.4.0, I've rewritten the Promise class entirely. Just some fragments of promise-light is left. I use
-// another strategy now that simplifies everything a lot: to always execute callbacks in a new micro-task, but have an own micro-task
-// engine that is indexedDB compliant across all browsers.
-// Promise class has also been optimized a lot with inspiration from bluebird - to avoid closures as much as possible.
-// Also with inspiration from bluebird, asyncronic stacks in debug mode.
-//
-// Specific non-standard features of this Promise class:
-// * Custom zone support (a.k.a. PSD) with ability to keep zones also when using native promises as well as
-//   native async / await.
-// * Promise.follow() method built upon the custom zone engine, that allows user to track all promises created from current stack frame
-//   and below + all promises that those promises creates or awaits.
-// * Detect any unhandled promise in a PSD-scope (PSD.onunhandled). 
-//
-// David Fahlander, https://github.com/dfahlander
-//
-// Just a pointer that only this module knows about.
-// Used in Promise constructor to emulate a private constructor.
-
-
-var INTERNAL = {}; // Async stacks (long stacks) must not grow infinitely.
-
-var LONG_STACKS_CLIP_LIMIT = 100;
-var MAX_LONG_STACKS = 20;
-var ZONE_ECHO_LIMIT = 7;
-
-var nativePromiseInstanceAndProto = function () {
-  try {
-    // Be able to patch native async functions
-    return new Function("let F=async ()=>{},p=F();return [p,Object.getPrototypeOf(p),Promise.resolve(),F.constructor];")();
-  } catch (e) {
-    var P = _global.Promise;
-    return P ? [P.resolve(), P.prototype, P.resolve()] : [];
-  }
-}();
-
-var resolvedNativePromise = nativePromiseInstanceAndProto[0];
-var nativePromiseProto = nativePromiseInstanceAndProto[1];
-var resolvedGlobalPromise = nativePromiseInstanceAndProto[2];
-var nativePromiseThen = nativePromiseProto && nativePromiseProto.then;
-var NativePromise = resolvedNativePromise && resolvedNativePromise.constructor;
-var AsyncFunction = nativePromiseInstanceAndProto[3];
-var patchGlobalPromise = !!resolvedGlobalPromise;
-var stack_being_generated = false;
-/* The default function used only for the very first promise in a promise chain.
-   As soon as then promise is resolved or rejected, all next tasks will be executed in micro ticks
-   emulated in this module. For indexedDB compatibility, this means that every method needs to
-   execute at least one promise before doing an indexedDB operation. Dexie will always call
-   db.ready().then() for every operation to make sure the indexedDB event is started in an
-   indexedDB-compatible emulated micro task loop.
-*/
-
-var schedulePhysicalTick = resolvedGlobalPromise ? function () {
-  resolvedGlobalPromise.then(physicalTick);
-} : _global.setImmediate ? // setImmediate supported. Those modern platforms also supports Function.bind().
-setImmediate.bind(null, physicalTick) : _global.MutationObserver ? // MutationObserver supported
-function () {
-  var hiddenDiv = document.createElement("div");
-  new MutationObserver(function () {
-    physicalTick();
-    hiddenDiv = null;
-  }).observe(hiddenDiv, {
-    attributes: true
-  });
-  hiddenDiv.setAttribute('i', '1');
-} : // No support for setImmediate or MutationObserver. No worry, setTimeout is only called
-// once time. Every tick that follows will be our emulated micro tick.
-// Could have uses setTimeout.bind(null, 0, physicalTick) if it wasnt for that FF13 and below has a bug 
-function () {
-  setTimeout(physicalTick, 0);
-}; // Configurable through Promise.scheduler.
-// Don't export because it would be unsafe to let unknown
-// code call it unless they do try..catch within their callback.
-// This function can be retrieved through getter of Promise.scheduler though,
-// but users must not do Promise.scheduler = myFuncThatThrowsException
-
-var asap$1 = function (callback, args) {
-  microtickQueue.push([callback, args]);
-
-  if (needsNewPhysicalTick) {
-    schedulePhysicalTick();
-    needsNewPhysicalTick = false;
-  }
-};
-
-var isOutsideMicroTick = true;
-var needsNewPhysicalTick = true;
-var unhandledErrors = [];
-var rejectingErrors = [];
-var currentFulfiller = null;
-var rejectionMapper = mirror; // Remove in next major when removing error mapping of DOMErrors and DOMExceptions
-
-var globalPSD = {
-  id: 'global',
-  global: true,
-  ref: 0,
-  unhandleds: [],
-  onunhandled: globalError,
-  pgp: false,
-  env: {},
-  finalize: function () {
-    this.unhandleds.forEach(function (uh) {
-      try {
-        globalError(uh[0], uh[1]);
-      } catch (e) {}
-    });
-  }
-};
-var PSD = globalPSD;
-var microtickQueue = []; // Callbacks to call in this or next physical tick.
-
-var numScheduledCalls = 0; // Number of listener-calls left to do in this physical tick.
-
-var tickFinalizers = []; // Finalizers to call when there are no more async calls scheduled within current physical tick.
-
-function Promise(fn) {
-  if (_typeof(this) !== 'object') throw new TypeError('Promises must be constructed via new');
-  this._listeners = [];
-  this.onuncatched = nop; // Deprecate in next major. Not needed. Better to use global error handler.
-  // A library may set `promise._lib = true;` after promise is created to make resolve() or reject()
-  // execute the microtask engine implicitely within the call to resolve() or reject().
-  // To remain A+ compliant, a library must only set `_lib=true` if it can guarantee that the stack
-  // only contains library code when calling resolve() or reject().
-  // RULE OF THUMB: ONLY set _lib = true for promises explicitely resolving/rejecting directly from
-  // global scope (event handler, timer etc)!
-
-  this._lib = false; // Current async scope
-
-  var psd = this._PSD = PSD;
-
-  if (debug) {
-    this._stackHolder = getErrorWithStack();
-    this._prev = null;
-    this._numPrev = 0; // Number of previous promises (for long stacks)
-  }
-
-  if (typeof fn !== 'function') {
-    if (fn !== INTERNAL) throw new TypeError('Not a function'); // Private constructor (INTERNAL, state, value).
-    // Used internally by Promise.resolve() and Promise.reject().
-
-    this._state = arguments[1];
-    this._value = arguments[2];
-    if (this._state === false) handleRejection(this, this._value); // Map error, set stack and addPossiblyUnhandledError().
-
-    return;
-  }
-
-  this._state = null; // null (=pending), false (=rejected) or true (=resolved)
-
-  this._value = null; // error or result
-
-  ++psd.ref; // Refcounting current scope
-
-  executePromiseTask(this, fn);
-} // Prepare a property descriptor to put onto Promise.prototype.then
-
-
-var thenProp = {
-  get: function () {
-    var psd = PSD,
-        microTaskId = totalEchoes;
-
-    function then(onFulfilled, onRejected) {
-      var _this = this;
-
-      var possibleAwait = !psd.global && (psd !== PSD || microTaskId !== totalEchoes);
-      if (possibleAwait) decrementExpectedAwaits();
-      var rv = new Promise(function (resolve, reject) {
-        propagateToListener(_this, new Listener(nativeAwaitCompatibleWrap(onFulfilled, psd, possibleAwait), nativeAwaitCompatibleWrap(onRejected, psd, possibleAwait), resolve, reject, psd));
-      });
-      debug && linkToPreviousPromise(rv, this);
-      return rv;
-    }
-
-    then.prototype = INTERNAL; // For idempotense, see setter below.
-
-    return then;
-  },
-  // Be idempotent and allow another framework (such as zone.js or another instance of a Dexie.Promise module) to replace Promise.prototype.then
-  // and when that framework wants to restore the original property, we must identify that and restore the original property descriptor.
-  set: function (value) {
-    setProp(this, 'then', value && value.prototype === INTERNAL ? thenProp : // Restore to original property descriptor.
-    {
-      get: function () {
-        return value; // Getter returning provided value (behaves like value is just changed)
-      },
-      set: thenProp.set // Keep a setter that is prepared to restore original.
-
-    });
-  }
-};
-props(Promise.prototype, {
-  then: thenProp,
-  _then: function (onFulfilled, onRejected) {
-    // A little tinier version of then() that don't have to create a resulting promise.
-    propagateToListener(this, new Listener(null, null, onFulfilled, onRejected, PSD));
-  },
-  catch: function (onRejected) {
-    if (arguments.length === 1) return this.then(null, onRejected); // First argument is the Error type to catch
-
-    var type = arguments[0],
-        handler = arguments[1];
-    return typeof type === 'function' ? this.then(null, function (err) {
-      // Catching errors by its constructor type (similar to java / c++ / c#)
-      // Sample: promise.catch(TypeError, function (e) { ... });
-      return err instanceof type ? handler(err) : PromiseReject(err);
-    }) : this.then(null, function (err) {
-      // Catching errors by the error.name property. Makes sense for indexedDB where error type
-      // is always DOMError but where e.name tells the actual error type.
-      // Sample: promise.catch('ConstraintError', function (e) { ... });
-      return err && err.name === type ? handler(err) : PromiseReject(err);
-    });
-  },
-  finally: function (onFinally) {
-    return this.then(function (value) {
-      onFinally();
-      return value;
-    }, function (err) {
-      onFinally();
-      return PromiseReject(err);
-    });
-  },
-  stack: {
-    get: function () {
-      if (this._stack) return this._stack;
-
-      try {
-        stack_being_generated = true;
-        var stacks = getStack(this, [], MAX_LONG_STACKS);
-        var stack = stacks.join("\nFrom previous: ");
-        if (this._state !== null) this._stack = stack; // Stack may be updated on reject.
-
-        return stack;
-      } finally {
-        stack_being_generated = false;
-      }
-    }
-  },
-  timeout: function (ms, msg) {
-    var _this = this;
-
-    return ms < Infinity ? new Promise(function (resolve, reject) {
-      var handle = setTimeout(function () {
-        return reject(new exceptions.Timeout(msg));
-      }, ms);
-
-      _this.then(resolve, reject).finally(clearTimeout.bind(null, handle));
-    }) : this;
-  }
-});
-if (typeof Symbol !== 'undefined' && Symbol.toStringTag) setProp(Promise.prototype, Symbol.toStringTag, 'Promise'); // Now that Promise.prototype is defined, we have all it takes to set globalPSD.env.
-// Environment globals snapshotted on leaving global zone
-
-globalPSD.env = snapShot();
-
-function Listener(onFulfilled, onRejected, resolve, reject, zone) {
-  this.onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : null;
-  this.onRejected = typeof onRejected === 'function' ? onRejected : null;
-  this.resolve = resolve;
-  this.reject = reject;
-  this.psd = zone;
-} // Promise Static Properties
-
-
-props(Promise, {
-  all: function () {
-    var values = getArrayOf.apply(null, arguments) // Supports iterables, implicit arguments and array-like.
-    .map(onPossibleParallellAsync); // Handle parallell async/awaits 
-
-    return new Promise(function (resolve, reject) {
-      if (values.length === 0) resolve([]);
-      var remaining = values.length;
-      values.forEach(function (a, i) {
-        return Promise.resolve(a).then(function (x) {
-          values[i] = x;
-          if (! --remaining) resolve(values);
-        }, reject);
-      });
-    });
-  },
-  resolve: function (value) {
-    if (value instanceof Promise) return value;
-    if (value && typeof value.then === 'function') return new Promise(function (resolve, reject) {
-      value.then(resolve, reject);
-    });
-    var rv = new Promise(INTERNAL, true, value);
-    linkToPreviousPromise(rv, currentFulfiller);
-    return rv;
-  },
-  reject: PromiseReject,
-  race: function () {
-    var values = getArrayOf.apply(null, arguments).map(onPossibleParallellAsync);
-    return new Promise(function (resolve, reject) {
-      values.map(function (value) {
-        return Promise.resolve(value).then(resolve, reject);
-      });
-    });
-  },
-  PSD: {
-    get: function () {
-      return PSD;
-    },
-    set: function (value) {
-      return PSD = value;
-    }
-  },
-  //totalEchoes: {get: ()=>totalEchoes},
-  //task: {get: ()=>task},
-  newPSD: newScope,
-  usePSD: usePSD,
-  scheduler: {
-    get: function () {
-      return asap$1;
-    },
-    set: function (value) {
-      asap$1 = value;
-    }
-  },
-  rejectionMapper: {
-    get: function () {
-      return rejectionMapper;
-    },
-    set: function (value) {
-      rejectionMapper = value;
-    } // Map reject failures
-
-  },
-  follow: function (fn, zoneProps) {
-    return new Promise(function (resolve, reject) {
-      return newScope(function (resolve, reject) {
-        var psd = PSD;
-        psd.unhandleds = []; // For unhandled standard- or 3rd party Promises. Checked at psd.finalize()
-
-        psd.onunhandled = reject; // Triggered directly on unhandled promises of this library.
-
-        psd.finalize = callBoth(function () {
-          var _this = this; // Unhandled standard or 3rd part promises are put in PSD.unhandleds and
-          // examined upon scope completion while unhandled rejections in this Promise
-          // will trigger directly through psd.onunhandled
-
-
-          run_at_end_of_this_or_next_physical_tick(function () {
-            _this.unhandleds.length === 0 ? resolve() : reject(_this.unhandleds[0]);
-          });
-        }, psd.finalize);
-        fn();
-      }, zoneProps, resolve, reject);
-    });
-  }
-});
-/**
-* Take a potentially misbehaving resolver function and make sure
-* onFulfilled and onRejected are only called once.
-*
-* Makes no guarantees about asynchrony.
-*/
-
-function executePromiseTask(promise, fn) {
-  // Promise Resolution Procedure:
-  // https://github.com/promises-aplus/promises-spec#the-promise-resolution-procedure
-  try {
-    fn(function (value) {
-      if (promise._state !== null) return; // Already settled
-
-      if (value === promise) throw new TypeError('A promise cannot be resolved with itself.');
-      var shouldExecuteTick = promise._lib && beginMicroTickScope();
-
-      if (value && typeof value.then === 'function') {
-        executePromiseTask(promise, function (resolve, reject) {
-          value instanceof Promise ? value._then(resolve, reject) : value.then(resolve, reject);
-        });
-      } else {
-        promise._state = true;
-        promise._value = value;
-        propagateAllListeners(promise);
-      }
-
-      if (shouldExecuteTick) endMicroTickScope();
-    }, handleRejection.bind(null, promise)); // If Function.bind is not supported. Exception is handled in catch below
-  } catch (ex) {
-    handleRejection(promise, ex);
-  }
-}
-
-function handleRejection(promise, reason) {
-  rejectingErrors.push(reason);
-  if (promise._state !== null) return;
-  var shouldExecuteTick = promise._lib && beginMicroTickScope();
-  reason = rejectionMapper(reason);
-  promise._state = false;
-  promise._value = reason;
-  debug && reason !== null && _typeof(reason) === 'object' && !reason._promise && tryCatch(function () {
-    var origProp = getPropertyDescriptor(reason, "stack");
-    reason._promise = promise;
-    setProp(reason, "stack", {
-      get: function () {
-        return stack_being_generated ? origProp && (origProp.get ? origProp.get.apply(reason) : origProp.value) : promise.stack;
-      }
-    });
-  }); // Add the failure to a list of possibly uncaught errors
-
-  addPossiblyUnhandledError(promise);
-  propagateAllListeners(promise);
-  if (shouldExecuteTick) endMicroTickScope();
-}
-
-function propagateAllListeners(promise) {
-  //debug && linkToPreviousPromise(promise);
-  var listeners = promise._listeners;
-  promise._listeners = [];
-
-  for (var i = 0, len = listeners.length; i < len; ++i) {
-    propagateToListener(promise, listeners[i]);
-  }
-
-  var psd = promise._PSD;
-  --psd.ref || psd.finalize(); // if psd.ref reaches zero, call psd.finalize();
-
-  if (numScheduledCalls === 0) {
-    // If numScheduledCalls is 0, it means that our stack is not in a callback of a scheduled call,
-    // and that no deferreds where listening to this rejection or success.
-    // Since there is a risk that our stack can contain application code that may
-    // do stuff after this code is finished that may generate new calls, we cannot
-    // call finalizers here.
-    ++numScheduledCalls;
-    asap$1(function () {
-      if (--numScheduledCalls === 0) finalizePhysicalTick(); // Will detect unhandled errors
-    }, []);
-  }
-}
-
-function propagateToListener(promise, listener) {
-  if (promise._state === null) {
-    promise._listeners.push(listener);
-
-    return;
-  }
-
-  var cb = promise._state ? listener.onFulfilled : listener.onRejected;
-
-  if (cb === null) {
-    // This Listener doesnt have a listener for the event being triggered (onFulfilled or onReject) so lets forward the event to any eventual listeners on the Promise instance returned by then() or catch()
-    return (promise._state ? listener.resolve : listener.reject)(promise._value);
-  }
-
-  ++listener.psd.ref;
-  ++numScheduledCalls;
-  asap$1(callListener, [cb, promise, listener]);
-}
-
-function callListener(cb, promise, listener) {
-  try {
-    // Set static variable currentFulfiller to the promise that is being fullfilled,
-    // so that we connect the chain of promises (for long stacks support)
-    currentFulfiller = promise; // Call callback and resolve our listener with it's return value.
-
-    var ret,
-        value = promise._value;
-
-    if (promise._state) {
-      // cb is onResolved
-      ret = cb(value);
-    } else {
-      // cb is onRejected
-      if (rejectingErrors.length) rejectingErrors = [];
-      ret = cb(value);
-      if (rejectingErrors.indexOf(value) === -1) markErrorAsHandled(promise); // Callback didnt do Promise.reject(err) nor reject(err) onto another promise.
-    }
-
-    listener.resolve(ret);
-  } catch (e) {
-    // Exception thrown in callback. Reject our listener.
-    listener.reject(e);
-  } finally {
-    // Restore env and currentFulfiller.
-    currentFulfiller = null;
-    if (--numScheduledCalls === 0) finalizePhysicalTick();
-    --listener.psd.ref || listener.psd.finalize();
-  }
-}
-
-function getStack(promise, stacks, limit) {
-  if (stacks.length === limit) return stacks;
-  var stack = "";
-
-  if (promise._state === false) {
-    var failure = promise._value,
-        errorName,
-        message;
-
-    if (failure != null) {
-      errorName = failure.name || "Error";
-      message = failure.message || failure;
-      stack = prettyStack(failure, 0);
-    } else {
-      errorName = failure; // If error is undefined or null, show that.
-
-      message = "";
-    }
-
-    stacks.push(errorName + (message ? ": " + message : "") + stack);
-  }
-
-  if (debug) {
-    stack = prettyStack(promise._stackHolder, 2);
-    if (stack && stacks.indexOf(stack) === -1) stacks.push(stack);
-    if (promise._prev) getStack(promise._prev, stacks, limit);
-  }
-
-  return stacks;
-}
-
-function linkToPreviousPromise(promise, prev) {
-  // Support long stacks by linking to previous completed promise.
-  var numPrev = prev ? prev._numPrev + 1 : 0;
-
-  if (numPrev < LONG_STACKS_CLIP_LIMIT) {
-    promise._prev = prev;
-    promise._numPrev = numPrev;
-  }
-}
-/* The callback to schedule with setImmediate() or setTimeout().
-   It runs a virtual microtick and executes any callback registered in microtickQueue.
- */
-
-
-function physicalTick() {
-  beginMicroTickScope() && endMicroTickScope();
-}
-
-function beginMicroTickScope() {
-  var wasRootExec = isOutsideMicroTick;
-  isOutsideMicroTick = false;
-  needsNewPhysicalTick = false;
-  return wasRootExec;
-}
-/* Executes micro-ticks without doing try..catch.
-   This can be possible because we only use this internally and
-   the registered functions are exception-safe (they do try..catch
-   internally before calling any external method). If registering
-   functions in the microtickQueue that are not exception-safe, this
-   would destroy the framework and make it instable. So we don't export
-   our asap method.
-*/
-
-
-function endMicroTickScope() {
-  var callbacks, i, l;
-
-  do {
-    while (microtickQueue.length > 0) {
-      callbacks = microtickQueue;
-      microtickQueue = [];
-      l = callbacks.length;
-
-      for (i = 0; i < l; ++i) {
-        var item = callbacks[i];
-        item[0].apply(null, item[1]);
-      }
-    }
-  } while (microtickQueue.length > 0);
-
-  isOutsideMicroTick = true;
-  needsNewPhysicalTick = true;
-}
-
-function finalizePhysicalTick() {
-  var unhandledErrs = unhandledErrors;
-  unhandledErrors = [];
-  unhandledErrs.forEach(function (p) {
-    p._PSD.onunhandled.call(null, p._value, p);
-  });
-  var finalizers = tickFinalizers.slice(0); // Clone first because finalizer may remove itself from list.
-
-  var i = finalizers.length;
-
-  while (i) {
-    finalizers[--i]();
-  }
-}
-
-function run_at_end_of_this_or_next_physical_tick(fn) {
-  function finalizer() {
-    fn();
-    tickFinalizers.splice(tickFinalizers.indexOf(finalizer), 1);
-  }
-
-  tickFinalizers.push(finalizer);
-  ++numScheduledCalls;
-  asap$1(function () {
-    if (--numScheduledCalls === 0) finalizePhysicalTick();
-  }, []);
-}
-
-function addPossiblyUnhandledError(promise) {
-  // Only add to unhandledErrors if not already there. The first one to add to this list
-  // will be upon the first rejection so that the root cause (first promise in the
-  // rejection chain) is the one listed.
-  if (!unhandledErrors.some(function (p) {
-    return p._value === promise._value;
-  })) unhandledErrors.push(promise);
-}
-
-function markErrorAsHandled(promise) {
-  // Called when a reject handled is actually being called.
-  // Search in unhandledErrors for any promise whos _value is this promise_value (list
-  // contains only rejected promises, and only one item per error)
-  var i = unhandledErrors.length;
-
-  while (i) {
-    if (unhandledErrors[--i]._value === promise._value) {
-      // Found a promise that failed with this same error object pointer,
-      // Remove that since there is a listener that actually takes care of it.
-      unhandledErrors.splice(i, 1);
-      return;
-    }
-  }
-}
-
-function PromiseReject(reason) {
-  return new Promise(INTERNAL, false, reason);
-}
-
-function wrap(fn, errorCatcher) {
-  var psd = PSD;
-  return function () {
-    var wasRootExec = beginMicroTickScope(),
-        outerScope = PSD;
-
-    try {
-      switchToZone(psd, true);
-      return fn.apply(this, arguments);
-    } catch (e) {
-      errorCatcher && errorCatcher(e);
-    } finally {
-      switchToZone(outerScope, false);
-      if (wasRootExec) endMicroTickScope();
-    }
-  };
-} //
-// variables used for native await support
-//
-
-
-var task = {
-  awaits: 0,
-  echoes: 0,
-  id: 0
-}; // The ongoing macro-task when using zone-echoing.
-
-var taskCounter = 0; // ID counter for macro tasks.
-
-var zoneStack = []; // Stack of left zones to restore asynchronically.
-
-var zoneEchoes = 0; // zoneEchoes is a must in order to persist zones between native await expressions.
-
-var totalEchoes = 0; // ID counter for micro-tasks. Used to detect possible native await in our Promise.prototype.then.
-
-var zone_id_counter = 0;
-
-function newScope(fn, props$$1, a1, a2) {
-  var parent = PSD,
-      psd = Object.create(parent);
-  psd.parent = parent;
-  psd.ref = 0;
-  psd.global = false;
-  psd.id = ++zone_id_counter; // Prepare for promise patching (done in usePSD):
-
-  var globalEnv = globalPSD.env;
-  psd.env = patchGlobalPromise ? {
-    Promise: Promise,
-    PromiseProp: {
-      value: Promise,
-      configurable: true,
-      writable: true
-    },
-    all: Promise.all,
-    race: Promise.race,
-    resolve: Promise.resolve,
-    reject: Promise.reject,
-    nthen: getPatchedPromiseThen(globalEnv.nthen, psd),
-    gthen: getPatchedPromiseThen(globalEnv.gthen, psd) // global then
-
-  } : {};
-  if (props$$1) extend(psd, props$$1); // unhandleds and onunhandled should not be specifically set here.
-  // Leave them on parent prototype.
-  // unhandleds.push(err) will push to parent's prototype
-  // onunhandled() will call parents onunhandled (with this scope's this-pointer though!)
-
-  ++parent.ref;
-
-  psd.finalize = function () {
-    --this.parent.ref || this.parent.finalize();
-  };
-
-  var rv = usePSD(psd, fn, a1, a2);
-  if (psd.ref === 0) psd.finalize();
-  return rv;
-} // Function to call if scopeFunc returns NativePromise
-// Also for each NativePromise in the arguments to Promise.all()
-
-
-function incrementExpectedAwaits() {
-  if (!task.id) task.id = ++taskCounter;
-  ++task.awaits;
-  task.echoes += ZONE_ECHO_LIMIT;
-  return task.id;
-} // Function to call when 'then' calls back on a native promise where onAwaitExpected() had been called.
-// Also call this when a native await calls then method on a promise. In that case, don't supply
-// sourceTaskId because we already know it refers to current task.
-
-
-function decrementExpectedAwaits(sourceTaskId) {
-  if (!task.awaits || sourceTaskId && sourceTaskId !== task.id) return;
-  if (--task.awaits === 0) task.id = 0;
-  task.echoes = task.awaits * ZONE_ECHO_LIMIT; // Will reset echoes to 0 if awaits is 0.
-} // Call from Promise.all() and Promise.race()
-
-
-function onPossibleParallellAsync(possiblePromise) {
-  if (task.echoes && possiblePromise && possiblePromise.constructor === NativePromise) {
-    incrementExpectedAwaits();
-    return possiblePromise.then(function (x) {
-      decrementExpectedAwaits();
-      return x;
-    }, function (e) {
-      decrementExpectedAwaits();
-      return rejection(e);
-    });
-  }
-
-  return possiblePromise;
-}
-
-function zoneEnterEcho(targetZone) {
-  ++totalEchoes;
-
-  if (!task.echoes || --task.echoes === 0) {
-    task.echoes = task.id = 0; // Cancel zone echoing.
-  }
-
-  zoneStack.push(PSD);
-  switchToZone(targetZone, true);
-}
-
-function zoneLeaveEcho() {
-  var zone = zoneStack[zoneStack.length - 1];
-  zoneStack.pop();
-  switchToZone(zone, false);
-}
-
-function switchToZone(targetZone, bEnteringZone) {
-  var currentZone = PSD;
-
-  if (bEnteringZone ? task.echoes && (!zoneEchoes++ || targetZone !== PSD) : zoneEchoes && (! --zoneEchoes || targetZone !== PSD)) {
-    // Enter or leave zone asynchronically as well, so that tasks initiated during current tick
-    // will be surrounded by the zone when they are invoked.
-    enqueueNativeMicroTask(bEnteringZone ? zoneEnterEcho.bind(null, targetZone) : zoneLeaveEcho);
-  }
-
-  if (targetZone === PSD) return;
-  PSD = targetZone; // The actual zone switch occurs at this line.
-  // Snapshot on every leave from global zone.
-
-  if (currentZone === globalPSD) globalPSD.env = snapShot();
-
-  if (patchGlobalPromise) {
-    // Let's patch the global and native Promises (may be same or may be different)
-    var GlobalPromise = globalPSD.env.Promise; // Swich environments (may be PSD-zone or the global zone. Both apply.)
-
-    var targetEnv = targetZone.env; // Change Promise.prototype.then for native and global Promise (they MAY differ on polyfilled environments, but both can be accessed)
-    // Must be done on each zone change because the patched method contains targetZone in its closure.
-
-    nativePromiseProto.then = targetEnv.nthen;
-    GlobalPromise.prototype.then = targetEnv.gthen;
-
-    if (currentZone.global || targetZone.global) {
-      // Leaving or entering global zone. It's time to patch / restore global Promise.
-      // Set this Promise to window.Promise so that transiled async functions will work on Firefox, Safari and IE, as well as with Zonejs and angular.
-      Object.defineProperty(_global, 'Promise', targetEnv.PromiseProp); // Support Promise.all() etc to work indexedDB-safe also when people are including es6-promise as a module (they might
-      // not be accessing global.Promise but a local reference to it)
-
-      GlobalPromise.all = targetEnv.all;
-      GlobalPromise.race = targetEnv.race;
-      GlobalPromise.resolve = targetEnv.resolve;
-      GlobalPromise.reject = targetEnv.reject;
-    }
-  }
-}
-
-function snapShot() {
-  var GlobalPromise = _global.Promise;
-  return patchGlobalPromise ? {
-    Promise: GlobalPromise,
-    PromiseProp: Object.getOwnPropertyDescriptor(_global, "Promise"),
-    all: GlobalPromise.all,
-    race: GlobalPromise.race,
-    resolve: GlobalPromise.resolve,
-    reject: GlobalPromise.reject,
-    nthen: nativePromiseProto.then,
-    gthen: GlobalPromise.prototype.then
-  } : {};
-}
-
-function usePSD(psd, fn, a1, a2, a3) {
-  var outerScope = PSD;
-
-  try {
-    switchToZone(psd, true);
-    return fn(a1, a2, a3);
-  } finally {
-    switchToZone(outerScope, false);
-  }
-}
-
-function enqueueNativeMicroTask(job) {
-  //
-  // Precondition: nativePromiseThen !== undefined
-  //
-  nativePromiseThen.call(resolvedNativePromise, job);
-}
-
-function nativeAwaitCompatibleWrap(fn, zone, possibleAwait) {
-  return typeof fn !== 'function' ? fn : function () {
-    var outerZone = PSD;
-    if (possibleAwait) incrementExpectedAwaits();
-    switchToZone(zone, true);
-
-    try {
-      return fn.apply(this, arguments);
-    } finally {
-      switchToZone(outerZone, false);
-    }
-  };
-}
-
-function getPatchedPromiseThen(origThen, zone) {
-  return function (onResolved, onRejected) {
-    return origThen.call(this, nativeAwaitCompatibleWrap(onResolved, zone, false), nativeAwaitCompatibleWrap(onRejected, zone, false));
-  };
-}
-
-var UNHANDLEDREJECTION = "unhandledrejection";
-
-function globalError(err, promise) {
-  var rv;
-
-  try {
-    rv = promise.onuncatched(err);
-  } catch (e) {}
-
-  if (rv !== false) try {
-    var event,
-        eventData = {
-      promise: promise,
-      reason: err
-    };
-
-    if (_global.document && document.createEvent) {
-      event = document.createEvent('Event');
-      event.initEvent(UNHANDLEDREJECTION, true, true);
-      extend(event, eventData);
-    } else if (_global.CustomEvent) {
-      event = new CustomEvent(UNHANDLEDREJECTION, {
-        detail: eventData
-      });
-      extend(event, eventData);
-    }
-
-    if (event && _global.dispatchEvent) {
-      dispatchEvent(event);
-      if (!_global.PromiseRejectionEvent && _global.onunhandledrejection) // No native support for PromiseRejectionEvent but user has set window.onunhandledrejection. Manually call it.
-        try {
-          _global.onunhandledrejection(event);
-        } catch (_) {}
-    }
-
-    if (!event.defaultPrevented) {
-      console.warn("Unhandled rejection: " + (err.stack || err));
-    }
-  } catch (e) {}
-}
-
-var rejection = Promise.reject;
-
-function Events(ctx) {
-  var evs = {};
-
-  var rv = function (eventName, subscriber) {
-    if (subscriber) {
-      // Subscribe. If additional arguments than just the subscriber was provided, forward them as well.
-      var i = arguments.length,
-          args = new Array(i - 1);
-
-      while (--i) {
-        args[i - 1] = arguments[i];
-      }
-
-      evs[eventName].subscribe.apply(null, args);
-      return ctx;
-    } else if (typeof eventName === 'string') {
-      // Return interface allowing to fire or unsubscribe from event
-      return evs[eventName];
-    }
-  };
-
-  rv.addEventType = add;
-
-  for (var i = 1, l = arguments.length; i < l; ++i) {
-    add(arguments[i]);
-  }
-
-  return rv;
-
-  function add(eventName, chainFunction, defaultFunction) {
-    if (_typeof(eventName) === 'object') return addConfiguredEvents(eventName);
-    if (!chainFunction) chainFunction = reverseStoppableEventChain;
-    if (!defaultFunction) defaultFunction = nop;
-    var context = {
-      subscribers: [],
-      fire: defaultFunction,
-      subscribe: function (cb) {
-        if (context.subscribers.indexOf(cb) === -1) {
-          context.subscribers.push(cb);
-          context.fire = chainFunction(context.fire, cb);
-        }
-      },
-      unsubscribe: function (cb) {
-        context.subscribers = context.subscribers.filter(function (fn) {
-          return fn !== cb;
-        });
-        context.fire = context.subscribers.reduce(chainFunction, defaultFunction);
-      }
-    };
-    evs[eventName] = rv[eventName] = context;
-    return context;
-  }
-
-  function addConfiguredEvents(cfg) {
-    // events(this, {reading: [functionChain, nop]});
-    keys(cfg).forEach(function (eventName) {
-      var args = cfg[eventName];
-
-      if (isArray(args)) {
-        add(eventName, cfg[eventName][0], cfg[eventName][1]);
-      } else if (args === 'asap') {
-        // Rather than approaching event subscription using a functional approach, we here do it in a for-loop where subscriber is executed in its own stack
-        // enabling that any exception that occur wont disturb the initiator and also not nescessary be catched and forgotten.
-        var context = add(eventName, mirror, function fire() {
-          // Optimazation-safe cloning of arguments into args.
-          var i = arguments.length,
-              args = new Array(i);
-
-          while (i--) {
-            args[i] = arguments[i];
-          } // All each subscriber:
-
-
-          context.subscribers.forEach(function (fn) {
-            asap(function fireEvent() {
-              fn.apply(null, args);
-            });
-          });
-        });
-      } else throw new exceptions.InvalidArgument("Invalid event config");
-    });
-  }
-}
-/*
- * Dexie.js - a minimalistic wrapper for IndexedDB
- * ===============================================
- *
- * Copyright (c) 2014-2017 David Fahlander
- *
- * Version {version}, {date}
- *
- * http://dexie.org
- *
- * Apache License Version 2.0, January 2004, http://www.apache.org/licenses/LICENSE-2.0
- *
- */
-
-
-var DEXIE_VERSION = '{version}';
-var maxString = String.fromCharCode(65535);
-
-var maxKey = function () {
-  try {
-    IDBKeyRange.only([[]]);
-    return [[]];
-  } catch (e) {
-    return maxString;
-  }
-}();
-
-var minKey = -Infinity;
-var INVALID_KEY_ARGUMENT = "Invalid key provided. Keys must be of type string, number, Date or Array<string | number | Date>.";
-var STRING_EXPECTED = "String expected.";
-var connections = [];
-var isIEOrEdge = typeof navigator !== 'undefined' && /(MSIE|Trident|Edge)/.test(navigator.userAgent);
-var hasIEDeleteObjectStoreBug = isIEOrEdge;
-var hangsOnDeleteLargeKeyRange = isIEOrEdge;
-
-var dexieStackFrameFilter = function (frame) {
-  return !/(dexie\.js|dexie\.min\.js)/.test(frame);
-};
-
-var dbNamesDB; // Global database for backing Dexie.getDatabaseNames() on browser without indexedDB.webkitGetDatabaseNames() 
-// Init debug
-
-setDebug(debug, dexieStackFrameFilter);
-
-function Dexie(dbName, options) {
-  /// <param name="options" type="Object" optional="true">Specify only if you wich to control which addons that should run on this instance</param>
-  var deps = Dexie.dependencies;
-  var opts = extend({
-    // Default Options
-    addons: Dexie.addons,
-    autoOpen: true,
-    indexedDB: deps.indexedDB,
-    IDBKeyRange: deps.IDBKeyRange // Backend IDBKeyRange api. Default to browser env.
-
-  }, options);
-  var addons = opts.addons,
-      autoOpen = opts.autoOpen,
-      indexedDB = opts.indexedDB,
-      IDBKeyRange = opts.IDBKeyRange;
-  var globalSchema = this._dbSchema = {};
-  var versions = [];
-  var dbStoreNames = [];
-  var allTables = {}; ///<var type="IDBDatabase" />
-
-  var idbdb = null; // Instance of IDBDatabase
-
-  var dbOpenError = null;
-  var isBeingOpened = false;
-  var onReadyBeingFired = null;
-  var openComplete = false;
-  var READONLY = "readonly",
-      READWRITE = "readwrite";
-  var db = this;
-  var dbReadyResolve,
-      dbReadyPromise = new Promise(function (resolve) {
-    dbReadyResolve = resolve;
-  }),
-      cancelOpen,
-      openCanceller = new Promise(function (_, reject) {
-    cancelOpen = reject;
-  });
-  var autoSchema = true;
-  var hasNativeGetDatabaseNames = !!getNativeGetDatabaseNamesFn(indexedDB),
-      hasGetAll;
-
-  function init() {
-    // Default subscribers to "versionchange" and "blocked".
-    // Can be overridden by custom handlers. If custom handlers return false, these default
-    // behaviours will be prevented.
-    db.on("versionchange", function (ev) {
-      // Default behavior for versionchange event is to close database connection.
-      // Caller can override this behavior by doing db.on("versionchange", function(){ return false; });
-      // Let's not block the other window from making it's delete() or open() call.
-      // NOTE! This event is never fired in IE,Edge or Safari.
-      if (ev.newVersion > 0) console.warn("Another connection wants to upgrade database '" + db.name + "'. Closing db now to resume the upgrade.");else console.warn("Another connection wants to delete database '" + db.name + "'. Closing db now to resume the delete request.");
-      db.close(); // In many web applications, it would be recommended to force window.reload()
-      // when this event occurs. To do that, subscribe to the versionchange event
-      // and call window.location.reload(true) if ev.newVersion > 0 (not a deletion)
-      // The reason for this is that your current web app obviously has old schema code that needs
-      // to be updated. Another window got a newer version of the app and needs to upgrade DB but
-      // your window is blocking it unless we close it here.
-    });
-    db.on("blocked", function (ev) {
-      if (!ev.newVersion || ev.newVersion < ev.oldVersion) console.warn("Dexie.delete('" + db.name + "') was blocked");else console.warn("Upgrade '" + db.name + "' blocked by other connection holding version " + ev.oldVersion / 10);
-    });
-  } //
-  //
-  //
-  // ------------------------- Versioning Framework---------------------------
-  //
-  //
-  //
-
-
-  this.version = function (versionNumber) {
-    /// <param name="versionNumber" type="Number"></param>
-    /// <returns type="Version"></returns>
-    if (idbdb || isBeingOpened) throw new exceptions.Schema("Cannot add version when database is open");
-    this.verno = Math.max(this.verno, versionNumber);
-    var versionInstance = versions.filter(function (v) {
-      return v._cfg.version === versionNumber;
-    })[0];
-    if (versionInstance) return versionInstance;
-    versionInstance = new Version(versionNumber);
-    versions.push(versionInstance);
-    versions.sort(lowerVersionFirst); // Disable autoschema mode, as at least one version is specified.
-
-    autoSchema = false;
-    return versionInstance;
-  };
-
-  function Version(versionNumber) {
-    this._cfg = {
-      version: versionNumber,
-      storesSource: null,
-      dbschema: {},
-      tables: {},
-      contentUpgrade: null
-    };
-    this.stores({}); // Derive earlier schemas by default.
-  }
-
-  extend(Version.prototype, {
-    stores: function (stores) {
-      /// <summary>
-      ///   Defines the schema for a particular version
-      /// </summary>
-      /// <param name="stores" type="Object">
-      /// Example: <br/>
-      ///   {users: "id++,first,last,&amp;username,*email", <br/>
-      ///   passwords: "id++,&amp;username"}<br/>
-      /// <br/>
-      /// Syntax: {Table: "[primaryKey][++],[&amp;][*]index1,[&amp;][*]index2,..."}<br/><br/>
-      /// Special characters:<br/>
-      ///  "&amp;"  means unique key, <br/>
-      ///  "*"  means value is multiEntry, <br/>
-      ///  "++" means auto-increment and only applicable for primary key <br/>
-      /// </param>
-      this._cfg.storesSource = this._cfg.storesSource ? extend(this._cfg.storesSource, stores) : stores; // Derive stores from earlier versions if they are not explicitely specified as null or a new syntax.
-
-      var storesSpec = {};
-      versions.forEach(function (version) {
-        extend(storesSpec, version._cfg.storesSource);
-      });
-      var dbschema = this._cfg.dbschema = {};
-
-      this._parseStoresSpec(storesSpec, dbschema); // Update the latest schema to this version
-      // Update API
-
-
-      globalSchema = db._dbSchema = dbschema;
-      removeTablesApi([allTables, db, Transaction.prototype]); // Keep Transaction.prototype even though it should be depr.
-
-      setApiOnPlace([allTables, db, Transaction.prototype, this._cfg.tables], keys(dbschema), dbschema);
-      dbStoreNames = keys(dbschema);
-      return this;
-    },
-    upgrade: function (upgradeFunction) {
-      this._cfg.contentUpgrade = upgradeFunction;
-      return this;
-    },
-    _parseStoresSpec: function (stores, outSchema) {
-      keys(stores).forEach(function (tableName) {
-        if (stores[tableName] !== null) {
-          var instanceTemplate = {};
-          var indexes = parseIndexSyntax(stores[tableName]);
-          var primKey = indexes.shift();
-          if (primKey.multi) throw new exceptions.Schema("Primary key cannot be multi-valued");
-          if (primKey.keyPath) setByKeyPath(instanceTemplate, primKey.keyPath, primKey.auto ? 0 : primKey.keyPath);
-          indexes.forEach(function (idx) {
-            if (idx.auto) throw new exceptions.Schema("Only primary key can be marked as autoIncrement (++)");
-            if (!idx.keyPath) throw new exceptions.Schema("Index must have a name and cannot be an empty string");
-            setByKeyPath(instanceTemplate, idx.keyPath, idx.compound ? idx.keyPath.map(function () {
-              return "";
-            }) : "");
-          });
-          outSchema[tableName] = new TableSchema(tableName, primKey, indexes, instanceTemplate);
-        }
-      });
-    }
-  });
-
-  function runUpgraders(oldVersion, idbtrans, reject) {
-    var trans = db._createTransaction(READWRITE, dbStoreNames, globalSchema);
-
-    trans.create(idbtrans);
-
-    trans._completion.catch(reject);
-
-    var rejectTransaction = trans._reject.bind(trans);
-
-    newScope(function () {
-      PSD.trans = trans;
-
-      if (oldVersion === 0) {
-        // Create tables:
-        keys(globalSchema).forEach(function (tableName) {
-          createTable(idbtrans, tableName, globalSchema[tableName].primKey, globalSchema[tableName].indexes);
-        });
-        Promise.follow(function () {
-          return db.on.populate.fire(trans);
-        }).catch(rejectTransaction);
-      } else updateTablesAndIndexes(oldVersion, trans, idbtrans).catch(rejectTransaction);
-    });
-  }
-
-  function updateTablesAndIndexes(oldVersion, trans, idbtrans) {
-    // Upgrade version to version, step-by-step from oldest to newest version.
-    // Each transaction object will contain the table set that was current in that version (but also not-yet-deleted tables from its previous version)
-    var queue = [];
-    var oldVersionStruct = versions.filter(function (version) {
-      return version._cfg.version === oldVersion;
-    })[0];
-    if (!oldVersionStruct) throw new exceptions.Upgrade("Dexie specification of currently installed DB version is missing");
-    globalSchema = db._dbSchema = oldVersionStruct._cfg.dbschema;
-    var anyContentUpgraderHasRun = false;
-    var versToRun = versions.filter(function (v) {
-      return v._cfg.version > oldVersion;
-    });
-    versToRun.forEach(function (version) {
-      /// <param name="version" type="Version"></param>
-      queue.push(function () {
-        var oldSchema = globalSchema;
-        var newSchema = version._cfg.dbschema;
-        adjustToExistingIndexNames(oldSchema, idbtrans);
-        adjustToExistingIndexNames(newSchema, idbtrans);
-        globalSchema = db._dbSchema = newSchema;
-        var diff = getSchemaDiff(oldSchema, newSchema); // Add tables           
-
-        diff.add.forEach(function (tuple) {
-          createTable(idbtrans, tuple[0], tuple[1].primKey, tuple[1].indexes);
-        }); // Change tables
-
-        diff.change.forEach(function (change) {
-          if (change.recreate) {
-            throw new exceptions.Upgrade("Not yet support for changing primary key");
-          } else {
-            var store = idbtrans.objectStore(change.name); // Add indexes
-
-            change.add.forEach(function (idx) {
-              addIndex(store, idx);
-            }); // Update indexes
-
-            change.change.forEach(function (idx) {
-              store.deleteIndex(idx.name);
-              addIndex(store, idx);
-            }); // Delete indexes
-
-            change.del.forEach(function (idxName) {
-              store.deleteIndex(idxName);
-            });
-          }
-        });
-
-        if (version._cfg.contentUpgrade) {
-          anyContentUpgraderHasRun = true;
-          return Promise.follow(function () {
-            version._cfg.contentUpgrade(trans);
-          });
-        }
-      });
-      queue.push(function (idbtrans) {
-        if (!anyContentUpgraderHasRun || !hasIEDeleteObjectStoreBug) {
-          var newSchema = version._cfg.dbschema; // Delete old tables
-
-          deleteRemovedTables(newSchema, idbtrans);
-        }
-      });
-    }); // Now, create a queue execution engine
-
-    function runQueue() {
-      return queue.length ? Promise.resolve(queue.shift()(trans.idbtrans)).then(runQueue) : Promise.resolve();
-    }
-
-    return runQueue().then(function () {
-      createMissingTables(globalSchema, idbtrans); // At last, make sure to create any missing tables. (Needed by addons that add stores to DB without specifying version)
-    });
-  }
-
-  function getSchemaDiff(oldSchema, newSchema) {
-    var diff = {
-      del: [],
-      add: [],
-      change: [] // Array of {name: tableName, recreate: newDefinition, del: delIndexNames, add: newIndexDefs, change: changedIndexDefs}
-
-    };
-
-    for (var table in oldSchema) {
-      if (!newSchema[table]) diff.del.push(table);
-    }
-
-    for (table in newSchema) {
-      var oldDef = oldSchema[table],
-          newDef = newSchema[table];
-
-      if (!oldDef) {
-        diff.add.push([table, newDef]);
-      } else {
-        var change = {
-          name: table,
-          def: newDef,
-          recreate: false,
-          del: [],
-          add: [],
-          change: []
-        };
-
-        if (oldDef.primKey.src !== newDef.primKey.src) {
-          // Primary key has changed. Remove and re-add table.
-          change.recreate = true;
-          diff.change.push(change);
-        } else {
-          // Same primary key. Just find out what differs:
-          var oldIndexes = oldDef.idxByName;
-          var newIndexes = newDef.idxByName;
-
-          for (var idxName in oldIndexes) {
-            if (!newIndexes[idxName]) change.del.push(idxName);
-          }
-
-          for (idxName in newIndexes) {
-            var oldIdx = oldIndexes[idxName],
-                newIdx = newIndexes[idxName];
-            if (!oldIdx) change.add.push(newIdx);else if (oldIdx.src !== newIdx.src) change.change.push(newIdx);
-          }
-
-          if (change.del.length > 0 || change.add.length > 0 || change.change.length > 0) {
-            diff.change.push(change);
-          }
-        }
-      }
-    }
-
-    return diff;
-  }
-
-  function createTable(idbtrans, tableName, primKey, indexes) {
-    /// <param name="idbtrans" type="IDBTransaction"></param>
-    var store = idbtrans.db.createObjectStore(tableName, primKey.keyPath ? {
-      keyPath: primKey.keyPath,
-      autoIncrement: primKey.auto
-    } : {
-      autoIncrement: primKey.auto
-    });
-    indexes.forEach(function (idx) {
-      addIndex(store, idx);
-    });
-    return store;
-  }
-
-  function createMissingTables(newSchema, idbtrans) {
-    keys(newSchema).forEach(function (tableName) {
-      if (!idbtrans.db.objectStoreNames.contains(tableName)) {
-        createTable(idbtrans, tableName, newSchema[tableName].primKey, newSchema[tableName].indexes);
-      }
-    });
-  }
-
-  function deleteRemovedTables(newSchema, idbtrans) {
-    for (var i = 0; i < idbtrans.db.objectStoreNames.length; ++i) {
-      var storeName = idbtrans.db.objectStoreNames[i];
-
-      if (newSchema[storeName] == null) {
-        idbtrans.db.deleteObjectStore(storeName);
-      }
-    }
-  }
-
-  function addIndex(store, idx) {
-    store.createIndex(idx.name, idx.keyPath, {
-      unique: idx.unique,
-      multiEntry: idx.multi
-    });
-  } //
-  //
-  //      Dexie Protected API
-  //
-  //
-
-
-  this._allTables = allTables;
-
-  this._createTransaction = function (mode, storeNames, dbschema, parentTransaction) {
-    return new Transaction(mode, storeNames, dbschema, parentTransaction);
-  };
-  /* Generate a temporary transaction when db operations are done outside a transaction scope.
-  */
-
-
-  function tempTransaction(mode, storeNames, fn) {
-    if (!openComplete && !PSD.letThrough) {
-      if (!isBeingOpened) {
-        if (!autoOpen) return rejection(new exceptions.DatabaseClosed());
-        db.open().catch(nop); // Open in background. If if fails, it will be catched by the final promise anyway.
-      }
-
-      return dbReadyPromise.then(function () {
-        return tempTransaction(mode, storeNames, fn);
-      });
-    } else {
-      var trans = db._createTransaction(mode, storeNames, globalSchema);
-
-      try {
-        trans.create();
-      } catch (ex) {
-        return rejection(ex);
-      }
-
-      return trans._promise(mode, function (resolve, reject) {
-        return newScope(function () {
-          PSD.trans = trans;
-          return fn(resolve, reject, trans);
-        });
-      }).then(function (result) {
-        // Instead of resolving value directly, wait with resolving it until transaction has completed.
-        // Otherwise the data would not be in the DB if requesting it in the then() operation.
-        // Specifically, to ensure that the following expression will work:
-        //
-        //   db.friends.put({name: "Arne"}).then(function () {
-        //       db.friends.where("name").equals("Arne").count(function(count) {
-        //           assert (count === 1);
-        //       });
-        //   });
-        //
-        return trans._completion.then(function () {
-          return result;
-        });
-      });
-      /*.catch(err => { // Don't do this as of now. If would affect bulk- and modify methods in a way that could be more intuitive. But wait! Maybe change in next major.
-      trans._reject(err);
-      return rejection(err);
-      });*/
-    }
-  }
-
-  this._whenReady = function (fn) {
-    return openComplete || PSD.letThrough ? fn() : new Promise(function (resolve, reject) {
-      if (!isBeingOpened) {
-        if (!autoOpen) {
-          reject(new exceptions.DatabaseClosed());
-          return;
-        }
-
-        db.open().catch(nop); // Open in background. If if fails, it will be catched by the final promise anyway.
-      }
-
-      dbReadyPromise.then(resolve, reject);
-    }).then(fn);
-  }; //
-  //
-  //
-  //
-  //      Dexie API
-  //
-  //
-  //
-
-
-  this.verno = 0;
-
-  this.open = function () {
-    if (isBeingOpened || idbdb) return dbReadyPromise.then(function () {
-      return dbOpenError ? rejection(dbOpenError) : db;
-    });
-    debug && (openCanceller._stackHolder = getErrorWithStack()); // Let stacks point to when open() was called rather than where new Dexie() was called.
-
-    isBeingOpened = true;
-    dbOpenError = null;
-    openComplete = false; // Function pointers to call when the core opening process completes.
-
-    var resolveDbReady = dbReadyResolve,
-        // upgradeTransaction to abort on failure.
-    upgradeTransaction = null;
-    return Promise.race([openCanceller, new Promise(function (resolve, reject) {
-      // Multiply db.verno with 10 will be needed to workaround upgrading bug in IE:
-      // IE fails when deleting objectStore after reading from it.
-      // A future version of Dexie.js will stopover an intermediate version to workaround this.
-      // At that point, we want to be backward compatible. Could have been multiplied with 2, but by using 10, it is easier to map the number to the real version number.
-      // If no API, throw!
-      if (!indexedDB) throw new exceptions.MissingAPI("indexedDB API not found. If using IE10+, make sure to run your code on a server URL " + "(not locally). If using old Safari versions, make sure to include indexedDB polyfill.");
-      var req = autoSchema ? indexedDB.open(dbName) : indexedDB.open(dbName, Math.round(db.verno * 10));
-      if (!req) throw new exceptions.MissingAPI("IndexedDB API not available"); // May happen in Safari private mode, see https://github.com/dfahlander/Dexie.js/issues/134
-
-      req.onerror = eventRejectHandler(reject);
-      req.onblocked = wrap(fireOnBlocked);
-      req.onupgradeneeded = wrap(function (e) {
-        upgradeTransaction = req.transaction;
-
-        if (autoSchema && !db._allowEmptyDB) {
-          // Caller did not specify a version or schema. Doing that is only acceptable for opening alread existing databases.
-          // If onupgradeneeded is called it means database did not exist. Reject the open() promise and make sure that we
-          // do not create a new database by accident here.
-          req.onerror = preventDefault; // Prohibit onabort error from firing before we're done!
-
-          upgradeTransaction.abort(); // Abort transaction (would hope that this would make DB disappear but it doesnt.)
-          // Close database and delete it.
-
-          req.result.close();
-          var delreq = indexedDB.deleteDatabase(dbName); // The upgrade transaction is atomic, and javascript is single threaded - meaning that there is no risk that we delete someone elses database here!
-
-          delreq.onsuccess = delreq.onerror = wrap(function () {
-            reject(new exceptions.NoSuchDatabase("Database " + dbName + " doesnt exist"));
-          });
-        } else {
-          upgradeTransaction.onerror = eventRejectHandler(reject);
-          var oldVer = e.oldVersion > Math.pow(2, 62) ? 0 : e.oldVersion; // Safari 8 fix.
-
-          runUpgraders(oldVer / 10, upgradeTransaction, reject, req);
-        }
-      }, reject);
-      req.onsuccess = wrap(function () {
-        // Core opening procedure complete. Now let's just record some stuff.
-        upgradeTransaction = null;
-        idbdb = req.result;
-        connections.push(db); // Used for emulating versionchange event on IE/Edge/Safari.
-
-        if (autoSchema) readGlobalSchema();else if (idbdb.objectStoreNames.length > 0) {
-          try {
-            adjustToExistingIndexNames(globalSchema, idbdb.transaction(safariMultiStoreFix(idbdb.objectStoreNames), READONLY));
-          } catch (e) {// Safari may bail out if > 1 store names. However, this shouldnt be a showstopper. Issue #120.
-          }
-        }
-        idbdb.onversionchange = wrap(function (ev) {
-          db._vcFired = true; // detect implementations that not support versionchange (IE/Edge/Safari)
-
-          db.on("versionchange").fire(ev);
-        });
-
-        if (!hasNativeGetDatabaseNames && dbName !== '__dbnames') {
-          dbNamesDB.dbnames.put({
-            name: dbName
-          }).catch(nop);
-        }
-
-        resolve();
-      }, reject);
-    })]).then(function () {
-      // Before finally resolving the dbReadyPromise and this promise,
-      // call and await all on('ready') subscribers:
-      // Dexie.vip() makes subscribers able to use the database while being opened.
-      // This is a must since these subscribers take part of the opening procedure.
-      onReadyBeingFired = [];
-      return Promise.resolve(Dexie.vip(db.on.ready.fire)).then(function fireRemainders() {
-        if (onReadyBeingFired.length > 0) {
-          // In case additional subscribers to db.on('ready') were added during the time db.on.ready.fire was executed.
-          var remainders = onReadyBeingFired.reduce(promisableChain, nop);
-          onReadyBeingFired = [];
-          return Promise.resolve(Dexie.vip(remainders)).then(fireRemainders);
-        }
-      });
-    }).finally(function () {
-      onReadyBeingFired = null;
-    }).then(function () {
-      // Resolve the db.open() with the db instance.
-      isBeingOpened = false;
-      return db;
-    }).catch(function (err) {
-      try {
-        // Did we fail within onupgradeneeded? Make sure to abort the upgrade transaction so it doesnt commit.
-        upgradeTransaction && upgradeTransaction.abort();
-      } catch (e) {}
-
-      isBeingOpened = false; // Set before calling db.close() so that it doesnt reject openCanceller again (leads to unhandled rejection event).
-
-      db.close(); // Closes and resets idbdb, removes connections, resets dbReadyPromise and openCanceller so that a later db.open() is fresh.
-      // A call to db.close() may have made on-ready subscribers fail. Use dbOpenError if set, since err could be a follow-up error on that.
-
-      dbOpenError = err; // Record the error. It will be used to reject further promises of db operations.
-
-      return rejection(dbOpenError);
-    }).finally(function () {
-      openComplete = true;
-      resolveDbReady(); // dbReadyPromise is resolved no matter if open() rejects or resolved. It's just to wake up waiters.
-    });
-  };
-
-  this.close = function () {
-    var idx = connections.indexOf(db);
-    if (idx >= 0) connections.splice(idx, 1);
-
-    if (idbdb) {
-      try {
-        idbdb.close();
-      } catch (e) {}
-
-      idbdb = null;
-    }
-
-    autoOpen = false;
-    dbOpenError = new exceptions.DatabaseClosed();
-    if (isBeingOpened) cancelOpen(dbOpenError); // Reset dbReadyPromise promise:
-
-    dbReadyPromise = new Promise(function (resolve) {
-      dbReadyResolve = resolve;
-    });
-    openCanceller = new Promise(function (_, reject) {
-      cancelOpen = reject;
-    });
-  };
-
-  this.delete = function () {
-    var hasArguments = arguments.length > 0;
-    return new Promise(function (resolve, reject) {
-      if (hasArguments) throw new exceptions.InvalidArgument("Arguments not allowed in db.delete()");
-
-      if (isBeingOpened) {
-        dbReadyPromise.then(doDelete);
-      } else {
-        doDelete();
-      }
-
-      function doDelete() {
-        db.close();
-        var req = indexedDB.deleteDatabase(dbName);
-        req.onsuccess = wrap(function () {
-          if (!hasNativeGetDatabaseNames) {
-            dbNamesDB.dbnames.delete(dbName).catch(nop);
-          }
-
-          resolve();
-        });
-        req.onerror = eventRejectHandler(reject);
-        req.onblocked = fireOnBlocked;
-      }
-    });
-  };
-
-  this.backendDB = function () {
-    return idbdb;
-  };
-
-  this.isOpen = function () {
-    return idbdb !== null;
-  };
-
-  this.hasBeenClosed = function () {
-    return dbOpenError && dbOpenError instanceof exceptions.DatabaseClosed;
-  };
-
-  this.hasFailed = function () {
-    return dbOpenError !== null;
-  };
-
-  this.dynamicallyOpened = function () {
-    return autoSchema;
-  }; //
-  // Properties
-  //
-
-
-  this.name = dbName; // db.tables - an array of all Table instances.
-
-  props(this, {
-    tables: {
-      get: function () {
-        /// <returns type="Array" elementType="Table" />
-        return keys(allTables).map(function (name) {
-          return allTables[name];
-        });
-      }
-    }
-  }); //
-  // Events
-  //
-
-  this.on = Events(this, "populate", "blocked", "versionchange", {
-    ready: [promisableChain, nop]
-  });
-  this.on.ready.subscribe = override(this.on.ready.subscribe, function (subscribe) {
-    return function (subscriber, bSticky) {
-      Dexie.vip(function () {
-        if (openComplete) {
-          // Database already open. Call subscriber asap.
-          if (!dbOpenError) Promise.resolve().then(subscriber); // bSticky: Also subscribe to future open sucesses (after close / reopen) 
-
-          if (bSticky) subscribe(subscriber);
-        } else if (onReadyBeingFired) {
-          // db.on('ready') subscribers are currently being executed and have not yet resolved or rejected
-          onReadyBeingFired.push(subscriber);
-          if (bSticky) subscribe(subscriber);
-        } else {
-          // Database not yet open. Subscribe to it.
-          subscribe(subscriber); // If bSticky is falsy, make sure to unsubscribe subscriber when fired once.
-
-          if (!bSticky) subscribe(function unsubscribe() {
-            db.on.ready.unsubscribe(subscriber);
-            db.on.ready.unsubscribe(unsubscribe);
-          });
-        }
-      });
-    };
-  });
-
-  this.transaction = function () {
-    /// <summary>
-    ///
-    /// </summary>
-    /// <param name="mode" type="String">"r" for readonly, or "rw" for readwrite</param>
-    /// <param name="tableInstances">Table instance, Array of Table instances, String or String Array of object stores to include in the transaction</param>
-    /// <param name="scopeFunc" type="Function">Function to execute with transaction</param>
-    var args = extractTransactionArgs.apply(this, arguments);
-    return this._transaction.apply(this, args);
-  };
-
-  function extractTransactionArgs(mode, _tableArgs_, scopeFunc) {
-    // Let table arguments be all arguments between mode and last argument.
-    var i = arguments.length;
-    if (i < 2) throw new exceptions.InvalidArgument("Too few arguments"); // Prevent optimzation killer (https://github.com/petkaantonov/bluebird/wiki/Optimization-killers#32-leaking-arguments)
-    // and clone arguments except the first one into local var 'args'.
-
-    var args = new Array(i - 1);
-
-    while (--i) {
-      args[i - 1] = arguments[i];
-    } // Let scopeFunc be the last argument and pop it so that args now only contain the table arguments.
-
-
-    scopeFunc = args.pop();
-    var tables = flatten(args); // Support using array as middle argument, or a mix of arrays and non-arrays.
-
-    return [mode, tables, scopeFunc];
-  }
-
-  this._transaction = function (mode, tables, scopeFunc) {
-    var parentTransaction = PSD.trans; // Check if parent transactions is bound to this db instance, and if caller wants to reuse it
-
-    if (!parentTransaction || parentTransaction.db !== db || mode.indexOf('!') !== -1) parentTransaction = null;
-    var onlyIfCompatible = mode.indexOf('?') !== -1;
-    mode = mode.replace('!', '').replace('?', ''); // Ok. Will change arguments[0] as well but we wont touch arguments henceforth.
-
-    try {
-      //
-      // Get storeNames from arguments. Either through given table instances, or through given table names.
-      //
-      var storeNames = tables.map(function (table) {
-        var storeName = table instanceof Table ? table.name : table;
-        if (typeof storeName !== 'string') throw new TypeError("Invalid table argument to Dexie.transaction(). Only Table or String are allowed");
-        return storeName;
-      }); //
-      // Resolve mode. Allow shortcuts "r" and "rw".
-      //
-
-      if (mode == "r" || mode == READONLY) mode = READONLY;else if (mode == "rw" || mode == READWRITE) mode = READWRITE;else throw new exceptions.InvalidArgument("Invalid transaction mode: " + mode);
-
-      if (parentTransaction) {
-        // Basic checks
-        if (parentTransaction.mode === READONLY && mode === READWRITE) {
-          if (onlyIfCompatible) {
-            // Spawn new transaction instead.
-            parentTransaction = null;
-          } else throw new exceptions.SubTransaction("Cannot enter a sub-transaction with READWRITE mode when parent transaction is READONLY");
-        }
-
-        if (parentTransaction) {
-          storeNames.forEach(function (storeName) {
-            if (parentTransaction && parentTransaction.storeNames.indexOf(storeName) === -1) {
-              if (onlyIfCompatible) {
-                // Spawn new transaction instead.
-                parentTransaction = null;
-              } else throw new exceptions.SubTransaction("Table " + storeName + " not included in parent transaction.");
-            }
-          });
-        }
-
-        if (onlyIfCompatible && parentTransaction && !parentTransaction.active) {
-          // '?' mode should not keep using an inactive transaction.
-          parentTransaction = null;
-        }
-      }
-    } catch (e) {
-      return parentTransaction ? parentTransaction._promise(null, function (_, reject) {
-        reject(e);
-      }) : rejection(e);
-    } // If this is a sub-transaction, lock the parent and then launch the sub-transaction.
-
-
-    return parentTransaction ? parentTransaction._promise(mode, enterTransactionScope, "lock") : PSD.trans ? // no parent transaction despite PSD.trans exists. Make sure also
-    // that the zone we create is not a sub-zone of current, because
-    // Promise.follow() should not wait for it if so.
-    usePSD(PSD.transless, function () {
-      return db._whenReady(enterTransactionScope);
-    }) : db._whenReady(enterTransactionScope);
-
-    function enterTransactionScope() {
-      return Promise.resolve().then(function () {
-        // Keep a pointer to last non-transactional PSD to use if someone calls Dexie.ignoreTransaction().
-        var transless = PSD.transless || PSD; // Our transaction.
-        //return new Promise((resolve, reject) => {
-
-        var trans = db._createTransaction(mode, storeNames, globalSchema, parentTransaction); // Let the transaction instance be part of a Promise-specific data (PSD) value.
-
-
-        var zoneProps = {
-          trans: trans,
-          transless: transless
-        };
-
-        if (parentTransaction) {
-          // Emulate transaction commit awareness for inner transaction (must 'commit' when the inner transaction has no more operations ongoing)
-          trans.idbtrans = parentTransaction.idbtrans;
-        } else {
-          trans.create(); // Create the backend transaction so that complete() or error() will trigger even if no operation is made upon it.
-        } // Support for native async await.
-
-
-        if (scopeFunc.constructor === AsyncFunction) {
-          incrementExpectedAwaits();
-        }
-
-        var returnValue;
-        var promiseFollowed = Promise.follow(function () {
-          // Finally, call the scope function with our table and transaction arguments.
-          returnValue = scopeFunc.call(trans, trans);
-
-          if (returnValue) {
-            if (returnValue.constructor === NativePromise) {
-              var decrementor = decrementExpectedAwaits.bind(null, null);
-              returnValue.then(decrementor, decrementor);
-            } else if (typeof returnValue.next === 'function' && typeof returnValue.throw === 'function') {
-              // scopeFunc returned an iterator with throw-support. Handle yield as await.
-              returnValue = awaitIterator(returnValue);
-            }
-          }
-        }, zoneProps);
-        return (returnValue && typeof returnValue.then === 'function' ? // Promise returned. User uses promise-style transactions.
-        Promise.resolve(returnValue).then(function (x) {
-          return trans.active ? x // Transaction still active. Continue.
-          : rejection(new exceptions.PrematureCommit("Transaction committed too early. See http://bit.ly/2kdckMn"));
-        }) // No promise returned. Wait for all outstanding promises before continuing. 
-        : promiseFollowed.then(function () {
-          return returnValue;
-        })).then(function (x) {
-          // sub transactions don't react to idbtrans.oncomplete. We must trigger a completion:
-          if (parentTransaction) trans._resolve(); // wait for trans._completion
-          // (if root transaction, this means 'complete' event. If sub-transaction, we've just fired it ourselves)
-
-          return trans._completion.then(function () {
-            return x;
-          });
-        }).catch(function (e) {
-          trans._reject(e); // Yes, above then-handler were maybe not called because of an unhandled rejection in scopeFunc!
-
-
-          return rejection(e);
-        });
-      });
-    }
-  };
-
-  this.table = function (tableName) {
-    /// <returns type="Table"></returns>
-    if (!hasOwn(allTables, tableName)) {
-      throw new exceptions.InvalidTable("Table " + tableName + " does not exist");
-    }
-
-    return allTables[tableName];
-  }; //
-  //
-  //
-  // Table Class
-  //
-  //
-  //
-
-
-  function Table(name, tableSchema, optionalTrans) {
-    /// <param name="name" type="String"></param>
-    this.name = name;
-    this.schema = tableSchema;
-    this._tx = optionalTrans;
-    this.hook = allTables[name] ? allTables[name].hook : Events(null, {
-      "creating": [hookCreatingChain, nop],
-      "reading": [pureFunctionChain, mirror],
-      "updating": [hookUpdatingChain, nop],
-      "deleting": [hookDeletingChain, nop]
-    });
-  }
-
-  function BulkErrorHandlerCatchAll(errorList, done, supportHooks) {
-    return (supportHooks ? hookedEventRejectHandler : eventRejectHandler)(function (e) {
-      errorList.push(e);
-      done && done();
-    });
-  }
-
-  function bulkDelete(idbstore, trans, keysOrTuples, hasDeleteHook, deletingHook) {
-    // If hasDeleteHook, keysOrTuples must be an array of tuples: [[key1, value2],[key2,value2],...],
-    // else keysOrTuples must be just an array of keys: [key1, key2, ...].
-    return new Promise(function (resolve, reject) {
-      var len = keysOrTuples.length,
-          lastItem = len - 1;
-      if (len === 0) return resolve();
-
-      if (!hasDeleteHook) {
-        for (var i = 0; i < len; ++i) {
-          var req = idbstore.delete(keysOrTuples[i]);
-          req.onerror = eventRejectHandler(reject);
-          if (i === lastItem) req.onsuccess = wrap(function () {
-            return resolve();
-          });
-        }
-      } else {
-        var hookCtx,
-            errorHandler = hookedEventRejectHandler(reject),
-            successHandler = hookedEventSuccessHandler(null);
-        tryCatch(function () {
-          for (var i = 0; i < len; ++i) {
-            hookCtx = {
-              onsuccess: null,
-              onerror: null
-            };
-            var tuple = keysOrTuples[i];
-            deletingHook.call(hookCtx, tuple[0], tuple[1], trans);
-            var req = idbstore.delete(tuple[0]);
-            req._hookCtx = hookCtx;
-            req.onerror = errorHandler;
-            if (i === lastItem) req.onsuccess = hookedEventSuccessHandler(resolve);else req.onsuccess = successHandler;
-          }
-        }, function (err) {
-          hookCtx.onerror && hookCtx.onerror(err);
-          throw err;
-        });
-      }
-    });
-  }
-
-  props(Table.prototype, {
-    //
-    // Table Protected Methods
-    //
-    _trans: function getTransaction(mode, fn, writeLocked) {
-      var trans = this._tx || PSD.trans;
-      return trans && trans.db === db ? trans === PSD.trans ? trans._promise(mode, fn, writeLocked) : newScope(function () {
-        return trans._promise(mode, fn, writeLocked);
-      }, {
-        trans: trans,
-        transless: PSD.transless || PSD
-      }) : tempTransaction(mode, [this.name], fn);
-    },
-    _idbstore: function getIDBObjectStore(mode, fn, writeLocked) {
-      var tableName = this.name;
-
-      function supplyIdbStore(resolve, reject, trans) {
-        if (trans.storeNames.indexOf(tableName) === -1) throw new exceptions.NotFound("Table" + tableName + " not part of transaction");
-        return fn(resolve, reject, trans.idbtrans.objectStore(tableName), trans);
-      }
-
-      return this._trans(mode, supplyIdbStore, writeLocked);
-    },
-    //
-    // Table Public Methods
-    //
-    get: function (keyOrCrit, cb) {
-      if (keyOrCrit && keyOrCrit.constructor === Object) return this.where(keyOrCrit).first(cb);
-      var self = this;
-      return this._idbstore(READONLY, function (resolve, reject, idbstore) {
-        var req = idbstore.get(keyOrCrit);
-        req.onerror = eventRejectHandler(reject);
-        req.onsuccess = wrap(function () {
-          resolve(self.hook.reading.fire(req.result));
-        }, reject);
-      }).then(cb);
-    },
-    where: function (indexOrCrit) {
-      if (typeof indexOrCrit === 'string') return new WhereClause(this, indexOrCrit);
-      if (isArray(indexOrCrit)) return new WhereClause(this, "[" + indexOrCrit.join('+') + "]"); // indexOrCrit is an object map of {[keyPath]:value} 
-
-      var keyPaths = keys(indexOrCrit);
-      if (keyPaths.length === 1) // Only one critera. This was the easy case:
-        return this.where(keyPaths[0]).equals(indexOrCrit[keyPaths[0]]); // Multiple criterias.
-      // Let's try finding a compound index that matches all keyPaths in
-      // arbritary order:
-
-      var compoundIndex = this.schema.indexes.concat(this.schema.primKey).filter(function (ix) {
-        return ix.compound && keyPaths.every(function (keyPath) {
-          return ix.keyPath.indexOf(keyPath) >= 0;
-        }) && ix.keyPath.every(function (keyPath) {
-          return keyPaths.indexOf(keyPath) >= 0;
-        });
-      })[0];
-      if (compoundIndex && maxKey !== maxString) // Cool! We found such compound index
-        // and this browser supports compound indexes (maxKey !== maxString)!
-        return this.where(compoundIndex.name).equals(compoundIndex.keyPath.map(function (kp) {
-          return indexOrCrit[kp];
-        }));
-      if (!compoundIndex) console.warn("The query " + JSON.stringify(indexOrCrit) + " on " + this.name + " would benefit of a " + ("compound index [" + keyPaths.join('+') + "]")); // Ok, now let's fallback to finding at least one matching index
-      // and filter the rest.
-
-      var idxByName = this.schema.idxByName;
-      var simpleIndex = keyPaths.reduce(function (r, keyPath) {
-        return [r[0] || idxByName[keyPath], r[0] || !idxByName[keyPath] ? combine(r[1], function (x) {
-          return '' + getByKeyPath(x, keyPath) == '' + indexOrCrit[keyPath];
-        }) : r[1]];
-      }, [null, null]);
-      var idx = simpleIndex[0];
-      return idx ? this.where(idx.name).equals(indexOrCrit[idx.keyPath]).filter(simpleIndex[1]) : compoundIndex ? this.filter(simpleIndex[1]) : // Has compound but browser bad. Allow filter.
-      this.where(keyPaths).equals(''); // No index at all. Fail lazily.
-    },
-    count: function (cb) {
-      return this.toCollection().count(cb);
-    },
-    offset: function (offset) {
-      return this.toCollection().offset(offset);
-    },
-    limit: function (numRows) {
-      return this.toCollection().limit(numRows);
-    },
-    reverse: function () {
-      return this.toCollection().reverse();
-    },
-    filter: function (filterFunction) {
-      return this.toCollection().and(filterFunction);
-    },
-    each: function (fn) {
-      return this.toCollection().each(fn);
-    },
-    toArray: function (cb) {
-      return this.toCollection().toArray(cb);
-    },
-    orderBy: function (index) {
-      return new Collection(new WhereClause(this, isArray(index) ? "[" + index.join('+') + "]" : index));
-    },
-    toCollection: function () {
-      return new Collection(new WhereClause(this));
-    },
-    mapToClass: function (constructor, structure) {
-      /// <summary>
-      ///     Map table to a javascript constructor function. Objects returned from the database will be instances of this class, making
-      ///     it possible to the instanceOf operator as well as extending the class using constructor.prototype.method = function(){...}.
-      /// </summary>
-      /// <param name="constructor">Constructor function representing the class.</param>
-      /// <param name="structure" optional="true">Helps IDE code completion by knowing the members that objects contain and not just the indexes. Also
-      /// know what type each member has. Example: {name: String, emailAddresses: [String], password}</param>
-      this.schema.mappedClass = constructor;
-      var instanceTemplate = Object.create(constructor.prototype);
-
-      if (structure) {
-        // structure and instanceTemplate is for IDE code competion only while constructor.prototype is for actual inheritance.
-        applyStructure(instanceTemplate, structure);
-      }
-
-      this.schema.instanceTemplate = instanceTemplate; // Now, subscribe to the when("reading") event to make all objects that come out from this table inherit from given class
-      // no matter which method to use for reading (Table.get() or Table.where(...)... )
-
-      var readHook = function (obj) {
-        if (!obj) return obj; // No valid object. (Value is null). Return as is.
-        // Create a new object that derives from constructor:
-
-        var res = Object.create(constructor.prototype); // Clone members:
-
-        for (var m in obj) {
-          if (hasOwn(obj, m)) try {
-            res[m] = obj[m];
-          } catch (_) {}
-        }
-
-        return res;
-      };
-
-      if (this.schema.readHook) {
-        this.hook.reading.unsubscribe(this.schema.readHook);
-      }
-
-      this.schema.readHook = readHook;
-      this.hook("reading", readHook);
-      return constructor;
-    },
-    defineClass: function (structure) {
-      /// <summary>
-      ///     Define all members of the class that represents the table. This will help code completion of when objects are read from the database
-      ///     as well as making it possible to extend the prototype of the returned constructor function.
-      /// </summary>
-      /// <param name="structure">Helps IDE code completion by knowing the members that objects contain and not just the indexes. Also
-      /// know what type each member has. Example: {name: String, emailAddresses: [String], properties: {shoeSize: Number}}</param>
-      return this.mapToClass(Dexie.defineClass(structure), structure);
-    },
-    bulkDelete: function (keys$$1) {
-      if (this.hook.deleting.fire === nop) {
-        return this._idbstore(READWRITE, function (resolve, reject, idbstore, trans) {
-          resolve(bulkDelete(idbstore, trans, keys$$1, false, nop));
-        });
-      } else {
-        return this.where(':id').anyOf(keys$$1).delete().then(function () {}); // Resolve with undefined.
-      }
-    },
-    bulkPut: function (objects, keys$$1) {
-      var _this = this;
-
-      return this._idbstore(READWRITE, function (resolve, reject, idbstore) {
-        if (!idbstore.keyPath && !_this.schema.primKey.auto && !keys$$1) throw new exceptions.InvalidArgument("bulkPut() with non-inbound keys requires keys array in second argument");
-        if (idbstore.keyPath && keys$$1) throw new exceptions.InvalidArgument("bulkPut(): keys argument invalid on tables with inbound keys");
-        if (keys$$1 && keys$$1.length !== objects.length) throw new exceptions.InvalidArgument("Arguments objects and keys must have the same length");
-        if (objects.length === 0) return resolve(); // Caller provided empty list.
-
-        var done = function (result) {
-          if (errorList.length === 0) resolve(result);else reject(new BulkError(_this.name + ".bulkPut(): " + errorList.length + " of " + numObjs + " operations failed", errorList));
-        };
-
-        var req,
-            errorList = [],
-            errorHandler,
-            numObjs = objects.length,
-            table = _this;
-
-        if (_this.hook.creating.fire === nop && _this.hook.updating.fire === nop) {
-          //
-          // Standard Bulk (no 'creating' or 'updating' hooks to care about)
-          //
-          errorHandler = BulkErrorHandlerCatchAll(errorList);
-
-          for (var i = 0, l = objects.length; i < l; ++i) {
-            req = keys$$1 ? idbstore.put(objects[i], keys$$1[i]) : idbstore.put(objects[i]);
-            req.onerror = errorHandler;
-          } // Only need to catch success or error on the last operation
-          // according to the IDB spec.
-
-
-          req.onerror = BulkErrorHandlerCatchAll(errorList, done);
-          req.onsuccess = eventSuccessHandler(done);
-        } else {
-          var effectiveKeys = keys$$1 || idbstore.keyPath && objects.map(function (o) {
-            return getByKeyPath(o, idbstore.keyPath);
-          }); // Generate map of {[key]: object}
-
-          var objectLookup = effectiveKeys && arrayToObject(effectiveKeys, function (key, i) {
-            return key != null && [key, objects[i]];
-          });
-          var promise = !effectiveKeys ? // Auto-incremented key-less objects only without any keys argument.
-          table.bulkAdd(objects) : // Keys provided. Either as inbound in provided objects, or as a keys argument.
-          // Begin with updating those that exists in DB:
-          table.where(':id').anyOf(effectiveKeys.filter(function (key) {
-            return key != null;
-          })).modify(function () {
-            this.value = objectLookup[this.primKey];
-            objectLookup[this.primKey] = null; // Mark as "don't add this"
-          }).catch(ModifyError, function (e) {
-            errorList = e.failures; // No need to concat here. These are the first errors added.
-          }).then(function () {
-            // Now, let's examine which items didnt exist so we can add them:
-            var objsToAdd = [],
-                keysToAdd = keys$$1 && []; // Iterate backwards. Why? Because if same key was used twice, just add the last one.
-
-            for (var i = effectiveKeys.length - 1; i >= 0; --i) {
-              var key = effectiveKeys[i];
-
-              if (key == null || objectLookup[key]) {
-                objsToAdd.push(objects[i]);
-                keys$$1 && keysToAdd.push(key);
-                if (key != null) objectLookup[key] = null; // Mark as "dont add again"
-              }
-            } // The items are in reverse order so reverse them before adding.
-            // Could be important in order to get auto-incremented keys the way the caller
-            // would expect. Could have used unshift instead of push()/reverse(),
-            // but: http://jsperf.com/unshift-vs-reverse
-
-
-            objsToAdd.reverse();
-            keys$$1 && keysToAdd.reverse();
-            return table.bulkAdd(objsToAdd, keysToAdd);
-          }).then(function (lastAddedKey) {
-            // Resolve with key of the last object in given arguments to bulkPut():
-            var lastEffectiveKey = effectiveKeys[effectiveKeys.length - 1]; // Key was provided.
-
-            return lastEffectiveKey != null ? lastEffectiveKey : lastAddedKey;
-          });
-          promise.then(done).catch(BulkError, function (e) {
-            // Concat failure from ModifyError and reject using our 'done' method.
-            errorList = errorList.concat(e.failures);
-            done();
-          }).catch(reject);
-        }
-      }, "locked"); // If called from transaction scope, lock transaction til all steps are done.
-    },
-    bulkAdd: function (objects, keys$$1) {
-      var self = this,
-          creatingHook = this.hook.creating.fire;
-      return this._idbstore(READWRITE, function (resolve, reject, idbstore, trans) {
-        if (!idbstore.keyPath && !self.schema.primKey.auto && !keys$$1) throw new exceptions.InvalidArgument("bulkAdd() with non-inbound keys requires keys array in second argument");
-        if (idbstore.keyPath && keys$$1) throw new exceptions.InvalidArgument("bulkAdd(): keys argument invalid on tables with inbound keys");
-        if (keys$$1 && keys$$1.length !== objects.length) throw new exceptions.InvalidArgument("Arguments objects and keys must have the same length");
-        if (objects.length === 0) return resolve(); // Caller provided empty list.
-
-        function done(result) {
-          if (errorList.length === 0) resolve(result);else reject(new BulkError(self.name + ".bulkAdd(): " + errorList.length + " of " + numObjs + " operations failed", errorList));
-        }
-
-        var req,
-            errorList = [],
-            errorHandler,
-            successHandler,
-            numObjs = objects.length;
-
-        if (creatingHook !== nop) {
-          //
-          // There are subscribers to hook('creating')
-          // Must behave as documented.
-          //
-          var keyPath = idbstore.keyPath,
-              hookCtx;
-          errorHandler = BulkErrorHandlerCatchAll(errorList, null, true);
-          successHandler = hookedEventSuccessHandler(null);
-          tryCatch(function () {
-            for (var i = 0, l = objects.length; i < l; ++i) {
-              hookCtx = {
-                onerror: null,
-                onsuccess: null
-              };
-              var key = keys$$1 && keys$$1[i];
-              var obj = objects[i],
-                  effectiveKey = keys$$1 ? key : keyPath ? getByKeyPath(obj, keyPath) : undefined,
-                  keyToUse = creatingHook.call(hookCtx, effectiveKey, obj, trans);
-
-              if (effectiveKey == null && keyToUse != null) {
-                if (keyPath) {
-                  obj = deepClone(obj);
-                  setByKeyPath(obj, keyPath, keyToUse);
-                } else {
-                  key = keyToUse;
-                }
-              }
-
-              req = key != null ? idbstore.add(obj, key) : idbstore.add(obj);
-              req._hookCtx = hookCtx;
-
-              if (i < l - 1) {
-                req.onerror = errorHandler;
-                if (hookCtx.onsuccess) req.onsuccess = successHandler;
-              }
-            }
-          }, function (err) {
-            hookCtx.onerror && hookCtx.onerror(err);
-            throw err;
-          });
-          req.onerror = BulkErrorHandlerCatchAll(errorList, done, true);
-          req.onsuccess = hookedEventSuccessHandler(done);
-        } else {
-          //
-          // Standard Bulk (no 'creating' hook to care about)
-          //
-          errorHandler = BulkErrorHandlerCatchAll(errorList);
-
-          for (var i = 0, l = objects.length; i < l; ++i) {
-            req = keys$$1 ? idbstore.add(objects[i], keys$$1[i]) : idbstore.add(objects[i]);
-            req.onerror = errorHandler;
-          } // Only need to catch success or error on the last operation
-          // according to the IDB spec.
-
-
-          req.onerror = BulkErrorHandlerCatchAll(errorList, done);
-          req.onsuccess = eventSuccessHandler(done);
-        }
-      });
-    },
-    add: function (obj, key) {
-      /// <summary>
-      ///   Add an object to the database. In case an object with same primary key already exists, the object will not be added.
-      /// </summary>
-      /// <param name="obj" type="Object">A javascript object to insert</param>
-      /// <param name="key" optional="true">Primary key</param>
-      var creatingHook = this.hook.creating.fire;
-      return this._idbstore(READWRITE, function (resolve, reject, idbstore, trans) {
-        var hookCtx = {
-          onsuccess: null,
-          onerror: null
-        };
-
-        if (creatingHook !== nop) {
-          var effectiveKey = key != null ? key : idbstore.keyPath ? getByKeyPath(obj, idbstore.keyPath) : undefined;
-          var keyToUse = creatingHook.call(hookCtx, effectiveKey, obj, trans); // Allow subscribers to when("creating") to generate the key.
-
-          if (effectiveKey == null && keyToUse != null) {
-            if (idbstore.keyPath) setByKeyPath(obj, idbstore.keyPath, keyToUse);else key = keyToUse;
-          }
-        }
-
-        try {
-          var req = key != null ? idbstore.add(obj, key) : idbstore.add(obj);
-          req._hookCtx = hookCtx;
-          req.onerror = hookedEventRejectHandler(reject);
-          req.onsuccess = hookedEventSuccessHandler(function (result) {
-            // TODO: Remove these two lines in next major release (2.0?)
-            // It's no good practice to have side effects on provided parameters
-            var keyPath = idbstore.keyPath;
-            if (keyPath) setByKeyPath(obj, keyPath, result);
-            resolve(result);
-          });
-        } catch (e) {
-          if (hookCtx.onerror) hookCtx.onerror(e);
-          throw e;
-        }
-      });
-    },
-    put: function (obj, key) {
-      var _this = this; /// <summary>
-      ///   Add an object to the database but in case an object with same primary key alread exists, the existing one will get updated.
-      /// </summary>
-      /// <param name="obj" type="Object">A javascript object to insert or update</param>
-      /// <param name="key" optional="true">Primary key</param>
-
-
-      var creatingHook = this.hook.creating.fire,
-          updatingHook = this.hook.updating.fire;
-
-      if (creatingHook !== nop || updatingHook !== nop) {
-        //
-        // People listens to when("creating") or when("updating") events!
-        // We must know whether the put operation results in an CREATE or UPDATE.
-        //
-        var keyPath = this.schema.primKey.keyPath;
-        var effectiveKey = key !== undefined ? key : keyPath && getByKeyPath(obj, keyPath);
-        if (effectiveKey == null) return this.add(obj); // Since key is optional, make sure we get it from obj if not provided
-        // Primary key exist. Lock transaction and try modifying existing. If nothing modified, call add().
-        // clone obj before this async call. If caller modifies obj the line after put(), the IDB spec requires that it should not affect operation.
-
-        obj = deepClone(obj);
-        return this._trans(READWRITE, function () {
-          return _this.where(":id").equals(effectiveKey).modify(function () {
-            // Replace extisting value with our object
-            // CRUD event firing handled in Collection.modify()
-            this.value = obj;
-          }).then(function (count) {
-            return count === 0 ? _this.add(obj, key) : effectiveKey;
-          });
-        }, "locked"); // Lock needed because operation is splitted into modify() and add().
-      } else {
-        // Use the standard IDB put() method.
-        return this._idbstore(READWRITE, function (resolve, reject, idbstore) {
-          var req = key !== undefined ? idbstore.put(obj, key) : idbstore.put(obj);
-          req.onerror = eventRejectHandler(reject);
-          req.onsuccess = wrap(function (ev) {
-            var keyPath = idbstore.keyPath;
-            if (keyPath) setByKeyPath(obj, keyPath, ev.target.result);
-            resolve(req.result);
-          });
-        });
-      }
-    },
-    'delete': function (key) {
-      /// <param name="key">Primary key of the object to delete</param>
-      if (this.hook.deleting.subscribers.length) {
-        // People listens to when("deleting") event. Must implement delete using Collection.delete() that will
-        // call the CRUD event. Only Collection.delete() will know whether an object was actually deleted.
-        return this.where(":id").equals(key).delete();
-      } else {
-        // No one listens. Use standard IDB delete() method.
-        return this._idbstore(READWRITE, function (resolve, reject, idbstore) {
-          var req = idbstore.delete(key);
-          req.onerror = eventRejectHandler(reject);
-          req.onsuccess = wrap(function () {
-            resolve(req.result);
-          });
-        });
-      }
-    },
-    clear: function () {
-      if (this.hook.deleting.subscribers.length) {
-        // People listens to when("deleting") event. Must implement delete using Collection.delete() that will
-        // call the CRUD event. Only Collection.delete() will knows which objects that are actually deleted.
-        return this.toCollection().delete();
-      } else {
-        return this._idbstore(READWRITE, function (resolve, reject, idbstore) {
-          var req = idbstore.clear();
-          req.onerror = eventRejectHandler(reject);
-          req.onsuccess = wrap(function () {
-            resolve(req.result);
-          });
-        });
-      }
-    },
-    update: function (keyOrObject, modifications) {
-      if (_typeof(modifications) !== 'object' || isArray(modifications)) throw new exceptions.InvalidArgument("Modifications must be an object.");
-
-      if (_typeof(keyOrObject) === 'object' && !isArray(keyOrObject)) {
-        // object to modify. Also modify given object with the modifications:
-        keys(modifications).forEach(function (keyPath) {
-          setByKeyPath(keyOrObject, keyPath, modifications[keyPath]);
-        });
-        var key = getByKeyPath(keyOrObject, this.schema.primKey.keyPath);
-        if (key === undefined) return rejection(new exceptions.InvalidArgument("Given object does not contain its primary key"));
-        return this.where(":id").equals(key).modify(modifications);
-      } else {
-        // key to modify
-        return this.where(":id").equals(keyOrObject).modify(modifications);
-      }
-    }
-  }); //
-  //
-  //
-  // Transaction Class
-  //
-  //
-  //
-
-  function Transaction(mode, storeNames, dbschema, parent) {
-    var _this = this; /// <summary>
-    ///    Transaction class. Represents a database transaction. All operations on db goes through a Transaction.
-    /// </summary>
-    /// <param name="mode" type="String">Any of "readwrite" or "readonly"</param>
-    /// <param name="storeNames" type="Array">Array of table names to operate on</param>
-
-
-    this.db = db;
-    this.mode = mode;
-    this.storeNames = storeNames;
-    this.idbtrans = null;
-    this.on = Events(this, "complete", "error", "abort");
-    this.parent = parent || null;
-    this.active = true;
-    this._reculock = 0;
-    this._blockedFuncs = [];
-    this._resolve = null;
-    this._reject = null;
-    this._waitingFor = null;
-    this._waitingQueue = null;
-    this._spinCount = 0; // Just for debugging waitFor()
-
-    this._completion = new Promise(function (resolve, reject) {
-      _this._resolve = resolve;
-      _this._reject = reject;
-    });
-
-    this._completion.then(function () {
-      _this.active = false;
-
-      _this.on.complete.fire();
-    }, function (e) {
-      var wasActive = _this.active;
-      _this.active = false;
-
-      _this.on.error.fire(e);
-
-      _this.parent ? _this.parent._reject(e) : wasActive && _this.idbtrans && _this.idbtrans.abort();
-      return rejection(e); // Indicate we actually DO NOT catch this error.
-    });
-  }
-
-  props(Transaction.prototype, {
-    //
-    // Transaction Protected Methods (not required by API users, but needed internally and eventually by dexie extensions)
-    //
-    _lock: function () {
-      assert(!PSD.global); // Locking and unlocking reuires to be within a PSD scope.
-      // Temporary set all requests into a pending queue if they are called before database is ready.
-
-      ++this._reculock; // Recursive read/write lock pattern using PSD (Promise Specific Data) instead of TLS (Thread Local Storage)
-
-      if (this._reculock === 1 && !PSD.global) PSD.lockOwnerFor = this;
-      return this;
-    },
-    _unlock: function () {
-      assert(!PSD.global); // Locking and unlocking reuires to be within a PSD scope.
-
-      if (--this._reculock === 0) {
-        if (!PSD.global) PSD.lockOwnerFor = null;
-
-        while (this._blockedFuncs.length > 0 && !this._locked()) {
-          var fnAndPSD = this._blockedFuncs.shift();
-
-          try {
-            usePSD(fnAndPSD[1], fnAndPSD[0]);
-          } catch (e) {}
-        }
-      }
-
-      return this;
-    },
-    _locked: function () {
-      // Checks if any write-lock is applied on this transaction.
-      // To simplify the Dexie API for extension implementations, we support recursive locks.
-      // This is accomplished by using "Promise Specific Data" (PSD).
-      // PSD data is bound to a Promise and any child Promise emitted through then() or resolve( new Promise() ).
-      // PSD is local to code executing on top of the call stacks of any of any code executed by Promise():
-      //         * callback given to the Promise() constructor  (function (resolve, reject){...})
-      //         * callbacks given to then()/catch()/finally() methods (function (value){...})
-      // If creating a new independant Promise instance from within a Promise call stack, the new Promise will derive the PSD from the call stack of the parent Promise.
-      // Derivation is done so that the inner PSD __proto__ points to the outer PSD.
-      // PSD.lockOwnerFor will point to current transaction object if the currently executing PSD scope owns the lock.
-      return this._reculock && PSD.lockOwnerFor !== this;
-    },
-    create: function (idbtrans) {
-      var _this = this;
-
-      if (!this.mode) return this;
-      assert(!this.idbtrans);
-
-      if (!idbtrans && !idbdb) {
-        switch (dbOpenError && dbOpenError.name) {
-          case "DatabaseClosedError":
-            // Errors where it is no difference whether it was caused by the user operation or an earlier call to db.open()
-            throw new exceptions.DatabaseClosed(dbOpenError);
-
-          case "MissingAPIError":
-            // Errors where it is no difference whether it was caused by the user operation or an earlier call to db.open()
-            throw new exceptions.MissingAPI(dbOpenError.message, dbOpenError);
-
-          default:
-            // Make it clear that the user operation was not what caused the error - the error had occurred earlier on db.open()!
-            throw new exceptions.OpenFailed(dbOpenError);
-        }
-      }
-
-      if (!this.active) throw new exceptions.TransactionInactive();
-      assert(this._completion._state === null);
-      idbtrans = this.idbtrans = idbtrans || idbdb.transaction(safariMultiStoreFix(this.storeNames), this.mode);
-      idbtrans.onerror = wrap(function (ev) {
-        preventDefault(ev); // Prohibit default bubbling to window.error
-
-        _this._reject(idbtrans.error);
-      });
-      idbtrans.onabort = wrap(function (ev) {
-        preventDefault(ev);
-        _this.active && _this._reject(new exceptions.Abort(idbtrans.error));
-        _this.active = false;
-
-        _this.on("abort").fire(ev);
-      });
-      idbtrans.oncomplete = wrap(function () {
-        _this.active = false;
-
-        _this._resolve();
-      });
-      return this;
-    },
-    _promise: function (mode, fn, bWriteLock) {
-      var _this = this;
-
-      if (mode === READWRITE && this.mode !== READWRITE) return rejection(new exceptions.ReadOnly("Transaction is readonly"));
-      if (!this.active) return rejection(new exceptions.TransactionInactive());
-
-      if (this._locked()) {
-        return new Promise(function (resolve, reject) {
-          _this._blockedFuncs.push([function () {
-            _this._promise(mode, fn, bWriteLock).then(resolve, reject);
-          }, PSD]);
-        });
-      } else if (bWriteLock) {
-        return newScope(function () {
-          var p = new Promise(function (resolve, reject) {
-            _this._lock();
-
-            var rv = fn(resolve, reject, _this);
-            if (rv && rv.then) rv.then(resolve, reject);
-          });
-          p.finally(function () {
-            return _this._unlock();
-          });
-          p._lib = true;
-          return p;
-        });
-      } else {
-        var p = new Promise(function (resolve, reject) {
-          var rv = fn(resolve, reject, _this);
-          if (rv && rv.then) rv.then(resolve, reject);
-        });
-        p._lib = true;
-        return p;
-      }
-    },
-    _root: function () {
-      return this.parent ? this.parent._root() : this;
-    },
-    waitFor: function (promise) {
-      // Always operate on the root transaction (in case this is a sub stransaction)
-      var root = this._root(); // For stability reasons, convert parameter to promise no matter what type is passed to waitFor().
-      // (We must be able to call .then() on it.)
-
-
-      promise = Promise.resolve(promise);
-
-      if (root._waitingFor) {
-        // Already called waitFor(). Wait for both to complete.
-        root._waitingFor = root._waitingFor.then(function () {
-          return promise;
-        });
-      } else {
-        // We're not in waiting state. Start waiting state.
-        root._waitingFor = promise;
-        root._waitingQueue = []; // Start interacting with indexedDB until promise completes:
-
-        var store = root.idbtrans.objectStore(root.storeNames[0]);
-
-        (function spin() {
-          ++root._spinCount; // For debugging only
-
-          while (root._waitingQueue.length) {
-            root._waitingQueue.shift()();
-          }
-
-          if (root._waitingFor) store.get(-Infinity).onsuccess = spin;
-        })();
-      }
-
-      var currentWaitPromise = root._waitingFor;
-      return new Promise(function (resolve, reject) {
-        promise.then(function (res) {
-          return root._waitingQueue.push(wrap(resolve.bind(null, res)));
-        }, function (err) {
-          return root._waitingQueue.push(wrap(reject.bind(null, err)));
-        }).finally(function () {
-          if (root._waitingFor === currentWaitPromise) {
-            // No one added a wait after us. Safe to stop the spinning.
-            root._waitingFor = null;
-          }
-        });
-      });
-    },
-    //
-    // Transaction Public Properties and Methods
-    //
-    abort: function () {
-      this.active && this._reject(new exceptions.Abort());
-      this.active = false;
-    },
-    tables: {
-      get: deprecated("Transaction.tables", function () {
-        return allTables;
-      })
-    },
-    table: function (name) {
-      var table = db.table(name); // Don't check that table is part of transaction. It must fail lazily!
-
-      return new Table(name, table.schema, this);
-    }
-  }); //
-  //
-  //
-  // WhereClause
-  //
-  //
-  //
-
-  function WhereClause(table, index, orCollection) {
-    /// <param name="table" type="Table"></param>
-    /// <param name="index" type="String" optional="true"></param>
-    /// <param name="orCollection" type="Collection" optional="true"></param>
-    this._ctx = {
-      table: table,
-      index: index === ":id" ? null : index,
-      or: orCollection
-    };
-  }
-
-  props(WhereClause.prototype, function () {
-    // WhereClause private methods
-    function fail(collectionOrWhereClause, err, T) {
-      var collection = collectionOrWhereClause instanceof WhereClause ? new Collection(collectionOrWhereClause) : collectionOrWhereClause;
-      collection._ctx.error = T ? new T(err) : new TypeError(err);
-      return collection;
-    }
-
-    function emptyCollection(whereClause) {
-      return new Collection(whereClause, function () {
-        return IDBKeyRange.only("");
-      }).limit(0);
-    }
-
-    function upperFactory(dir) {
-      return dir === "next" ? function (s) {
-        return s.toUpperCase();
-      } : function (s) {
-        return s.toLowerCase();
-      };
-    }
-
-    function lowerFactory(dir) {
-      return dir === "next" ? function (s) {
-        return s.toLowerCase();
-      } : function (s) {
-        return s.toUpperCase();
-      };
-    }
-
-    function nextCasing(key, lowerKey, upperNeedle, lowerNeedle, cmp, dir) {
-      var length = Math.min(key.length, lowerNeedle.length);
-      var llp = -1;
-
-      for (var i = 0; i < length; ++i) {
-        var lwrKeyChar = lowerKey[i];
-
-        if (lwrKeyChar !== lowerNeedle[i]) {
-          if (cmp(key[i], upperNeedle[i]) < 0) return key.substr(0, i) + upperNeedle[i] + upperNeedle.substr(i + 1);
-          if (cmp(key[i], lowerNeedle[i]) < 0) return key.substr(0, i) + lowerNeedle[i] + upperNeedle.substr(i + 1);
-          if (llp >= 0) return key.substr(0, llp) + lowerKey[llp] + upperNeedle.substr(llp + 1);
-          return null;
-        }
-
-        if (cmp(key[i], lwrKeyChar) < 0) llp = i;
-      }
-
-      if (length < lowerNeedle.length && dir === "next") return key + upperNeedle.substr(key.length);
-      if (length < key.length && dir === "prev") return key.substr(0, upperNeedle.length);
-      return llp < 0 ? null : key.substr(0, llp) + lowerNeedle[llp] + upperNeedle.substr(llp + 1);
-    }
-
-    function addIgnoreCaseAlgorithm(whereClause, match, needles, suffix) {
-      /// <param name="needles" type="Array" elementType="String"></param>
-      var upper,
-          lower,
-          compare,
-          upperNeedles,
-          lowerNeedles,
-          direction,
-          nextKeySuffix,
-          needlesLen = needles.length;
-
-      if (!needles.every(function (s) {
-        return typeof s === 'string';
-      })) {
-        return fail(whereClause, STRING_EXPECTED);
-      }
-
-      function initDirection(dir) {
-        upper = upperFactory(dir);
-        lower = lowerFactory(dir);
-        compare = dir === "next" ? simpleCompare : simpleCompareReverse;
-        var needleBounds = needles.map(function (needle) {
-          return {
-            lower: lower(needle),
-            upper: upper(needle)
-          };
-        }).sort(function (a, b) {
-          return compare(a.lower, b.lower);
-        });
-        upperNeedles = needleBounds.map(function (nb) {
-          return nb.upper;
-        });
-        lowerNeedles = needleBounds.map(function (nb) {
-          return nb.lower;
-        });
-        direction = dir;
-        nextKeySuffix = dir === "next" ? "" : suffix;
-      }
-
-      initDirection("next");
-      var c = new Collection(whereClause, function () {
-        return IDBKeyRange.bound(upperNeedles[0], lowerNeedles[needlesLen - 1] + suffix);
-      });
-
-      c._ondirectionchange = function (direction) {
-        // This event onlys occur before filter is called the first time.
-        initDirection(direction);
-      };
-
-      var firstPossibleNeedle = 0;
-
-      c._addAlgorithm(function (cursor, advance, resolve) {
-        /// <param name="cursor" type="IDBCursor"></param>
-        /// <param name="advance" type="Function"></param>
-        /// <param name="resolve" type="Function"></param>
-        var key = cursor.key;
-        if (typeof key !== 'string') return false;
-        var lowerKey = lower(key);
-
-        if (match(lowerKey, lowerNeedles, firstPossibleNeedle)) {
-          return true;
-        } else {
-          var lowestPossibleCasing = null;
-
-          for (var i = firstPossibleNeedle; i < needlesLen; ++i) {
-            var casing = nextCasing(key, lowerKey, upperNeedles[i], lowerNeedles[i], compare, direction);
-            if (casing === null && lowestPossibleCasing === null) firstPossibleNeedle = i + 1;else if (lowestPossibleCasing === null || compare(lowestPossibleCasing, casing) > 0) {
-              lowestPossibleCasing = casing;
-            }
-          }
-
-          if (lowestPossibleCasing !== null) {
-            advance(function () {
-              cursor.continue(lowestPossibleCasing + nextKeySuffix);
-            });
-          } else {
-            advance(resolve);
-          }
-
-          return false;
-        }
-      });
-
-      return c;
-    } //
-    // WhereClause public methods
-    //
-
-
-    return {
-      between: function (lower, upper, includeLower, includeUpper) {
-        /// <summary>
-        ///     Filter out records whose where-field lays between given lower and upper values. Applies to Strings, Numbers and Dates.
-        /// </summary>
-        /// <param name="lower"></param>
-        /// <param name="upper"></param>
-        /// <param name="includeLower" optional="true">Whether items that equals lower should be included. Default true.</param>
-        /// <param name="includeUpper" optional="true">Whether items that equals upper should be included. Default false.</param>
-        /// <returns type="Collection"></returns>
-        includeLower = includeLower !== false; // Default to true
-
-        includeUpper = includeUpper === true; // Default to false
-
-        try {
-          if (cmp(lower, upper) > 0 || cmp(lower, upper) === 0 && (includeLower || includeUpper) && !(includeLower && includeUpper)) return emptyCollection(this); // Workaround for idiotic W3C Specification that DataError must be thrown if lower > upper. The natural result would be to return an empty collection.
-
-          return new Collection(this, function () {
-            return IDBKeyRange.bound(lower, upper, !includeLower, !includeUpper);
-          });
-        } catch (e) {
-          return fail(this, INVALID_KEY_ARGUMENT);
-        }
-      },
-      equals: function (value) {
-        return new Collection(this, function () {
-          return IDBKeyRange.only(value);
-        });
-      },
-      above: function (value) {
-        return new Collection(this, function () {
-          return IDBKeyRange.lowerBound(value, true);
-        });
-      },
-      aboveOrEqual: function (value) {
-        return new Collection(this, function () {
-          return IDBKeyRange.lowerBound(value);
-        });
-      },
-      below: function (value) {
-        return new Collection(this, function () {
-          return IDBKeyRange.upperBound(value, true);
-        });
-      },
-      belowOrEqual: function (value) {
-        return new Collection(this, function () {
-          return IDBKeyRange.upperBound(value);
-        });
-      },
-      startsWith: function (str) {
-        /// <param name="str" type="String"></param>
-        if (typeof str !== 'string') return fail(this, STRING_EXPECTED);
-        return this.between(str, str + maxString, true, true);
-      },
-      startsWithIgnoreCase: function (str) {
-        /// <param name="str" type="String"></param>
-        if (str === "") return this.startsWith(str);
-        return addIgnoreCaseAlgorithm(this, function (x, a) {
-          return x.indexOf(a[0]) === 0;
-        }, [str], maxString);
-      },
-      equalsIgnoreCase: function (str) {
-        /// <param name="str" type="String"></param>
-        return addIgnoreCaseAlgorithm(this, function (x, a) {
-          return x === a[0];
-        }, [str], "");
-      },
-      anyOfIgnoreCase: function () {
-        var set = getArrayOf.apply(NO_CHAR_ARRAY, arguments);
-        if (set.length === 0) return emptyCollection(this);
-        return addIgnoreCaseAlgorithm(this, function (x, a) {
-          return a.indexOf(x) !== -1;
-        }, set, "");
-      },
-      startsWithAnyOfIgnoreCase: function () {
-        var set = getArrayOf.apply(NO_CHAR_ARRAY, arguments);
-        if (set.length === 0) return emptyCollection(this);
-        return addIgnoreCaseAlgorithm(this, function (x, a) {
-          return a.some(function (n) {
-            return x.indexOf(n) === 0;
-          });
-        }, set, maxString);
-      },
-      anyOf: function () {
-        var set = getArrayOf.apply(NO_CHAR_ARRAY, arguments);
-        var compare = ascending;
-
-        try {
-          set.sort(compare);
-        } catch (e) {
-          return fail(this, INVALID_KEY_ARGUMENT);
-        }
-
-        if (set.length === 0) return emptyCollection(this);
-        var c = new Collection(this, function () {
-          return IDBKeyRange.bound(set[0], set[set.length - 1]);
-        });
-
-        c._ondirectionchange = function (direction) {
-          compare = direction === "next" ? ascending : descending;
-          set.sort(compare);
-        };
-
-        var i = 0;
-
-        c._addAlgorithm(function (cursor, advance, resolve) {
-          var key = cursor.key;
-
-          while (compare(key, set[i]) > 0) {
-            // The cursor has passed beyond this key. Check next.
-            ++i;
-
-            if (i === set.length) {
-              // There is no next. Stop searching.
-              advance(resolve);
-              return false;
-            }
-          }
-
-          if (compare(key, set[i]) === 0) {
-            // The current cursor value should be included and we should continue a single step in case next item has the same key or possibly our next key in set.
-            return true;
-          } else {
-            // cursor.key not yet at set[i]. Forward cursor to the next key to hunt for.
-            advance(function () {
-              cursor.continue(set[i]);
-            });
-            return false;
-          }
-        });
-
-        return c;
-      },
-      notEqual: function (value) {
-        return this.inAnyRange([[minKey, value], [value, maxKey]], {
-          includeLowers: false,
-          includeUppers: false
-        });
-      },
-      noneOf: function () {
-        var set = getArrayOf.apply(NO_CHAR_ARRAY, arguments);
-        if (set.length === 0) return new Collection(this); // Return entire collection.
-
-        try {
-          set.sort(ascending);
-        } catch (e) {
-          return fail(this, INVALID_KEY_ARGUMENT);
-        } // Transform ["a","b","c"] to a set of ranges for between/above/below: [[minKey,"a"], ["a","b"], ["b","c"], ["c",maxKey]]
-
-
-        var ranges = set.reduce(function (res, val) {
-          return res ? res.concat([[res[res.length - 1][1], val]]) : [[minKey, val]];
-        }, null);
-        ranges.push([set[set.length - 1], maxKey]);
-        return this.inAnyRange(ranges, {
-          includeLowers: false,
-          includeUppers: false
-        });
-      },
-
-      /** Filter out values withing given set of ranges.
-      * Example, give children and elders a rebate of 50%:
-      *
-      *   db.friends.where('age').inAnyRange([[0,18],[65,Infinity]]).modify({Rebate: 1/2});
-      *
-      * @param {(string|number|Date|Array)[][]} ranges
-      * @param {{includeLowers: boolean, includeUppers: boolean}} options
-      */
-      inAnyRange: function (ranges, options) {
-        if (ranges.length === 0) return emptyCollection(this);
-
-        if (!ranges.every(function (range) {
-          return range[0] !== undefined && range[1] !== undefined && ascending(range[0], range[1]) <= 0;
-        })) {
-          return fail(this, "First argument to inAnyRange() must be an Array of two-value Arrays [lower,upper] where upper must not be lower than lower", exceptions.InvalidArgument);
-        }
-
-        var includeLowers = !options || options.includeLowers !== false; // Default to true
-
-        var includeUppers = options && options.includeUppers === true; // Default to false
-
-        function addRange(ranges, newRange) {
-          for (var i = 0, l = ranges.length; i < l; ++i) {
-            var range = ranges[i];
-
-            if (cmp(newRange[0], range[1]) < 0 && cmp(newRange[1], range[0]) > 0) {
-              range[0] = min(range[0], newRange[0]);
-              range[1] = max(range[1], newRange[1]);
-              break;
-            }
-          }
-
-          if (i === l) ranges.push(newRange);
-          return ranges;
-        }
-
-        var sortDirection = ascending;
-
-        function rangeSorter(a, b) {
-          return sortDirection(a[0], b[0]);
-        } // Join overlapping ranges
-
-
-        var set;
-
-        try {
-          set = ranges.reduce(addRange, []);
-          set.sort(rangeSorter);
-        } catch (ex) {
-          return fail(this, INVALID_KEY_ARGUMENT);
-        }
-
-        var i = 0;
-        var keyIsBeyondCurrentEntry = includeUppers ? function (key) {
-          return ascending(key, set[i][1]) > 0;
-        } : function (key) {
-          return ascending(key, set[i][1]) >= 0;
-        };
-        var keyIsBeforeCurrentEntry = includeLowers ? function (key) {
-          return descending(key, set[i][0]) > 0;
-        } : function (key) {
-          return descending(key, set[i][0]) >= 0;
-        };
-
-        function keyWithinCurrentRange(key) {
-          return !keyIsBeyondCurrentEntry(key) && !keyIsBeforeCurrentEntry(key);
-        }
-
-        var checkKey = keyIsBeyondCurrentEntry;
-        var c = new Collection(this, function () {
-          return IDBKeyRange.bound(set[0][0], set[set.length - 1][1], !includeLowers, !includeUppers);
-        });
-
-        c._ondirectionchange = function (direction) {
-          if (direction === "next") {
-            checkKey = keyIsBeyondCurrentEntry;
-            sortDirection = ascending;
-          } else {
-            checkKey = keyIsBeforeCurrentEntry;
-            sortDirection = descending;
-          }
-
-          set.sort(rangeSorter);
-        };
-
-        c._addAlgorithm(function (cursor, advance, resolve) {
-          var key = cursor.key;
-
-          while (checkKey(key)) {
-            // The cursor has passed beyond this key. Check next.
-            ++i;
-
-            if (i === set.length) {
-              // There is no next. Stop searching.
-              advance(resolve);
-              return false;
-            }
-          }
-
-          if (keyWithinCurrentRange(key)) {
-            // The current cursor value should be included and we should continue a single step in case next item has the same key or possibly our next key in set.
-            return true;
-          } else if (cmp(key, set[i][1]) === 0 || cmp(key, set[i][0]) === 0) {
-            // includeUpper or includeLower is false so keyWithinCurrentRange() returns false even though we are at range border.
-            // Continue to next key but don't include this one.
-            return false;
-          } else {
-            // cursor.key not yet at set[i]. Forward cursor to the next key to hunt for.
-            advance(function () {
-              if (sortDirection === ascending) cursor.continue(set[i][0]);else cursor.continue(set[i][1]);
-            });
-            return false;
-          }
-        });
-
-        return c;
-      },
-      startsWithAnyOf: function () {
-        var set = getArrayOf.apply(NO_CHAR_ARRAY, arguments);
-
-        if (!set.every(function (s) {
-          return typeof s === 'string';
-        })) {
-          return fail(this, "startsWithAnyOf() only works with strings");
-        }
-
-        if (set.length === 0) return emptyCollection(this);
-        return this.inAnyRange(set.map(function (str) {
-          return [str, str + maxString];
-        }));
-      }
-    };
-  }); //
-  //
-  //
-  // Collection Class
-  //
-  //
-  //
-
-  function Collection(whereClause, keyRangeGenerator) {
-    /// <summary>
-    ///
-    /// </summary>
-    /// <param name="whereClause" type="WhereClause">Where clause instance</param>
-    /// <param name="keyRangeGenerator" value="function(){ return IDBKeyRange.bound(0,1);}" optional="true"></param>
-    var keyRange = null,
-        error = null;
-    if (keyRangeGenerator) try {
-      keyRange = keyRangeGenerator();
-    } catch (ex) {
-      error = ex;
-    }
-    var whereCtx = whereClause._ctx,
-        table = whereCtx.table;
-    this._ctx = {
-      table: table,
-      index: whereCtx.index,
-      isPrimKey: !whereCtx.index || table.schema.primKey.keyPath && whereCtx.index === table.schema.primKey.name,
-      range: keyRange,
-      keysOnly: false,
-      dir: "next",
-      unique: "",
-      algorithm: null,
-      filter: null,
-      replayFilter: null,
-      justLimit: true,
-      isMatch: null,
-      offset: 0,
-      limit: Infinity,
-      error: error,
-      or: whereCtx.or,
-      valueMapper: table.hook.reading.fire
-    };
-  }
-
-  function isPlainKeyRange(ctx, ignoreLimitFilter) {
-    return !(ctx.filter || ctx.algorithm || ctx.or) && (ignoreLimitFilter ? ctx.justLimit : !ctx.replayFilter);
-  }
-
-  props(Collection.prototype, function () {
-    //
-    // Collection Private Functions
-    //
-    function addFilter(ctx, fn) {
-      ctx.filter = combine(ctx.filter, fn);
-    }
-
-    function addReplayFilter(ctx, factory, isLimitFilter) {
-      var curr = ctx.replayFilter;
-      ctx.replayFilter = curr ? function () {
-        return combine(curr(), factory());
-      } : factory;
-      ctx.justLimit = isLimitFilter && !curr;
-    }
-
-    function addMatchFilter(ctx, fn) {
-      ctx.isMatch = combine(ctx.isMatch, fn);
-    }
-    /** @param ctx {
-     *      isPrimKey: boolean,
-     *      table: Table,
-     *      index: string
-     * }
-     * @param store IDBObjectStore
-     **/
-
-
-    function getIndexOrStore(ctx, store) {
-      if (ctx.isPrimKey) return store;
-      var indexSpec = ctx.table.schema.idxByName[ctx.index];
-      if (!indexSpec) throw new exceptions.Schema("KeyPath " + ctx.index + " on object store " + store.name + " is not indexed");
-      return store.index(indexSpec.name);
-    }
-    /** @param ctx {
-     *      isPrimKey: boolean,
-     *      table: Table,
-     *      index: string,
-     *      keysOnly: boolean,
-     *      range?: IDBKeyRange,
-     *      dir: "next" | "prev"
-     * }
-     */
-
-
-    function openCursor(ctx, store) {
-      var idxOrStore = getIndexOrStore(ctx, store);
-      return ctx.keysOnly && 'openKeyCursor' in idxOrStore ? idxOrStore.openKeyCursor(ctx.range || null, ctx.dir + ctx.unique) : idxOrStore.openCursor(ctx.range || null, ctx.dir + ctx.unique);
-    }
-
-    function iter(ctx, fn, resolve, reject, idbstore) {
-      var filter = ctx.replayFilter ? combine(ctx.filter, ctx.replayFilter()) : ctx.filter;
-
-      if (!ctx.or) {
-        iterate(openCursor(ctx, idbstore), combine(ctx.algorithm, filter), fn, resolve, reject, !ctx.keysOnly && ctx.valueMapper);
-      } else (function () {
-        var set = {};
-        var resolved = 0;
-
-        function resolveboth() {
-          if (++resolved === 2) resolve(); // Seems like we just support or btwn max 2 expressions, but there are no limit because we do recursion.
-        }
-
-        function union(item, cursor, advance) {
-          if (!filter || filter(cursor, advance, resolveboth, reject)) {
-            var primaryKey = cursor.primaryKey;
-            var key = '' + primaryKey;
-            if (key === '[object ArrayBuffer]') key = '' + new Uint8Array(primaryKey);
-
-            if (!hasOwn(set, key)) {
-              set[key] = true;
-              fn(item, cursor, advance);
-            }
-          }
-        }
-
-        ctx.or._iterate(union, resolveboth, reject, idbstore);
-
-        iterate(openCursor(ctx, idbstore), ctx.algorithm, union, resolveboth, reject, !ctx.keysOnly && ctx.valueMapper);
-      })();
-    }
-
-    return {
-      //
-      // Collection Protected Functions
-      //
-      _read: function (fn, cb) {
-        var ctx = this._ctx;
-        return ctx.error ? ctx.table._trans(null, rejection.bind(null, ctx.error)) : ctx.table._idbstore(READONLY, fn).then(cb);
-      },
-      _write: function (fn) {
-        var ctx = this._ctx;
-        return ctx.error ? ctx.table._trans(null, rejection.bind(null, ctx.error)) : ctx.table._idbstore(READWRITE, fn, "locked"); // When doing write operations on collections, always lock the operation so that upcoming operations gets queued.
-      },
-      _addAlgorithm: function (fn) {
-        var ctx = this._ctx;
-        ctx.algorithm = combine(ctx.algorithm, fn);
-      },
-      _iterate: function (fn, resolve, reject, idbstore) {
-        return iter(this._ctx, fn, resolve, reject, idbstore);
-      },
-      clone: function (props$$1) {
-        var rv = Object.create(this.constructor.prototype),
-            ctx = Object.create(this._ctx);
-        if (props$$1) extend(ctx, props$$1);
-        rv._ctx = ctx;
-        return rv;
-      },
-      raw: function () {
-        this._ctx.valueMapper = null;
-        return this;
-      },
-      //
-      // Collection Public methods
-      //
-      each: function (fn) {
-        var ctx = this._ctx;
-        return this._read(function (resolve, reject, idbstore) {
-          iter(ctx, fn, resolve, reject, idbstore);
-        });
-      },
-      count: function (cb) {
-        var ctx = this._ctx;
-
-        if (isPlainKeyRange(ctx, true)) {
-          // This is a plain key range. We can use the count() method if the index.
-          return this._read(function (resolve, reject, idbstore) {
-            var idx = getIndexOrStore(ctx, idbstore);
-            var req = ctx.range ? idx.count(ctx.range) : idx.count();
-            req.onerror = eventRejectHandler(reject);
-
-            req.onsuccess = function (e) {
-              resolve(Math.min(e.target.result, ctx.limit));
-            };
-          }, cb);
-        } else {
-          // Algorithms, filters or expressions are applied. Need to count manually.
-          var count = 0;
-          return this._read(function (resolve, reject, idbstore) {
-            iter(ctx, function () {
-              ++count;
-              return false;
-            }, function () {
-              resolve(count);
-            }, reject, idbstore);
-          }, cb);
-        }
-      },
-      sortBy: function (keyPath, cb) {
-        /// <param name="keyPath" type="String"></param>
-        var parts = keyPath.split('.').reverse(),
-            lastPart = parts[0],
-            lastIndex = parts.length - 1;
-
-        function getval(obj, i) {
-          if (i) return getval(obj[parts[i]], i - 1);
-          return obj[lastPart];
-        }
-
-        var order = this._ctx.dir === "next" ? 1 : -1;
-
-        function sorter(a, b) {
-          var aVal = getval(a, lastIndex),
-              bVal = getval(b, lastIndex);
-          return aVal < bVal ? -order : aVal > bVal ? order : 0;
-        }
-
-        return this.toArray(function (a) {
-          return a.sort(sorter);
-        }).then(cb);
-      },
-      toArray: function (cb) {
-        var ctx = this._ctx;
-        return this._read(function (resolve, reject, idbstore) {
-          if (hasGetAll && ctx.dir === 'next' && isPlainKeyRange(ctx, true) && ctx.limit > 0) {
-            // Special optimation if we could use IDBObjectStore.getAll() or
-            // IDBKeyRange.getAll():
-            var readingHook = ctx.table.hook.reading.fire;
-            var idxOrStore = getIndexOrStore(ctx, idbstore);
-            var req = ctx.limit < Infinity ? idxOrStore.getAll(ctx.range, ctx.limit) : idxOrStore.getAll(ctx.range);
-            req.onerror = eventRejectHandler(reject);
-            req.onsuccess = readingHook === mirror ? eventSuccessHandler(resolve) : eventSuccessHandler(function (res) {
-              try {
-                resolve(res.map(readingHook));
-              } catch (e) {
-                reject(e);
-              }
-            });
-          } else {
-            // Getting array through a cursor.
-            var a = [];
-            iter(ctx, function (item) {
-              a.push(item);
-            }, function arrayComplete() {
-              resolve(a);
-            }, reject, idbstore);
-          }
-        }, cb);
-      },
-      offset: function (offset) {
-        var ctx = this._ctx;
-        if (offset <= 0) return this;
-        ctx.offset += offset; // For count()
-
-        if (isPlainKeyRange(ctx)) {
-          addReplayFilter(ctx, function () {
-            var offsetLeft = offset;
-            return function (cursor, advance) {
-              if (offsetLeft === 0) return true;
-
-              if (offsetLeft === 1) {
-                --offsetLeft;
-                return false;
-              }
-
-              advance(function () {
-                cursor.advance(offsetLeft);
-                offsetLeft = 0;
-              });
-              return false;
-            };
-          });
-        } else {
-          addReplayFilter(ctx, function () {
-            var offsetLeft = offset;
-            return function () {
-              return --offsetLeft < 0;
-            };
-          });
-        }
-
-        return this;
-      },
-      limit: function (numRows) {
-        this._ctx.limit = Math.min(this._ctx.limit, numRows); // For count()
-
-        addReplayFilter(this._ctx, function () {
-          var rowsLeft = numRows;
-          return function (cursor, advance, resolve) {
-            if (--rowsLeft <= 0) advance(resolve); // Stop after this item has been included
-
-            return rowsLeft >= 0; // If numRows is already below 0, return false because then 0 was passed to numRows initially. Otherwise we wouldnt come here.
-          };
-        }, true);
-        return this;
-      },
-      until: function (filterFunction, bIncludeStopEntry) {
-        addFilter(this._ctx, function (cursor, advance, resolve) {
-          if (filterFunction(cursor.value)) {
-            advance(resolve);
-            return bIncludeStopEntry;
-          } else {
-            return true;
-          }
-        });
-        return this;
-      },
-      first: function (cb) {
-        return this.limit(1).toArray(function (a) {
-          return a[0];
-        }).then(cb);
-      },
-      last: function (cb) {
-        return this.reverse().first(cb);
-      },
-      filter: function (filterFunction) {
-        /// <param name="jsFunctionFilter" type="Function">function(val){return true/false}</param>
-        addFilter(this._ctx, function (cursor) {
-          return filterFunction(cursor.value);
-        }); // match filters not used in Dexie.js but can be used by 3rd part libraries to test a
-        // collection for a match without querying DB. Used by Dexie.Observable.
-
-        addMatchFilter(this._ctx, filterFunction);
-        return this;
-      },
-      and: function (filterFunction) {
-        return this.filter(filterFunction);
-      },
-      or: function (indexName) {
-        return new WhereClause(this._ctx.table, indexName, this);
-      },
-      reverse: function () {
-        this._ctx.dir = this._ctx.dir === "prev" ? "next" : "prev";
-        if (this._ondirectionchange) this._ondirectionchange(this._ctx.dir);
-        return this;
-      },
-      desc: function () {
-        return this.reverse();
-      },
-      eachKey: function (cb) {
-        var ctx = this._ctx;
-        ctx.keysOnly = !ctx.isMatch;
-        return this.each(function (val, cursor) {
-          cb(cursor.key, cursor);
-        });
-      },
-      eachUniqueKey: function (cb) {
-        this._ctx.unique = "unique";
-        return this.eachKey(cb);
-      },
-      eachPrimaryKey: function (cb) {
-        var ctx = this._ctx;
-        ctx.keysOnly = !ctx.isMatch;
-        return this.each(function (val, cursor) {
-          cb(cursor.primaryKey, cursor);
-        });
-      },
-      keys: function (cb) {
-        var ctx = this._ctx;
-        ctx.keysOnly = !ctx.isMatch;
-        var a = [];
-        return this.each(function (item, cursor) {
-          a.push(cursor.key);
-        }).then(function () {
-          return a;
-        }).then(cb);
-      },
-      primaryKeys: function (cb) {
-        var ctx = this._ctx;
-
-        if (hasGetAll && ctx.dir === 'next' && isPlainKeyRange(ctx, true) && ctx.limit > 0) {
-          // Special optimation if we could use IDBObjectStore.getAllKeys() or
-          // IDBKeyRange.getAllKeys():
-          return this._read(function (resolve, reject, idbstore) {
-            var idxOrStore = getIndexOrStore(ctx, idbstore);
-            var req = ctx.limit < Infinity ? idxOrStore.getAllKeys(ctx.range, ctx.limit) : idxOrStore.getAllKeys(ctx.range);
-            req.onerror = eventRejectHandler(reject);
-            req.onsuccess = eventSuccessHandler(resolve);
-          }).then(cb);
-        }
-
-        ctx.keysOnly = !ctx.isMatch;
-        var a = [];
-        return this.each(function (item, cursor) {
-          a.push(cursor.primaryKey);
-        }).then(function () {
-          return a;
-        }).then(cb);
-      },
-      uniqueKeys: function (cb) {
-        this._ctx.unique = "unique";
-        return this.keys(cb);
-      },
-      firstKey: function (cb) {
-        return this.limit(1).keys(function (a) {
-          return a[0];
-        }).then(cb);
-      },
-      lastKey: function (cb) {
-        return this.reverse().firstKey(cb);
-      },
-      distinct: function () {
-        var ctx = this._ctx,
-            idx = ctx.index && ctx.table.schema.idxByName[ctx.index];
-        if (!idx || !idx.multi) return this; // distinct() only makes differencies on multiEntry indexes.
-
-        var set = {};
-        addFilter(this._ctx, function (cursor) {
-          var strKey = cursor.primaryKey.toString(); // Converts any Date to String, String to String, Number to String and Array to comma-separated string
-
-          var found = hasOwn(set, strKey);
-          set[strKey] = true;
-          return !found;
-        });
-        return this;
-      },
-      //
-      // Methods that mutate storage
-      //
-      modify: function (changes) {
-        var self = this,
-            ctx = this._ctx,
-            hook = ctx.table.hook,
-            updatingHook = hook.updating.fire,
-            deletingHook = hook.deleting.fire;
-        return this._write(function (resolve, reject, idbstore, trans) {
-          var modifyer;
-
-          if (typeof changes === 'function') {
-            // Changes is a function that may update, add or delete propterties or even require a deletion the object itself (delete this.item)
-            if (updatingHook === nop && deletingHook === nop) {
-              // Noone cares about what is being changed. Just let the modifier function be the given argument as is.
-              modifyer = changes;
-            } else {
-              // People want to know exactly what is being modified or deleted.
-              // Let modifyer be a proxy function that finds out what changes the caller is actually doing
-              // and call the hooks accordingly!
-              modifyer = function (item) {
-                var origItem = deepClone(item); // Clone the item first so we can compare laters.
-
-                if (changes.call(this, item, this) === false) return false; // Call the real modifyer function (If it returns false explicitely, it means it dont want to modify anyting on this object)
-
-                if (!hasOwn(this, "value")) {
-                  // The real modifyer function requests a deletion of the object. Inform the deletingHook that a deletion is taking place.
-                  deletingHook.call(this, this.primKey, item, trans);
-                } else {
-                  // No deletion. Check what was changed
-                  var objectDiff = getObjectDiff(origItem, this.value);
-                  var additionalChanges = updatingHook.call(this, objectDiff, this.primKey, origItem, trans);
-
-                  if (additionalChanges) {
-                    // Hook want to apply additional modifications. Make sure to fullfill the will of the hook.
-                    item = this.value;
-                    keys(additionalChanges).forEach(function (keyPath) {
-                      setByKeyPath(item, keyPath, additionalChanges[keyPath]); // Adding {keyPath: undefined} means that the keyPath should be deleted. Handled by setByKeyPath
-                    });
-                  }
-                }
-              };
-            }
-          } else if (updatingHook === nop) {
-            // changes is a set of {keyPath: value} and no one is listening to the updating hook.
-            var keyPaths = keys(changes);
-            var numKeys = keyPaths.length;
-
-            modifyer = function (item) {
-              var anythingModified = false;
-
-              for (var i = 0; i < numKeys; ++i) {
-                var keyPath = keyPaths[i],
-                    val = changes[keyPath];
-
-                if (getByKeyPath(item, keyPath) !== val) {
-                  setByKeyPath(item, keyPath, val); // Adding {keyPath: undefined} means that the keyPath should be deleted. Handled by setByKeyPath
-
-                  anythingModified = true;
-                }
-              }
-
-              return anythingModified;
-            };
-          } else {
-            // changes is a set of {keyPath: value} and people are listening to the updating hook so we need to call it and
-            // allow it to add additional modifications to make.
-            var origChanges = changes;
-            changes = shallowClone(origChanges); // Let's work with a clone of the changes keyPath/value set so that we can restore it in case a hook extends it.
-
-            modifyer = function (item) {
-              var anythingModified = false;
-              var additionalChanges = updatingHook.call(this, changes, this.primKey, deepClone(item), trans);
-              if (additionalChanges) extend(changes, additionalChanges);
-              keys(changes).forEach(function (keyPath) {
-                var val = changes[keyPath];
-
-                if (getByKeyPath(item, keyPath) !== val) {
-                  setByKeyPath(item, keyPath, val);
-                  anythingModified = true;
-                }
-              });
-              if (additionalChanges) changes = shallowClone(origChanges); // Restore original changes for next iteration
-
-              return anythingModified;
-            };
-          }
-
-          var count = 0;
-          var successCount = 0;
-          var iterationComplete = false;
-          var failures = [];
-          var failKeys = [];
-          var currentKey = null;
-
-          function modifyItem(item, cursor) {
-            currentKey = cursor.primaryKey;
-            var thisContext = {
-              primKey: cursor.primaryKey,
-              value: item,
-              onsuccess: null,
-              onerror: null
-            };
-
-            function onerror(e) {
-              failures.push(e);
-              failKeys.push(thisContext.primKey);
-              checkFinished();
-              return true; // Catch these errors and let a final rejection decide whether or not to abort entire transaction
-            }
-
-            if (modifyer.call(thisContext, item, thisContext) !== false) {
-              var bDelete = !hasOwn(thisContext, "value");
-              ++count;
-              tryCatch(function () {
-                var req = bDelete ? cursor.delete() : cursor.update(thisContext.value);
-                req._hookCtx = thisContext;
-                req.onerror = hookedEventRejectHandler(onerror);
-                req.onsuccess = hookedEventSuccessHandler(function () {
-                  ++successCount;
-                  checkFinished();
-                });
-              }, onerror);
-            } else if (thisContext.onsuccess) {
-              // Hook will expect either onerror or onsuccess to always be called!
-              thisContext.onsuccess(thisContext.value);
-            }
-          }
-
-          function doReject(e) {
-            if (e) {
-              failures.push(e);
-              failKeys.push(currentKey);
-            }
-
-            return reject(new ModifyError("Error modifying one or more objects", failures, successCount, failKeys));
-          }
-
-          function checkFinished() {
-            if (iterationComplete && successCount + failures.length === count) {
-              if (failures.length > 0) doReject();else resolve(successCount);
-            }
-          }
-
-          self.clone().raw()._iterate(modifyItem, function () {
-            iterationComplete = true;
-            checkFinished();
-          }, doReject, idbstore);
-        });
-      },
-      'delete': function () {
-        var _this = this;
-
-        var ctx = this._ctx,
-            range = ctx.range,
-            deletingHook = ctx.table.hook.deleting.fire,
-            hasDeleteHook = deletingHook !== nop;
-
-        if (!hasDeleteHook && isPlainKeyRange(ctx) && (ctx.isPrimKey && !hangsOnDeleteLargeKeyRange || !range)) {
-          // May use IDBObjectStore.delete(IDBKeyRange) in this case (Issue #208)
-          // For chromium, this is the way most optimized version.
-          // For IE/Edge, this could hang the indexedDB engine and make operating system instable
-          // (https://gist.github.com/dfahlander/5a39328f029de18222cf2125d56c38f7)
-          return this._write(function (resolve, reject, idbstore) {
-            // Our API contract is to return a count of deleted items, so we have to count() before delete().
-            var onerror = eventRejectHandler(reject),
-                countReq = range ? idbstore.count(range) : idbstore.count();
-            countReq.onerror = onerror;
-
-            countReq.onsuccess = function () {
-              var count = countReq.result;
-              tryCatch(function () {
-                var delReq = range ? idbstore.delete(range) : idbstore.clear();
-                delReq.onerror = onerror;
-
-                delReq.onsuccess = function () {
-                  return resolve(count);
-                };
-              }, function (err) {
-                return reject(err);
-              });
-            };
-          });
-        } // Default version to use when collection is not a vanilla IDBKeyRange on the primary key.
-        // Divide into chunks to not starve RAM.
-        // If has delete hook, we will have to collect not just keys but also objects, so it will use
-        // more memory and need lower chunk size.
-
-
-        var CHUNKSIZE = hasDeleteHook ? 2000 : 10000;
-        return this._write(function (resolve, reject, idbstore, trans) {
-          var totalCount = 0; // Clone collection and change its table and set a limit of CHUNKSIZE on the cloned Collection instance.
-
-          var collection = _this.clone({
-            keysOnly: !ctx.isMatch && !hasDeleteHook
-          }) // load just keys (unless filter() or and() or deleteHook has subscribers)
-          .distinct() // In case multiEntry is used, never delete same key twice because resulting count
-          .limit(CHUNKSIZE).raw(); // Don't filter through reading-hooks (like mapped classes etc)
-
-
-          var keysOrTuples = []; // We're gonna do things on as many chunks that are needed.
-          // Use recursion of nextChunk function:
-
-          var nextChunk = function () {
-            return collection.each(hasDeleteHook ? function (val, cursor) {
-              // Somebody subscribes to hook('deleting'). Collect all primary keys and their values,
-              // so that the hook can be called with its values in bulkDelete().
-              keysOrTuples.push([cursor.primaryKey, cursor.value]);
-            } : function (val, cursor) {
-              // No one subscribes to hook('deleting'). Collect only primary keys:
-              keysOrTuples.push(cursor.primaryKey);
-            }).then(function () {
-              // Chromium deletes faster when doing it in sort order.
-              hasDeleteHook ? keysOrTuples.sort(function (a, b) {
-                return ascending(a[0], b[0]);
-              }) : keysOrTuples.sort(ascending);
-              return bulkDelete(idbstore, trans, keysOrTuples, hasDeleteHook, deletingHook);
-            }).then(function () {
-              var count = keysOrTuples.length;
-              totalCount += count;
-              keysOrTuples = [];
-              return count < CHUNKSIZE ? totalCount : nextChunk();
-            });
-          };
-
-          resolve(nextChunk());
-        });
-      }
-    };
-  }); //
-  //
-  //
-  // ------------------------- Help functions ---------------------------
-  //
-  //
-  //
-
-  function lowerVersionFirst(a, b) {
-    return a._cfg.version - b._cfg.version;
-  }
-
-  function setApiOnPlace(objs, tableNames, dbschema) {
-    tableNames.forEach(function (tableName) {
-      var schema = dbschema[tableName];
-      objs.forEach(function (obj) {
-        if (!(tableName in obj)) {
-          if (obj === Transaction.prototype || obj instanceof Transaction) {
-            // obj is a Transaction prototype (or prototype of a subclass to Transaction)
-            // Make the API a getter that returns this.table(tableName)
-            setProp(obj, tableName, {
-              get: function () {
-                return this.table(tableName);
-              }
-            });
-          } else {
-            // Table will not be bound to a transaction (will use Dexie.currentTransaction)
-            obj[tableName] = new Table(tableName, schema);
-          }
-        }
-      });
-    });
-  }
-
-  function removeTablesApi(objs) {
-    objs.forEach(function (obj) {
-      for (var key in obj) {
-        if (obj[key] instanceof Table) delete obj[key];
-      }
-    });
-  }
-
-  function iterate(req, filter, fn, resolve, reject, valueMapper) {
-    // Apply valueMapper (hook('reading') or mappped class)
-    var mappedFn = valueMapper ? function (x, c, a) {
-      return fn(valueMapper(x), c, a);
-    } : fn; // Wrap fn with PSD and microtick stuff from Promise.
-
-    var wrappedFn = wrap(mappedFn, reject);
-    if (!req.onerror) req.onerror = eventRejectHandler(reject);
-
-    if (filter) {
-      req.onsuccess = trycatcher(function filter_record() {
-        var cursor = req.result;
-
-        if (cursor) {
-          var c = function () {
-            cursor.continue();
-          };
-
-          if (filter(cursor, function (advancer) {
-            c = advancer;
-          }, resolve, reject)) wrappedFn(cursor.value, cursor, function (advancer) {
-            c = advancer;
-          });
-          c();
-        } else {
-          resolve();
-        }
-      }, reject);
-    } else {
-      req.onsuccess = trycatcher(function filter_record() {
-        var cursor = req.result;
-
-        if (cursor) {
-          var c = function () {
-            cursor.continue();
-          };
-
-          wrappedFn(cursor.value, cursor, function (advancer) {
-            c = advancer;
-          });
-          c();
-        } else {
-          resolve();
-        }
-      }, reject);
-    }
-  }
-
-  function parseIndexSyntax(indexes) {
-    /// <param name="indexes" type="String"></param>
-    /// <returns type="Array" elementType="IndexSpec"></returns>
-    var rv = [];
-    indexes.split(',').forEach(function (index) {
-      index = index.trim();
-      var name = index.replace(/([&*]|\+\+)/g, ""); // Remove "&", "++" and "*"
-      // Let keyPath of "[a+b]" be ["a","b"]:
-
-      var keyPath = /^\[/.test(name) ? name.match(/^\[(.*)\]$/)[1].split('+') : name;
-      rv.push(new IndexSpec(name, keyPath || null, /\&/.test(index), /\*/.test(index), /\+\+/.test(index), isArray(keyPath), /\./.test(index)));
-    });
-    return rv;
-  }
-
-  function cmp(key1, key2) {
-    return indexedDB.cmp(key1, key2);
-  }
-
-  function min(a, b) {
-    return cmp(a, b) < 0 ? a : b;
-  }
-
-  function max(a, b) {
-    return cmp(a, b) > 0 ? a : b;
-  }
-
-  function ascending(a, b) {
-    return indexedDB.cmp(a, b);
-  }
-
-  function descending(a, b) {
-    return indexedDB.cmp(b, a);
-  }
-
-  function simpleCompare(a, b) {
-    return a < b ? -1 : a === b ? 0 : 1;
-  }
-
-  function simpleCompareReverse(a, b) {
-    return a > b ? -1 : a === b ? 0 : 1;
-  }
-
-  function combine(filter1, filter2) {
-    return filter1 ? filter2 ? function () {
-      return filter1.apply(this, arguments) && filter2.apply(this, arguments);
-    } : filter1 : filter2;
-  }
-
-  function readGlobalSchema() {
-    db.verno = idbdb.version / 10;
-    db._dbSchema = globalSchema = {};
-    dbStoreNames = slice(idbdb.objectStoreNames, 0);
-    if (dbStoreNames.length === 0) return; // Database contains no stores.
-
-    var trans = idbdb.transaction(safariMultiStoreFix(dbStoreNames), 'readonly');
-    dbStoreNames.forEach(function (storeName) {
-      var store = trans.objectStore(storeName),
-          keyPath = store.keyPath,
-          dotted = keyPath && typeof keyPath === 'string' && keyPath.indexOf('.') !== -1;
-      var primKey = new IndexSpec(keyPath, keyPath || "", false, false, !!store.autoIncrement, keyPath && typeof keyPath !== 'string', dotted);
-      var indexes = [];
-
-      for (var j = 0; j < store.indexNames.length; ++j) {
-        var idbindex = store.index(store.indexNames[j]);
-        keyPath = idbindex.keyPath;
-        dotted = keyPath && typeof keyPath === 'string' && keyPath.indexOf('.') !== -1;
-        var index = new IndexSpec(idbindex.name, keyPath, !!idbindex.unique, !!idbindex.multiEntry, false, keyPath && typeof keyPath !== 'string', dotted);
-        indexes.push(index);
-      }
-
-      globalSchema[storeName] = new TableSchema(storeName, primKey, indexes, {});
-    });
-    setApiOnPlace([allTables], keys(globalSchema), globalSchema);
-  }
-
-  function adjustToExistingIndexNames(schema, idbtrans) {
-    /// <summary>
-    /// Issue #30 Problem with existing db - adjust to existing index names when migrating from non-dexie db
-    /// </summary>
-    /// <param name="schema" type="Object">Map between name and TableSchema</param>
-    /// <param name="idbtrans" type="IDBTransaction"></param>
-    var storeNames = idbtrans.db.objectStoreNames;
-
-    for (var i = 0; i < storeNames.length; ++i) {
-      var storeName = storeNames[i];
-      var store = idbtrans.objectStore(storeName);
-      hasGetAll = 'getAll' in store;
-
-      for (var j = 0; j < store.indexNames.length; ++j) {
-        var indexName = store.indexNames[j];
-        var keyPath = store.index(indexName).keyPath;
-        var dexieName = typeof keyPath === 'string' ? keyPath : "[" + slice(keyPath).join('+') + "]";
-
-        if (schema[storeName]) {
-          var indexSpec = schema[storeName].idxByName[dexieName];
-          if (indexSpec) indexSpec.name = indexName;
-        }
-      }
-    } // Bug with getAll() on Safari ver<604 on Workers only, see discussion following PR #579
-
-
-    if (/Safari/.test(navigator.userAgent) && !/(Chrome\/|Edge\/)/.test(navigator.userAgent) && _global.WorkerGlobalScope && _global instanceof _global.WorkerGlobalScope && [].concat(navigator.userAgent.match(/Safari\/(\d*)/))[1] < 604) {
-      hasGetAll = false;
-    }
-  }
-
-  function fireOnBlocked(ev) {
-    db.on("blocked").fire(ev); // Workaround (not fully*) for missing "versionchange" event in IE,Edge and Safari:
-
-    connections.filter(function (c) {
-      return c.name === db.name && c !== db && !c._vcFired;
-    }).map(function (c) {
-      return c.on("versionchange").fire(ev);
-    });
-  }
-
-  extend(this, {
-    Collection: Collection,
-    Table: Table,
-    Transaction: Transaction,
-    Version: Version,
-    WhereClause: WhereClause
-  });
-  init();
-  addons.forEach(function (fn) {
-    fn(db);
-  });
-}
-
-function parseType(type) {
-  if (typeof type === 'function') {
-    return new type();
-  } else if (isArray(type)) {
-    return [parseType(type[0])];
-  } else if (type && _typeof(type) === 'object') {
-    var rv = {};
-    applyStructure(rv, type);
-    return rv;
-  } else {
-    return type;
-  }
-}
-
-function applyStructure(obj, structure) {
-  keys(structure).forEach(function (member) {
-    var value = parseType(structure[member]);
-    obj[member] = value;
-  });
-  return obj;
-}
-
-function hookedEventSuccessHandler(resolve) {
-  // wrap() is needed when calling hooks because the rare scenario of:
-  //  * hook does a db operation that fails immediately (IDB throws exception)
-  //    For calling db operations on correct transaction, wrap makes sure to set PSD correctly.
-  //    wrap() will also execute in a virtual tick.
-  //  * If not wrapped in a virtual tick, direct exception will launch a new physical tick.
-  //  * If this was the last event in the bulk, the promise will resolve after a physical tick
-  //    and the transaction will have committed already.
-  // If no hook, the virtual tick will be executed in the reject()/resolve of the final promise,
-  // because it is always marked with _lib = true when created using Transaction._promise().
-  return wrap(function (event) {
-    var req = event.target,
-        ctx = req._hookCtx,
-        // Contains the hook error handler. Put here instead of closure to boost performance.
-    result = ctx.value || req.result,
-        // Pass the object value on updates. The result from IDB is the primary key.
-    hookSuccessHandler = ctx && ctx.onsuccess;
-    hookSuccessHandler && hookSuccessHandler(result);
-    resolve && resolve(result);
-  }, resolve);
-}
-
-function eventRejectHandler(reject) {
-  return wrap(function (event) {
-    preventDefault(event);
-    reject(event.target.error);
-    return false;
-  });
-}
-
-function eventSuccessHandler(resolve) {
-  return wrap(function (event) {
-    resolve(event.target.result);
-  });
-}
-
-function hookedEventRejectHandler(reject) {
-  return wrap(function (event) {
-    // See comment on hookedEventSuccessHandler() why wrap() is needed only when supporting hooks.
-    var req = event.target,
-        err = req.error,
-        ctx = req._hookCtx,
-        // Contains the hook error handler. Put here instead of closure to boost performance.
-    hookErrorHandler = ctx && ctx.onerror;
-    hookErrorHandler && hookErrorHandler(err);
-    preventDefault(event);
-    reject(err);
-    return false;
-  });
-}
-
-function preventDefault(event) {
-  if (event.stopPropagation) event.stopPropagation();
-  if (event.preventDefault) event.preventDefault();
-}
-
-function awaitIterator(iterator) {
-  var callNext = function (result) {
-    return iterator.next(result);
-  },
-      doThrow = function (error) {
-    return iterator.throw(error);
-  },
-      onSuccess = step(callNext),
-      onError = step(doThrow);
-
-  function step(getNext) {
-    return function (val) {
-      var next = getNext(val),
-          value = next.value;
-      return next.done ? value : !value || typeof value.then !== 'function' ? isArray(value) ? Promise.all(value).then(onSuccess, onError) : onSuccess(value) : value.then(onSuccess, onError);
-    };
-  }
-
-  return step(callNext)();
-} //
-// IndexSpec struct
-//
-
-
-function IndexSpec(name, keyPath, unique, multi, auto, compound, dotted) {
-  /// <param name="name" type="String"></param>
-  /// <param name="keyPath" type="String"></param>
-  /// <param name="unique" type="Boolean"></param>
-  /// <param name="multi" type="Boolean"></param>
-  /// <param name="auto" type="Boolean"></param>
-  /// <param name="compound" type="Boolean"></param>
-  /// <param name="dotted" type="Boolean"></param>
-  this.name = name;
-  this.keyPath = keyPath;
-  this.unique = unique;
-  this.multi = multi;
-  this.auto = auto;
-  this.compound = compound;
-  this.dotted = dotted;
-  var keyPathSrc = typeof keyPath === 'string' ? keyPath : keyPath && '[' + [].join.call(keyPath, '+') + ']';
-  this.src = (unique ? '&' : '') + (multi ? '*' : '') + (auto ? "++" : "") + keyPathSrc;
-} //
-// TableSchema struct
-//
-
-
-function TableSchema(name, primKey, indexes, instanceTemplate) {
-  /// <param name="name" type="String"></param>
-  /// <param name="primKey" type="IndexSpec"></param>
-  /// <param name="indexes" type="Array" elementType="IndexSpec"></param>
-  /// <param name="instanceTemplate" type="Object"></param>
-  this.name = name;
-  this.primKey = primKey || new IndexSpec();
-  this.indexes = indexes || [new IndexSpec()];
-  this.instanceTemplate = instanceTemplate;
-  this.mappedClass = null;
-  this.idxByName = arrayToObject(indexes, function (index) {
-    return [index.name, index];
-  });
-}
-
-function safariMultiStoreFix(storeNames) {
-  return storeNames.length === 1 ? storeNames[0] : storeNames;
-}
-
-function getNativeGetDatabaseNamesFn(indexedDB) {
-  var fn = indexedDB && (indexedDB.getDatabaseNames || indexedDB.webkitGetDatabaseNames);
-  return fn && fn.bind(indexedDB);
-} // Export Error classes
-
-
-props(Dexie, fullNameExceptions); // Dexie.XXXError = class XXXError {...};
-//
-// Static methods and properties
-// 
-
-props(Dexie, {
-  //
-  // Static delete() method.
-  //
-  delete: function (databaseName) {
-    var db = new Dexie(databaseName),
-        promise = db.delete();
-
-    promise.onblocked = function (fn) {
-      db.on("blocked", fn);
-      return this;
-    };
-
-    return promise;
-  },
-  //
-  // Static exists() method.
-  //
-  exists: function (name) {
-    return new Dexie(name).open().then(function (db) {
-      db.close();
-      return true;
-    }).catch(Dexie.NoSuchDatabaseError, function () {
-      return false;
-    });
-  },
-  //
-  // Static method for retrieving a list of all existing databases at current host.
-  //
-  getDatabaseNames: function (cb) {
-    var getDatabaseNames = getNativeGetDatabaseNamesFn(Dexie.dependencies.indexedDB);
-    return getDatabaseNames ? new Promise(function (resolve, reject) {
-      var req = getDatabaseNames();
-
-      req.onsuccess = function (event) {
-        resolve(slice(event.target.result, 0)); // Converst DOMStringList to Array<String>
-      };
-
-      req.onerror = eventRejectHandler(reject);
-    }).then(cb) : dbNamesDB.dbnames.toCollection().primaryKeys(cb);
-  },
-  defineClass: function () {
-    // Default constructor able to copy given properties into this object.
-    function Class(properties) {
-      /// <param name="properties" type="Object" optional="true">Properties to initialize object with.
-      /// </param>
-      if (properties) extend(this, properties);
-    }
-
-    return Class;
-  },
-  applyStructure: applyStructure,
-  ignoreTransaction: function (scopeFunc) {
-    // In case caller is within a transaction but needs to create a separate transaction.
-    // Example of usage:
-    //
-    // Let's say we have a logger function in our app. Other application-logic should be unaware of the
-    // logger function and not need to include the 'logentries' table in all transaction it performs.
-    // The logging should always be done in a separate transaction and not be dependant on the current
-    // running transaction context. Then you could use Dexie.ignoreTransaction() to run code that starts a new transaction.
-    //
-    //     Dexie.ignoreTransaction(function() {
-    //         db.logentries.add(newLogEntry);
-    //     });
-    //
-    // Unless using Dexie.ignoreTransaction(), the above example would try to reuse the current transaction
-    // in current Promise-scope.
-    //
-    // An alternative to Dexie.ignoreTransaction() would be setImmediate() or setTimeout(). The reason we still provide an
-    // API for this because
-    //  1) The intention of writing the statement could be unclear if using setImmediate() or setTimeout().
-    //  2) setTimeout() would wait unnescessary until firing. This is however not the case with setImmediate().
-    //  3) setImmediate() is not supported in the ES standard.
-    //  4) You might want to keep other PSD state that was set in a parent PSD, such as PSD.letThrough.
-    return PSD.trans ? usePSD(PSD.transless, scopeFunc) : // Use the closest parent that was non-transactional.
-    scopeFunc(); // No need to change scope because there is no ongoing transaction.
-  },
-  vip: function (fn) {
-    // To be used by subscribers to the on('ready') event.
-    // This will let caller through to access DB even when it is blocked while the db.ready() subscribers are firing.
-    // This would have worked automatically if we were certain that the Provider was using Dexie.Promise for all asyncronic operations. The promise PSD
-    // from the provider.connect() call would then be derived all the way to when provider would call localDatabase.applyChanges(). But since
-    // the provider more likely is using non-promise async APIs or other thenable implementations, we cannot assume that.
-    // Note that this method is only useful for on('ready') subscribers that is returning a Promise from the event. If not using vip()
-    // the database could deadlock since it wont open until the returned Promise is resolved, and any non-VIPed operation started by
-    // the caller will not resolve until database is opened.
-    return newScope(function () {
-      PSD.letThrough = true; // Make sure we are let through if still blocking db due to onready is firing.
-
-      return fn();
-    });
-  },
-  async: function (generatorFn) {
-    return function () {
-      try {
-        var rv = awaitIterator(generatorFn.apply(this, arguments));
-        if (!rv || typeof rv.then !== 'function') return Promise.resolve(rv);
-        return rv;
-      } catch (e) {
-        return rejection(e);
-      }
-    };
-  },
-  spawn: function (generatorFn, args, thiz) {
-    try {
-      var rv = awaitIterator(generatorFn.apply(thiz, args || []));
-      if (!rv || typeof rv.then !== 'function') return Promise.resolve(rv);
-      return rv;
-    } catch (e) {
-      return rejection(e);
-    }
-  },
-  // Dexie.currentTransaction property
-  currentTransaction: {
-    get: function () {
-      return PSD.trans || null;
-    }
-  },
-  waitFor: function (promiseOrFunction, optionalTimeout) {
-    // If a function is provided, invoke it and pass the returning value to Transaction.waitFor()
-    var promise = Promise.resolve(typeof promiseOrFunction === 'function' ? Dexie.ignoreTransaction(promiseOrFunction) : promiseOrFunction).timeout(optionalTimeout || 60000); // Default the timeout to one minute. Caller may specify Infinity if required.       
-    // Run given promise on current transaction. If no current transaction, just return a Dexie promise based
-    // on given value.
-
-    return PSD.trans ? PSD.trans.waitFor(promise) : promise;
-  },
-  // Export our Promise implementation since it can be handy as a standalone Promise implementation
-  Promise: Promise,
-  // Dexie.debug proptery:
-  // Dexie.debug = false
-  // Dexie.debug = true
-  // Dexie.debug = "dexie" - don't hide dexie's stack frames.
-  debug: {
-    get: function () {
-      return debug;
-    },
-    set: function (value) {
-      setDebug(value, value === 'dexie' ? function () {
-        return true;
-      } : dexieStackFrameFilter);
-    }
-  },
-  // Export our derive/extend/override methodology
-  derive: derive,
-  extend: extend,
-  props: props,
-  override: override,
-  // Export our Events() function - can be handy as a toolkit
-  Events: Events,
-  // Utilities
-  getByKeyPath: getByKeyPath,
-  setByKeyPath: setByKeyPath,
-  delByKeyPath: delByKeyPath,
-  shallowClone: shallowClone,
-  deepClone: deepClone,
-  getObjectDiff: getObjectDiff,
-  asap: asap,
-  maxKey: maxKey,
-  minKey: minKey,
-  // Addon registry
-  addons: [],
-  // Global DB connection list
-  connections: connections,
-  MultiModifyError: exceptions.Modify,
-  errnames: errnames,
-  // Export other static classes
-  IndexSpec: IndexSpec,
-  TableSchema: TableSchema,
-  //
-  // Dependencies
-  //
-  // These will automatically work in browsers with indexedDB support, or where an indexedDB polyfill has been included.
-  //
-  // In node.js, however, these properties must be set "manually" before instansiating a new Dexie().
-  // For node.js, you need to require indexeddb-js or similar and then set these deps.
-  //
-  dependencies: function () {
-    try {
-      return {
-        // Required:
-        indexedDB: _global.indexedDB || _global.mozIndexedDB || _global.webkitIndexedDB || _global.msIndexedDB,
-        IDBKeyRange: _global.IDBKeyRange || _global.webkitIDBKeyRange
-      };
-    } catch (e) {
-      return {
-        indexedDB: null,
-        IDBKeyRange: null
-      };
-    }
-  }(),
-  // API Version Number: Type Number, make sure to always set a version number that can be comparable correctly. Example: 0.9, 0.91, 0.92, 1.0, 1.01, 1.1, 1.2, 1.21, etc.
-  semVer: DEXIE_VERSION,
-  version: DEXIE_VERSION.split('.').map(function (n) {
-    return parseInt(n);
-  }).reduce(function (p, c, i) {
-    return p + c / Math.pow(10, i * 2);
-  }),
-  // https://github.com/dfahlander/Dexie.js/issues/186
-  // typescript compiler tsc in mode ts-->es5 & commonJS, will expect require() to return
-  // x.default. Workaround: Set Dexie.default = Dexie.
-  default: Dexie,
-  // Make it possible to import {Dexie} (non-default import)
-  // Reason 1: May switch to that in future.
-  // Reason 2: We declare it both default and named exported in d.ts to make it possible
-  // to let addons extend the Dexie interface with Typescript 2.1 (works only when explicitely
-  // exporting the symbol, not just default exporting)
-  Dexie: Dexie
-}); // Map DOMErrors and DOMExceptions to corresponding Dexie errors. May change in Dexie v2.0.
-
-Promise.rejectionMapper = mapError; // Initialize dbNamesDB (won't ever be opened on chromium browsers')
-
-dbNamesDB = new Dexie('__dbnames');
-dbNamesDB.version(1).stores({
-  dbnames: 'name'
-});
-
-(function () {
-  // Migrate from Dexie 1.x database names stored in localStorage:
-  var DBNAMES = 'Dexie.DatabaseNames';
-
-  try {
-    if ((typeof localStorage === "undefined" ? "undefined" : _typeof(localStorage)) !== undefined && _global.document !== undefined) {
-      // Have localStorage and is not executing in a worker. Lets migrate from Dexie 1.x.
-      JSON.parse(localStorage.getItem(DBNAMES) || "[]").forEach(function (name) {
-        return dbNamesDB.dbnames.put({
-          name: name
-        }).catch(nop);
-      });
-      localStorage.removeItem(DBNAMES);
-    }
-  } catch (_e) {}
-})();
-
-var _default = Dexie;
-exports.default = _default;
-},{}],"../node_modules/moment/moment.js":[function(require,module,exports) {
-var define;
-var global = arguments[3];
-//! moment.js
-
-;(function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-    typeof define === 'function' && define.amd ? define(factory) :
-    global.moment = factory()
-}(this, (function () { 'use strict';
-
-    var hookCallback;
-
-    function hooks () {
-        return hookCallback.apply(null, arguments);
-    }
-
-    // This is done to register the method called with moment()
-    // without creating circular dependencies.
-    function setHookCallback (callback) {
-        hookCallback = callback;
-    }
-
-    function isArray(input) {
-        return input instanceof Array || Object.prototype.toString.call(input) === '[object Array]';
-    }
-
-    function isObject(input) {
-        // IE8 will treat undefined and null as object if it wasn't for
-        // input != null
-        return input != null && Object.prototype.toString.call(input) === '[object Object]';
-    }
-
-    function isObjectEmpty(obj) {
-        if (Object.getOwnPropertyNames) {
-            return (Object.getOwnPropertyNames(obj).length === 0);
-        } else {
-            var k;
-            for (k in obj) {
-                if (obj.hasOwnProperty(k)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-    }
-
-    function isUndefined(input) {
-        return input === void 0;
-    }
-
-    function isNumber(input) {
-        return typeof input === 'number' || Object.prototype.toString.call(input) === '[object Number]';
-    }
-
-    function isDate(input) {
-        return input instanceof Date || Object.prototype.toString.call(input) === '[object Date]';
-    }
-
-    function map(arr, fn) {
-        var res = [], i;
-        for (i = 0; i < arr.length; ++i) {
-            res.push(fn(arr[i], i));
-        }
-        return res;
-    }
-
-    function hasOwnProp(a, b) {
-        return Object.prototype.hasOwnProperty.call(a, b);
-    }
-
-    function extend(a, b) {
-        for (var i in b) {
-            if (hasOwnProp(b, i)) {
-                a[i] = b[i];
-            }
-        }
-
-        if (hasOwnProp(b, 'toString')) {
-            a.toString = b.toString;
-        }
-
-        if (hasOwnProp(b, 'valueOf')) {
-            a.valueOf = b.valueOf;
-        }
-
-        return a;
-    }
-
-    function createUTC (input, format, locale, strict) {
-        return createLocalOrUTC(input, format, locale, strict, true).utc();
-    }
-
-    function defaultParsingFlags() {
-        // We need to deep clone this object.
-        return {
-            empty           : false,
-            unusedTokens    : [],
-            unusedInput     : [],
-            overflow        : -2,
-            charsLeftOver   : 0,
-            nullInput       : false,
-            invalidMonth    : null,
-            invalidFormat   : false,
-            userInvalidated : false,
-            iso             : false,
-            parsedDateParts : [],
-            meridiem        : null,
-            rfc2822         : false,
-            weekdayMismatch : false
-        };
-    }
-
-    function getParsingFlags(m) {
-        if (m._pf == null) {
-            m._pf = defaultParsingFlags();
-        }
-        return m._pf;
-    }
-
-    var some;
-    if (Array.prototype.some) {
-        some = Array.prototype.some;
-    } else {
-        some = function (fun) {
-            var t = Object(this);
-            var len = t.length >>> 0;
-
-            for (var i = 0; i < len; i++) {
-                if (i in t && fun.call(this, t[i], i, t)) {
-                    return true;
-                }
-            }
-
-            return false;
-        };
-    }
-
-    function isValid(m) {
-        if (m._isValid == null) {
-            var flags = getParsingFlags(m);
-            var parsedParts = some.call(flags.parsedDateParts, function (i) {
-                return i != null;
-            });
-            var isNowValid = !isNaN(m._d.getTime()) &&
-                flags.overflow < 0 &&
-                !flags.empty &&
-                !flags.invalidMonth &&
-                !flags.invalidWeekday &&
-                !flags.weekdayMismatch &&
-                !flags.nullInput &&
-                !flags.invalidFormat &&
-                !flags.userInvalidated &&
-                (!flags.meridiem || (flags.meridiem && parsedParts));
-
-            if (m._strict) {
-                isNowValid = isNowValid &&
-                    flags.charsLeftOver === 0 &&
-                    flags.unusedTokens.length === 0 &&
-                    flags.bigHour === undefined;
-            }
-
-            if (Object.isFrozen == null || !Object.isFrozen(m)) {
-                m._isValid = isNowValid;
-            }
-            else {
-                return isNowValid;
-            }
-        }
-        return m._isValid;
-    }
-
-    function createInvalid (flags) {
-        var m = createUTC(NaN);
-        if (flags != null) {
-            extend(getParsingFlags(m), flags);
-        }
-        else {
-            getParsingFlags(m).userInvalidated = true;
-        }
-
-        return m;
-    }
-
-    // Plugins that add properties should also add the key here (null value),
-    // so we can properly clone ourselves.
-    var momentProperties = hooks.momentProperties = [];
-
-    function copyConfig(to, from) {
-        var i, prop, val;
-
-        if (!isUndefined(from._isAMomentObject)) {
-            to._isAMomentObject = from._isAMomentObject;
-        }
-        if (!isUndefined(from._i)) {
-            to._i = from._i;
-        }
-        if (!isUndefined(from._f)) {
-            to._f = from._f;
-        }
-        if (!isUndefined(from._l)) {
-            to._l = from._l;
-        }
-        if (!isUndefined(from._strict)) {
-            to._strict = from._strict;
-        }
-        if (!isUndefined(from._tzm)) {
-            to._tzm = from._tzm;
-        }
-        if (!isUndefined(from._isUTC)) {
-            to._isUTC = from._isUTC;
-        }
-        if (!isUndefined(from._offset)) {
-            to._offset = from._offset;
-        }
-        if (!isUndefined(from._pf)) {
-            to._pf = getParsingFlags(from);
-        }
-        if (!isUndefined(from._locale)) {
-            to._locale = from._locale;
-        }
-
-        if (momentProperties.length > 0) {
-            for (i = 0; i < momentProperties.length; i++) {
-                prop = momentProperties[i];
-                val = from[prop];
-                if (!isUndefined(val)) {
-                    to[prop] = val;
-                }
-            }
-        }
-
-        return to;
-    }
-
-    var updateInProgress = false;
-
-    // Moment prototype object
-    function Moment(config) {
-        copyConfig(this, config);
-        this._d = new Date(config._d != null ? config._d.getTime() : NaN);
-        if (!this.isValid()) {
-            this._d = new Date(NaN);
-        }
-        // Prevent infinite loop in case updateOffset creates new moment
-        // objects.
-        if (updateInProgress === false) {
-            updateInProgress = true;
-            hooks.updateOffset(this);
-            updateInProgress = false;
-        }
-    }
-
-    function isMoment (obj) {
-        return obj instanceof Moment || (obj != null && obj._isAMomentObject != null);
-    }
-
-    function absFloor (number) {
-        if (number < 0) {
-            // -0 -> 0
-            return Math.ceil(number) || 0;
-        } else {
-            return Math.floor(number);
-        }
-    }
-
-    function toInt(argumentForCoercion) {
-        var coercedNumber = +argumentForCoercion,
-            value = 0;
-
-        if (coercedNumber !== 0 && isFinite(coercedNumber)) {
-            value = absFloor(coercedNumber);
-        }
-
-        return value;
-    }
-
-    // compare two arrays, return the number of differences
-    function compareArrays(array1, array2, dontConvert) {
-        var len = Math.min(array1.length, array2.length),
-            lengthDiff = Math.abs(array1.length - array2.length),
-            diffs = 0,
-            i;
-        for (i = 0; i < len; i++) {
-            if ((dontConvert && array1[i] !== array2[i]) ||
-                (!dontConvert && toInt(array1[i]) !== toInt(array2[i]))) {
-                diffs++;
-            }
-        }
-        return diffs + lengthDiff;
-    }
-
-    function warn(msg) {
-        if (hooks.suppressDeprecationWarnings === false &&
-                (typeof console !==  'undefined') && console.warn) {
-            console.warn('Deprecation warning: ' + msg);
-        }
-    }
-
-    function deprecate(msg, fn) {
-        var firstTime = true;
-
-        return extend(function () {
-            if (hooks.deprecationHandler != null) {
-                hooks.deprecationHandler(null, msg);
-            }
-            if (firstTime) {
-                var args = [];
-                var arg;
-                for (var i = 0; i < arguments.length; i++) {
-                    arg = '';
-                    if (typeof arguments[i] === 'object') {
-                        arg += '\n[' + i + '] ';
-                        for (var key in arguments[0]) {
-                            arg += key + ': ' + arguments[0][key] + ', ';
-                        }
-                        arg = arg.slice(0, -2); // Remove trailing comma and space
-                    } else {
-                        arg = arguments[i];
-                    }
-                    args.push(arg);
-                }
-                warn(msg + '\nArguments: ' + Array.prototype.slice.call(args).join('') + '\n' + (new Error()).stack);
-                firstTime = false;
-            }
-            return fn.apply(this, arguments);
-        }, fn);
-    }
-
-    var deprecations = {};
-
-    function deprecateSimple(name, msg) {
-        if (hooks.deprecationHandler != null) {
-            hooks.deprecationHandler(name, msg);
-        }
-        if (!deprecations[name]) {
-            warn(msg);
-            deprecations[name] = true;
-        }
-    }
-
-    hooks.suppressDeprecationWarnings = false;
-    hooks.deprecationHandler = null;
-
-    function isFunction(input) {
-        return input instanceof Function || Object.prototype.toString.call(input) === '[object Function]';
-    }
-
-    function set (config) {
-        var prop, i;
-        for (i in config) {
-            prop = config[i];
-            if (isFunction(prop)) {
-                this[i] = prop;
-            } else {
-                this['_' + i] = prop;
-            }
-        }
-        this._config = config;
-        // Lenient ordinal parsing accepts just a number in addition to
-        // number + (possibly) stuff coming from _dayOfMonthOrdinalParse.
-        // TODO: Remove "ordinalParse" fallback in next major release.
-        this._dayOfMonthOrdinalParseLenient = new RegExp(
-            (this._dayOfMonthOrdinalParse.source || this._ordinalParse.source) +
-                '|' + (/\d{1,2}/).source);
-    }
-
-    function mergeConfigs(parentConfig, childConfig) {
-        var res = extend({}, parentConfig), prop;
-        for (prop in childConfig) {
-            if (hasOwnProp(childConfig, prop)) {
-                if (isObject(parentConfig[prop]) && isObject(childConfig[prop])) {
-                    res[prop] = {};
-                    extend(res[prop], parentConfig[prop]);
-                    extend(res[prop], childConfig[prop]);
-                } else if (childConfig[prop] != null) {
-                    res[prop] = childConfig[prop];
-                } else {
-                    delete res[prop];
-                }
-            }
-        }
-        for (prop in parentConfig) {
-            if (hasOwnProp(parentConfig, prop) &&
-                    !hasOwnProp(childConfig, prop) &&
-                    isObject(parentConfig[prop])) {
-                // make sure changes to properties don't modify parent config
-                res[prop] = extend({}, res[prop]);
-            }
-        }
-        return res;
-    }
-
-    function Locale(config) {
-        if (config != null) {
-            this.set(config);
-        }
-    }
-
-    var keys;
-
-    if (Object.keys) {
-        keys = Object.keys;
-    } else {
-        keys = function (obj) {
-            var i, res = [];
-            for (i in obj) {
-                if (hasOwnProp(obj, i)) {
-                    res.push(i);
-                }
-            }
-            return res;
-        };
-    }
-
-    var defaultCalendar = {
-        sameDay : '[Today at] LT',
-        nextDay : '[Tomorrow at] LT',
-        nextWeek : 'dddd [at] LT',
-        lastDay : '[Yesterday at] LT',
-        lastWeek : '[Last] dddd [at] LT',
-        sameElse : 'L'
-    };
-
-    function calendar (key, mom, now) {
-        var output = this._calendar[key] || this._calendar['sameElse'];
-        return isFunction(output) ? output.call(mom, now) : output;
-    }
-
-    var defaultLongDateFormat = {
-        LTS  : 'h:mm:ss A',
-        LT   : 'h:mm A',
-        L    : 'MM/DD/YYYY',
-        LL   : 'MMMM D, YYYY',
-        LLL  : 'MMMM D, YYYY h:mm A',
-        LLLL : 'dddd, MMMM D, YYYY h:mm A'
-    };
-
-    function longDateFormat (key) {
-        var format = this._longDateFormat[key],
-            formatUpper = this._longDateFormat[key.toUpperCase()];
-
-        if (format || !formatUpper) {
-            return format;
-        }
-
-        this._longDateFormat[key] = formatUpper.replace(/MMMM|MM|DD|dddd/g, function (val) {
-            return val.slice(1);
-        });
-
-        return this._longDateFormat[key];
-    }
-
-    var defaultInvalidDate = 'Invalid date';
-
-    function invalidDate () {
-        return this._invalidDate;
-    }
-
-    var defaultOrdinal = '%d';
-    var defaultDayOfMonthOrdinalParse = /\d{1,2}/;
-
-    function ordinal (number) {
-        return this._ordinal.replace('%d', number);
-    }
-
-    var defaultRelativeTime = {
-        future : 'in %s',
-        past   : '%s ago',
-        s  : 'a few seconds',
-        ss : '%d seconds',
-        m  : 'a minute',
-        mm : '%d minutes',
-        h  : 'an hour',
-        hh : '%d hours',
-        d  : 'a day',
-        dd : '%d days',
-        M  : 'a month',
-        MM : '%d months',
-        y  : 'a year',
-        yy : '%d years'
-    };
-
-    function relativeTime (number, withoutSuffix, string, isFuture) {
-        var output = this._relativeTime[string];
-        return (isFunction(output)) ?
-            output(number, withoutSuffix, string, isFuture) :
-            output.replace(/%d/i, number);
-    }
-
-    function pastFuture (diff, output) {
-        var format = this._relativeTime[diff > 0 ? 'future' : 'past'];
-        return isFunction(format) ? format(output) : format.replace(/%s/i, output);
-    }
-
-    var aliases = {};
-
-    function addUnitAlias (unit, shorthand) {
-        var lowerCase = unit.toLowerCase();
-        aliases[lowerCase] = aliases[lowerCase + 's'] = aliases[shorthand] = unit;
-    }
-
-    function normalizeUnits(units) {
-        return typeof units === 'string' ? aliases[units] || aliases[units.toLowerCase()] : undefined;
-    }
-
-    function normalizeObjectUnits(inputObject) {
-        var normalizedInput = {},
-            normalizedProp,
-            prop;
-
-        for (prop in inputObject) {
-            if (hasOwnProp(inputObject, prop)) {
-                normalizedProp = normalizeUnits(prop);
-                if (normalizedProp) {
-                    normalizedInput[normalizedProp] = inputObject[prop];
-                }
-            }
-        }
-
-        return normalizedInput;
-    }
-
-    var priorities = {};
-
-    function addUnitPriority(unit, priority) {
-        priorities[unit] = priority;
-    }
-
-    function getPrioritizedUnits(unitsObj) {
-        var units = [];
-        for (var u in unitsObj) {
-            units.push({unit: u, priority: priorities[u]});
-        }
-        units.sort(function (a, b) {
-            return a.priority - b.priority;
-        });
-        return units;
-    }
-
-    function zeroFill(number, targetLength, forceSign) {
-        var absNumber = '' + Math.abs(number),
-            zerosToFill = targetLength - absNumber.length,
-            sign = number >= 0;
-        return (sign ? (forceSign ? '+' : '') : '-') +
-            Math.pow(10, Math.max(0, zerosToFill)).toString().substr(1) + absNumber;
-    }
-
-    var formattingTokens = /(\[[^\[]*\])|(\\)?([Hh]mm(ss)?|Mo|MM?M?M?|Do|DDDo|DD?D?D?|ddd?d?|do?|w[o|w]?|W[o|W]?|Qo?|YYYYYY|YYYYY|YYYY|YY|gg(ggg?)?|GG(GGG?)?|e|E|a|A|hh?|HH?|kk?|mm?|ss?|S{1,9}|x|X|zz?|ZZ?|.)/g;
-
-    var localFormattingTokens = /(\[[^\[]*\])|(\\)?(LTS|LT|LL?L?L?|l{1,4})/g;
-
-    var formatFunctions = {};
-
-    var formatTokenFunctions = {};
-
-    // token:    'M'
-    // padded:   ['MM', 2]
-    // ordinal:  'Mo'
-    // callback: function () { this.month() + 1 }
-    function addFormatToken (token, padded, ordinal, callback) {
-        var func = callback;
-        if (typeof callback === 'string') {
-            func = function () {
-                return this[callback]();
-            };
-        }
-        if (token) {
-            formatTokenFunctions[token] = func;
-        }
-        if (padded) {
-            formatTokenFunctions[padded[0]] = function () {
-                return zeroFill(func.apply(this, arguments), padded[1], padded[2]);
-            };
-        }
-        if (ordinal) {
-            formatTokenFunctions[ordinal] = function () {
-                return this.localeData().ordinal(func.apply(this, arguments), token);
-            };
-        }
-    }
-
-    function removeFormattingTokens(input) {
-        if (input.match(/\[[\s\S]/)) {
-            return input.replace(/^\[|\]$/g, '');
-        }
-        return input.replace(/\\/g, '');
-    }
-
-    function makeFormatFunction(format) {
-        var array = format.match(formattingTokens), i, length;
-
-        for (i = 0, length = array.length; i < length; i++) {
-            if (formatTokenFunctions[array[i]]) {
-                array[i] = formatTokenFunctions[array[i]];
-            } else {
-                array[i] = removeFormattingTokens(array[i]);
-            }
-        }
-
-        return function (mom) {
-            var output = '', i;
-            for (i = 0; i < length; i++) {
-                output += isFunction(array[i]) ? array[i].call(mom, format) : array[i];
-            }
-            return output;
-        };
-    }
-
-    // format date using native date object
-    function formatMoment(m, format) {
-        if (!m.isValid()) {
-            return m.localeData().invalidDate();
-        }
-
-        format = expandFormat(format, m.localeData());
-        formatFunctions[format] = formatFunctions[format] || makeFormatFunction(format);
-
-        return formatFunctions[format](m);
-    }
-
-    function expandFormat(format, locale) {
-        var i = 5;
-
-        function replaceLongDateFormatTokens(input) {
-            return locale.longDateFormat(input) || input;
-        }
-
-        localFormattingTokens.lastIndex = 0;
-        while (i >= 0 && localFormattingTokens.test(format)) {
-            format = format.replace(localFormattingTokens, replaceLongDateFormatTokens);
-            localFormattingTokens.lastIndex = 0;
-            i -= 1;
-        }
-
-        return format;
-    }
-
-    var match1         = /\d/;            //       0 - 9
-    var match2         = /\d\d/;          //      00 - 99
-    var match3         = /\d{3}/;         //     000 - 999
-    var match4         = /\d{4}/;         //    0000 - 9999
-    var match6         = /[+-]?\d{6}/;    // -999999 - 999999
-    var match1to2      = /\d\d?/;         //       0 - 99
-    var match3to4      = /\d\d\d\d?/;     //     999 - 9999
-    var match5to6      = /\d\d\d\d\d\d?/; //   99999 - 999999
-    var match1to3      = /\d{1,3}/;       //       0 - 999
-    var match1to4      = /\d{1,4}/;       //       0 - 9999
-    var match1to6      = /[+-]?\d{1,6}/;  // -999999 - 999999
-
-    var matchUnsigned  = /\d+/;           //       0 - inf
-    var matchSigned    = /[+-]?\d+/;      //    -inf - inf
-
-    var matchOffset    = /Z|[+-]\d\d:?\d\d/gi; // +00:00 -00:00 +0000 -0000 or Z
-    var matchShortOffset = /Z|[+-]\d\d(?::?\d\d)?/gi; // +00 -00 +00:00 -00:00 +0000 -0000 or Z
-
-    var matchTimestamp = /[+-]?\d+(\.\d{1,3})?/; // 123456789 123456789.123
-
-    // any word (or two) characters or numbers including two/three word month in arabic.
-    // includes scottish gaelic two word and hyphenated months
-    var matchWord = /[0-9]{0,256}['a-z\u00A0-\u05FF\u0700-\uD7FF\uF900-\uFDCF\uFDF0-\uFF07\uFF10-\uFFEF]{1,256}|[\u0600-\u06FF\/]{1,256}(\s*?[\u0600-\u06FF]{1,256}){1,2}/i;
-
-    var regexes = {};
-
-    function addRegexToken (token, regex, strictRegex) {
-        regexes[token] = isFunction(regex) ? regex : function (isStrict, localeData) {
-            return (isStrict && strictRegex) ? strictRegex : regex;
-        };
-    }
-
-    function getParseRegexForToken (token, config) {
-        if (!hasOwnProp(regexes, token)) {
-            return new RegExp(unescapeFormat(token));
-        }
-
-        return regexes[token](config._strict, config._locale);
-    }
-
-    // Code from http://stackoverflow.com/questions/3561493/is-there-a-regexp-escape-function-in-javascript
-    function unescapeFormat(s) {
-        return regexEscape(s.replace('\\', '').replace(/\\(\[)|\\(\])|\[([^\]\[]*)\]|\\(.)/g, function (matched, p1, p2, p3, p4) {
-            return p1 || p2 || p3 || p4;
-        }));
-    }
-
-    function regexEscape(s) {
-        return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-    }
-
-    var tokens = {};
-
-    function addParseToken (token, callback) {
-        var i, func = callback;
-        if (typeof token === 'string') {
-            token = [token];
-        }
-        if (isNumber(callback)) {
-            func = function (input, array) {
-                array[callback] = toInt(input);
-            };
-        }
-        for (i = 0; i < token.length; i++) {
-            tokens[token[i]] = func;
-        }
-    }
-
-    function addWeekParseToken (token, callback) {
-        addParseToken(token, function (input, array, config, token) {
-            config._w = config._w || {};
-            callback(input, config._w, config, token);
-        });
-    }
-
-    function addTimeToArrayFromToken(token, input, config) {
-        if (input != null && hasOwnProp(tokens, token)) {
-            tokens[token](input, config._a, config, token);
-        }
-    }
-
-    var YEAR = 0;
-    var MONTH = 1;
-    var DATE = 2;
-    var HOUR = 3;
-    var MINUTE = 4;
-    var SECOND = 5;
-    var MILLISECOND = 6;
-    var WEEK = 7;
-    var WEEKDAY = 8;
-
-    // FORMATTING
-
-    addFormatToken('Y', 0, 0, function () {
-        var y = this.year();
-        return y <= 9999 ? '' + y : '+' + y;
-    });
-
-    addFormatToken(0, ['YY', 2], 0, function () {
-        return this.year() % 100;
-    });
-
-    addFormatToken(0, ['YYYY',   4],       0, 'year');
-    addFormatToken(0, ['YYYYY',  5],       0, 'year');
-    addFormatToken(0, ['YYYYYY', 6, true], 0, 'year');
-
-    // ALIASES
-
-    addUnitAlias('year', 'y');
-
-    // PRIORITIES
-
-    addUnitPriority('year', 1);
-
-    // PARSING
-
-    addRegexToken('Y',      matchSigned);
-    addRegexToken('YY',     match1to2, match2);
-    addRegexToken('YYYY',   match1to4, match4);
-    addRegexToken('YYYYY',  match1to6, match6);
-    addRegexToken('YYYYYY', match1to6, match6);
-
-    addParseToken(['YYYYY', 'YYYYYY'], YEAR);
-    addParseToken('YYYY', function (input, array) {
-        array[YEAR] = input.length === 2 ? hooks.parseTwoDigitYear(input) : toInt(input);
-    });
-    addParseToken('YY', function (input, array) {
-        array[YEAR] = hooks.parseTwoDigitYear(input);
-    });
-    addParseToken('Y', function (input, array) {
-        array[YEAR] = parseInt(input, 10);
-    });
-
-    // HELPERS
-
-    function daysInYear(year) {
-        return isLeapYear(year) ? 366 : 365;
-    }
-
-    function isLeapYear(year) {
-        return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-    }
-
-    // HOOKS
-
-    hooks.parseTwoDigitYear = function (input) {
-        return toInt(input) + (toInt(input) > 68 ? 1900 : 2000);
-    };
-
-    // MOMENTS
-
-    var getSetYear = makeGetSet('FullYear', true);
-
-    function getIsLeapYear () {
-        return isLeapYear(this.year());
-    }
-
-    function makeGetSet (unit, keepTime) {
-        return function (value) {
-            if (value != null) {
-                set$1(this, unit, value);
-                hooks.updateOffset(this, keepTime);
-                return this;
-            } else {
-                return get(this, unit);
-            }
-        };
-    }
-
-    function get (mom, unit) {
-        return mom.isValid() ?
-            mom._d['get' + (mom._isUTC ? 'UTC' : '') + unit]() : NaN;
-    }
-
-    function set$1 (mom, unit, value) {
-        if (mom.isValid() && !isNaN(value)) {
-            if (unit === 'FullYear' && isLeapYear(mom.year()) && mom.month() === 1 && mom.date() === 29) {
-                mom._d['set' + (mom._isUTC ? 'UTC' : '') + unit](value, mom.month(), daysInMonth(value, mom.month()));
-            }
-            else {
-                mom._d['set' + (mom._isUTC ? 'UTC' : '') + unit](value);
-            }
-        }
-    }
-
-    // MOMENTS
-
-    function stringGet (units) {
-        units = normalizeUnits(units);
-        if (isFunction(this[units])) {
-            return this[units]();
-        }
-        return this;
-    }
-
-
-    function stringSet (units, value) {
-        if (typeof units === 'object') {
-            units = normalizeObjectUnits(units);
-            var prioritized = getPrioritizedUnits(units);
-            for (var i = 0; i < prioritized.length; i++) {
-                this[prioritized[i].unit](units[prioritized[i].unit]);
-            }
-        } else {
-            units = normalizeUnits(units);
-            if (isFunction(this[units])) {
-                return this[units](value);
-            }
-        }
-        return this;
-    }
-
-    function mod(n, x) {
-        return ((n % x) + x) % x;
-    }
-
-    var indexOf;
-
-    if (Array.prototype.indexOf) {
-        indexOf = Array.prototype.indexOf;
-    } else {
-        indexOf = function (o) {
-            // I know
-            var i;
-            for (i = 0; i < this.length; ++i) {
-                if (this[i] === o) {
-                    return i;
-                }
-            }
-            return -1;
-        };
-    }
-
-    function daysInMonth(year, month) {
-        if (isNaN(year) || isNaN(month)) {
-            return NaN;
-        }
-        var modMonth = mod(month, 12);
-        year += (month - modMonth) / 12;
-        return modMonth === 1 ? (isLeapYear(year) ? 29 : 28) : (31 - modMonth % 7 % 2);
-    }
-
-    // FORMATTING
-
-    addFormatToken('M', ['MM', 2], 'Mo', function () {
-        return this.month() + 1;
-    });
-
-    addFormatToken('MMM', 0, 0, function (format) {
-        return this.localeData().monthsShort(this, format);
-    });
-
-    addFormatToken('MMMM', 0, 0, function (format) {
-        return this.localeData().months(this, format);
-    });
-
-    // ALIASES
-
-    addUnitAlias('month', 'M');
-
-    // PRIORITY
-
-    addUnitPriority('month', 8);
-
-    // PARSING
-
-    addRegexToken('M',    match1to2);
-    addRegexToken('MM',   match1to2, match2);
-    addRegexToken('MMM',  function (isStrict, locale) {
-        return locale.monthsShortRegex(isStrict);
-    });
-    addRegexToken('MMMM', function (isStrict, locale) {
-        return locale.monthsRegex(isStrict);
-    });
-
-    addParseToken(['M', 'MM'], function (input, array) {
-        array[MONTH] = toInt(input) - 1;
-    });
-
-    addParseToken(['MMM', 'MMMM'], function (input, array, config, token) {
-        var month = config._locale.monthsParse(input, token, config._strict);
-        // if we didn't find a month name, mark the date as invalid.
-        if (month != null) {
-            array[MONTH] = month;
-        } else {
-            getParsingFlags(config).invalidMonth = input;
-        }
-    });
-
-    // LOCALES
-
-    var MONTHS_IN_FORMAT = /D[oD]?(\[[^\[\]]*\]|\s)+MMMM?/;
-    var defaultLocaleMonths = 'January_February_March_April_May_June_July_August_September_October_November_December'.split('_');
-    function localeMonths (m, format) {
-        if (!m) {
-            return isArray(this._months) ? this._months :
-                this._months['standalone'];
-        }
-        return isArray(this._months) ? this._months[m.month()] :
-            this._months[(this._months.isFormat || MONTHS_IN_FORMAT).test(format) ? 'format' : 'standalone'][m.month()];
-    }
-
-    var defaultLocaleMonthsShort = 'Jan_Feb_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec'.split('_');
-    function localeMonthsShort (m, format) {
-        if (!m) {
-            return isArray(this._monthsShort) ? this._monthsShort :
-                this._monthsShort['standalone'];
-        }
-        return isArray(this._monthsShort) ? this._monthsShort[m.month()] :
-            this._monthsShort[MONTHS_IN_FORMAT.test(format) ? 'format' : 'standalone'][m.month()];
-    }
-
-    function handleStrictParse(monthName, format, strict) {
-        var i, ii, mom, llc = monthName.toLocaleLowerCase();
-        if (!this._monthsParse) {
-            // this is not used
-            this._monthsParse = [];
-            this._longMonthsParse = [];
-            this._shortMonthsParse = [];
-            for (i = 0; i < 12; ++i) {
-                mom = createUTC([2000, i]);
-                this._shortMonthsParse[i] = this.monthsShort(mom, '').toLocaleLowerCase();
-                this._longMonthsParse[i] = this.months(mom, '').toLocaleLowerCase();
-            }
-        }
-
-        if (strict) {
-            if (format === 'MMM') {
-                ii = indexOf.call(this._shortMonthsParse, llc);
-                return ii !== -1 ? ii : null;
-            } else {
-                ii = indexOf.call(this._longMonthsParse, llc);
-                return ii !== -1 ? ii : null;
-            }
-        } else {
-            if (format === 'MMM') {
-                ii = indexOf.call(this._shortMonthsParse, llc);
-                if (ii !== -1) {
-                    return ii;
-                }
-                ii = indexOf.call(this._longMonthsParse, llc);
-                return ii !== -1 ? ii : null;
-            } else {
-                ii = indexOf.call(this._longMonthsParse, llc);
-                if (ii !== -1) {
-                    return ii;
-                }
-                ii = indexOf.call(this._shortMonthsParse, llc);
-                return ii !== -1 ? ii : null;
-            }
-        }
-    }
-
-    function localeMonthsParse (monthName, format, strict) {
-        var i, mom, regex;
-
-        if (this._monthsParseExact) {
-            return handleStrictParse.call(this, monthName, format, strict);
-        }
-
-        if (!this._monthsParse) {
-            this._monthsParse = [];
-            this._longMonthsParse = [];
-            this._shortMonthsParse = [];
-        }
-
-        // TODO: add sorting
-        // Sorting makes sure if one month (or abbr) is a prefix of another
-        // see sorting in computeMonthsParse
-        for (i = 0; i < 12; i++) {
-            // make the regex if we don't have it already
-            mom = createUTC([2000, i]);
-            if (strict && !this._longMonthsParse[i]) {
-                this._longMonthsParse[i] = new RegExp('^' + this.months(mom, '').replace('.', '') + '$', 'i');
-                this._shortMonthsParse[i] = new RegExp('^' + this.monthsShort(mom, '').replace('.', '') + '$', 'i');
-            }
-            if (!strict && !this._monthsParse[i]) {
-                regex = '^' + this.months(mom, '') + '|^' + this.monthsShort(mom, '');
-                this._monthsParse[i] = new RegExp(regex.replace('.', ''), 'i');
-            }
-            // test the regex
-            if (strict && format === 'MMMM' && this._longMonthsParse[i].test(monthName)) {
-                return i;
-            } else if (strict && format === 'MMM' && this._shortMonthsParse[i].test(monthName)) {
-                return i;
-            } else if (!strict && this._monthsParse[i].test(monthName)) {
-                return i;
-            }
-        }
-    }
-
-    // MOMENTS
-
-    function setMonth (mom, value) {
-        var dayOfMonth;
-
-        if (!mom.isValid()) {
-            // No op
-            return mom;
-        }
-
-        if (typeof value === 'string') {
-            if (/^\d+$/.test(value)) {
-                value = toInt(value);
-            } else {
-                value = mom.localeData().monthsParse(value);
-                // TODO: Another silent failure?
-                if (!isNumber(value)) {
-                    return mom;
-                }
-            }
-        }
-
-        dayOfMonth = Math.min(mom.date(), daysInMonth(mom.year(), value));
-        mom._d['set' + (mom._isUTC ? 'UTC' : '') + 'Month'](value, dayOfMonth);
-        return mom;
-    }
-
-    function getSetMonth (value) {
-        if (value != null) {
-            setMonth(this, value);
-            hooks.updateOffset(this, true);
-            return this;
-        } else {
-            return get(this, 'Month');
-        }
-    }
-
-    function getDaysInMonth () {
-        return daysInMonth(this.year(), this.month());
-    }
-
-    var defaultMonthsShortRegex = matchWord;
-    function monthsShortRegex (isStrict) {
-        if (this._monthsParseExact) {
-            if (!hasOwnProp(this, '_monthsRegex')) {
-                computeMonthsParse.call(this);
-            }
-            if (isStrict) {
-                return this._monthsShortStrictRegex;
-            } else {
-                return this._monthsShortRegex;
-            }
-        } else {
-            if (!hasOwnProp(this, '_monthsShortRegex')) {
-                this._monthsShortRegex = defaultMonthsShortRegex;
-            }
-            return this._monthsShortStrictRegex && isStrict ?
-                this._monthsShortStrictRegex : this._monthsShortRegex;
-        }
-    }
-
-    var defaultMonthsRegex = matchWord;
-    function monthsRegex (isStrict) {
-        if (this._monthsParseExact) {
-            if (!hasOwnProp(this, '_monthsRegex')) {
-                computeMonthsParse.call(this);
-            }
-            if (isStrict) {
-                return this._monthsStrictRegex;
-            } else {
-                return this._monthsRegex;
-            }
-        } else {
-            if (!hasOwnProp(this, '_monthsRegex')) {
-                this._monthsRegex = defaultMonthsRegex;
-            }
-            return this._monthsStrictRegex && isStrict ?
-                this._monthsStrictRegex : this._monthsRegex;
-        }
-    }
-
-    function computeMonthsParse () {
-        function cmpLenRev(a, b) {
-            return b.length - a.length;
-        }
-
-        var shortPieces = [], longPieces = [], mixedPieces = [],
-            i, mom;
-        for (i = 0; i < 12; i++) {
-            // make the regex if we don't have it already
-            mom = createUTC([2000, i]);
-            shortPieces.push(this.monthsShort(mom, ''));
-            longPieces.push(this.months(mom, ''));
-            mixedPieces.push(this.months(mom, ''));
-            mixedPieces.push(this.monthsShort(mom, ''));
-        }
-        // Sorting makes sure if one month (or abbr) is a prefix of another it
-        // will match the longer piece.
-        shortPieces.sort(cmpLenRev);
-        longPieces.sort(cmpLenRev);
-        mixedPieces.sort(cmpLenRev);
-        for (i = 0; i < 12; i++) {
-            shortPieces[i] = regexEscape(shortPieces[i]);
-            longPieces[i] = regexEscape(longPieces[i]);
-        }
-        for (i = 0; i < 24; i++) {
-            mixedPieces[i] = regexEscape(mixedPieces[i]);
-        }
-
-        this._monthsRegex = new RegExp('^(' + mixedPieces.join('|') + ')', 'i');
-        this._monthsShortRegex = this._monthsRegex;
-        this._monthsStrictRegex = new RegExp('^(' + longPieces.join('|') + ')', 'i');
-        this._monthsShortStrictRegex = new RegExp('^(' + shortPieces.join('|') + ')', 'i');
-    }
-
-    function createDate (y, m, d, h, M, s, ms) {
-        // can't just apply() to create a date:
-        // https://stackoverflow.com/q/181348
-        var date;
-        // the date constructor remaps years 0-99 to 1900-1999
-        if (y < 100 && y >= 0) {
-            // preserve leap years using a full 400 year cycle, then reset
-            date = new Date(y + 400, m, d, h, M, s, ms);
-            if (isFinite(date.getFullYear())) {
-                date.setFullYear(y);
-            }
-        } else {
-            date = new Date(y, m, d, h, M, s, ms);
-        }
-
-        return date;
-    }
-
-    function createUTCDate (y) {
-        var date;
-        // the Date.UTC function remaps years 0-99 to 1900-1999
-        if (y < 100 && y >= 0) {
-            var args = Array.prototype.slice.call(arguments);
-            // preserve leap years using a full 400 year cycle, then reset
-            args[0] = y + 400;
-            date = new Date(Date.UTC.apply(null, args));
-            if (isFinite(date.getUTCFullYear())) {
-                date.setUTCFullYear(y);
-            }
-        } else {
-            date = new Date(Date.UTC.apply(null, arguments));
-        }
-
-        return date;
-    }
-
-    // start-of-first-week - start-of-year
-    function firstWeekOffset(year, dow, doy) {
-        var // first-week day -- which january is always in the first week (4 for iso, 1 for other)
-            fwd = 7 + dow - doy,
-            // first-week day local weekday -- which local weekday is fwd
-            fwdlw = (7 + createUTCDate(year, 0, fwd).getUTCDay() - dow) % 7;
-
-        return -fwdlw + fwd - 1;
-    }
-
-    // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_a_date_given_the_year.2C_week_number_and_weekday
-    function dayOfYearFromWeeks(year, week, weekday, dow, doy) {
-        var localWeekday = (7 + weekday - dow) % 7,
-            weekOffset = firstWeekOffset(year, dow, doy),
-            dayOfYear = 1 + 7 * (week - 1) + localWeekday + weekOffset,
-            resYear, resDayOfYear;
-
-        if (dayOfYear <= 0) {
-            resYear = year - 1;
-            resDayOfYear = daysInYear(resYear) + dayOfYear;
-        } else if (dayOfYear > daysInYear(year)) {
-            resYear = year + 1;
-            resDayOfYear = dayOfYear - daysInYear(year);
-        } else {
-            resYear = year;
-            resDayOfYear = dayOfYear;
-        }
-
-        return {
-            year: resYear,
-            dayOfYear: resDayOfYear
-        };
-    }
-
-    function weekOfYear(mom, dow, doy) {
-        var weekOffset = firstWeekOffset(mom.year(), dow, doy),
-            week = Math.floor((mom.dayOfYear() - weekOffset - 1) / 7) + 1,
-            resWeek, resYear;
-
-        if (week < 1) {
-            resYear = mom.year() - 1;
-            resWeek = week + weeksInYear(resYear, dow, doy);
-        } else if (week > weeksInYear(mom.year(), dow, doy)) {
-            resWeek = week - weeksInYear(mom.year(), dow, doy);
-            resYear = mom.year() + 1;
-        } else {
-            resYear = mom.year();
-            resWeek = week;
-        }
-
-        return {
-            week: resWeek,
-            year: resYear
-        };
-    }
-
-    function weeksInYear(year, dow, doy) {
-        var weekOffset = firstWeekOffset(year, dow, doy),
-            weekOffsetNext = firstWeekOffset(year + 1, dow, doy);
-        return (daysInYear(year) - weekOffset + weekOffsetNext) / 7;
-    }
-
-    // FORMATTING
-
-    addFormatToken('w', ['ww', 2], 'wo', 'week');
-    addFormatToken('W', ['WW', 2], 'Wo', 'isoWeek');
-
-    // ALIASES
-
-    addUnitAlias('week', 'w');
-    addUnitAlias('isoWeek', 'W');
-
-    // PRIORITIES
-
-    addUnitPriority('week', 5);
-    addUnitPriority('isoWeek', 5);
-
-    // PARSING
-
-    addRegexToken('w',  match1to2);
-    addRegexToken('ww', match1to2, match2);
-    addRegexToken('W',  match1to2);
-    addRegexToken('WW', match1to2, match2);
-
-    addWeekParseToken(['w', 'ww', 'W', 'WW'], function (input, week, config, token) {
-        week[token.substr(0, 1)] = toInt(input);
-    });
-
-    // HELPERS
-
-    // LOCALES
-
-    function localeWeek (mom) {
-        return weekOfYear(mom, this._week.dow, this._week.doy).week;
-    }
-
-    var defaultLocaleWeek = {
-        dow : 0, // Sunday is the first day of the week.
-        doy : 6  // The week that contains Jan 6th is the first week of the year.
-    };
-
-    function localeFirstDayOfWeek () {
-        return this._week.dow;
-    }
-
-    function localeFirstDayOfYear () {
-        return this._week.doy;
-    }
-
-    // MOMENTS
-
-    function getSetWeek (input) {
-        var week = this.localeData().week(this);
-        return input == null ? week : this.add((input - week) * 7, 'd');
-    }
-
-    function getSetISOWeek (input) {
-        var week = weekOfYear(this, 1, 4).week;
-        return input == null ? week : this.add((input - week) * 7, 'd');
-    }
-
-    // FORMATTING
-
-    addFormatToken('d', 0, 'do', 'day');
-
-    addFormatToken('dd', 0, 0, function (format) {
-        return this.localeData().weekdaysMin(this, format);
-    });
-
-    addFormatToken('ddd', 0, 0, function (format) {
-        return this.localeData().weekdaysShort(this, format);
-    });
-
-    addFormatToken('dddd', 0, 0, function (format) {
-        return this.localeData().weekdays(this, format);
-    });
-
-    addFormatToken('e', 0, 0, 'weekday');
-    addFormatToken('E', 0, 0, 'isoWeekday');
-
-    // ALIASES
-
-    addUnitAlias('day', 'd');
-    addUnitAlias('weekday', 'e');
-    addUnitAlias('isoWeekday', 'E');
-
-    // PRIORITY
-    addUnitPriority('day', 11);
-    addUnitPriority('weekday', 11);
-    addUnitPriority('isoWeekday', 11);
-
-    // PARSING
-
-    addRegexToken('d',    match1to2);
-    addRegexToken('e',    match1to2);
-    addRegexToken('E',    match1to2);
-    addRegexToken('dd',   function (isStrict, locale) {
-        return locale.weekdaysMinRegex(isStrict);
-    });
-    addRegexToken('ddd',   function (isStrict, locale) {
-        return locale.weekdaysShortRegex(isStrict);
-    });
-    addRegexToken('dddd',   function (isStrict, locale) {
-        return locale.weekdaysRegex(isStrict);
-    });
-
-    addWeekParseToken(['dd', 'ddd', 'dddd'], function (input, week, config, token) {
-        var weekday = config._locale.weekdaysParse(input, token, config._strict);
-        // if we didn't get a weekday name, mark the date as invalid
-        if (weekday != null) {
-            week.d = weekday;
-        } else {
-            getParsingFlags(config).invalidWeekday = input;
-        }
-    });
-
-    addWeekParseToken(['d', 'e', 'E'], function (input, week, config, token) {
-        week[token] = toInt(input);
-    });
-
-    // HELPERS
-
-    function parseWeekday(input, locale) {
-        if (typeof input !== 'string') {
-            return input;
-        }
-
-        if (!isNaN(input)) {
-            return parseInt(input, 10);
-        }
-
-        input = locale.weekdaysParse(input);
-        if (typeof input === 'number') {
-            return input;
-        }
-
-        return null;
-    }
-
-    function parseIsoWeekday(input, locale) {
-        if (typeof input === 'string') {
-            return locale.weekdaysParse(input) % 7 || 7;
-        }
-        return isNaN(input) ? null : input;
-    }
-
-    // LOCALES
-    function shiftWeekdays (ws, n) {
-        return ws.slice(n, 7).concat(ws.slice(0, n));
-    }
-
-    var defaultLocaleWeekdays = 'Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday'.split('_');
-    function localeWeekdays (m, format) {
-        var weekdays = isArray(this._weekdays) ? this._weekdays :
-            this._weekdays[(m && m !== true && this._weekdays.isFormat.test(format)) ? 'format' : 'standalone'];
-        return (m === true) ? shiftWeekdays(weekdays, this._week.dow)
-            : (m) ? weekdays[m.day()] : weekdays;
-    }
-
-    var defaultLocaleWeekdaysShort = 'Sun_Mon_Tue_Wed_Thu_Fri_Sat'.split('_');
-    function localeWeekdaysShort (m) {
-        return (m === true) ? shiftWeekdays(this._weekdaysShort, this._week.dow)
-            : (m) ? this._weekdaysShort[m.day()] : this._weekdaysShort;
-    }
-
-    var defaultLocaleWeekdaysMin = 'Su_Mo_Tu_We_Th_Fr_Sa'.split('_');
-    function localeWeekdaysMin (m) {
-        return (m === true) ? shiftWeekdays(this._weekdaysMin, this._week.dow)
-            : (m) ? this._weekdaysMin[m.day()] : this._weekdaysMin;
-    }
-
-    function handleStrictParse$1(weekdayName, format, strict) {
-        var i, ii, mom, llc = weekdayName.toLocaleLowerCase();
-        if (!this._weekdaysParse) {
-            this._weekdaysParse = [];
-            this._shortWeekdaysParse = [];
-            this._minWeekdaysParse = [];
-
-            for (i = 0; i < 7; ++i) {
-                mom = createUTC([2000, 1]).day(i);
-                this._minWeekdaysParse[i] = this.weekdaysMin(mom, '').toLocaleLowerCase();
-                this._shortWeekdaysParse[i] = this.weekdaysShort(mom, '').toLocaleLowerCase();
-                this._weekdaysParse[i] = this.weekdays(mom, '').toLocaleLowerCase();
-            }
-        }
-
-        if (strict) {
-            if (format === 'dddd') {
-                ii = indexOf.call(this._weekdaysParse, llc);
-                return ii !== -1 ? ii : null;
-            } else if (format === 'ddd') {
-                ii = indexOf.call(this._shortWeekdaysParse, llc);
-                return ii !== -1 ? ii : null;
-            } else {
-                ii = indexOf.call(this._minWeekdaysParse, llc);
-                return ii !== -1 ? ii : null;
-            }
-        } else {
-            if (format === 'dddd') {
-                ii = indexOf.call(this._weekdaysParse, llc);
-                if (ii !== -1) {
-                    return ii;
-                }
-                ii = indexOf.call(this._shortWeekdaysParse, llc);
-                if (ii !== -1) {
-                    return ii;
-                }
-                ii = indexOf.call(this._minWeekdaysParse, llc);
-                return ii !== -1 ? ii : null;
-            } else if (format === 'ddd') {
-                ii = indexOf.call(this._shortWeekdaysParse, llc);
-                if (ii !== -1) {
-                    return ii;
-                }
-                ii = indexOf.call(this._weekdaysParse, llc);
-                if (ii !== -1) {
-                    return ii;
-                }
-                ii = indexOf.call(this._minWeekdaysParse, llc);
-                return ii !== -1 ? ii : null;
-            } else {
-                ii = indexOf.call(this._minWeekdaysParse, llc);
-                if (ii !== -1) {
-                    return ii;
-                }
-                ii = indexOf.call(this._weekdaysParse, llc);
-                if (ii !== -1) {
-                    return ii;
-                }
-                ii = indexOf.call(this._shortWeekdaysParse, llc);
-                return ii !== -1 ? ii : null;
-            }
-        }
-    }
-
-    function localeWeekdaysParse (weekdayName, format, strict) {
-        var i, mom, regex;
-
-        if (this._weekdaysParseExact) {
-            return handleStrictParse$1.call(this, weekdayName, format, strict);
-        }
-
-        if (!this._weekdaysParse) {
-            this._weekdaysParse = [];
-            this._minWeekdaysParse = [];
-            this._shortWeekdaysParse = [];
-            this._fullWeekdaysParse = [];
-        }
-
-        for (i = 0; i < 7; i++) {
-            // make the regex if we don't have it already
-
-            mom = createUTC([2000, 1]).day(i);
-            if (strict && !this._fullWeekdaysParse[i]) {
-                this._fullWeekdaysParse[i] = new RegExp('^' + this.weekdays(mom, '').replace('.', '\\.?') + '$', 'i');
-                this._shortWeekdaysParse[i] = new RegExp('^' + this.weekdaysShort(mom, '').replace('.', '\\.?') + '$', 'i');
-                this._minWeekdaysParse[i] = new RegExp('^' + this.weekdaysMin(mom, '').replace('.', '\\.?') + '$', 'i');
-            }
-            if (!this._weekdaysParse[i]) {
-                regex = '^' + this.weekdays(mom, '') + '|^' + this.weekdaysShort(mom, '') + '|^' + this.weekdaysMin(mom, '');
-                this._weekdaysParse[i] = new RegExp(regex.replace('.', ''), 'i');
-            }
-            // test the regex
-            if (strict && format === 'dddd' && this._fullWeekdaysParse[i].test(weekdayName)) {
-                return i;
-            } else if (strict && format === 'ddd' && this._shortWeekdaysParse[i].test(weekdayName)) {
-                return i;
-            } else if (strict && format === 'dd' && this._minWeekdaysParse[i].test(weekdayName)) {
-                return i;
-            } else if (!strict && this._weekdaysParse[i].test(weekdayName)) {
-                return i;
-            }
-        }
-    }
-
-    // MOMENTS
-
-    function getSetDayOfWeek (input) {
-        if (!this.isValid()) {
-            return input != null ? this : NaN;
-        }
-        var day = this._isUTC ? this._d.getUTCDay() : this._d.getDay();
-        if (input != null) {
-            input = parseWeekday(input, this.localeData());
-            return this.add(input - day, 'd');
-        } else {
-            return day;
-        }
-    }
-
-    function getSetLocaleDayOfWeek (input) {
-        if (!this.isValid()) {
-            return input != null ? this : NaN;
-        }
-        var weekday = (this.day() + 7 - this.localeData()._week.dow) % 7;
-        return input == null ? weekday : this.add(input - weekday, 'd');
-    }
-
-    function getSetISODayOfWeek (input) {
-        if (!this.isValid()) {
-            return input != null ? this : NaN;
-        }
-
-        // behaves the same as moment#day except
-        // as a getter, returns 7 instead of 0 (1-7 range instead of 0-6)
-        // as a setter, sunday should belong to the previous week.
-
-        if (input != null) {
-            var weekday = parseIsoWeekday(input, this.localeData());
-            return this.day(this.day() % 7 ? weekday : weekday - 7);
-        } else {
-            return this.day() || 7;
-        }
-    }
-
-    var defaultWeekdaysRegex = matchWord;
-    function weekdaysRegex (isStrict) {
-        if (this._weekdaysParseExact) {
-            if (!hasOwnProp(this, '_weekdaysRegex')) {
-                computeWeekdaysParse.call(this);
-            }
-            if (isStrict) {
-                return this._weekdaysStrictRegex;
-            } else {
-                return this._weekdaysRegex;
-            }
-        } else {
-            if (!hasOwnProp(this, '_weekdaysRegex')) {
-                this._weekdaysRegex = defaultWeekdaysRegex;
-            }
-            return this._weekdaysStrictRegex && isStrict ?
-                this._weekdaysStrictRegex : this._weekdaysRegex;
-        }
-    }
-
-    var defaultWeekdaysShortRegex = matchWord;
-    function weekdaysShortRegex (isStrict) {
-        if (this._weekdaysParseExact) {
-            if (!hasOwnProp(this, '_weekdaysRegex')) {
-                computeWeekdaysParse.call(this);
-            }
-            if (isStrict) {
-                return this._weekdaysShortStrictRegex;
-            } else {
-                return this._weekdaysShortRegex;
-            }
-        } else {
-            if (!hasOwnProp(this, '_weekdaysShortRegex')) {
-                this._weekdaysShortRegex = defaultWeekdaysShortRegex;
-            }
-            return this._weekdaysShortStrictRegex && isStrict ?
-                this._weekdaysShortStrictRegex : this._weekdaysShortRegex;
-        }
-    }
-
-    var defaultWeekdaysMinRegex = matchWord;
-    function weekdaysMinRegex (isStrict) {
-        if (this._weekdaysParseExact) {
-            if (!hasOwnProp(this, '_weekdaysRegex')) {
-                computeWeekdaysParse.call(this);
-            }
-            if (isStrict) {
-                return this._weekdaysMinStrictRegex;
-            } else {
-                return this._weekdaysMinRegex;
-            }
-        } else {
-            if (!hasOwnProp(this, '_weekdaysMinRegex')) {
-                this._weekdaysMinRegex = defaultWeekdaysMinRegex;
-            }
-            return this._weekdaysMinStrictRegex && isStrict ?
-                this._weekdaysMinStrictRegex : this._weekdaysMinRegex;
-        }
-    }
-
-
-    function computeWeekdaysParse () {
-        function cmpLenRev(a, b) {
-            return b.length - a.length;
-        }
-
-        var minPieces = [], shortPieces = [], longPieces = [], mixedPieces = [],
-            i, mom, minp, shortp, longp;
-        for (i = 0; i < 7; i++) {
-            // make the regex if we don't have it already
-            mom = createUTC([2000, 1]).day(i);
-            minp = this.weekdaysMin(mom, '');
-            shortp = this.weekdaysShort(mom, '');
-            longp = this.weekdays(mom, '');
-            minPieces.push(minp);
-            shortPieces.push(shortp);
-            longPieces.push(longp);
-            mixedPieces.push(minp);
-            mixedPieces.push(shortp);
-            mixedPieces.push(longp);
-        }
-        // Sorting makes sure if one weekday (or abbr) is a prefix of another it
-        // will match the longer piece.
-        minPieces.sort(cmpLenRev);
-        shortPieces.sort(cmpLenRev);
-        longPieces.sort(cmpLenRev);
-        mixedPieces.sort(cmpLenRev);
-        for (i = 0; i < 7; i++) {
-            shortPieces[i] = regexEscape(shortPieces[i]);
-            longPieces[i] = regexEscape(longPieces[i]);
-            mixedPieces[i] = regexEscape(mixedPieces[i]);
-        }
-
-        this._weekdaysRegex = new RegExp('^(' + mixedPieces.join('|') + ')', 'i');
-        this._weekdaysShortRegex = this._weekdaysRegex;
-        this._weekdaysMinRegex = this._weekdaysRegex;
-
-        this._weekdaysStrictRegex = new RegExp('^(' + longPieces.join('|') + ')', 'i');
-        this._weekdaysShortStrictRegex = new RegExp('^(' + shortPieces.join('|') + ')', 'i');
-        this._weekdaysMinStrictRegex = new RegExp('^(' + minPieces.join('|') + ')', 'i');
-    }
-
-    // FORMATTING
-
-    function hFormat() {
-        return this.hours() % 12 || 12;
-    }
-
-    function kFormat() {
-        return this.hours() || 24;
-    }
-
-    addFormatToken('H', ['HH', 2], 0, 'hour');
-    addFormatToken('h', ['hh', 2], 0, hFormat);
-    addFormatToken('k', ['kk', 2], 0, kFormat);
-
-    addFormatToken('hmm', 0, 0, function () {
-        return '' + hFormat.apply(this) + zeroFill(this.minutes(), 2);
-    });
-
-    addFormatToken('hmmss', 0, 0, function () {
-        return '' + hFormat.apply(this) + zeroFill(this.minutes(), 2) +
-            zeroFill(this.seconds(), 2);
-    });
-
-    addFormatToken('Hmm', 0, 0, function () {
-        return '' + this.hours() + zeroFill(this.minutes(), 2);
-    });
-
-    addFormatToken('Hmmss', 0, 0, function () {
-        return '' + this.hours() + zeroFill(this.minutes(), 2) +
-            zeroFill(this.seconds(), 2);
-    });
-
-    function meridiem (token, lowercase) {
-        addFormatToken(token, 0, 0, function () {
-            return this.localeData().meridiem(this.hours(), this.minutes(), lowercase);
-        });
-    }
-
-    meridiem('a', true);
-    meridiem('A', false);
-
-    // ALIASES
-
-    addUnitAlias('hour', 'h');
-
-    // PRIORITY
-    addUnitPriority('hour', 13);
-
-    // PARSING
-
-    function matchMeridiem (isStrict, locale) {
-        return locale._meridiemParse;
-    }
-
-    addRegexToken('a',  matchMeridiem);
-    addRegexToken('A',  matchMeridiem);
-    addRegexToken('H',  match1to2);
-    addRegexToken('h',  match1to2);
-    addRegexToken('k',  match1to2);
-    addRegexToken('HH', match1to2, match2);
-    addRegexToken('hh', match1to2, match2);
-    addRegexToken('kk', match1to2, match2);
-
-    addRegexToken('hmm', match3to4);
-    addRegexToken('hmmss', match5to6);
-    addRegexToken('Hmm', match3to4);
-    addRegexToken('Hmmss', match5to6);
-
-    addParseToken(['H', 'HH'], HOUR);
-    addParseToken(['k', 'kk'], function (input, array, config) {
-        var kInput = toInt(input);
-        array[HOUR] = kInput === 24 ? 0 : kInput;
-    });
-    addParseToken(['a', 'A'], function (input, array, config) {
-        config._isPm = config._locale.isPM(input);
-        config._meridiem = input;
-    });
-    addParseToken(['h', 'hh'], function (input, array, config) {
-        array[HOUR] = toInt(input);
-        getParsingFlags(config).bigHour = true;
-    });
-    addParseToken('hmm', function (input, array, config) {
-        var pos = input.length - 2;
-        array[HOUR] = toInt(input.substr(0, pos));
-        array[MINUTE] = toInt(input.substr(pos));
-        getParsingFlags(config).bigHour = true;
-    });
-    addParseToken('hmmss', function (input, array, config) {
-        var pos1 = input.length - 4;
-        var pos2 = input.length - 2;
-        array[HOUR] = toInt(input.substr(0, pos1));
-        array[MINUTE] = toInt(input.substr(pos1, 2));
-        array[SECOND] = toInt(input.substr(pos2));
-        getParsingFlags(config).bigHour = true;
-    });
-    addParseToken('Hmm', function (input, array, config) {
-        var pos = input.length - 2;
-        array[HOUR] = toInt(input.substr(0, pos));
-        array[MINUTE] = toInt(input.substr(pos));
-    });
-    addParseToken('Hmmss', function (input, array, config) {
-        var pos1 = input.length - 4;
-        var pos2 = input.length - 2;
-        array[HOUR] = toInt(input.substr(0, pos1));
-        array[MINUTE] = toInt(input.substr(pos1, 2));
-        array[SECOND] = toInt(input.substr(pos2));
-    });
-
-    // LOCALES
-
-    function localeIsPM (input) {
-        // IE8 Quirks Mode & IE7 Standards Mode do not allow accessing strings like arrays
-        // Using charAt should be more compatible.
-        return ((input + '').toLowerCase().charAt(0) === 'p');
-    }
-
-    var defaultLocaleMeridiemParse = /[ap]\.?m?\.?/i;
-    function localeMeridiem (hours, minutes, isLower) {
-        if (hours > 11) {
-            return isLower ? 'pm' : 'PM';
-        } else {
-            return isLower ? 'am' : 'AM';
-        }
-    }
-
-
-    // MOMENTS
-
-    // Setting the hour should keep the time, because the user explicitly
-    // specified which hour they want. So trying to maintain the same hour (in
-    // a new timezone) makes sense. Adding/subtracting hours does not follow
-    // this rule.
-    var getSetHour = makeGetSet('Hours', true);
-
-    var baseConfig = {
-        calendar: defaultCalendar,
-        longDateFormat: defaultLongDateFormat,
-        invalidDate: defaultInvalidDate,
-        ordinal: defaultOrdinal,
-        dayOfMonthOrdinalParse: defaultDayOfMonthOrdinalParse,
-        relativeTime: defaultRelativeTime,
-
-        months: defaultLocaleMonths,
-        monthsShort: defaultLocaleMonthsShort,
-
-        week: defaultLocaleWeek,
-
-        weekdays: defaultLocaleWeekdays,
-        weekdaysMin: defaultLocaleWeekdaysMin,
-        weekdaysShort: defaultLocaleWeekdaysShort,
-
-        meridiemParse: defaultLocaleMeridiemParse
-    };
-
-    // internal storage for locale config files
-    var locales = {};
-    var localeFamilies = {};
-    var globalLocale;
-
-    function normalizeLocale(key) {
-        return key ? key.toLowerCase().replace('_', '-') : key;
-    }
-
-    // pick the locale from the array
-    // try ['en-au', 'en-gb'] as 'en-au', 'en-gb', 'en', as in move through the list trying each
-    // substring from most specific to least, but move to the next array item if it's a more specific variant than the current root
-    function chooseLocale(names) {
-        var i = 0, j, next, locale, split;
-
-        while (i < names.length) {
-            split = normalizeLocale(names[i]).split('-');
-            j = split.length;
-            next = normalizeLocale(names[i + 1]);
-            next = next ? next.split('-') : null;
-            while (j > 0) {
-                locale = loadLocale(split.slice(0, j).join('-'));
-                if (locale) {
-                    return locale;
-                }
-                if (next && next.length >= j && compareArrays(split, next, true) >= j - 1) {
-                    //the next array item is better than a shallower substring of this one
-                    break;
-                }
-                j--;
-            }
-            i++;
-        }
-        return globalLocale;
-    }
-
-    function loadLocale(name) {
-        var oldLocale = null;
-        // TODO: Find a better way to register and load all the locales in Node
-        if (!locales[name] && (typeof module !== 'undefined') &&
-                module && module.exports) {
-            try {
-                oldLocale = globalLocale._abbr;
-                var aliasedRequire = require;
-                aliasedRequire('./locale/' + name);
-                getSetGlobalLocale(oldLocale);
-            } catch (e) {}
-        }
-        return locales[name];
-    }
-
-    // This function will load locale and then set the global locale.  If
-    // no arguments are passed in, it will simply return the current global
-    // locale key.
-    function getSetGlobalLocale (key, values) {
-        var data;
-        if (key) {
-            if (isUndefined(values)) {
-                data = getLocale(key);
-            }
-            else {
-                data = defineLocale(key, values);
-            }
-
-            if (data) {
-                // moment.duration._locale = moment._locale = data;
-                globalLocale = data;
-            }
-            else {
-                if ((typeof console !==  'undefined') && console.warn) {
-                    //warn user if arguments are passed but the locale could not be set
-                    console.warn('Locale ' + key +  ' not found. Did you forget to load it?');
-                }
-            }
-        }
-
-        return globalLocale._abbr;
-    }
-
-    function defineLocale (name, config) {
-        if (config !== null) {
-            var locale, parentConfig = baseConfig;
-            config.abbr = name;
-            if (locales[name] != null) {
-                deprecateSimple('defineLocaleOverride',
-                        'use moment.updateLocale(localeName, config) to change ' +
-                        'an existing locale. moment.defineLocale(localeName, ' +
-                        'config) should only be used for creating a new locale ' +
-                        'See http://momentjs.com/guides/#/warnings/define-locale/ for more info.');
-                parentConfig = locales[name]._config;
-            } else if (config.parentLocale != null) {
-                if (locales[config.parentLocale] != null) {
-                    parentConfig = locales[config.parentLocale]._config;
-                } else {
-                    locale = loadLocale(config.parentLocale);
-                    if (locale != null) {
-                        parentConfig = locale._config;
-                    } else {
-                        if (!localeFamilies[config.parentLocale]) {
-                            localeFamilies[config.parentLocale] = [];
-                        }
-                        localeFamilies[config.parentLocale].push({
-                            name: name,
-                            config: config
-                        });
-                        return null;
-                    }
-                }
-            }
-            locales[name] = new Locale(mergeConfigs(parentConfig, config));
-
-            if (localeFamilies[name]) {
-                localeFamilies[name].forEach(function (x) {
-                    defineLocale(x.name, x.config);
-                });
-            }
-
-            // backwards compat for now: also set the locale
-            // make sure we set the locale AFTER all child locales have been
-            // created, so we won't end up with the child locale set.
-            getSetGlobalLocale(name);
-
-
-            return locales[name];
-        } else {
-            // useful for testing
-            delete locales[name];
-            return null;
-        }
-    }
-
-    function updateLocale(name, config) {
-        if (config != null) {
-            var locale, tmpLocale, parentConfig = baseConfig;
-            // MERGE
-            tmpLocale = loadLocale(name);
-            if (tmpLocale != null) {
-                parentConfig = tmpLocale._config;
-            }
-            config = mergeConfigs(parentConfig, config);
-            locale = new Locale(config);
-            locale.parentLocale = locales[name];
-            locales[name] = locale;
-
-            // backwards compat for now: also set the locale
-            getSetGlobalLocale(name);
-        } else {
-            // pass null for config to unupdate, useful for tests
-            if (locales[name] != null) {
-                if (locales[name].parentLocale != null) {
-                    locales[name] = locales[name].parentLocale;
-                } else if (locales[name] != null) {
-                    delete locales[name];
-                }
-            }
-        }
-        return locales[name];
-    }
-
-    // returns locale data
-    function getLocale (key) {
-        var locale;
-
-        if (key && key._locale && key._locale._abbr) {
-            key = key._locale._abbr;
-        }
-
-        if (!key) {
-            return globalLocale;
-        }
-
-        if (!isArray(key)) {
-            //short-circuit everything else
-            locale = loadLocale(key);
-            if (locale) {
-                return locale;
-            }
-            key = [key];
-        }
-
-        return chooseLocale(key);
-    }
-
-    function listLocales() {
-        return keys(locales);
-    }
-
-    function checkOverflow (m) {
-        var overflow;
-        var a = m._a;
-
-        if (a && getParsingFlags(m).overflow === -2) {
-            overflow =
-                a[MONTH]       < 0 || a[MONTH]       > 11  ? MONTH :
-                a[DATE]        < 1 || a[DATE]        > daysInMonth(a[YEAR], a[MONTH]) ? DATE :
-                a[HOUR]        < 0 || a[HOUR]        > 24 || (a[HOUR] === 24 && (a[MINUTE] !== 0 || a[SECOND] !== 0 || a[MILLISECOND] !== 0)) ? HOUR :
-                a[MINUTE]      < 0 || a[MINUTE]      > 59  ? MINUTE :
-                a[SECOND]      < 0 || a[SECOND]      > 59  ? SECOND :
-                a[MILLISECOND] < 0 || a[MILLISECOND] > 999 ? MILLISECOND :
-                -1;
-
-            if (getParsingFlags(m)._overflowDayOfYear && (overflow < YEAR || overflow > DATE)) {
-                overflow = DATE;
-            }
-            if (getParsingFlags(m)._overflowWeeks && overflow === -1) {
-                overflow = WEEK;
-            }
-            if (getParsingFlags(m)._overflowWeekday && overflow === -1) {
-                overflow = WEEKDAY;
-            }
-
-            getParsingFlags(m).overflow = overflow;
-        }
-
-        return m;
-    }
-
-    // Pick the first defined of two or three arguments.
-    function defaults(a, b, c) {
-        if (a != null) {
-            return a;
-        }
-        if (b != null) {
-            return b;
-        }
-        return c;
-    }
-
-    function currentDateArray(config) {
-        // hooks is actually the exported moment object
-        var nowValue = new Date(hooks.now());
-        if (config._useUTC) {
-            return [nowValue.getUTCFullYear(), nowValue.getUTCMonth(), nowValue.getUTCDate()];
-        }
-        return [nowValue.getFullYear(), nowValue.getMonth(), nowValue.getDate()];
-    }
-
-    // convert an array to a date.
-    // the array should mirror the parameters below
-    // note: all values past the year are optional and will default to the lowest possible value.
-    // [year, month, day , hour, minute, second, millisecond]
-    function configFromArray (config) {
-        var i, date, input = [], currentDate, expectedWeekday, yearToUse;
-
-        if (config._d) {
-            return;
-        }
-
-        currentDate = currentDateArray(config);
-
-        //compute day of the year from weeks and weekdays
-        if (config._w && config._a[DATE] == null && config._a[MONTH] == null) {
-            dayOfYearFromWeekInfo(config);
-        }
-
-        //if the day of the year is set, figure out what it is
-        if (config._dayOfYear != null) {
-            yearToUse = defaults(config._a[YEAR], currentDate[YEAR]);
-
-            if (config._dayOfYear > daysInYear(yearToUse) || config._dayOfYear === 0) {
-                getParsingFlags(config)._overflowDayOfYear = true;
-            }
-
-            date = createUTCDate(yearToUse, 0, config._dayOfYear);
-            config._a[MONTH] = date.getUTCMonth();
-            config._a[DATE] = date.getUTCDate();
-        }
-
-        // Default to current date.
-        // * if no year, month, day of month are given, default to today
-        // * if day of month is given, default month and year
-        // * if month is given, default only year
-        // * if year is given, don't default anything
-        for (i = 0; i < 3 && config._a[i] == null; ++i) {
-            config._a[i] = input[i] = currentDate[i];
-        }
-
-        // Zero out whatever was not defaulted, including time
-        for (; i < 7; i++) {
-            config._a[i] = input[i] = (config._a[i] == null) ? (i === 2 ? 1 : 0) : config._a[i];
-        }
-
-        // Check for 24:00:00.000
-        if (config._a[HOUR] === 24 &&
-                config._a[MINUTE] === 0 &&
-                config._a[SECOND] === 0 &&
-                config._a[MILLISECOND] === 0) {
-            config._nextDay = true;
-            config._a[HOUR] = 0;
-        }
-
-        config._d = (config._useUTC ? createUTCDate : createDate).apply(null, input);
-        expectedWeekday = config._useUTC ? config._d.getUTCDay() : config._d.getDay();
-
-        // Apply timezone offset from input. The actual utcOffset can be changed
-        // with parseZone.
-        if (config._tzm != null) {
-            config._d.setUTCMinutes(config._d.getUTCMinutes() - config._tzm);
-        }
-
-        if (config._nextDay) {
-            config._a[HOUR] = 24;
-        }
-
-        // check for mismatching day of week
-        if (config._w && typeof config._w.d !== 'undefined' && config._w.d !== expectedWeekday) {
-            getParsingFlags(config).weekdayMismatch = true;
-        }
-    }
-
-    function dayOfYearFromWeekInfo(config) {
-        var w, weekYear, week, weekday, dow, doy, temp, weekdayOverflow;
-
-        w = config._w;
-        if (w.GG != null || w.W != null || w.E != null) {
-            dow = 1;
-            doy = 4;
-
-            // TODO: We need to take the current isoWeekYear, but that depends on
-            // how we interpret now (local, utc, fixed offset). So create
-            // a now version of current config (take local/utc/offset flags, and
-            // create now).
-            weekYear = defaults(w.GG, config._a[YEAR], weekOfYear(createLocal(), 1, 4).year);
-            week = defaults(w.W, 1);
-            weekday = defaults(w.E, 1);
-            if (weekday < 1 || weekday > 7) {
-                weekdayOverflow = true;
-            }
-        } else {
-            dow = config._locale._week.dow;
-            doy = config._locale._week.doy;
-
-            var curWeek = weekOfYear(createLocal(), dow, doy);
-
-            weekYear = defaults(w.gg, config._a[YEAR], curWeek.year);
-
-            // Default to current week.
-            week = defaults(w.w, curWeek.week);
-
-            if (w.d != null) {
-                // weekday -- low day numbers are considered next week
-                weekday = w.d;
-                if (weekday < 0 || weekday > 6) {
-                    weekdayOverflow = true;
-                }
-            } else if (w.e != null) {
-                // local weekday -- counting starts from beginning of week
-                weekday = w.e + dow;
-                if (w.e < 0 || w.e > 6) {
-                    weekdayOverflow = true;
-                }
-            } else {
-                // default to beginning of week
-                weekday = dow;
-            }
-        }
-        if (week < 1 || week > weeksInYear(weekYear, dow, doy)) {
-            getParsingFlags(config)._overflowWeeks = true;
-        } else if (weekdayOverflow != null) {
-            getParsingFlags(config)._overflowWeekday = true;
-        } else {
-            temp = dayOfYearFromWeeks(weekYear, week, weekday, dow, doy);
-            config._a[YEAR] = temp.year;
-            config._dayOfYear = temp.dayOfYear;
-        }
-    }
-
-    // iso 8601 regex
-    // 0000-00-00 0000-W00 or 0000-W00-0 + T + 00 or 00:00 or 00:00:00 or 00:00:00.000 + +00:00 or +0000 or +00)
-    var extendedIsoRegex = /^\s*((?:[+-]\d{6}|\d{4})-(?:\d\d-\d\d|W\d\d-\d|W\d\d|\d\d\d|\d\d))(?:(T| )(\d\d(?::\d\d(?::\d\d(?:[.,]\d+)?)?)?)([\+\-]\d\d(?::?\d\d)?|\s*Z)?)?$/;
-    var basicIsoRegex = /^\s*((?:[+-]\d{6}|\d{4})(?:\d\d\d\d|W\d\d\d|W\d\d|\d\d\d|\d\d))(?:(T| )(\d\d(?:\d\d(?:\d\d(?:[.,]\d+)?)?)?)([\+\-]\d\d(?::?\d\d)?|\s*Z)?)?$/;
-
-    var tzRegex = /Z|[+-]\d\d(?::?\d\d)?/;
-
-    var isoDates = [
-        ['YYYYYY-MM-DD', /[+-]\d{6}-\d\d-\d\d/],
-        ['YYYY-MM-DD', /\d{4}-\d\d-\d\d/],
-        ['GGGG-[W]WW-E', /\d{4}-W\d\d-\d/],
-        ['GGGG-[W]WW', /\d{4}-W\d\d/, false],
-        ['YYYY-DDD', /\d{4}-\d{3}/],
-        ['YYYY-MM', /\d{4}-\d\d/, false],
-        ['YYYYYYMMDD', /[+-]\d{10}/],
-        ['YYYYMMDD', /\d{8}/],
-        // YYYYMM is NOT allowed by the standard
-        ['GGGG[W]WWE', /\d{4}W\d{3}/],
-        ['GGGG[W]WW', /\d{4}W\d{2}/, false],
-        ['YYYYDDD', /\d{7}/]
-    ];
-
-    // iso time formats and regexes
-    var isoTimes = [
-        ['HH:mm:ss.SSSS', /\d\d:\d\d:\d\d\.\d+/],
-        ['HH:mm:ss,SSSS', /\d\d:\d\d:\d\d,\d+/],
-        ['HH:mm:ss', /\d\d:\d\d:\d\d/],
-        ['HH:mm', /\d\d:\d\d/],
-        ['HHmmss.SSSS', /\d\d\d\d\d\d\.\d+/],
-        ['HHmmss,SSSS', /\d\d\d\d\d\d,\d+/],
-        ['HHmmss', /\d\d\d\d\d\d/],
-        ['HHmm', /\d\d\d\d/],
-        ['HH', /\d\d/]
-    ];
-
-    var aspNetJsonRegex = /^\/?Date\((\-?\d+)/i;
-
-    // date from iso format
-    function configFromISO(config) {
-        var i, l,
-            string = config._i,
-            match = extendedIsoRegex.exec(string) || basicIsoRegex.exec(string),
-            allowTime, dateFormat, timeFormat, tzFormat;
-
-        if (match) {
-            getParsingFlags(config).iso = true;
-
-            for (i = 0, l = isoDates.length; i < l; i++) {
-                if (isoDates[i][1].exec(match[1])) {
-                    dateFormat = isoDates[i][0];
-                    allowTime = isoDates[i][2] !== false;
-                    break;
-                }
-            }
-            if (dateFormat == null) {
-                config._isValid = false;
-                return;
-            }
-            if (match[3]) {
-                for (i = 0, l = isoTimes.length; i < l; i++) {
-                    if (isoTimes[i][1].exec(match[3])) {
-                        // match[2] should be 'T' or space
-                        timeFormat = (match[2] || ' ') + isoTimes[i][0];
-                        break;
-                    }
-                }
-                if (timeFormat == null) {
-                    config._isValid = false;
-                    return;
-                }
-            }
-            if (!allowTime && timeFormat != null) {
-                config._isValid = false;
-                return;
-            }
-            if (match[4]) {
-                if (tzRegex.exec(match[4])) {
-                    tzFormat = 'Z';
-                } else {
-                    config._isValid = false;
-                    return;
-                }
-            }
-            config._f = dateFormat + (timeFormat || '') + (tzFormat || '');
-            configFromStringAndFormat(config);
-        } else {
-            config._isValid = false;
-        }
-    }
-
-    // RFC 2822 regex: For details see https://tools.ietf.org/html/rfc2822#section-3.3
-    var rfc2822 = /^(?:(Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s)?(\d{1,2})\s(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s(\d{2,4})\s(\d\d):(\d\d)(?::(\d\d))?\s(?:(UT|GMT|[ECMP][SD]T)|([Zz])|([+-]\d{4}))$/;
-
-    function extractFromRFC2822Strings(yearStr, monthStr, dayStr, hourStr, minuteStr, secondStr) {
-        var result = [
-            untruncateYear(yearStr),
-            defaultLocaleMonthsShort.indexOf(monthStr),
-            parseInt(dayStr, 10),
-            parseInt(hourStr, 10),
-            parseInt(minuteStr, 10)
-        ];
-
-        if (secondStr) {
-            result.push(parseInt(secondStr, 10));
-        }
-
-        return result;
-    }
-
-    function untruncateYear(yearStr) {
-        var year = parseInt(yearStr, 10);
-        if (year <= 49) {
-            return 2000 + year;
-        } else if (year <= 999) {
-            return 1900 + year;
-        }
-        return year;
-    }
-
-    function preprocessRFC2822(s) {
-        // Remove comments and folding whitespace and replace multiple-spaces with a single space
-        return s.replace(/\([^)]*\)|[\n\t]/g, ' ').replace(/(\s\s+)/g, ' ').replace(/^\s\s*/, '').replace(/\s\s*$/, '');
-    }
-
-    function checkWeekday(weekdayStr, parsedInput, config) {
-        if (weekdayStr) {
-            // TODO: Replace the vanilla JS Date object with an indepentent day-of-week check.
-            var weekdayProvided = defaultLocaleWeekdaysShort.indexOf(weekdayStr),
-                weekdayActual = new Date(parsedInput[0], parsedInput[1], parsedInput[2]).getDay();
-            if (weekdayProvided !== weekdayActual) {
-                getParsingFlags(config).weekdayMismatch = true;
-                config._isValid = false;
-                return false;
-            }
-        }
-        return true;
-    }
-
-    var obsOffsets = {
-        UT: 0,
-        GMT: 0,
-        EDT: -4 * 60,
-        EST: -5 * 60,
-        CDT: -5 * 60,
-        CST: -6 * 60,
-        MDT: -6 * 60,
-        MST: -7 * 60,
-        PDT: -7 * 60,
-        PST: -8 * 60
-    };
-
-    function calculateOffset(obsOffset, militaryOffset, numOffset) {
-        if (obsOffset) {
-            return obsOffsets[obsOffset];
-        } else if (militaryOffset) {
-            // the only allowed military tz is Z
-            return 0;
-        } else {
-            var hm = parseInt(numOffset, 10);
-            var m = hm % 100, h = (hm - m) / 100;
-            return h * 60 + m;
-        }
-    }
-
-    // date and time from ref 2822 format
-    function configFromRFC2822(config) {
-        var match = rfc2822.exec(preprocessRFC2822(config._i));
-        if (match) {
-            var parsedArray = extractFromRFC2822Strings(match[4], match[3], match[2], match[5], match[6], match[7]);
-            if (!checkWeekday(match[1], parsedArray, config)) {
-                return;
-            }
-
-            config._a = parsedArray;
-            config._tzm = calculateOffset(match[8], match[9], match[10]);
-
-            config._d = createUTCDate.apply(null, config._a);
-            config._d.setUTCMinutes(config._d.getUTCMinutes() - config._tzm);
-
-            getParsingFlags(config).rfc2822 = true;
-        } else {
-            config._isValid = false;
-        }
-    }
-
-    // date from iso format or fallback
-    function configFromString(config) {
-        var matched = aspNetJsonRegex.exec(config._i);
-
-        if (matched !== null) {
-            config._d = new Date(+matched[1]);
-            return;
-        }
-
-        configFromISO(config);
-        if (config._isValid === false) {
-            delete config._isValid;
-        } else {
-            return;
-        }
-
-        configFromRFC2822(config);
-        if (config._isValid === false) {
-            delete config._isValid;
-        } else {
-            return;
-        }
-
-        // Final attempt, use Input Fallback
-        hooks.createFromInputFallback(config);
-    }
-
-    hooks.createFromInputFallback = deprecate(
-        'value provided is not in a recognized RFC2822 or ISO format. moment construction falls back to js Date(), ' +
-        'which is not reliable across all browsers and versions. Non RFC2822/ISO date formats are ' +
-        'discouraged and will be removed in an upcoming major release. Please refer to ' +
-        'http://momentjs.com/guides/#/warnings/js-date/ for more info.',
-        function (config) {
-            config._d = new Date(config._i + (config._useUTC ? ' UTC' : ''));
-        }
-    );
-
-    // constant that refers to the ISO standard
-    hooks.ISO_8601 = function () {};
-
-    // constant that refers to the RFC 2822 form
-    hooks.RFC_2822 = function () {};
-
-    // date from string and format string
-    function configFromStringAndFormat(config) {
-        // TODO: Move this to another part of the creation flow to prevent circular deps
-        if (config._f === hooks.ISO_8601) {
-            configFromISO(config);
-            return;
-        }
-        if (config._f === hooks.RFC_2822) {
-            configFromRFC2822(config);
-            return;
-        }
-        config._a = [];
-        getParsingFlags(config).empty = true;
-
-        // This array is used to make a Date, either with `new Date` or `Date.UTC`
-        var string = '' + config._i,
-            i, parsedInput, tokens, token, skipped,
-            stringLength = string.length,
-            totalParsedInputLength = 0;
-
-        tokens = expandFormat(config._f, config._locale).match(formattingTokens) || [];
-
-        for (i = 0; i < tokens.length; i++) {
-            token = tokens[i];
-            parsedInput = (string.match(getParseRegexForToken(token, config)) || [])[0];
-            // console.log('token', token, 'parsedInput', parsedInput,
-            //         'regex', getParseRegexForToken(token, config));
-            if (parsedInput) {
-                skipped = string.substr(0, string.indexOf(parsedInput));
-                if (skipped.length > 0) {
-                    getParsingFlags(config).unusedInput.push(skipped);
-                }
-                string = string.slice(string.indexOf(parsedInput) + parsedInput.length);
-                totalParsedInputLength += parsedInput.length;
-            }
-            // don't parse if it's not a known token
-            if (formatTokenFunctions[token]) {
-                if (parsedInput) {
-                    getParsingFlags(config).empty = false;
-                }
-                else {
-                    getParsingFlags(config).unusedTokens.push(token);
-                }
-                addTimeToArrayFromToken(token, parsedInput, config);
-            }
-            else if (config._strict && !parsedInput) {
-                getParsingFlags(config).unusedTokens.push(token);
-            }
-        }
-
-        // add remaining unparsed input length to the string
-        getParsingFlags(config).charsLeftOver = stringLength - totalParsedInputLength;
-        if (string.length > 0) {
-            getParsingFlags(config).unusedInput.push(string);
-        }
-
-        // clear _12h flag if hour is <= 12
-        if (config._a[HOUR] <= 12 &&
-            getParsingFlags(config).bigHour === true &&
-            config._a[HOUR] > 0) {
-            getParsingFlags(config).bigHour = undefined;
-        }
-
-        getParsingFlags(config).parsedDateParts = config._a.slice(0);
-        getParsingFlags(config).meridiem = config._meridiem;
-        // handle meridiem
-        config._a[HOUR] = meridiemFixWrap(config._locale, config._a[HOUR], config._meridiem);
-
-        configFromArray(config);
-        checkOverflow(config);
-    }
-
-
-    function meridiemFixWrap (locale, hour, meridiem) {
-        var isPm;
-
-        if (meridiem == null) {
-            // nothing to do
-            return hour;
-        }
-        if (locale.meridiemHour != null) {
-            return locale.meridiemHour(hour, meridiem);
-        } else if (locale.isPM != null) {
-            // Fallback
-            isPm = locale.isPM(meridiem);
-            if (isPm && hour < 12) {
-                hour += 12;
-            }
-            if (!isPm && hour === 12) {
-                hour = 0;
-            }
-            return hour;
-        } else {
-            // this is not supposed to happen
-            return hour;
-        }
-    }
-
-    // date from string and array of format strings
-    function configFromStringAndArray(config) {
-        var tempConfig,
-            bestMoment,
-
-            scoreToBeat,
-            i,
-            currentScore;
-
-        if (config._f.length === 0) {
-            getParsingFlags(config).invalidFormat = true;
-            config._d = new Date(NaN);
-            return;
-        }
-
-        for (i = 0; i < config._f.length; i++) {
-            currentScore = 0;
-            tempConfig = copyConfig({}, config);
-            if (config._useUTC != null) {
-                tempConfig._useUTC = config._useUTC;
-            }
-            tempConfig._f = config._f[i];
-            configFromStringAndFormat(tempConfig);
-
-            if (!isValid(tempConfig)) {
-                continue;
-            }
-
-            // if there is any input that was not parsed add a penalty for that format
-            currentScore += getParsingFlags(tempConfig).charsLeftOver;
-
-            //or tokens
-            currentScore += getParsingFlags(tempConfig).unusedTokens.length * 10;
-
-            getParsingFlags(tempConfig).score = currentScore;
-
-            if (scoreToBeat == null || currentScore < scoreToBeat) {
-                scoreToBeat = currentScore;
-                bestMoment = tempConfig;
-            }
-        }
-
-        extend(config, bestMoment || tempConfig);
-    }
-
-    function configFromObject(config) {
-        if (config._d) {
-            return;
-        }
-
-        var i = normalizeObjectUnits(config._i);
-        config._a = map([i.year, i.month, i.day || i.date, i.hour, i.minute, i.second, i.millisecond], function (obj) {
-            return obj && parseInt(obj, 10);
-        });
-
-        configFromArray(config);
-    }
-
-    function createFromConfig (config) {
-        var res = new Moment(checkOverflow(prepareConfig(config)));
-        if (res._nextDay) {
-            // Adding is smart enough around DST
-            res.add(1, 'd');
-            res._nextDay = undefined;
-        }
-
-        return res;
-    }
-
-    function prepareConfig (config) {
-        var input = config._i,
-            format = config._f;
-
-        config._locale = config._locale || getLocale(config._l);
-
-        if (input === null || (format === undefined && input === '')) {
-            return createInvalid({nullInput: true});
-        }
-
-        if (typeof input === 'string') {
-            config._i = input = config._locale.preparse(input);
-        }
-
-        if (isMoment(input)) {
-            return new Moment(checkOverflow(input));
-        } else if (isDate(input)) {
-            config._d = input;
-        } else if (isArray(format)) {
-            configFromStringAndArray(config);
-        } else if (format) {
-            configFromStringAndFormat(config);
-        }  else {
-            configFromInput(config);
-        }
-
-        if (!isValid(config)) {
-            config._d = null;
-        }
-
-        return config;
-    }
-
-    function configFromInput(config) {
-        var input = config._i;
-        if (isUndefined(input)) {
-            config._d = new Date(hooks.now());
-        } else if (isDate(input)) {
-            config._d = new Date(input.valueOf());
-        } else if (typeof input === 'string') {
-            configFromString(config);
-        } else if (isArray(input)) {
-            config._a = map(input.slice(0), function (obj) {
-                return parseInt(obj, 10);
-            });
-            configFromArray(config);
-        } else if (isObject(input)) {
-            configFromObject(config);
-        } else if (isNumber(input)) {
-            // from milliseconds
-            config._d = new Date(input);
-        } else {
-            hooks.createFromInputFallback(config);
-        }
-    }
-
-    function createLocalOrUTC (input, format, locale, strict, isUTC) {
-        var c = {};
-
-        if (locale === true || locale === false) {
-            strict = locale;
-            locale = undefined;
-        }
-
-        if ((isObject(input) && isObjectEmpty(input)) ||
-                (isArray(input) && input.length === 0)) {
-            input = undefined;
-        }
-        // object construction must be done this way.
-        // https://github.com/moment/moment/issues/1423
-        c._isAMomentObject = true;
-        c._useUTC = c._isUTC = isUTC;
-        c._l = locale;
-        c._i = input;
-        c._f = format;
-        c._strict = strict;
-
-        return createFromConfig(c);
-    }
-
-    function createLocal (input, format, locale, strict) {
-        return createLocalOrUTC(input, format, locale, strict, false);
-    }
-
-    var prototypeMin = deprecate(
-        'moment().min is deprecated, use moment.max instead. http://momentjs.com/guides/#/warnings/min-max/',
-        function () {
-            var other = createLocal.apply(null, arguments);
-            if (this.isValid() && other.isValid()) {
-                return other < this ? this : other;
-            } else {
-                return createInvalid();
-            }
-        }
-    );
-
-    var prototypeMax = deprecate(
-        'moment().max is deprecated, use moment.min instead. http://momentjs.com/guides/#/warnings/min-max/',
-        function () {
-            var other = createLocal.apply(null, arguments);
-            if (this.isValid() && other.isValid()) {
-                return other > this ? this : other;
-            } else {
-                return createInvalid();
-            }
-        }
-    );
-
-    // Pick a moment m from moments so that m[fn](other) is true for all
-    // other. This relies on the function fn to be transitive.
-    //
-    // moments should either be an array of moment objects or an array, whose
-    // first element is an array of moment objects.
-    function pickBy(fn, moments) {
-        var res, i;
-        if (moments.length === 1 && isArray(moments[0])) {
-            moments = moments[0];
-        }
-        if (!moments.length) {
-            return createLocal();
-        }
-        res = moments[0];
-        for (i = 1; i < moments.length; ++i) {
-            if (!moments[i].isValid() || moments[i][fn](res)) {
-                res = moments[i];
-            }
-        }
-        return res;
-    }
-
-    // TODO: Use [].sort instead?
-    function min () {
-        var args = [].slice.call(arguments, 0);
-
-        return pickBy('isBefore', args);
-    }
-
-    function max () {
-        var args = [].slice.call(arguments, 0);
-
-        return pickBy('isAfter', args);
-    }
-
-    var now = function () {
-        return Date.now ? Date.now() : +(new Date());
-    };
-
-    var ordering = ['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute', 'second', 'millisecond'];
-
-    function isDurationValid(m) {
-        for (var key in m) {
-            if (!(indexOf.call(ordering, key) !== -1 && (m[key] == null || !isNaN(m[key])))) {
-                return false;
-            }
-        }
-
-        var unitHasDecimal = false;
-        for (var i = 0; i < ordering.length; ++i) {
-            if (m[ordering[i]]) {
-                if (unitHasDecimal) {
-                    return false; // only allow non-integers for smallest unit
-                }
-                if (parseFloat(m[ordering[i]]) !== toInt(m[ordering[i]])) {
-                    unitHasDecimal = true;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    function isValid$1() {
-        return this._isValid;
-    }
-
-    function createInvalid$1() {
-        return createDuration(NaN);
-    }
-
-    function Duration (duration) {
-        var normalizedInput = normalizeObjectUnits(duration),
-            years = normalizedInput.year || 0,
-            quarters = normalizedInput.quarter || 0,
-            months = normalizedInput.month || 0,
-            weeks = normalizedInput.week || normalizedInput.isoWeek || 0,
-            days = normalizedInput.day || 0,
-            hours = normalizedInput.hour || 0,
-            minutes = normalizedInput.minute || 0,
-            seconds = normalizedInput.second || 0,
-            milliseconds = normalizedInput.millisecond || 0;
-
-        this._isValid = isDurationValid(normalizedInput);
-
-        // representation for dateAddRemove
-        this._milliseconds = +milliseconds +
-            seconds * 1e3 + // 1000
-            minutes * 6e4 + // 1000 * 60
-            hours * 1000 * 60 * 60; //using 1000 * 60 * 60 instead of 36e5 to avoid floating point rounding errors https://github.com/moment/moment/issues/2978
-        // Because of dateAddRemove treats 24 hours as different from a
-        // day when working around DST, we need to store them separately
-        this._days = +days +
-            weeks * 7;
-        // It is impossible to translate months into days without knowing
-        // which months you are are talking about, so we have to store
-        // it separately.
-        this._months = +months +
-            quarters * 3 +
-            years * 12;
-
-        this._data = {};
-
-        this._locale = getLocale();
-
-        this._bubble();
-    }
-
-    function isDuration (obj) {
-        return obj instanceof Duration;
-    }
-
-    function absRound (number) {
-        if (number < 0) {
-            return Math.round(-1 * number) * -1;
-        } else {
-            return Math.round(number);
-        }
-    }
-
-    // FORMATTING
-
-    function offset (token, separator) {
-        addFormatToken(token, 0, 0, function () {
-            var offset = this.utcOffset();
-            var sign = '+';
-            if (offset < 0) {
-                offset = -offset;
-                sign = '-';
-            }
-            return sign + zeroFill(~~(offset / 60), 2) + separator + zeroFill(~~(offset) % 60, 2);
-        });
-    }
-
-    offset('Z', ':');
-    offset('ZZ', '');
-
-    // PARSING
-
-    addRegexToken('Z',  matchShortOffset);
-    addRegexToken('ZZ', matchShortOffset);
-    addParseToken(['Z', 'ZZ'], function (input, array, config) {
-        config._useUTC = true;
-        config._tzm = offsetFromString(matchShortOffset, input);
-    });
-
-    // HELPERS
-
-    // timezone chunker
-    // '+10:00' > ['10',  '00']
-    // '-1530'  > ['-15', '30']
-    var chunkOffset = /([\+\-]|\d\d)/gi;
-
-    function offsetFromString(matcher, string) {
-        var matches = (string || '').match(matcher);
-
-        if (matches === null) {
-            return null;
-        }
-
-        var chunk   = matches[matches.length - 1] || [];
-        var parts   = (chunk + '').match(chunkOffset) || ['-', 0, 0];
-        var minutes = +(parts[1] * 60) + toInt(parts[2]);
-
-        return minutes === 0 ?
-          0 :
-          parts[0] === '+' ? minutes : -minutes;
-    }
-
-    // Return a moment from input, that is local/utc/zone equivalent to model.
-    function cloneWithOffset(input, model) {
-        var res, diff;
-        if (model._isUTC) {
-            res = model.clone();
-            diff = (isMoment(input) || isDate(input) ? input.valueOf() : createLocal(input).valueOf()) - res.valueOf();
-            // Use low-level api, because this fn is low-level api.
-            res._d.setTime(res._d.valueOf() + diff);
-            hooks.updateOffset(res, false);
-            return res;
-        } else {
-            return createLocal(input).local();
-        }
-    }
-
-    function getDateOffset (m) {
-        // On Firefox.24 Date#getTimezoneOffset returns a floating point.
-        // https://github.com/moment/moment/pull/1871
-        return -Math.round(m._d.getTimezoneOffset() / 15) * 15;
-    }
-
-    // HOOKS
-
-    // This function will be called whenever a moment is mutated.
-    // It is intended to keep the offset in sync with the timezone.
-    hooks.updateOffset = function () {};
-
-    // MOMENTS
-
-    // keepLocalTime = true means only change the timezone, without
-    // affecting the local hour. So 5:31:26 +0300 --[utcOffset(2, true)]-->
-    // 5:31:26 +0200 It is possible that 5:31:26 doesn't exist with offset
-    // +0200, so we adjust the time as needed, to be valid.
-    //
-    // Keeping the time actually adds/subtracts (one hour)
-    // from the actual represented time. That is why we call updateOffset
-    // a second time. In case it wants us to change the offset again
-    // _changeInProgress == true case, then we have to adjust, because
-    // there is no such time in the given timezone.
-    function getSetOffset (input, keepLocalTime, keepMinutes) {
-        var offset = this._offset || 0,
-            localAdjust;
-        if (!this.isValid()) {
-            return input != null ? this : NaN;
-        }
-        if (input != null) {
-            if (typeof input === 'string') {
-                input = offsetFromString(matchShortOffset, input);
-                if (input === null) {
-                    return this;
-                }
-            } else if (Math.abs(input) < 16 && !keepMinutes) {
-                input = input * 60;
-            }
-            if (!this._isUTC && keepLocalTime) {
-                localAdjust = getDateOffset(this);
-            }
-            this._offset = input;
-            this._isUTC = true;
-            if (localAdjust != null) {
-                this.add(localAdjust, 'm');
-            }
-            if (offset !== input) {
-                if (!keepLocalTime || this._changeInProgress) {
-                    addSubtract(this, createDuration(input - offset, 'm'), 1, false);
-                } else if (!this._changeInProgress) {
-                    this._changeInProgress = true;
-                    hooks.updateOffset(this, true);
-                    this._changeInProgress = null;
-                }
-            }
-            return this;
-        } else {
-            return this._isUTC ? offset : getDateOffset(this);
-        }
-    }
-
-    function getSetZone (input, keepLocalTime) {
-        if (input != null) {
-            if (typeof input !== 'string') {
-                input = -input;
-            }
-
-            this.utcOffset(input, keepLocalTime);
-
-            return this;
-        } else {
-            return -this.utcOffset();
-        }
-    }
-
-    function setOffsetToUTC (keepLocalTime) {
-        return this.utcOffset(0, keepLocalTime);
-    }
-
-    function setOffsetToLocal (keepLocalTime) {
-        if (this._isUTC) {
-            this.utcOffset(0, keepLocalTime);
-            this._isUTC = false;
-
-            if (keepLocalTime) {
-                this.subtract(getDateOffset(this), 'm');
-            }
-        }
-        return this;
-    }
-
-    function setOffsetToParsedOffset () {
-        if (this._tzm != null) {
-            this.utcOffset(this._tzm, false, true);
-        } else if (typeof this._i === 'string') {
-            var tZone = offsetFromString(matchOffset, this._i);
-            if (tZone != null) {
-                this.utcOffset(tZone);
-            }
-            else {
-                this.utcOffset(0, true);
-            }
-        }
-        return this;
-    }
-
-    function hasAlignedHourOffset (input) {
-        if (!this.isValid()) {
-            return false;
-        }
-        input = input ? createLocal(input).utcOffset() : 0;
-
-        return (this.utcOffset() - input) % 60 === 0;
-    }
-
-    function isDaylightSavingTime () {
-        return (
-            this.utcOffset() > this.clone().month(0).utcOffset() ||
-            this.utcOffset() > this.clone().month(5).utcOffset()
-        );
-    }
-
-    function isDaylightSavingTimeShifted () {
-        if (!isUndefined(this._isDSTShifted)) {
-            return this._isDSTShifted;
-        }
-
-        var c = {};
-
-        copyConfig(c, this);
-        c = prepareConfig(c);
-
-        if (c._a) {
-            var other = c._isUTC ? createUTC(c._a) : createLocal(c._a);
-            this._isDSTShifted = this.isValid() &&
-                compareArrays(c._a, other.toArray()) > 0;
-        } else {
-            this._isDSTShifted = false;
-        }
-
-        return this._isDSTShifted;
-    }
-
-    function isLocal () {
-        return this.isValid() ? !this._isUTC : false;
-    }
-
-    function isUtcOffset () {
-        return this.isValid() ? this._isUTC : false;
-    }
-
-    function isUtc () {
-        return this.isValid() ? this._isUTC && this._offset === 0 : false;
-    }
-
-    // ASP.NET json date format regex
-    var aspNetRegex = /^(\-|\+)?(?:(\d*)[. ])?(\d+)\:(\d+)(?:\:(\d+)(\.\d*)?)?$/;
-
-    // from http://docs.closure-library.googlecode.com/git/closure_goog_date_date.js.source.html
-    // somewhat more in line with 4.4.3.2 2004 spec, but allows decimal anywhere
-    // and further modified to allow for strings containing both week and day
-    var isoRegex = /^(-|\+)?P(?:([-+]?[0-9,.]*)Y)?(?:([-+]?[0-9,.]*)M)?(?:([-+]?[0-9,.]*)W)?(?:([-+]?[0-9,.]*)D)?(?:T(?:([-+]?[0-9,.]*)H)?(?:([-+]?[0-9,.]*)M)?(?:([-+]?[0-9,.]*)S)?)?$/;
-
-    function createDuration (input, key) {
-        var duration = input,
-            // matching against regexp is expensive, do it on demand
-            match = null,
-            sign,
-            ret,
-            diffRes;
-
-        if (isDuration(input)) {
-            duration = {
-                ms : input._milliseconds,
-                d  : input._days,
-                M  : input._months
-            };
-        } else if (isNumber(input)) {
-            duration = {};
-            if (key) {
-                duration[key] = input;
-            } else {
-                duration.milliseconds = input;
-            }
-        } else if (!!(match = aspNetRegex.exec(input))) {
-            sign = (match[1] === '-') ? -1 : 1;
-            duration = {
-                y  : 0,
-                d  : toInt(match[DATE])                         * sign,
-                h  : toInt(match[HOUR])                         * sign,
-                m  : toInt(match[MINUTE])                       * sign,
-                s  : toInt(match[SECOND])                       * sign,
-                ms : toInt(absRound(match[MILLISECOND] * 1000)) * sign // the millisecond decimal point is included in the match
-            };
-        } else if (!!(match = isoRegex.exec(input))) {
-            sign = (match[1] === '-') ? -1 : 1;
-            duration = {
-                y : parseIso(match[2], sign),
-                M : parseIso(match[3], sign),
-                w : parseIso(match[4], sign),
-                d : parseIso(match[5], sign),
-                h : parseIso(match[6], sign),
-                m : parseIso(match[7], sign),
-                s : parseIso(match[8], sign)
-            };
-        } else if (duration == null) {// checks for null or undefined
-            duration = {};
-        } else if (typeof duration === 'object' && ('from' in duration || 'to' in duration)) {
-            diffRes = momentsDifference(createLocal(duration.from), createLocal(duration.to));
-
-            duration = {};
-            duration.ms = diffRes.milliseconds;
-            duration.M = diffRes.months;
-        }
-
-        ret = new Duration(duration);
-
-        if (isDuration(input) && hasOwnProp(input, '_locale')) {
-            ret._locale = input._locale;
-        }
-
-        return ret;
-    }
-
-    createDuration.fn = Duration.prototype;
-    createDuration.invalid = createInvalid$1;
-
-    function parseIso (inp, sign) {
-        // We'd normally use ~~inp for this, but unfortunately it also
-        // converts floats to ints.
-        // inp may be undefined, so careful calling replace on it.
-        var res = inp && parseFloat(inp.replace(',', '.'));
-        // apply sign while we're at it
-        return (isNaN(res) ? 0 : res) * sign;
-    }
-
-    function positiveMomentsDifference(base, other) {
-        var res = {};
-
-        res.months = other.month() - base.month() +
-            (other.year() - base.year()) * 12;
-        if (base.clone().add(res.months, 'M').isAfter(other)) {
-            --res.months;
-        }
-
-        res.milliseconds = +other - +(base.clone().add(res.months, 'M'));
-
-        return res;
-    }
-
-    function momentsDifference(base, other) {
-        var res;
-        if (!(base.isValid() && other.isValid())) {
-            return {milliseconds: 0, months: 0};
-        }
-
-        other = cloneWithOffset(other, base);
-        if (base.isBefore(other)) {
-            res = positiveMomentsDifference(base, other);
-        } else {
-            res = positiveMomentsDifference(other, base);
-            res.milliseconds = -res.milliseconds;
-            res.months = -res.months;
-        }
-
-        return res;
-    }
-
-    // TODO: remove 'name' arg after deprecation is removed
-    function createAdder(direction, name) {
-        return function (val, period) {
-            var dur, tmp;
-            //invert the arguments, but complain about it
-            if (period !== null && !isNaN(+period)) {
-                deprecateSimple(name, 'moment().' + name  + '(period, number) is deprecated. Please use moment().' + name + '(number, period). ' +
-                'See http://momentjs.com/guides/#/warnings/add-inverted-param/ for more info.');
-                tmp = val; val = period; period = tmp;
-            }
-
-            val = typeof val === 'string' ? +val : val;
-            dur = createDuration(val, period);
-            addSubtract(this, dur, direction);
-            return this;
-        };
-    }
-
-    function addSubtract (mom, duration, isAdding, updateOffset) {
-        var milliseconds = duration._milliseconds,
-            days = absRound(duration._days),
-            months = absRound(duration._months);
-
-        if (!mom.isValid()) {
-            // No op
-            return;
-        }
-
-        updateOffset = updateOffset == null ? true : updateOffset;
-
-        if (months) {
-            setMonth(mom, get(mom, 'Month') + months * isAdding);
-        }
-        if (days) {
-            set$1(mom, 'Date', get(mom, 'Date') + days * isAdding);
-        }
-        if (milliseconds) {
-            mom._d.setTime(mom._d.valueOf() + milliseconds * isAdding);
-        }
-        if (updateOffset) {
-            hooks.updateOffset(mom, days || months);
-        }
-    }
-
-    var add      = createAdder(1, 'add');
-    var subtract = createAdder(-1, 'subtract');
-
-    function getCalendarFormat(myMoment, now) {
-        var diff = myMoment.diff(now, 'days', true);
-        return diff < -6 ? 'sameElse' :
-                diff < -1 ? 'lastWeek' :
-                diff < 0 ? 'lastDay' :
-                diff < 1 ? 'sameDay' :
-                diff < 2 ? 'nextDay' :
-                diff < 7 ? 'nextWeek' : 'sameElse';
-    }
-
-    function calendar$1 (time, formats) {
-        // We want to compare the start of today, vs this.
-        // Getting start-of-today depends on whether we're local/utc/offset or not.
-        var now = time || createLocal(),
-            sod = cloneWithOffset(now, this).startOf('day'),
-            format = hooks.calendarFormat(this, sod) || 'sameElse';
-
-        var output = formats && (isFunction(formats[format]) ? formats[format].call(this, now) : formats[format]);
-
-        return this.format(output || this.localeData().calendar(format, this, createLocal(now)));
-    }
-
-    function clone () {
-        return new Moment(this);
-    }
-
-    function isAfter (input, units) {
-        var localInput = isMoment(input) ? input : createLocal(input);
-        if (!(this.isValid() && localInput.isValid())) {
-            return false;
-        }
-        units = normalizeUnits(units) || 'millisecond';
-        if (units === 'millisecond') {
-            return this.valueOf() > localInput.valueOf();
-        } else {
-            return localInput.valueOf() < this.clone().startOf(units).valueOf();
-        }
-    }
-
-    function isBefore (input, units) {
-        var localInput = isMoment(input) ? input : createLocal(input);
-        if (!(this.isValid() && localInput.isValid())) {
-            return false;
-        }
-        units = normalizeUnits(units) || 'millisecond';
-        if (units === 'millisecond') {
-            return this.valueOf() < localInput.valueOf();
-        } else {
-            return this.clone().endOf(units).valueOf() < localInput.valueOf();
-        }
-    }
-
-    function isBetween (from, to, units, inclusivity) {
-        var localFrom = isMoment(from) ? from : createLocal(from),
-            localTo = isMoment(to) ? to : createLocal(to);
-        if (!(this.isValid() && localFrom.isValid() && localTo.isValid())) {
-            return false;
-        }
-        inclusivity = inclusivity || '()';
-        return (inclusivity[0] === '(' ? this.isAfter(localFrom, units) : !this.isBefore(localFrom, units)) &&
-            (inclusivity[1] === ')' ? this.isBefore(localTo, units) : !this.isAfter(localTo, units));
-    }
-
-    function isSame (input, units) {
-        var localInput = isMoment(input) ? input : createLocal(input),
-            inputMs;
-        if (!(this.isValid() && localInput.isValid())) {
-            return false;
-        }
-        units = normalizeUnits(units) || 'millisecond';
-        if (units === 'millisecond') {
-            return this.valueOf() === localInput.valueOf();
-        } else {
-            inputMs = localInput.valueOf();
-            return this.clone().startOf(units).valueOf() <= inputMs && inputMs <= this.clone().endOf(units).valueOf();
-        }
-    }
-
-    function isSameOrAfter (input, units) {
-        return this.isSame(input, units) || this.isAfter(input, units);
-    }
-
-    function isSameOrBefore (input, units) {
-        return this.isSame(input, units) || this.isBefore(input, units);
-    }
-
-    function diff (input, units, asFloat) {
-        var that,
-            zoneDelta,
-            output;
-
-        if (!this.isValid()) {
-            return NaN;
-        }
-
-        that = cloneWithOffset(input, this);
-
-        if (!that.isValid()) {
-            return NaN;
-        }
-
-        zoneDelta = (that.utcOffset() - this.utcOffset()) * 6e4;
-
-        units = normalizeUnits(units);
-
-        switch (units) {
-            case 'year': output = monthDiff(this, that) / 12; break;
-            case 'month': output = monthDiff(this, that); break;
-            case 'quarter': output = monthDiff(this, that) / 3; break;
-            case 'second': output = (this - that) / 1e3; break; // 1000
-            case 'minute': output = (this - that) / 6e4; break; // 1000 * 60
-            case 'hour': output = (this - that) / 36e5; break; // 1000 * 60 * 60
-            case 'day': output = (this - that - zoneDelta) / 864e5; break; // 1000 * 60 * 60 * 24, negate dst
-            case 'week': output = (this - that - zoneDelta) / 6048e5; break; // 1000 * 60 * 60 * 24 * 7, negate dst
-            default: output = this - that;
-        }
-
-        return asFloat ? output : absFloor(output);
-    }
-
-    function monthDiff (a, b) {
-        // difference in months
-        var wholeMonthDiff = ((b.year() - a.year()) * 12) + (b.month() - a.month()),
-            // b is in (anchor - 1 month, anchor + 1 month)
-            anchor = a.clone().add(wholeMonthDiff, 'months'),
-            anchor2, adjust;
-
-        if (b - anchor < 0) {
-            anchor2 = a.clone().add(wholeMonthDiff - 1, 'months');
-            // linear across the month
-            adjust = (b - anchor) / (anchor - anchor2);
-        } else {
-            anchor2 = a.clone().add(wholeMonthDiff + 1, 'months');
-            // linear across the month
-            adjust = (b - anchor) / (anchor2 - anchor);
-        }
-
-        //check for negative zero, return zero if negative zero
-        return -(wholeMonthDiff + adjust) || 0;
-    }
-
-    hooks.defaultFormat = 'YYYY-MM-DDTHH:mm:ssZ';
-    hooks.defaultFormatUtc = 'YYYY-MM-DDTHH:mm:ss[Z]';
-
-    function toString () {
-        return this.clone().locale('en').format('ddd MMM DD YYYY HH:mm:ss [GMT]ZZ');
-    }
-
-    function toISOString(keepOffset) {
-        if (!this.isValid()) {
-            return null;
-        }
-        var utc = keepOffset !== true;
-        var m = utc ? this.clone().utc() : this;
-        if (m.year() < 0 || m.year() > 9999) {
-            return formatMoment(m, utc ? 'YYYYYY-MM-DD[T]HH:mm:ss.SSS[Z]' : 'YYYYYY-MM-DD[T]HH:mm:ss.SSSZ');
-        }
-        if (isFunction(Date.prototype.toISOString)) {
-            // native implementation is ~50x faster, use it when we can
-            if (utc) {
-                return this.toDate().toISOString();
-            } else {
-                return new Date(this.valueOf() + this.utcOffset() * 60 * 1000).toISOString().replace('Z', formatMoment(m, 'Z'));
-            }
-        }
-        return formatMoment(m, utc ? 'YYYY-MM-DD[T]HH:mm:ss.SSS[Z]' : 'YYYY-MM-DD[T]HH:mm:ss.SSSZ');
-    }
-
-    /**
-     * Return a human readable representation of a moment that can
-     * also be evaluated to get a new moment which is the same
-     *
-     * @link https://nodejs.org/dist/latest/docs/api/util.html#util_custom_inspect_function_on_objects
-     */
-    function inspect () {
-        if (!this.isValid()) {
-            return 'moment.invalid(/* ' + this._i + ' */)';
-        }
-        var func = 'moment';
-        var zone = '';
-        if (!this.isLocal()) {
-            func = this.utcOffset() === 0 ? 'moment.utc' : 'moment.parseZone';
-            zone = 'Z';
-        }
-        var prefix = '[' + func + '("]';
-        var year = (0 <= this.year() && this.year() <= 9999) ? 'YYYY' : 'YYYYYY';
-        var datetime = '-MM-DD[T]HH:mm:ss.SSS';
-        var suffix = zone + '[")]';
-
-        return this.format(prefix + year + datetime + suffix);
-    }
-
-    function format (inputString) {
-        if (!inputString) {
-            inputString = this.isUtc() ? hooks.defaultFormatUtc : hooks.defaultFormat;
-        }
-        var output = formatMoment(this, inputString);
-        return this.localeData().postformat(output);
-    }
-
-    function from (time, withoutSuffix) {
-        if (this.isValid() &&
-                ((isMoment(time) && time.isValid()) ||
-                 createLocal(time).isValid())) {
-            return createDuration({to: this, from: time}).locale(this.locale()).humanize(!withoutSuffix);
-        } else {
-            return this.localeData().invalidDate();
-        }
-    }
-
-    function fromNow (withoutSuffix) {
-        return this.from(createLocal(), withoutSuffix);
-    }
-
-    function to (time, withoutSuffix) {
-        if (this.isValid() &&
-                ((isMoment(time) && time.isValid()) ||
-                 createLocal(time).isValid())) {
-            return createDuration({from: this, to: time}).locale(this.locale()).humanize(!withoutSuffix);
-        } else {
-            return this.localeData().invalidDate();
-        }
-    }
-
-    function toNow (withoutSuffix) {
-        return this.to(createLocal(), withoutSuffix);
-    }
-
-    // If passed a locale key, it will set the locale for this
-    // instance.  Otherwise, it will return the locale configuration
-    // variables for this instance.
-    function locale (key) {
-        var newLocaleData;
-
-        if (key === undefined) {
-            return this._locale._abbr;
-        } else {
-            newLocaleData = getLocale(key);
-            if (newLocaleData != null) {
-                this._locale = newLocaleData;
-            }
-            return this;
-        }
-    }
-
-    var lang = deprecate(
-        'moment().lang() is deprecated. Instead, use moment().localeData() to get the language configuration. Use moment().locale() to change languages.',
-        function (key) {
-            if (key === undefined) {
-                return this.localeData();
-            } else {
-                return this.locale(key);
-            }
-        }
-    );
-
-    function localeData () {
-        return this._locale;
-    }
-
-    var MS_PER_SECOND = 1000;
-    var MS_PER_MINUTE = 60 * MS_PER_SECOND;
-    var MS_PER_HOUR = 60 * MS_PER_MINUTE;
-    var MS_PER_400_YEARS = (365 * 400 + 97) * 24 * MS_PER_HOUR;
-
-    // actual modulo - handles negative numbers (for dates before 1970):
-    function mod$1(dividend, divisor) {
-        return (dividend % divisor + divisor) % divisor;
-    }
-
-    function localStartOfDate(y, m, d) {
-        // the date constructor remaps years 0-99 to 1900-1999
-        if (y < 100 && y >= 0) {
-            // preserve leap years using a full 400 year cycle, then reset
-            return new Date(y + 400, m, d) - MS_PER_400_YEARS;
-        } else {
-            return new Date(y, m, d).valueOf();
-        }
-    }
-
-    function utcStartOfDate(y, m, d) {
-        // Date.UTC remaps years 0-99 to 1900-1999
-        if (y < 100 && y >= 0) {
-            // preserve leap years using a full 400 year cycle, then reset
-            return Date.UTC(y + 400, m, d) - MS_PER_400_YEARS;
-        } else {
-            return Date.UTC(y, m, d);
-        }
-    }
-
-    function startOf (units) {
-        var time;
-        units = normalizeUnits(units);
-        if (units === undefined || units === 'millisecond' || !this.isValid()) {
-            return this;
-        }
-
-        var startOfDate = this._isUTC ? utcStartOfDate : localStartOfDate;
-
-        switch (units) {
-            case 'year':
-                time = startOfDate(this.year(), 0, 1);
-                break;
-            case 'quarter':
-                time = startOfDate(this.year(), this.month() - this.month() % 3, 1);
-                break;
-            case 'month':
-                time = startOfDate(this.year(), this.month(), 1);
-                break;
-            case 'week':
-                time = startOfDate(this.year(), this.month(), this.date() - this.weekday());
-                break;
-            case 'isoWeek':
-                time = startOfDate(this.year(), this.month(), this.date() - (this.isoWeekday() - 1));
-                break;
-            case 'day':
-            case 'date':
-                time = startOfDate(this.year(), this.month(), this.date());
-                break;
-            case 'hour':
-                time = this._d.valueOf();
-                time -= mod$1(time + (this._isUTC ? 0 : this.utcOffset() * MS_PER_MINUTE), MS_PER_HOUR);
-                break;
-            case 'minute':
-                time = this._d.valueOf();
-                time -= mod$1(time, MS_PER_MINUTE);
-                break;
-            case 'second':
-                time = this._d.valueOf();
-                time -= mod$1(time, MS_PER_SECOND);
-                break;
-        }
-
-        this._d.setTime(time);
-        hooks.updateOffset(this, true);
-        return this;
-    }
-
-    function endOf (units) {
-        var time;
-        units = normalizeUnits(units);
-        if (units === undefined || units === 'millisecond' || !this.isValid()) {
-            return this;
-        }
-
-        var startOfDate = this._isUTC ? utcStartOfDate : localStartOfDate;
-
-        switch (units) {
-            case 'year':
-                time = startOfDate(this.year() + 1, 0, 1) - 1;
-                break;
-            case 'quarter':
-                time = startOfDate(this.year(), this.month() - this.month() % 3 + 3, 1) - 1;
-                break;
-            case 'month':
-                time = startOfDate(this.year(), this.month() + 1, 1) - 1;
-                break;
-            case 'week':
-                time = startOfDate(this.year(), this.month(), this.date() - this.weekday() + 7) - 1;
-                break;
-            case 'isoWeek':
-                time = startOfDate(this.year(), this.month(), this.date() - (this.isoWeekday() - 1) + 7) - 1;
-                break;
-            case 'day':
-            case 'date':
-                time = startOfDate(this.year(), this.month(), this.date() + 1) - 1;
-                break;
-            case 'hour':
-                time = this._d.valueOf();
-                time += MS_PER_HOUR - mod$1(time + (this._isUTC ? 0 : this.utcOffset() * MS_PER_MINUTE), MS_PER_HOUR) - 1;
-                break;
-            case 'minute':
-                time = this._d.valueOf();
-                time += MS_PER_MINUTE - mod$1(time, MS_PER_MINUTE) - 1;
-                break;
-            case 'second':
-                time = this._d.valueOf();
-                time += MS_PER_SECOND - mod$1(time, MS_PER_SECOND) - 1;
-                break;
-        }
-
-        this._d.setTime(time);
-        hooks.updateOffset(this, true);
-        return this;
-    }
-
-    function valueOf () {
-        return this._d.valueOf() - ((this._offset || 0) * 60000);
-    }
-
-    function unix () {
-        return Math.floor(this.valueOf() / 1000);
-    }
-
-    function toDate () {
-        return new Date(this.valueOf());
-    }
-
-    function toArray () {
-        var m = this;
-        return [m.year(), m.month(), m.date(), m.hour(), m.minute(), m.second(), m.millisecond()];
-    }
-
-    function toObject () {
-        var m = this;
-        return {
-            years: m.year(),
-            months: m.month(),
-            date: m.date(),
-            hours: m.hours(),
-            minutes: m.minutes(),
-            seconds: m.seconds(),
-            milliseconds: m.milliseconds()
-        };
-    }
-
-    function toJSON () {
-        // new Date(NaN).toJSON() === null
-        return this.isValid() ? this.toISOString() : null;
-    }
-
-    function isValid$2 () {
-        return isValid(this);
-    }
-
-    function parsingFlags () {
-        return extend({}, getParsingFlags(this));
-    }
-
-    function invalidAt () {
-        return getParsingFlags(this).overflow;
-    }
-
-    function creationData() {
-        return {
-            input: this._i,
-            format: this._f,
-            locale: this._locale,
-            isUTC: this._isUTC,
-            strict: this._strict
-        };
-    }
-
-    // FORMATTING
-
-    addFormatToken(0, ['gg', 2], 0, function () {
-        return this.weekYear() % 100;
-    });
-
-    addFormatToken(0, ['GG', 2], 0, function () {
-        return this.isoWeekYear() % 100;
-    });
-
-    function addWeekYearFormatToken (token, getter) {
-        addFormatToken(0, [token, token.length], 0, getter);
-    }
-
-    addWeekYearFormatToken('gggg',     'weekYear');
-    addWeekYearFormatToken('ggggg',    'weekYear');
-    addWeekYearFormatToken('GGGG',  'isoWeekYear');
-    addWeekYearFormatToken('GGGGG', 'isoWeekYear');
-
-    // ALIASES
-
-    addUnitAlias('weekYear', 'gg');
-    addUnitAlias('isoWeekYear', 'GG');
-
-    // PRIORITY
-
-    addUnitPriority('weekYear', 1);
-    addUnitPriority('isoWeekYear', 1);
-
-
-    // PARSING
-
-    addRegexToken('G',      matchSigned);
-    addRegexToken('g',      matchSigned);
-    addRegexToken('GG',     match1to2, match2);
-    addRegexToken('gg',     match1to2, match2);
-    addRegexToken('GGGG',   match1to4, match4);
-    addRegexToken('gggg',   match1to4, match4);
-    addRegexToken('GGGGG',  match1to6, match6);
-    addRegexToken('ggggg',  match1to6, match6);
-
-    addWeekParseToken(['gggg', 'ggggg', 'GGGG', 'GGGGG'], function (input, week, config, token) {
-        week[token.substr(0, 2)] = toInt(input);
-    });
-
-    addWeekParseToken(['gg', 'GG'], function (input, week, config, token) {
-        week[token] = hooks.parseTwoDigitYear(input);
-    });
-
-    // MOMENTS
-
-    function getSetWeekYear (input) {
-        return getSetWeekYearHelper.call(this,
-                input,
-                this.week(),
-                this.weekday(),
-                this.localeData()._week.dow,
-                this.localeData()._week.doy);
-    }
-
-    function getSetISOWeekYear (input) {
-        return getSetWeekYearHelper.call(this,
-                input, this.isoWeek(), this.isoWeekday(), 1, 4);
-    }
-
-    function getISOWeeksInYear () {
-        return weeksInYear(this.year(), 1, 4);
-    }
-
-    function getWeeksInYear () {
-        var weekInfo = this.localeData()._week;
-        return weeksInYear(this.year(), weekInfo.dow, weekInfo.doy);
-    }
-
-    function getSetWeekYearHelper(input, week, weekday, dow, doy) {
-        var weeksTarget;
-        if (input == null) {
-            return weekOfYear(this, dow, doy).year;
-        } else {
-            weeksTarget = weeksInYear(input, dow, doy);
-            if (week > weeksTarget) {
-                week = weeksTarget;
-            }
-            return setWeekAll.call(this, input, week, weekday, dow, doy);
-        }
-    }
-
-    function setWeekAll(weekYear, week, weekday, dow, doy) {
-        var dayOfYearData = dayOfYearFromWeeks(weekYear, week, weekday, dow, doy),
-            date = createUTCDate(dayOfYearData.year, 0, dayOfYearData.dayOfYear);
-
-        this.year(date.getUTCFullYear());
-        this.month(date.getUTCMonth());
-        this.date(date.getUTCDate());
-        return this;
-    }
-
-    // FORMATTING
-
-    addFormatToken('Q', 0, 'Qo', 'quarter');
-
-    // ALIASES
-
-    addUnitAlias('quarter', 'Q');
-
-    // PRIORITY
-
-    addUnitPriority('quarter', 7);
-
-    // PARSING
-
-    addRegexToken('Q', match1);
-    addParseToken('Q', function (input, array) {
-        array[MONTH] = (toInt(input) - 1) * 3;
-    });
-
-    // MOMENTS
-
-    function getSetQuarter (input) {
-        return input == null ? Math.ceil((this.month() + 1) / 3) : this.month((input - 1) * 3 + this.month() % 3);
-    }
-
-    // FORMATTING
-
-    addFormatToken('D', ['DD', 2], 'Do', 'date');
-
-    // ALIASES
-
-    addUnitAlias('date', 'D');
-
-    // PRIORITY
-    addUnitPriority('date', 9);
-
-    // PARSING
-
-    addRegexToken('D',  match1to2);
-    addRegexToken('DD', match1to2, match2);
-    addRegexToken('Do', function (isStrict, locale) {
-        // TODO: Remove "ordinalParse" fallback in next major release.
-        return isStrict ?
-          (locale._dayOfMonthOrdinalParse || locale._ordinalParse) :
-          locale._dayOfMonthOrdinalParseLenient;
-    });
-
-    addParseToken(['D', 'DD'], DATE);
-    addParseToken('Do', function (input, array) {
-        array[DATE] = toInt(input.match(match1to2)[0]);
-    });
-
-    // MOMENTS
-
-    var getSetDayOfMonth = makeGetSet('Date', true);
-
-    // FORMATTING
-
-    addFormatToken('DDD', ['DDDD', 3], 'DDDo', 'dayOfYear');
-
-    // ALIASES
-
-    addUnitAlias('dayOfYear', 'DDD');
-
-    // PRIORITY
-    addUnitPriority('dayOfYear', 4);
-
-    // PARSING
-
-    addRegexToken('DDD',  match1to3);
-    addRegexToken('DDDD', match3);
-    addParseToken(['DDD', 'DDDD'], function (input, array, config) {
-        config._dayOfYear = toInt(input);
-    });
-
-    // HELPERS
-
-    // MOMENTS
-
-    function getSetDayOfYear (input) {
-        var dayOfYear = Math.round((this.clone().startOf('day') - this.clone().startOf('year')) / 864e5) + 1;
-        return input == null ? dayOfYear : this.add((input - dayOfYear), 'd');
-    }
-
-    // FORMATTING
-
-    addFormatToken('m', ['mm', 2], 0, 'minute');
-
-    // ALIASES
-
-    addUnitAlias('minute', 'm');
-
-    // PRIORITY
-
-    addUnitPriority('minute', 14);
-
-    // PARSING
-
-    addRegexToken('m',  match1to2);
-    addRegexToken('mm', match1to2, match2);
-    addParseToken(['m', 'mm'], MINUTE);
-
-    // MOMENTS
-
-    var getSetMinute = makeGetSet('Minutes', false);
-
-    // FORMATTING
-
-    addFormatToken('s', ['ss', 2], 0, 'second');
-
-    // ALIASES
-
-    addUnitAlias('second', 's');
-
-    // PRIORITY
-
-    addUnitPriority('second', 15);
-
-    // PARSING
-
-    addRegexToken('s',  match1to2);
-    addRegexToken('ss', match1to2, match2);
-    addParseToken(['s', 'ss'], SECOND);
-
-    // MOMENTS
-
-    var getSetSecond = makeGetSet('Seconds', false);
-
-    // FORMATTING
-
-    addFormatToken('S', 0, 0, function () {
-        return ~~(this.millisecond() / 100);
-    });
-
-    addFormatToken(0, ['SS', 2], 0, function () {
-        return ~~(this.millisecond() / 10);
-    });
-
-    addFormatToken(0, ['SSS', 3], 0, 'millisecond');
-    addFormatToken(0, ['SSSS', 4], 0, function () {
-        return this.millisecond() * 10;
-    });
-    addFormatToken(0, ['SSSSS', 5], 0, function () {
-        return this.millisecond() * 100;
-    });
-    addFormatToken(0, ['SSSSSS', 6], 0, function () {
-        return this.millisecond() * 1000;
-    });
-    addFormatToken(0, ['SSSSSSS', 7], 0, function () {
-        return this.millisecond() * 10000;
-    });
-    addFormatToken(0, ['SSSSSSSS', 8], 0, function () {
-        return this.millisecond() * 100000;
-    });
-    addFormatToken(0, ['SSSSSSSSS', 9], 0, function () {
-        return this.millisecond() * 1000000;
-    });
-
-
-    // ALIASES
-
-    addUnitAlias('millisecond', 'ms');
-
-    // PRIORITY
-
-    addUnitPriority('millisecond', 16);
-
-    // PARSING
-
-    addRegexToken('S',    match1to3, match1);
-    addRegexToken('SS',   match1to3, match2);
-    addRegexToken('SSS',  match1to3, match3);
-
-    var token;
-    for (token = 'SSSS'; token.length <= 9; token += 'S') {
-        addRegexToken(token, matchUnsigned);
-    }
-
-    function parseMs(input, array) {
-        array[MILLISECOND] = toInt(('0.' + input) * 1000);
-    }
-
-    for (token = 'S'; token.length <= 9; token += 'S') {
-        addParseToken(token, parseMs);
-    }
-    // MOMENTS
-
-    var getSetMillisecond = makeGetSet('Milliseconds', false);
-
-    // FORMATTING
-
-    addFormatToken('z',  0, 0, 'zoneAbbr');
-    addFormatToken('zz', 0, 0, 'zoneName');
-
-    // MOMENTS
-
-    function getZoneAbbr () {
-        return this._isUTC ? 'UTC' : '';
-    }
-
-    function getZoneName () {
-        return this._isUTC ? 'Coordinated Universal Time' : '';
-    }
-
-    var proto = Moment.prototype;
-
-    proto.add               = add;
-    proto.calendar          = calendar$1;
-    proto.clone             = clone;
-    proto.diff              = diff;
-    proto.endOf             = endOf;
-    proto.format            = format;
-    proto.from              = from;
-    proto.fromNow           = fromNow;
-    proto.to                = to;
-    proto.toNow             = toNow;
-    proto.get               = stringGet;
-    proto.invalidAt         = invalidAt;
-    proto.isAfter           = isAfter;
-    proto.isBefore          = isBefore;
-    proto.isBetween         = isBetween;
-    proto.isSame            = isSame;
-    proto.isSameOrAfter     = isSameOrAfter;
-    proto.isSameOrBefore    = isSameOrBefore;
-    proto.isValid           = isValid$2;
-    proto.lang              = lang;
-    proto.locale            = locale;
-    proto.localeData        = localeData;
-    proto.max               = prototypeMax;
-    proto.min               = prototypeMin;
-    proto.parsingFlags      = parsingFlags;
-    proto.set               = stringSet;
-    proto.startOf           = startOf;
-    proto.subtract          = subtract;
-    proto.toArray           = toArray;
-    proto.toObject          = toObject;
-    proto.toDate            = toDate;
-    proto.toISOString       = toISOString;
-    proto.inspect           = inspect;
-    proto.toJSON            = toJSON;
-    proto.toString          = toString;
-    proto.unix              = unix;
-    proto.valueOf           = valueOf;
-    proto.creationData      = creationData;
-    proto.year       = getSetYear;
-    proto.isLeapYear = getIsLeapYear;
-    proto.weekYear    = getSetWeekYear;
-    proto.isoWeekYear = getSetISOWeekYear;
-    proto.quarter = proto.quarters = getSetQuarter;
-    proto.month       = getSetMonth;
-    proto.daysInMonth = getDaysInMonth;
-    proto.week           = proto.weeks        = getSetWeek;
-    proto.isoWeek        = proto.isoWeeks     = getSetISOWeek;
-    proto.weeksInYear    = getWeeksInYear;
-    proto.isoWeeksInYear = getISOWeeksInYear;
-    proto.date       = getSetDayOfMonth;
-    proto.day        = proto.days             = getSetDayOfWeek;
-    proto.weekday    = getSetLocaleDayOfWeek;
-    proto.isoWeekday = getSetISODayOfWeek;
-    proto.dayOfYear  = getSetDayOfYear;
-    proto.hour = proto.hours = getSetHour;
-    proto.minute = proto.minutes = getSetMinute;
-    proto.second = proto.seconds = getSetSecond;
-    proto.millisecond = proto.milliseconds = getSetMillisecond;
-    proto.utcOffset            = getSetOffset;
-    proto.utc                  = setOffsetToUTC;
-    proto.local                = setOffsetToLocal;
-    proto.parseZone            = setOffsetToParsedOffset;
-    proto.hasAlignedHourOffset = hasAlignedHourOffset;
-    proto.isDST                = isDaylightSavingTime;
-    proto.isLocal              = isLocal;
-    proto.isUtcOffset          = isUtcOffset;
-    proto.isUtc                = isUtc;
-    proto.isUTC                = isUtc;
-    proto.zoneAbbr = getZoneAbbr;
-    proto.zoneName = getZoneName;
-    proto.dates  = deprecate('dates accessor is deprecated. Use date instead.', getSetDayOfMonth);
-    proto.months = deprecate('months accessor is deprecated. Use month instead', getSetMonth);
-    proto.years  = deprecate('years accessor is deprecated. Use year instead', getSetYear);
-    proto.zone   = deprecate('moment().zone is deprecated, use moment().utcOffset instead. http://momentjs.com/guides/#/warnings/zone/', getSetZone);
-    proto.isDSTShifted = deprecate('isDSTShifted is deprecated. See http://momentjs.com/guides/#/warnings/dst-shifted/ for more information', isDaylightSavingTimeShifted);
-
-    function createUnix (input) {
-        return createLocal(input * 1000);
-    }
-
-    function createInZone () {
-        return createLocal.apply(null, arguments).parseZone();
-    }
-
-    function preParsePostFormat (string) {
-        return string;
-    }
-
-    var proto$1 = Locale.prototype;
-
-    proto$1.calendar        = calendar;
-    proto$1.longDateFormat  = longDateFormat;
-    proto$1.invalidDate     = invalidDate;
-    proto$1.ordinal         = ordinal;
-    proto$1.preparse        = preParsePostFormat;
-    proto$1.postformat      = preParsePostFormat;
-    proto$1.relativeTime    = relativeTime;
-    proto$1.pastFuture      = pastFuture;
-    proto$1.set             = set;
-
-    proto$1.months            =        localeMonths;
-    proto$1.monthsShort       =        localeMonthsShort;
-    proto$1.monthsParse       =        localeMonthsParse;
-    proto$1.monthsRegex       = monthsRegex;
-    proto$1.monthsShortRegex  = monthsShortRegex;
-    proto$1.week = localeWeek;
-    proto$1.firstDayOfYear = localeFirstDayOfYear;
-    proto$1.firstDayOfWeek = localeFirstDayOfWeek;
-
-    proto$1.weekdays       =        localeWeekdays;
-    proto$1.weekdaysMin    =        localeWeekdaysMin;
-    proto$1.weekdaysShort  =        localeWeekdaysShort;
-    proto$1.weekdaysParse  =        localeWeekdaysParse;
-
-    proto$1.weekdaysRegex       =        weekdaysRegex;
-    proto$1.weekdaysShortRegex  =        weekdaysShortRegex;
-    proto$1.weekdaysMinRegex    =        weekdaysMinRegex;
-
-    proto$1.isPM = localeIsPM;
-    proto$1.meridiem = localeMeridiem;
-
-    function get$1 (format, index, field, setter) {
-        var locale = getLocale();
-        var utc = createUTC().set(setter, index);
-        return locale[field](utc, format);
-    }
-
-    function listMonthsImpl (format, index, field) {
-        if (isNumber(format)) {
-            index = format;
-            format = undefined;
-        }
-
-        format = format || '';
-
-        if (index != null) {
-            return get$1(format, index, field, 'month');
-        }
-
-        var i;
-        var out = [];
-        for (i = 0; i < 12; i++) {
-            out[i] = get$1(format, i, field, 'month');
-        }
-        return out;
-    }
-
-    // ()
-    // (5)
-    // (fmt, 5)
-    // (fmt)
-    // (true)
-    // (true, 5)
-    // (true, fmt, 5)
-    // (true, fmt)
-    function listWeekdaysImpl (localeSorted, format, index, field) {
-        if (typeof localeSorted === 'boolean') {
-            if (isNumber(format)) {
-                index = format;
-                format = undefined;
-            }
-
-            format = format || '';
-        } else {
-            format = localeSorted;
-            index = format;
-            localeSorted = false;
-
-            if (isNumber(format)) {
-                index = format;
-                format = undefined;
-            }
-
-            format = format || '';
-        }
-
-        var locale = getLocale(),
-            shift = localeSorted ? locale._week.dow : 0;
-
-        if (index != null) {
-            return get$1(format, (index + shift) % 7, field, 'day');
-        }
-
-        var i;
-        var out = [];
-        for (i = 0; i < 7; i++) {
-            out[i] = get$1(format, (i + shift) % 7, field, 'day');
-        }
-        return out;
-    }
-
-    function listMonths (format, index) {
-        return listMonthsImpl(format, index, 'months');
-    }
-
-    function listMonthsShort (format, index) {
-        return listMonthsImpl(format, index, 'monthsShort');
-    }
-
-    function listWeekdays (localeSorted, format, index) {
-        return listWeekdaysImpl(localeSorted, format, index, 'weekdays');
-    }
-
-    function listWeekdaysShort (localeSorted, format, index) {
-        return listWeekdaysImpl(localeSorted, format, index, 'weekdaysShort');
-    }
-
-    function listWeekdaysMin (localeSorted, format, index) {
-        return listWeekdaysImpl(localeSorted, format, index, 'weekdaysMin');
-    }
-
-    getSetGlobalLocale('en', {
-        dayOfMonthOrdinalParse: /\d{1,2}(th|st|nd|rd)/,
-        ordinal : function (number) {
-            var b = number % 10,
-                output = (toInt(number % 100 / 10) === 1) ? 'th' :
-                (b === 1) ? 'st' :
-                (b === 2) ? 'nd' :
-                (b === 3) ? 'rd' : 'th';
-            return number + output;
-        }
-    });
-
-    // Side effect imports
-
-    hooks.lang = deprecate('moment.lang is deprecated. Use moment.locale instead.', getSetGlobalLocale);
-    hooks.langData = deprecate('moment.langData is deprecated. Use moment.localeData instead.', getLocale);
-
-    var mathAbs = Math.abs;
-
-    function abs () {
-        var data           = this._data;
-
-        this._milliseconds = mathAbs(this._milliseconds);
-        this._days         = mathAbs(this._days);
-        this._months       = mathAbs(this._months);
-
-        data.milliseconds  = mathAbs(data.milliseconds);
-        data.seconds       = mathAbs(data.seconds);
-        data.minutes       = mathAbs(data.minutes);
-        data.hours         = mathAbs(data.hours);
-        data.months        = mathAbs(data.months);
-        data.years         = mathAbs(data.years);
-
-        return this;
-    }
-
-    function addSubtract$1 (duration, input, value, direction) {
-        var other = createDuration(input, value);
-
-        duration._milliseconds += direction * other._milliseconds;
-        duration._days         += direction * other._days;
-        duration._months       += direction * other._months;
-
-        return duration._bubble();
-    }
-
-    // supports only 2.0-style add(1, 's') or add(duration)
-    function add$1 (input, value) {
-        return addSubtract$1(this, input, value, 1);
-    }
-
-    // supports only 2.0-style subtract(1, 's') or subtract(duration)
-    function subtract$1 (input, value) {
-        return addSubtract$1(this, input, value, -1);
-    }
-
-    function absCeil (number) {
-        if (number < 0) {
-            return Math.floor(number);
-        } else {
-            return Math.ceil(number);
-        }
-    }
-
-    function bubble () {
-        var milliseconds = this._milliseconds;
-        var days         = this._days;
-        var months       = this._months;
-        var data         = this._data;
-        var seconds, minutes, hours, years, monthsFromDays;
-
-        // if we have a mix of positive and negative values, bubble down first
-        // check: https://github.com/moment/moment/issues/2166
-        if (!((milliseconds >= 0 && days >= 0 && months >= 0) ||
-                (milliseconds <= 0 && days <= 0 && months <= 0))) {
-            milliseconds += absCeil(monthsToDays(months) + days) * 864e5;
-            days = 0;
-            months = 0;
-        }
-
-        // The following code bubbles up values, see the tests for
-        // examples of what that means.
-        data.milliseconds = milliseconds % 1000;
-
-        seconds           = absFloor(milliseconds / 1000);
-        data.seconds      = seconds % 60;
-
-        minutes           = absFloor(seconds / 60);
-        data.minutes      = minutes % 60;
-
-        hours             = absFloor(minutes / 60);
-        data.hours        = hours % 24;
-
-        days += absFloor(hours / 24);
-
-        // convert days to months
-        monthsFromDays = absFloor(daysToMonths(days));
-        months += monthsFromDays;
-        days -= absCeil(monthsToDays(monthsFromDays));
-
-        // 12 months -> 1 year
-        years = absFloor(months / 12);
-        months %= 12;
-
-        data.days   = days;
-        data.months = months;
-        data.years  = years;
-
-        return this;
-    }
-
-    function daysToMonths (days) {
-        // 400 years have 146097 days (taking into account leap year rules)
-        // 400 years have 12 months === 4800
-        return days * 4800 / 146097;
-    }
-
-    function monthsToDays (months) {
-        // the reverse of daysToMonths
-        return months * 146097 / 4800;
-    }
-
-    function as (units) {
-        if (!this.isValid()) {
-            return NaN;
-        }
-        var days;
-        var months;
-        var milliseconds = this._milliseconds;
-
-        units = normalizeUnits(units);
-
-        if (units === 'month' || units === 'quarter' || units === 'year') {
-            days = this._days + milliseconds / 864e5;
-            months = this._months + daysToMonths(days);
-            switch (units) {
-                case 'month':   return months;
-                case 'quarter': return months / 3;
-                case 'year':    return months / 12;
-            }
-        } else {
-            // handle milliseconds separately because of floating point math errors (issue #1867)
-            days = this._days + Math.round(monthsToDays(this._months));
-            switch (units) {
-                case 'week'   : return days / 7     + milliseconds / 6048e5;
-                case 'day'    : return days         + milliseconds / 864e5;
-                case 'hour'   : return days * 24    + milliseconds / 36e5;
-                case 'minute' : return days * 1440  + milliseconds / 6e4;
-                case 'second' : return days * 86400 + milliseconds / 1000;
-                // Math.floor prevents floating point math errors here
-                case 'millisecond': return Math.floor(days * 864e5) + milliseconds;
-                default: throw new Error('Unknown unit ' + units);
-            }
-        }
-    }
-
-    // TODO: Use this.as('ms')?
-    function valueOf$1 () {
-        if (!this.isValid()) {
-            return NaN;
-        }
-        return (
-            this._milliseconds +
-            this._days * 864e5 +
-            (this._months % 12) * 2592e6 +
-            toInt(this._months / 12) * 31536e6
-        );
-    }
-
-    function makeAs (alias) {
-        return function () {
-            return this.as(alias);
-        };
-    }
-
-    var asMilliseconds = makeAs('ms');
-    var asSeconds      = makeAs('s');
-    var asMinutes      = makeAs('m');
-    var asHours        = makeAs('h');
-    var asDays         = makeAs('d');
-    var asWeeks        = makeAs('w');
-    var asMonths       = makeAs('M');
-    var asQuarters     = makeAs('Q');
-    var asYears        = makeAs('y');
-
-    function clone$1 () {
-        return createDuration(this);
-    }
-
-    function get$2 (units) {
-        units = normalizeUnits(units);
-        return this.isValid() ? this[units + 's']() : NaN;
-    }
-
-    function makeGetter(name) {
-        return function () {
-            return this.isValid() ? this._data[name] : NaN;
-        };
-    }
-
-    var milliseconds = makeGetter('milliseconds');
-    var seconds      = makeGetter('seconds');
-    var minutes      = makeGetter('minutes');
-    var hours        = makeGetter('hours');
-    var days         = makeGetter('days');
-    var months       = makeGetter('months');
-    var years        = makeGetter('years');
-
-    function weeks () {
-        return absFloor(this.days() / 7);
-    }
-
-    var round = Math.round;
-    var thresholds = {
-        ss: 44,         // a few seconds to seconds
-        s : 45,         // seconds to minute
-        m : 45,         // minutes to hour
-        h : 22,         // hours to day
-        d : 26,         // days to month
-        M : 11          // months to year
-    };
-
-    // helper function for moment.fn.from, moment.fn.fromNow, and moment.duration.fn.humanize
-    function substituteTimeAgo(string, number, withoutSuffix, isFuture, locale) {
-        return locale.relativeTime(number || 1, !!withoutSuffix, string, isFuture);
-    }
-
-    function relativeTime$1 (posNegDuration, withoutSuffix, locale) {
-        var duration = createDuration(posNegDuration).abs();
-        var seconds  = round(duration.as('s'));
-        var minutes  = round(duration.as('m'));
-        var hours    = round(duration.as('h'));
-        var days     = round(duration.as('d'));
-        var months   = round(duration.as('M'));
-        var years    = round(duration.as('y'));
-
-        var a = seconds <= thresholds.ss && ['s', seconds]  ||
-                seconds < thresholds.s   && ['ss', seconds] ||
-                minutes <= 1             && ['m']           ||
-                minutes < thresholds.m   && ['mm', minutes] ||
-                hours   <= 1             && ['h']           ||
-                hours   < thresholds.h   && ['hh', hours]   ||
-                days    <= 1             && ['d']           ||
-                days    < thresholds.d   && ['dd', days]    ||
-                months  <= 1             && ['M']           ||
-                months  < thresholds.M   && ['MM', months]  ||
-                years   <= 1             && ['y']           || ['yy', years];
-
-        a[2] = withoutSuffix;
-        a[3] = +posNegDuration > 0;
-        a[4] = locale;
-        return substituteTimeAgo.apply(null, a);
-    }
-
-    // This function allows you to set the rounding function for relative time strings
-    function getSetRelativeTimeRounding (roundingFunction) {
-        if (roundingFunction === undefined) {
-            return round;
-        }
-        if (typeof(roundingFunction) === 'function') {
-            round = roundingFunction;
-            return true;
-        }
-        return false;
-    }
-
-    // This function allows you to set a threshold for relative time strings
-    function getSetRelativeTimeThreshold (threshold, limit) {
-        if (thresholds[threshold] === undefined) {
-            return false;
-        }
-        if (limit === undefined) {
-            return thresholds[threshold];
-        }
-        thresholds[threshold] = limit;
-        if (threshold === 's') {
-            thresholds.ss = limit - 1;
-        }
-        return true;
-    }
-
-    function humanize (withSuffix) {
-        if (!this.isValid()) {
-            return this.localeData().invalidDate();
-        }
-
-        var locale = this.localeData();
-        var output = relativeTime$1(this, !withSuffix, locale);
-
-        if (withSuffix) {
-            output = locale.pastFuture(+this, output);
-        }
-
-        return locale.postformat(output);
-    }
-
-    var abs$1 = Math.abs;
-
-    function sign(x) {
-        return ((x > 0) - (x < 0)) || +x;
-    }
-
-    function toISOString$1() {
-        // for ISO strings we do not use the normal bubbling rules:
-        //  * milliseconds bubble up until they become hours
-        //  * days do not bubble at all
-        //  * months bubble up until they become years
-        // This is because there is no context-free conversion between hours and days
-        // (think of clock changes)
-        // and also not between days and months (28-31 days per month)
-        if (!this.isValid()) {
-            return this.localeData().invalidDate();
-        }
-
-        var seconds = abs$1(this._milliseconds) / 1000;
-        var days         = abs$1(this._days);
-        var months       = abs$1(this._months);
-        var minutes, hours, years;
-
-        // 3600 seconds -> 60 minutes -> 1 hour
-        minutes           = absFloor(seconds / 60);
-        hours             = absFloor(minutes / 60);
-        seconds %= 60;
-        minutes %= 60;
-
-        // 12 months -> 1 year
-        years  = absFloor(months / 12);
-        months %= 12;
-
-
-        // inspired by https://github.com/dordille/moment-isoduration/blob/master/moment.isoduration.js
-        var Y = years;
-        var M = months;
-        var D = days;
-        var h = hours;
-        var m = minutes;
-        var s = seconds ? seconds.toFixed(3).replace(/\.?0+$/, '') : '';
-        var total = this.asSeconds();
-
-        if (!total) {
-            // this is the same as C#'s (Noda) and python (isodate)...
-            // but not other JS (goog.date)
-            return 'P0D';
-        }
-
-        var totalSign = total < 0 ? '-' : '';
-        var ymSign = sign(this._months) !== sign(total) ? '-' : '';
-        var daysSign = sign(this._days) !== sign(total) ? '-' : '';
-        var hmsSign = sign(this._milliseconds) !== sign(total) ? '-' : '';
-
-        return totalSign + 'P' +
-            (Y ? ymSign + Y + 'Y' : '') +
-            (M ? ymSign + M + 'M' : '') +
-            (D ? daysSign + D + 'D' : '') +
-            ((h || m || s) ? 'T' : '') +
-            (h ? hmsSign + h + 'H' : '') +
-            (m ? hmsSign + m + 'M' : '') +
-            (s ? hmsSign + s + 'S' : '');
-    }
-
-    var proto$2 = Duration.prototype;
-
-    proto$2.isValid        = isValid$1;
-    proto$2.abs            = abs;
-    proto$2.add            = add$1;
-    proto$2.subtract       = subtract$1;
-    proto$2.as             = as;
-    proto$2.asMilliseconds = asMilliseconds;
-    proto$2.asSeconds      = asSeconds;
-    proto$2.asMinutes      = asMinutes;
-    proto$2.asHours        = asHours;
-    proto$2.asDays         = asDays;
-    proto$2.asWeeks        = asWeeks;
-    proto$2.asMonths       = asMonths;
-    proto$2.asQuarters     = asQuarters;
-    proto$2.asYears        = asYears;
-    proto$2.valueOf        = valueOf$1;
-    proto$2._bubble        = bubble;
-    proto$2.clone          = clone$1;
-    proto$2.get            = get$2;
-    proto$2.milliseconds   = milliseconds;
-    proto$2.seconds        = seconds;
-    proto$2.minutes        = minutes;
-    proto$2.hours          = hours;
-    proto$2.days           = days;
-    proto$2.weeks          = weeks;
-    proto$2.months         = months;
-    proto$2.years          = years;
-    proto$2.humanize       = humanize;
-    proto$2.toISOString    = toISOString$1;
-    proto$2.toString       = toISOString$1;
-    proto$2.toJSON         = toISOString$1;
-    proto$2.locale         = locale;
-    proto$2.localeData     = localeData;
-
-    proto$2.toIsoString = deprecate('toIsoString() is deprecated. Please use toISOString() instead (notice the capitals)', toISOString$1);
-    proto$2.lang = lang;
-
-    // Side effect imports
-
-    // FORMATTING
-
-    addFormatToken('X', 0, 0, 'unix');
-    addFormatToken('x', 0, 0, 'valueOf');
-
-    // PARSING
-
-    addRegexToken('x', matchSigned);
-    addRegexToken('X', matchTimestamp);
-    addParseToken('X', function (input, array, config) {
-        config._d = new Date(parseFloat(input, 10) * 1000);
-    });
-    addParseToken('x', function (input, array, config) {
-        config._d = new Date(toInt(input));
-    });
-
-    // Side effect imports
-
-
-    hooks.version = '2.24.0';
-
-    setHookCallback(createLocal);
-
-    hooks.fn                    = proto;
-    hooks.min                   = min;
-    hooks.max                   = max;
-    hooks.now                   = now;
-    hooks.utc                   = createUTC;
-    hooks.unix                  = createUnix;
-    hooks.months                = listMonths;
-    hooks.isDate                = isDate;
-    hooks.locale                = getSetGlobalLocale;
-    hooks.invalid               = createInvalid;
-    hooks.duration              = createDuration;
-    hooks.isMoment              = isMoment;
-    hooks.weekdays              = listWeekdays;
-    hooks.parseZone             = createInZone;
-    hooks.localeData            = getLocale;
-    hooks.isDuration            = isDuration;
-    hooks.monthsShort           = listMonthsShort;
-    hooks.weekdaysMin           = listWeekdaysMin;
-    hooks.defineLocale          = defineLocale;
-    hooks.updateLocale          = updateLocale;
-    hooks.locales               = listLocales;
-    hooks.weekdaysShort         = listWeekdaysShort;
-    hooks.normalizeUnits        = normalizeUnits;
-    hooks.relativeTimeRounding  = getSetRelativeTimeRounding;
-    hooks.relativeTimeThreshold = getSetRelativeTimeThreshold;
-    hooks.calendarFormat        = getCalendarFormat;
-    hooks.prototype             = proto;
-
-    // currently HTML5 input type only supports 24-hour formats
-    hooks.HTML5_FMT = {
-        DATETIME_LOCAL: 'YYYY-MM-DDTHH:mm',             // <input type="datetime-local" />
-        DATETIME_LOCAL_SECONDS: 'YYYY-MM-DDTHH:mm:ss',  // <input type="datetime-local" step="1" />
-        DATETIME_LOCAL_MS: 'YYYY-MM-DDTHH:mm:ss.SSS',   // <input type="datetime-local" step="0.001" />
-        DATE: 'YYYY-MM-DD',                             // <input type="date" />
-        TIME: 'HH:mm',                                  // <input type="time" />
-        TIME_SECONDS: 'HH:mm:ss',                       // <input type="time" step="1" />
-        TIME_MS: 'HH:mm:ss.SSS',                        // <input type="time" step="0.001" />
-        WEEK: 'GGGG-[W]WW',                             // <input type="week" />
-        MONTH: 'YYYY-MM'                                // <input type="month" />
-    };
-
-    return hooks;
-
-})));
-
-},{}],"../node_modules/axios/lib/helpers/bind.js":[function(require,module,exports) {
+},{"@babel/runtime/helpers/esm/objectWithoutProperties":"../node_modules/@babel/runtime/helpers/esm/objectWithoutProperties.js","@babel/runtime/helpers/esm/extends":"../node_modules/@babel/runtime/helpers/esm/extends.js","@babel/runtime/helpers/esm/toConsumableArray":"../node_modules/@babel/runtime/helpers/esm/toConsumableArray.js","@babel/runtime/helpers/esm/objectSpread":"../node_modules/@babel/runtime/helpers/esm/objectSpread.js","@babel/runtime/helpers/esm/classCallCheck":"../node_modules/@babel/runtime/helpers/esm/classCallCheck.js","@babel/runtime/helpers/esm/createClass":"../node_modules/@babel/runtime/helpers/esm/createClass.js","@babel/runtime/helpers/esm/possibleConstructorReturn":"../node_modules/@babel/runtime/helpers/esm/possibleConstructorReturn.js","@babel/runtime/helpers/esm/getPrototypeOf":"../node_modules/@babel/runtime/helpers/esm/getPrototypeOf.js","@babel/runtime/helpers/esm/inherits":"../node_modules/@babel/runtime/helpers/esm/inherits.js","@babel/runtime/helpers/esm/assertThisInitialized":"../node_modules/@babel/runtime/helpers/esm/assertThisInitialized.js","@babel/runtime/helpers/esm/defineProperty":"../node_modules/@babel/runtime/helpers/esm/defineProperty.js","react":"../node_modules/react/index.js","memoize-one":"../node_modules/memoize-one/dist/memoize-one.esm.js","@emotion/core":"../node_modules/@emotion/core/dist/core.browser.esm.js","react-dom":"../node_modules/react-dom/index.js","prop-types":"../node_modules/prop-types/index.js","@babel/runtime/helpers/esm/typeof":"../node_modules/@babel/runtime/helpers/esm/typeof.js","./chunk-39d3fda8.browser.esm.js":"../node_modules/react-select/dist/chunk-39d3fda8.browser.esm.js","./chunk-80640036.browser.esm.js":"../node_modules/react-select/dist/chunk-80640036.browser.esm.js","./base/dist/react-select-cac0a5ae.browser.esm.js":"../node_modules/react-select/dist/base/dist/react-select-cac0a5ae.browser.esm.js","@emotion/css":"../node_modules/@emotion/css/dist/css.browser.esm.js","@babel/runtime/helpers/esm/taggedTemplateLiteral":"../node_modules/@babel/runtime/helpers/esm/taggedTemplateLiteral.js","react-input-autosize":"../node_modules/react-input-autosize/lib/AutosizeInput.js","./chunk-b36baf1a.browser.esm.js":"../node_modules/react-select/dist/chunk-b36baf1a.browser.esm.js","@emotion/cache":"../node_modules/@emotion/cache/dist/cache.browser.esm.js"}],"../node_modules/axios/lib/helpers/bind.js":[function(require,module,exports) {
 'use strict';
 
 module.exports = function bind(fn, thisArg) {
@@ -55244,30 +54342,23 @@ module.exports.default = axios;
 
 },{"./utils":"../node_modules/axios/lib/utils.js","./helpers/bind":"../node_modules/axios/lib/helpers/bind.js","./core/Axios":"../node_modules/axios/lib/core/Axios.js","./core/mergeConfig":"../node_modules/axios/lib/core/mergeConfig.js","./defaults":"../node_modules/axios/lib/defaults.js","./cancel/Cancel":"../node_modules/axios/lib/cancel/Cancel.js","./cancel/CancelToken":"../node_modules/axios/lib/cancel/CancelToken.js","./cancel/isCancel":"../node_modules/axios/lib/cancel/isCancel.js","./helpers/spread":"../node_modules/axios/lib/helpers/spread.js"}],"../node_modules/axios/index.js":[function(require,module,exports) {
 module.exports = require('./lib/axios');
-},{"./lib/axios":"../node_modules/axios/lib/axios.js"}],"index.jsx":[function(require,module,exports) {
+},{"./lib/axios":"../node_modules/axios/lib/axios.js"}],"browse.jsx":[function(require,module,exports) {
 "use strict";
 
-var _react = _interopRequireWildcard(require("react"));
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _react = _interopRequireDefault(require("react"));
 
 var _reactRouterDom = require("react-router-dom");
 
-var _reactDom = _interopRequireDefault(require("react-dom"));
-
-var _reactImageCrop = _interopRequireDefault(require("react-image-crop"));
-
 var _reactSelect = _interopRequireDefault(require("react-select"));
-
-var _dexie = _interopRequireDefault(require("dexie"));
-
-var _moment = _interopRequireDefault(require("moment"));
 
 var _axios = _interopRequireDefault(require("axios"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function () { return cache; }; return cache; }
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
@@ -55279,13 +54370,1794 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
 
 function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
 
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
-
 function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
 
 function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+var Browse = function Browse() {
+  return _react.default.createElement(Browser, {
+    query: (0, _reactRouterDom.useParams)().query
+  });
+};
+
+var _default = Browse;
+exports.default = _default;
+
+var Browser =
+/*#__PURE__*/
+function (_React$Component) {
+  _inherits(Browser, _React$Component);
+
+  function Browser(props) {
+    var _this;
+
+    _classCallCheck(this, Browser);
+
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(Browser).call(this, props));
+    _this.state = {
+      value: props.query
+    };
+    _this.handleChange = _this.handleChange.bind(_assertThisInitialized(_this));
+    _this.handleSubmit = _this.handleSubmit.bind(_assertThisInitialized(_this));
+    return _this;
+  }
+
+  _createClass(Browser, [{
+    key: "handleChange",
+    value: function handleChange(e) {
+      this.setState({
+        value: e.target.value
+      });
+    }
+  }, {
+    key: "handleSubmit",
+    value: function handleSubmit(e) {
+      e.preventDefault();
+
+      if (this.state.value !== "") {
+        window.location = "/browse/".concat(this.state.value, "/");
+      }
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      return _react.default.createElement("div", {
+        className: "browse"
+      }, _react.default.createElement("form", {
+        onSubmit: this.handleSubmit
+      }, _react.default.createElement("input", {
+        type: "text",
+        value: this.state.value,
+        onChange: this.handleChange
+      })), _react.default.createElement(Container, {
+        query: this.props.query
+      }));
+    }
+  }]);
+
+  return Browser;
+}(_react.default.Component);
+
+var Container =
+/*#__PURE__*/
+function (_React$Component2) {
+  _inherits(Container, _React$Component2);
+
+  function Container(props) {
+    var _this2;
+
+    _classCallCheck(this, Container);
+
+    _this2 = _possibleConstructorReturn(this, _getPrototypeOf(Container).call(this, props));
+    _this2.state = {
+      assets: []
+    };
+    return _this2;
+  }
+
+  _createClass(Container, [{
+    key: "componentDidMount",
+    value: function componentDidMount() {
+      var _this3 = this;
+
+      (0, _axios.default)("/rest/query/".concat(this.props.query)).then(function (res) {
+        return _this3.setState({
+          assets: res.data.assets
+        });
+      });
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      var counts = {},
+          tags = [];
+      this.state.assets.forEach(function (asset) {
+        asset.tags.forEach(function (tag) {
+          if (!counts[tag.name]) {
+            tags.push(tag);
+            counts[tag.name] = 0;
+          }
+
+          counts[tag.name]++;
+        });
+      });
+      tags.sort(function (a, b) {
+        return a.group[0] < b.group[0] ? -1 : a.group[0] > b.group[0] ? 1 : a.name < b.name ? -1 : a.name > b.name ? 1 : counts[a.name] < counts[b.name] ? -1 : counts[a.name] > counts[b.name] ? 1 : 0;
+      });
+      console.log(tags);
+      return _react.default.createElement("div", null, _react.default.createElement(Tags, {
+        tags: tags,
+        counts: counts
+      }), _react.default.createElement(Thumbs, {
+        assets: this.state.assets
+      }));
+    }
+  }]);
+
+  return Container;
+}(_react.default.Component);
+
+var Tags = function Tags(_ref) {
+  var tags = _ref.tags,
+      counts = _ref.counts;
+  var collectionStyle = {
+    margin: "0",
+    padding: "0.3rem"
+  };
+  var itemStyle = {
+    display: "inline-block",
+    padding: "0.2rem 0.4rem",
+    margin: "0 0.2rem 0.2rem 0",
+    borderRadius: "0.3rem",
+    whiteSpace: "nowrap",
+    cursor: "pointer",
+    fontSize: "0.9rem",
+    background: "#999"
+  };
+  return _react.default.createElement("div", {
+    className: "tags",
+    style: collectionStyle
+  }, tags.map(function (tag) {
+    return _react.default.createElement("span", {
+      className: "tag",
+      key: tag.id,
+      style: itemStyle
+    }, tag.name);
+  }));
+};
+
+var Thumbs = function Thumbs(_ref2) {
+  var assets = _ref2.assets;
+  var collectionStyle = {
+    padding: "0 1rem 1rem 0",
+    display: "flex",
+    flexFlow: "row wrap",
+    alignItems: "center"
+  };
+  var itemStyle = {
+    flex: "0 0 100px",
+    maxHeight: "100px",
+    maxWidth: "100px",
+    margin: "1rem 0 0 1rem",
+    cursor: "pointer",
+    position: "relative",
+    textAlign: "center"
+  };
+  var cursorStyle = {
+    position: "absolute",
+    textShadow: "#111 0px 0px 2px, #111 0px 0px 2px, #111 0px 0px 2px",
+    display: "none",
+    fontSize: "2em",
+    fontWeight: "bold"
+  };
+  var imageStyle = {
+    maxHeight: "100px",
+    maxWidth: "100px",
+    borderRadius: "0.3rem",
+    border: "solid 0.3rem #111"
+  };
+  return _react.default.createElement("div", {
+    className: "thumbs",
+    style: collectionStyle
+  }, assets.map(function (asset) {
+    return _react.default.createElement("div", {
+      className: "asset",
+      key: asset.id,
+      style: itemStyle
+    }, _react.default.createElement("span", {
+      className: "cursor star",
+      style: cursorStyle
+    }, "*"), _react.default.createElement("img", {
+      className: asset.medium,
+      src: "/asset/thumb/".concat(asset.id, "/"),
+      style: imageStyle
+    }));
+  }));
+};
+},{"react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","react-select":"../node_modules/react-select/dist/react-select.browser.esm.js","axios":"../node_modules/axios/index.js"}],"view.jsx":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _react = _interopRequireDefault(require("react"));
+
+var _reactRouterDom = require("react-router-dom");
+
+var _reactSelect = _interopRequireDefault(require("react-select"));
+
+var _axios = _interopRequireDefault(require("axios"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var View = function View() {
+  return _react.default.createElement("div", {
+    className: "view"
+  }, "VIEW ", (0, _reactRouterDom.useParams)().id);
+};
+
+var _default = View;
+exports.default = _default;
+},{"react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","react-select":"../node_modules/react-select/dist/react-select.browser.esm.js","axios":"../node_modules/axios/index.js"}],"../node_modules/react-image-crop/dist/ReactCrop.min.js":[function(require,module,exports) {
+var define;
+!function (e, t) {
+  "object" == typeof exports && "object" == typeof module ? module.exports = t(require("react")) : "function" == typeof define && define.amd ? define(["react"], t) : "object" == typeof exports ? exports.ReactCrop = t(require("react")) : e.ReactCrop = t(e.React);
+}(this, function (e) {
+  return function (e) {
+    var t = {};
+
+    function r(o) {
+      if (t[o]) return t[o].exports;
+      var n = t[o] = {
+        i: o,
+        l: !1,
+        exports: {}
+      };
+      return e[o].call(n.exports, n, n.exports, r), n.l = !0, n.exports;
+    }
+
+    return r.m = e, r.c = t, r.d = function (e, t, o) {
+      r.o(e, t) || Object.defineProperty(e, t, {
+        enumerable: !0,
+        get: o
+      });
+    }, r.r = function (e) {
+      "undefined" != typeof Symbol && Symbol.toStringTag && Object.defineProperty(e, Symbol.toStringTag, {
+        value: "Module"
+      }), Object.defineProperty(e, "__esModule", {
+        value: !0
+      });
+    }, r.t = function (e, t) {
+      if (1 & t && (e = r(e)), 8 & t) return e;
+      if (4 & t && "object" == typeof e && e && e.__esModule) return e;
+      var o = Object.create(null);
+      if (r.r(o), Object.defineProperty(o, "default", {
+        enumerable: !0,
+        value: e
+      }), 2 & t && "string" != typeof e) for (var n in e) r.d(o, n, function (t) {
+        return e[t];
+      }.bind(null, n));
+      return o;
+    }, r.n = function (e) {
+      var t = e && e.__esModule ? function () {
+        return e.default;
+      } : function () {
+        return e;
+      };
+      return r.d(t, "a", t), t;
+    }, r.o = function (e, t) {
+      return Object.prototype.hasOwnProperty.call(e, t);
+    }, r.p = "", r(r.s = 4);
+  }([function (e, t, r) {
+    e.exports = r(2)();
+  }, function (t, r) {
+    t.exports = e;
+  }, function (e, t, r) {
+    "use strict";
+
+    var o = r(3);
+
+    function n() {}
+
+    function i() {}
+
+    i.resetWarningCache = n, e.exports = function () {
+      function e(e, t, r, n, i, a) {
+        if (a !== o) {
+          var s = new Error("Calling PropTypes validators directly is not supported by the `prop-types` package. Use PropTypes.checkPropTypes() to call them. Read more at http://fb.me/use-check-prop-types");
+          throw s.name = "Invariant Violation", s;
+        }
+      }
+
+      function t() {
+        return e;
+      }
+
+      e.isRequired = e;
+      var r = {
+        array: e,
+        bool: e,
+        func: e,
+        number: e,
+        object: e,
+        string: e,
+        symbol: e,
+        any: e,
+        arrayOf: t,
+        element: e,
+        elementType: e,
+        instanceOf: t,
+        node: e,
+        objectOf: t,
+        oneOf: t,
+        oneOfType: t,
+        shape: t,
+        exact: t,
+        checkPropTypes: i,
+        resetWarningCache: n
+      };
+      return r.PropTypes = r, r;
+    };
+  }, function (e, t, r) {
+    "use strict";
+
+    e.exports = "SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED";
+  }, function (e, t, r) {
+    "use strict";
+
+    r.r(t);
+    var o = r(1),
+        n = r.n(o),
+        i = r(0),
+        a = r.n(i);
+
+    function s(e) {
+      var t,
+          r,
+          o = "";
+      if (e) if ("object" == typeof e) {
+        if (e.push) for (t = 0; t < e.length; t++) e[t] && (r = s(e[t])) && (o && (o += " "), o += r);else for (t in e) e[t] && (r = s(t)) && (o && (o += " "), o += r);
+      } else "boolean" == typeof e || e.call || (o && (o += " "), o += e);
+      return o;
+    }
+
+    function c(e) {
+      return (c = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (e) {
+        return typeof e;
+      } : function (e) {
+        return e && "function" == typeof Symbol && e.constructor === Symbol && e !== Symbol.prototype ? "symbol" : typeof e;
+      })(e);
+    }
+
+    function h(e, t) {
+      for (var r = 0; r < t.length; r++) {
+        var o = t[r];
+        o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, o.key, o);
+      }
+    }
+
+    function d(e) {
+      return (d = Object.setPrototypeOf ? Object.getPrototypeOf : function (e) {
+        return e.__proto__ || Object.getPrototypeOf(e);
+      })(e);
+    }
+
+    function p(e) {
+      if (void 0 === e) throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+      return e;
+    }
+
+    function u(e, t) {
+      return (u = Object.setPrototypeOf || function (e, t) {
+        return e.__proto__ = t, e;
+      })(e, t);
+    }
+
+    function f(e, t) {
+      var r = Object.keys(e);
+
+      if (Object.getOwnPropertySymbols) {
+        var o = Object.getOwnPropertySymbols(e);
+        t && (o = o.filter(function (t) {
+          return Object.getOwnPropertyDescriptor(e, t).enumerable;
+        })), r.push.apply(r, o);
+      }
+
+      return r;
+    }
+
+    function l(e) {
+      for (var t = 1; t < arguments.length; t++) {
+        var r = null != arguments[t] ? arguments[t] : {};
+        t % 2 ? f(Object(r), !0).forEach(function (t) {
+          m(e, t, r[t]);
+        }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(r)) : f(Object(r)).forEach(function (t) {
+          Object.defineProperty(e, t, Object.getOwnPropertyDescriptor(r, t));
+        });
+      }
+
+      return e;
+    }
+
+    function m(e, t, r) {
+      return t in e ? Object.defineProperty(e, t, {
+        value: r,
+        enumerable: !0,
+        configurable: !0,
+        writable: !0
+      }) : e[t] = r, e;
+    }
+
+    function v(e, t) {
+      return function (e) {
+        if (Array.isArray(e)) return e;
+      }(e) || function (e, t) {
+        if (!(Symbol.iterator in Object(e) || "[object Arguments]" === Object.prototype.toString.call(e))) return;
+        var r = [],
+            o = !0,
+            n = !1,
+            i = void 0;
+
+        try {
+          for (var a, s = e[Symbol.iterator](); !(o = (a = s.next()).done) && (r.push(a.value), !t || r.length !== t); o = !0);
+        } catch (e) {
+          n = !0, i = e;
+        } finally {
+          try {
+            o || null == s.return || s.return();
+          } finally {
+            if (n) throw i;
+          }
+        }
+
+        return r;
+      }(e, t) || function () {
+        throw new TypeError("Invalid attempt to destructure non-iterable instance");
+      }();
+    }
+
+    r.d(t, "default", function () {
+      return R;
+    }), r.d(t, "Component", function () {
+      return R;
+    }), r.d(t, "makeAspectCrop", function () {
+      return O;
+    }), r.d(t, "containCrop", function () {
+      return E;
+    });
+    var g = !1;
+
+    try {
+      window.addEventListener("test", null, Object.defineProperty({}, "passive", {
+        get: function () {
+          return g = !0, !0;
+        }
+      }));
+    } catch (e) {}
+
+    function y(e) {
+      var t, r;
+
+      if (e.touches) {
+        var o = v(e.touches, 1)[0];
+        t = o.pageX, r = o.pageY;
+      } else t = e.pageX, r = e.pageY;
+
+      return {
+        x: t,
+        y: r
+      };
+    }
+
+    function w(e, t, r) {
+      return Math.min(Math.max(e, t), r);
+    }
+
+    function C(e) {
+      return e && e.width && e.height && !isNaN(e.width) && !isNaN(e.height);
+    }
+
+    function x(e) {
+      return "n" === e ? "s" : "ne" === e ? "sw" : "e" === e ? "w" : "se" === e ? "nw" : "s" === e ? "n" : "sw" === e ? "ne" : "w" === e ? "e" : "nw" === e ? "se" : e;
+    }
+
+    function O(e, t, r) {
+      if (isNaN(e.aspect)) return console.warn("`crop.aspect` should be a number in order to make an aspect crop", e), e;
+      var o = l({
+        unit: "px",
+        x: 0,
+        y: 0
+      }, e);
+      return e.width && (o.height = o.width / e.aspect), e.height && (o.width = o.height * e.aspect), o.y + o.height > r && (o.height = r - o.y, o.width = o.height * e.aspect), o.x + o.width > t && (o.width = t - o.x, o.height = o.width / e.aspect), o;
+    }
+
+    function b(e, t, r) {
+      return "%" === e.unit ? e : {
+        unit: "%",
+        aspect: e.aspect,
+        x: e.x / t * 100,
+        y: e.y / r * 100,
+        width: e.width / t * 100,
+        height: e.height / r * 100
+      };
+    }
+
+    function S(e, t, r) {
+      return e.unit ? "px" === e.unit ? e : {
+        unit: "px",
+        aspect: e.aspect,
+        x: e.x * t / 100,
+        y: e.y * r / 100,
+        width: e.width * t / 100,
+        height: e.height * r / 100
+      } : l({}, e, {
+        unit: "px"
+      });
+    }
+
+    function D(e, t, r) {
+      if (!e) return e;
+      var o = e,
+          n = e.x + e.width > t,
+          i = e.y + e.height > r;
+      return n && i ? o = {
+        unit: "px",
+        x: 0,
+        y: 0,
+        width: t > e.width ? e.width : t,
+        height: r > e.height ? e.height : r
+      } : n ? o = l({}, e, {
+        x: 0,
+        width: t > e.width ? e.width : t
+      }) : i && (o = l({}, e, {
+        y: 0,
+        height: r > e.height ? e.height : r
+      })), o.aspect && function (e, t, r) {
+        return !!(!e.width && e.height || e.width && !e.height) || e.y + e.height > r || e.x + e.width > t || e.width / e.aspect < e.height - 1 || e.width / e.aspect > e.height + 1 || e.height * e.aspect < e.width - 1 || e.height * e.aspect > e.width + 1;
+      }(o, t, r) ? O(o, t, r) : o;
+    }
+
+    function E(e, t, r, o) {
+      var n = S(t, r, o),
+          i = S(e, r, o),
+          a = l({}, n);
+      if (!n.aspect) return n.x < 0 ? (a.x = 0, a.width += n.x) : n.x + n.width > r && (a.width = r - n.x), n.y + n.height > o && (a.height = o - n.y), a;
+      var s = !1;
+      n.x < 0 ? (a.x = 0, a.width += n.x, a.height = a.width / n.aspect, s = !0) : n.x + n.width > r && (a.width = r - n.x, a.height = a.width / n.aspect, s = !0), s && i.y > a.y && (a.y = n.y + (n.height - a.height));
+      var c = !1;
+      return a.y + a.height > o && (a.height = o - n.y, a.width = a.height * n.aspect, c = !0), c && i.x > a.x && (a.x = n.x + (n.width - a.width)), a;
+    }
+
+    var R = function (e) {
+      function t() {
+        var e, r, o, n;
+        !function (e, t) {
+          if (!(e instanceof t)) throw new TypeError("Cannot call a class as a function");
+        }(this, t);
+
+        for (var i = arguments.length, a = new Array(i), s = 0; s < i; s++) a[s] = arguments[s];
+
+        return o = this, n = (e = d(t)).call.apply(e, [this].concat(a)), r = !n || "object" !== c(n) && "function" != typeof n ? p(o) : n, m(p(r), "window", "undefined" != typeof window ? window : {}), m(p(r), "document", "undefined" != typeof document ? document : {}), m(p(r), "state", {}), m(p(r), "onCropMouseTouchDown", function (e) {
+          var t = r.props,
+              o = t.crop,
+              n = t.disabled,
+              i = r.mediaDimensions,
+              a = S(o, i.width, i.height);
+
+          if (!n) {
+            e.preventDefault();
+            var s = y(e);
+            r.componentRef.setActive ? r.componentRef.setActive({
+              preventScroll: !0
+            }) : r.componentRef.focus({
+              preventScroll: !0
+            });
+            var c,
+                h = e.target.dataset.ord,
+                d = "nw" === h || "w" === h || "sw" === h,
+                p = "nw" === h || "n" === h || "ne" === h;
+            a.aspect && (c = r.getElementOffset(r.cropSelectRef)), r.evData = {
+              clientStartX: s.x,
+              clientStartY: s.y,
+              cropStartWidth: a.width,
+              cropStartHeight: a.height,
+              cropStartX: d ? a.x + a.width : a.x,
+              cropStartY: p ? a.y + a.height : a.y,
+              xInversed: d,
+              yInversed: p,
+              xCrossOver: d,
+              yCrossOver: p,
+              startXCrossOver: d,
+              startYCrossOver: p,
+              isResize: e.target.dataset.ord,
+              ord: h,
+              cropOffset: c
+            }, r.mouseDownOnCrop = !0, r.setState({
+              cropIsActive: !0
+            });
+          }
+        }), m(p(r), "onComponentMouseTouchDown", function (e) {
+          var t = r.props,
+              o = t.crop,
+              n = t.disabled,
+              i = t.locked,
+              a = t.keepSelection,
+              s = t.onChange,
+              c = r.mediaWrapperRef.firstChild;
+
+          if (e.target === c && c.contains(e.target) && !(n || i || a && C(o))) {
+            e.preventDefault();
+            var h = y(e);
+            r.componentRef.setActive ? r.componentRef.setActive({
+              preventScroll: !0
+            }) : r.componentRef.focus({
+              preventScroll: !0
+            });
+            var d = r.getElementOffset(r.mediaWrapperRef),
+                p = h.x - d.left,
+                u = h.y - d.top,
+                f = {
+              unit: "px",
+              aspect: o ? o.aspect : void 0,
+              x: p,
+              y: u,
+              width: 0,
+              height: 0
+            };
+            r.evData = {
+              clientStartX: h.x,
+              clientStartY: h.y,
+              cropStartWidth: f.width,
+              cropStartHeight: f.height,
+              cropStartX: f.x,
+              cropStartY: f.y,
+              xInversed: !1,
+              yInversed: !1,
+              xCrossOver: !1,
+              yCrossOver: !1,
+              startXCrossOver: !1,
+              startYCrossOver: !1,
+              isResize: !0,
+              ord: "nw"
+            }, r.mouseDownOnCrop = !0;
+            var l = r.mediaDimensions,
+                m = l.width,
+                v = l.height;
+            s(S(f, m, v), b(f, m, v)), r.setState({
+              cropIsActive: !0,
+              newCropIsBeingDrawn: !0
+            });
+          }
+        }), m(p(r), "onDocMouseTouchMove", function (e) {
+          var t = r.props,
+              o = t.crop,
+              n = t.disabled,
+              i = t.onChange,
+              a = t.onDragStart;
+
+          if (!n && r.mouseDownOnCrop) {
+            e.preventDefault(), r.dragStarted || (r.dragStarted = !0, a(e));
+            var s,
+                c = p(r).evData,
+                h = y(e);
+
+            if (c.isResize && o.aspect && c.cropOffset && (h.y = r.straightenYPath(h.x)), c.xDiff = h.x - c.clientStartX, c.yDiff = h.y - c.clientStartY, (s = c.isResize ? r.resizeCrop() : r.dragCrop()) !== o) {
+              var d = r.mediaDimensions,
+                  u = d.width,
+                  f = d.height;
+              i(S(s, u, f), b(s, u, f));
+            }
+          }
+        }), m(p(r), "onComponentKeyDown", function (e) {
+          var o = r.props,
+              n = o.crop,
+              i = o.disabled,
+              a = o.onChange,
+              s = o.onComplete;
+
+          if (!i) {
+            var c = e.key,
+                h = !1;
+
+            if (C(n)) {
+              var d = r.makeNewCrop(),
+                  p = e.shiftKey ? t.nudgeStepLarge : t.nudgeStep;
+
+              if ("ArrowLeft" === c ? (d.x -= p, h = !0) : "ArrowRight" === c ? (d.x += p, h = !0) : "ArrowUp" === c ? (d.y -= p, h = !0) : "ArrowDown" === c && (d.y += p, h = !0), h) {
+                e.preventDefault();
+                var u = r.mediaDimensions,
+                    f = u.width,
+                    l = u.height;
+                d.x = w(d.x, 0, f - d.width), d.y = w(d.y, 0, l - d.height);
+                var m = S(d, f, l),
+                    v = b(d, f, l);
+                a(m, v), s(m, v);
+              }
+            }
+          }
+        }), m(p(r), "onDocMouseTouchEnd", function (e) {
+          var t = r.props,
+              o = t.crop,
+              n = t.disabled,
+              i = t.onComplete,
+              a = t.onDragEnd;
+
+          if (!n && r.mouseDownOnCrop) {
+            r.mouseDownOnCrop = !1, r.dragStarted = !1;
+            var s = r.mediaDimensions,
+                c = s.width,
+                h = s.height;
+            a(e), i(S(o, c, h), b(o, c, h)), r.setState({
+              cropIsActive: !1,
+              newCropIsBeingDrawn: !1
+            });
+          }
+        }), m(p(r), "onMediaLoaded", function () {
+          var e = r.props,
+              t = e.onComplete,
+              o = e.onChange,
+              n = r.createNewCrop(),
+              i = n.pixelCrop,
+              a = n.percentCrop;
+          o(i, a), t(i, a);
+        }), r;
+      }
+
+      var r, o, i;
+      return function (e, t) {
+        if ("function" != typeof t && null !== t) throw new TypeError("Super expression must either be null or a function");
+        e.prototype = Object.create(t && t.prototype, {
+          constructor: {
+            value: e,
+            writable: !0,
+            configurable: !0
+          }
+        }), t && u(e, t);
+      }(t, e), r = t, (o = [{
+        key: "componentDidMount",
+        value: function () {
+          if (this.document.addEventListener) {
+            var e = !!g && {
+              passive: !1
+            };
+            this.document.addEventListener("mousemove", this.onDocMouseTouchMove, e), this.document.addEventListener("touchmove", this.onDocMouseTouchMove, e), this.document.addEventListener("mouseup", this.onDocMouseTouchEnd, e), this.document.addEventListener("touchend", this.onDocMouseTouchEnd, e), this.document.addEventListener("touchcancel", this.onDocMouseTouchEnd, e), this.componentRef.addEventListener("medialoaded", this.onMediaLoaded);
+          }
+        }
+      }, {
+        key: "componentWillUnmount",
+        value: function () {
+          this.document.removeEventListener && (this.document.removeEventListener("mousemove", this.onDocMouseTouchMove), this.document.removeEventListener("touchmove", this.onDocMouseTouchMove), this.document.removeEventListener("mouseup", this.onDocMouseTouchEnd), this.document.removeEventListener("touchend", this.onDocMouseTouchEnd), this.document.removeEventListener("touchcancel", this.onDocMouseTouchEnd), this.componentRef.removeEventListener("medialoaded", this.onMediaLoaded));
+        }
+      }, {
+        key: "componentDidUpdate",
+        value: function (e) {
+          if (e.crop !== this.props.crop && this.imageRef) {
+            var t = this.imageRef,
+                r = t.width,
+                o = t.height,
+                n = this.makeNewCrop(),
+                i = D(n, r, o);
+
+            if (n !== i) {
+              var a = S(i, r, o),
+                  s = b(i, r, o);
+              this.props.onChange(a, s), this.props.onComplete(a, s);
+            }
+          }
+        }
+      }, {
+        key: "createNewCrop",
+        value: function () {
+          var e = this.mediaDimensions,
+              t = e.width,
+              r = e.height,
+              o = D(this.makeNewCrop(), t, r);
+          return {
+            pixelCrop: S(o, t, r),
+            percentCrop: b(o, t, r)
+          };
+        }
+      }, {
+        key: "onImageLoad",
+        value: function (e) {
+          var t = this.props,
+              r = t.onComplete,
+              o = t.onChange;
+
+          if (!1 !== (0, t.onImageLoaded)(e)) {
+            var n = this.createNewCrop(),
+                i = n.pixelCrop,
+                a = n.percentCrop;
+            o(i, a), r(i, a);
+          }
+        }
+      }, {
+        key: "getDocumentOffset",
+        value: function () {
+          var e = this.document.documentElement || {},
+              t = e.clientTop,
+              r = void 0 === t ? 0 : t,
+              o = e.clientLeft;
+          return {
+            clientTop: r,
+            clientLeft: void 0 === o ? 0 : o
+          };
+        }
+      }, {
+        key: "getWindowOffset",
+        value: function () {
+          var e = this.window,
+              t = e.pageYOffset,
+              r = void 0 === t ? 0 : t,
+              o = e.pageXOffset;
+          return {
+            pageYOffset: r,
+            pageXOffset: void 0 === o ? 0 : o
+          };
+        }
+      }, {
+        key: "getElementOffset",
+        value: function (e) {
+          var t = e.getBoundingClientRect(),
+              r = this.getDocumentOffset(),
+              o = this.getWindowOffset();
+          return {
+            top: t.top + o.pageYOffset - r.clientTop,
+            left: t.left + o.pageXOffset - r.clientLeft
+          };
+        }
+      }, {
+        key: "getCropStyle",
+        value: function () {
+          var e = this.makeNewCrop(this.props.crop ? this.props.crop.unit : "px");
+          return {
+            top: "".concat(e.y).concat(e.unit),
+            left: "".concat(e.x).concat(e.unit),
+            width: "".concat(e.width).concat(e.unit),
+            height: "".concat(e.height).concat(e.unit)
+          };
+        }
+      }, {
+        key: "getNewSize",
+        value: function () {
+          var e,
+              t = this.props,
+              r = t.crop,
+              o = t.minWidth,
+              n = t.maxWidth,
+              i = t.minHeight,
+              a = t.maxHeight,
+              s = this.evData,
+              c = this.mediaDimensions,
+              h = c.width,
+              d = c.height,
+              p = s.cropStartWidth + s.xDiff;
+          return s.xCrossOver && (p = Math.abs(p)), p = w(p, o, n || h), e = r.aspect ? p / r.aspect : s.cropStartHeight + s.yDiff, s.yCrossOver && (e = Math.min(Math.abs(e), s.cropStartY)), e = w(e, i, a || d), r.aspect && (p = w(e * r.aspect, 0, h)), {
+            width: p,
+            height: e
+          };
+        }
+      }, {
+        key: "dragCrop",
+        value: function () {
+          var e = this.makeNewCrop(),
+              t = this.evData,
+              r = this.mediaDimensions,
+              o = r.width,
+              n = r.height;
+          return e.x = w(t.cropStartX + t.xDiff, 0, o - e.width), e.y = w(t.cropStartY + t.yDiff, 0, n - e.height), e;
+        }
+      }, {
+        key: "resizeCrop",
+        value: function () {
+          var e = this.evData,
+              r = this.makeNewCrop(),
+              o = e.ord;
+          e.xInversed && (e.xDiff -= 2 * e.cropStartWidth, e.xDiffPc -= 2 * e.cropStartWidth), e.yInversed && (e.yDiff -= 2 * e.cropStartHeight, e.yDiffPc -= 2 * e.cropStartHeight);
+          var n = this.getNewSize(),
+              i = e.cropStartX,
+              a = e.cropStartY;
+          e.xCrossOver && (i = r.x + (r.width - n.width)), e.yCrossOver && (a = !1 === e.lastYCrossover ? r.y - n.height : r.y + (r.height - n.height));
+          var s = this.mediaDimensions,
+              c = s.width,
+              h = s.height,
+              d = E(this.props.crop, {
+            unit: r.unit,
+            x: i,
+            y: a,
+            width: n.width,
+            height: n.height,
+            aspect: r.aspect
+          }, c, h);
+          return r.aspect || t.xyOrds.indexOf(o) > -1 ? (r.x = d.x, r.y = d.y, r.width = d.width, r.height = d.height) : t.xOrds.indexOf(o) > -1 ? (r.x = d.x, r.width = d.width) : t.yOrds.indexOf(o) > -1 && (r.y = d.y, r.height = d.height), e.lastYCrossover = e.yCrossOver, this.crossOverCheck(), r;
+        }
+      }, {
+        key: "straightenYPath",
+        value: function (e) {
+          var t,
+              r,
+              o = this.evData,
+              n = o.ord,
+              i = o.cropOffset,
+              a = o.cropStartWidth,
+              s = o.cropStartHeight;
+          return "nw" === n || "se" === n ? (t = s / a, r = i.top - i.left * t) : (t = -s / a, r = i.top + (s - i.left * t)), t * e + r;
+        }
+      }, {
+        key: "createCropSelection",
+        value: function () {
+          var e = this,
+              t = this.props,
+              r = t.disabled,
+              o = t.locked,
+              i = t.renderSelectionAddon,
+              a = t.ruleOfThirds,
+              s = this.getCropStyle();
+          return n.a.createElement("div", {
+            ref: function (t) {
+              return e.cropSelectRef = t;
+            },
+            style: s,
+            className: "ReactCrop__crop-selection",
+            onMouseDown: this.onCropMouseTouchDown,
+            onTouchStart: this.onCropMouseTouchDown,
+            tabIndex: "0"
+          }, !r && !o && n.a.createElement("div", {
+            className: "ReactCrop__drag-elements"
+          }, n.a.createElement("div", {
+            className: "ReactCrop__drag-bar ord-n",
+            "data-ord": "n"
+          }), n.a.createElement("div", {
+            className: "ReactCrop__drag-bar ord-e",
+            "data-ord": "e"
+          }), n.a.createElement("div", {
+            className: "ReactCrop__drag-bar ord-s",
+            "data-ord": "s"
+          }), n.a.createElement("div", {
+            className: "ReactCrop__drag-bar ord-w",
+            "data-ord": "w"
+          }), n.a.createElement("div", {
+            className: "ReactCrop__drag-handle ord-nw",
+            "data-ord": "nw"
+          }), n.a.createElement("div", {
+            className: "ReactCrop__drag-handle ord-n",
+            "data-ord": "n"
+          }), n.a.createElement("div", {
+            className: "ReactCrop__drag-handle ord-ne",
+            "data-ord": "ne"
+          }), n.a.createElement("div", {
+            className: "ReactCrop__drag-handle ord-e",
+            "data-ord": "e"
+          }), n.a.createElement("div", {
+            className: "ReactCrop__drag-handle ord-se",
+            "data-ord": "se"
+          }), n.a.createElement("div", {
+            className: "ReactCrop__drag-handle ord-s",
+            "data-ord": "s"
+          }), n.a.createElement("div", {
+            className: "ReactCrop__drag-handle ord-sw",
+            "data-ord": "sw"
+          }), n.a.createElement("div", {
+            className: "ReactCrop__drag-handle ord-w",
+            "data-ord": "w"
+          })), i && n.a.createElement("div", {
+            className: "ReactCrop__selection-addon",
+            onMouseDown: function (e) {
+              return e.stopPropagation();
+            }
+          }, i(this.state)), a && n.a.createElement(n.a.Fragment, null, n.a.createElement("div", {
+            className: "ReactCrop__rule-of-thirds-hz"
+          }), n.a.createElement("div", {
+            className: "ReactCrop__rule-of-thirds-vt"
+          })));
+        }
+      }, {
+        key: "makeNewCrop",
+        value: function () {
+          var e = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : "px",
+              r = l({}, t.defaultCrop, {}, this.props.crop),
+              o = this.mediaDimensions,
+              n = o.width,
+              i = o.height;
+          return "px" === e ? S(r, n, i) : b(r, n, i);
+        }
+      }, {
+        key: "crossOverCheck",
+        value: function () {
+          var e = this.evData,
+              t = this.props,
+              r = t.minWidth,
+              o = t.minHeight;
+          !r && (!e.xCrossOver && -Math.abs(e.cropStartWidth) - e.xDiff >= 0 || e.xCrossOver && -Math.abs(e.cropStartWidth) - e.xDiff <= 0) && (e.xCrossOver = !e.xCrossOver), !o && (!e.yCrossOver && -Math.abs(e.cropStartHeight) - e.yDiff >= 0 || e.yCrossOver && -Math.abs(e.cropStartHeight) - e.yDiff <= 0) && (e.yCrossOver = !e.yCrossOver);
+          var n = e.xCrossOver !== e.startXCrossOver,
+              i = e.yCrossOver !== e.startYCrossOver;
+          e.inversedXOrd = !!n && x(e.ord), e.inversedYOrd = !!i && x(e.ord);
+        }
+      }, {
+        key: "render",
+        value: function () {
+          var e = this,
+              t = this.props,
+              r = t.children,
+              o = t.circularCrop,
+              i = t.className,
+              a = t.crossorigin,
+              c = t.crop,
+              h = t.disabled,
+              d = t.locked,
+              p = t.imageAlt,
+              u = t.onImageError,
+              f = t.renderComponent,
+              l = t.src,
+              m = t.style,
+              v = t.imageStyle,
+              g = t.ruleOfThirds,
+              y = this.state,
+              w = y.cropIsActive,
+              x = y.newCropIsBeingDrawn,
+              O = C(c) && this.componentRef ? this.createCropSelection() : null,
+              b = function () {
+            for (var e, t = 0, r = ""; t < arguments.length;) (e = s(arguments[t++])) && (r && (r += " "), r += e);
+
+            return r;
+          }("ReactCrop", i, {
+            "ReactCrop--active": w,
+            "ReactCrop--disabled": h,
+            "ReactCrop--locked": d,
+            "ReactCrop--new-crop": x,
+            "ReactCrop--fixed-aspect": c && c.aspect,
+            "ReactCrop--crop-invisible": c && w && (!c.width || !c.height),
+            "ReactCrop--circular-crop": c && o,
+            "ReactCrop--rule-of-thirds": c && g
+          });
+
+          return n.a.createElement("div", {
+            ref: function (t) {
+              e.componentRef = t;
+            },
+            className: b,
+            style: m,
+            onTouchStart: this.onComponentMouseTouchDown,
+            onMouseDown: this.onComponentMouseTouchDown,
+            tabIndex: "0",
+            onKeyDown: this.onComponentKeyDown
+          }, n.a.createElement("div", {
+            ref: function (t) {
+              e.mediaWrapperRef = t;
+            }
+          }, f || n.a.createElement("img", {
+            ref: function (t) {
+              return e.imageRef = t;
+            },
+            crossOrigin: a,
+            className: "ReactCrop__image",
+            style: v,
+            src: l,
+            onLoad: function (t) {
+              return e.onImageLoad(t.target);
+            },
+            onError: u,
+            alt: p
+          })), r, O);
+        }
+      }, {
+        key: "mediaDimensions",
+        get: function () {
+          var e = this.mediaWrapperRef;
+          return {
+            width: e.clientWidth,
+            height: e.clientHeight
+          };
+        }
+      }]) && h(r.prototype, o), i && h(r, i), t;
+    }(o.PureComponent);
+
+    R.xOrds = ["e", "w"], R.yOrds = ["n", "s"], R.xyOrds = ["nw", "ne", "se", "sw"], R.nudgeStep = .2, R.nudgeStepLarge = 2, R.defaultCrop = {
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+      unit: "px"
+    }, R.propTypes = {
+      className: a.a.string,
+      children: a.a.oneOfType([a.a.arrayOf(a.a.node), a.a.node]),
+      circularCrop: a.a.bool,
+      crop: a.a.shape({
+        aspect: a.a.number,
+        x: a.a.number,
+        y: a.a.number,
+        width: a.a.number,
+        height: a.a.number,
+        unit: a.a.oneOf(["px", "%"])
+      }),
+      crossorigin: a.a.string,
+      disabled: a.a.bool,
+      locked: a.a.bool,
+      imageAlt: a.a.string,
+      imageStyle: a.a.shape({}),
+      keepSelection: a.a.bool,
+      minWidth: a.a.number,
+      minHeight: a.a.number,
+      maxWidth: a.a.number,
+      maxHeight: a.a.number,
+      onChange: a.a.func.isRequired,
+      onImageError: a.a.func,
+      onComplete: a.a.func,
+      onImageLoaded: a.a.func,
+      onDragStart: a.a.func,
+      onDragEnd: a.a.func,
+      src: a.a.string.isRequired,
+      style: a.a.shape({}),
+      renderComponent: a.a.node,
+      renderSelectionAddon: a.a.func,
+      ruleOfThirds: a.a.bool
+    }, R.defaultProps = {
+      circularCrop: !1,
+      className: void 0,
+      crop: void 0,
+      crossorigin: void 0,
+      disabled: !1,
+      locked: !1,
+      imageAlt: "",
+      maxWidth: void 0,
+      maxHeight: void 0,
+      minWidth: 0,
+      minHeight: 0,
+      keepSelection: !1,
+      onComplete: function () {},
+      onImageError: function () {},
+      onImageLoaded: function () {},
+      onDragStart: function () {},
+      onDragEnd: function () {},
+      children: void 0,
+      style: void 0,
+      renderComponent: void 0,
+      imageStyle: void 0,
+      renderSelectionAddon: void 0,
+      ruleOfThirds: !1
+    };
+  }]);
+});
+},{"react":"../node_modules/react/index.js"}],"edit.jsx":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _react = _interopRequireWildcard(require("react"));
+
+var _reactRouterDom = require("react-router-dom");
+
+var _reactImageCrop = _interopRequireDefault(require("react-image-crop"));
+
+var _reactSelect = _interopRequireDefault(require("react-select"));
+
+var _axios = _interopRequireDefault(require("axios"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function () { return cache; }; return cache; }
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+
+var Edit = function Edit() {
+  return _react.default.createElement("div", {
+    className: "edit"
+  }, "EDIT ", (0, _reactRouterDom.useParams)().id);
+};
+
+var _default = Edit;
+/*
+
+const EditTools = () => (
+  <ul>
+    <li><a id="magic"><span className="dingbat">☘</span> Magic</a></li>
+    <li className="sep"></li>
+    <li><a id="brightness"><span className="dingbat">☀</span> Brightness</a></li>
+    <li><a id="contrast"><span className="dingbat">◑</span> Contrast</a></li>
+    <li><a id="saturation"><span className="dingbat">▧</span> Saturation</a></li>
+    <li><a id="hue"><span className="dingbat">🖌</span> Hue</a></li>
+    <li className="sep"></li>
+    <li><a id="rotate"><span className="dingbat">↻</span> Rotate</a></li>
+    <li><a id="cw-90"><span className="dingbat">⤵</span> Clockwise 90&deg;</a></li>
+    <li><a id="ccw-90"><span className="dingbat">⤴</span> Counter-clockwise 90&deg;</a></li>
+    <li><a id="hflip"><span className="dingbat">↔</span> Flip Horizontal</a></li>
+    <li><a id="vflip"><span className="dingbat">↕</span> Flip Vertical</a></li>
+    <li className="sep"></li>
+    <li><a id="crop"><span className="dingbat">✂</span> Crop</a></li>
+  </ul>)
+
+const TagTools = ({tags}) => (
+  <ul>
+    {tags.map(tag => <li className="tag group-{tag.group}">{tag.name}</li>)}
+    <li><input id="tag-input" type="text"/></li>
+  </ul>)
+
+const FilterTools = ({filters}) => (
+    <ul>{filters.map(filter => (
+      <li><a data-filter="{filter}" data-index="{index}">
+        <span className="dingbat">✘</span> {filter}</a></li>
+    ))}</ul>)
+
+const StampTools = ({stamp}) => (
+  <ul>
+    <li><a id="">Y: {stamp.year}</a></li>
+    <li><a id="">M: {stamp.month}</a></li>
+    <li><a id="">D: {stamp.day}</a></li>
+    <li><a id="">H: {stamp.hour}</a></li>
+  </ul>)
+
+
+class Editing extends Component {
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            asset: {
+                tags: [],
+                filters: [],
+                stamp: {},
+            },
+            format: {},
+            uniq: 1,
+            isRanging: false,
+            isCropping: false,
+            crop: {unit: "%"},
+        };
+
+        this.setCurrent = this.setCurrent.bind(this);
+    }
+
+    setCurrent() {
+    }
+
+    setCrop() {
+    }
+
+    render() {
+        const {asset, format, uniq} = this.state;
+        return (
+<div id="editing">
+  <div id="tools">
+    <ul className="toolbar" id="basic-tools">
+      <li><span className="dingbat">⚒</span> Edit <EditTools /></li>
+      <li><span className="dingbat">🏷</span> Tags <TagTools tags={asset.tags} /></li>
+      <li><span className="dingbat">☞</span> Filters <FilterTools filters={asset.filters} /></li>
+      <li><span className="dingbat">⏰</span> {asset.stamp.title} <StampTools stamp={asset.stamp} /></li>
+      <li><span id="path">{asset.path}</span></li>
+    </ul>
+    <ul className="toolbar" id="ephemeral-tools">
+      <li id="cancel"><span className="dingbat">✘</span> Cancel</li>
+      <li id="commit"><span className="dingbat">✔</span> Save</li>
+      <li id="range"><input type="range" min="0" max="200" defaultValue="100" step="1"/><span id="range-value"></span></li>
+    </ul>
+  </div>
+  <div id="workspace">
+    <div id="grid"></div>
+    { (asset.is_video) ? <video controls src="/thumb/{format.path}/{asset.thumb}.{format.ext}?{uniq}"/>
+    : (asset.is_audio) ? <audio controls src="/thumb/{format.path}/{asset.thumb}.{format.ext}?{uniq}"/>
+    : (asset.is_photo) ? <img src="/thumb/{format.path}/{asset.thumb}.{format.ext}?{this.state.uniq}"/>
+    : ""}
+    <ReactCrop src={this.state.asset.src} crop={this.state.crop} onChange={newCrop => this.setCrop(newCrop)} />
+  </div>
+</div>);
+    }
+}
+
+
+
+(function() {
+  'use strict';
+
+  var KEYS = {
+    tab: 9, enter: 13, escape: 27, space: 32,
+    insert: 45, delete: 46, backspace: 8,
+    pageup: 33, pagedown: 34, end: 35, home: 36,
+    left: 37, up: 38, right: 39, down: 40,
+    '0': 48, '1': 49, '2': 50, '3': 51, '4': 52,
+    '5': 53, '6': 54, '7': 55, '8': 56, '9': 57,
+    a: 65, b: 66, c: 67, d: 68, e: 69, f: 70, g: 71, h: 72, i: 73,
+    j: 74, k: 75, l: 76, m: 77, n: 78, o: 79, p: 80, q: 81, r: 82,
+    s: 83, t: 84, u: 85, v: 86, w: 87, x: 88, y: 89, z: 90,
+    '=': 187, '-': 189, '`': 192, '[': 219, ']': 221
+  };
+
+  var tags = null;
+  var config = null;
+  var thumbs = null;
+  var editor = null;
+
+  var showExportDialog = function() {
+    $.featherlight('text', {
+      afterOpen: function(e) {
+        var query = thumbs.query;
+        var name = query.replace(/\W+/g, '-');
+        var selected = thumbs.selected();
+        if (selected.length > 0) {
+          var ids = [];
+          selected.forEach(function(ids) { asset.push('id:' + asset.rec.id); });
+          query = ids.join('|');
+          name = name + '-' + ids.length;
+        }
+        var render = Handlebars.compile($('#export-template').html());
+        $('div.featherlight-inner').html(
+          render({query: query, name: 'export-' + name}));
+      }});
+  };
+
+  var ensureEditor = function() {
+    if (!editor)
+      editor = new Illuminatus.Editor(
+        config, '#editor-template', $('#editor'), $('#editor-column'));
+    editor.edit(thumbs.asset);
+    tags.setClosed(true);
+  };
+
+  Illuminatus.Editor = function(config, template, $target, $column) {
+    this.config = config;
+    this.template = Handlebars.compile($(template).html());
+    this.$target = $target;
+    this.$column = $column;
+
+    var self = this;
+    this.$column.on('input', 'input[type=range]', function(e) {
+      var mod = 'filter';
+      var value = this.value + '%';
+      var filter = self.isRanging;
+      if (self.isRanging === 'saturation') {
+        filter = 'saturate';
+      } else if (self.isRanging === 'hue') {
+        value = this.value + 'deg';
+        filter = 'hue-rotate';
+      } else if (self.isRanging === 'rotate') {
+        mod = 'transform';
+        value = this.value + 'deg';
+      }
+      $('#workspace img').css(mod, filter + '(' + value + ')');
+      $('#range-value').html(value);
+    });
+
+    this.isTagging = null;
+    this.isRanging = null;
+    this.isCropping = null;
+    this.$crop = null;
+
+    this.asset = null;
+  };
+
+  Illuminatus.Editor.prototype = {
+    edit: function(asset) {
+      location.hash = '#edit:' + thumbs.query + '=' + thumbs.assets.indexOf(asset);
+      this.asset = asset;
+      this.render();
+      this.$column.removeClass('closed');
+      thumbs.setNarrow(true);
+    },
+
+    hide: function() {
+      location.hash = '#thumbs:' + thumbs.query;
+      this.$column.addClass('closed');
+      thumbs.setNarrow(false);
+      this.asset = null;
+    },
+
+    render: function() {
+      var when = moment(this.asset.rec.stamp);
+      var format = this.config.formats.large_photo_format;
+      if (this.asset.rec.medium === 'audio')
+        format = this.config.formats.large_audio_format;
+      if (this.asset.rec.medium === 'video')
+        format = this.config.formats.large_video_format;
+      this.$target.html(this.template({
+        format: format,
+        asset: this.asset.rec,
+        is_audio: this.asset.rec.medium === 'audio',
+        is_photo: this.asset.rec.medium === 'photo',
+        is_video: this.asset.rec.medium === 'video',
+        thumb: this.asset.rec.path_hash.slice(0, 2) + '/' + this.asset.rec.path_hash,
+        uniq: moment().format(),
+        stamp: {
+          title: when.format('DD MMM'),
+          year: when.format('YYYY'),
+          month: when.format('MM'),
+          day: when.format('DD'),
+          hour: when.format('ha')
+        }
+      }));
+      if (this.isTagging)
+        this.startTagging();
+    },
+
+    renderCallback: function() {
+      var self = this;
+      return function() { self.render(); };
+    },
+
+    remove: function() {
+      if (!this.asset) return;
+      thumbs.remove(this.asset);
+      if (thumbs.asset)
+        this.edit(thumbs.asset);
+    },
+
+    cancel: function() {
+      if (this.isTagging) {
+        this.isTagging = null;
+        this.$target.toggleClass('tagging', false);
+      }
+      if (this.isCropping) {
+        this.isCropping = null;
+        this.$target.toggleClass('cropping', false);
+        if (this.$crop) this.$crop.destroy();
+        this.$crop = null;
+        $('#workspace img').attr('style', '');
+      }
+      if (this.isRanging) {
+        this.isRanging = null;
+        this.$target.toggleClass('ranging', false);
+        $('#workspace img').css({filter: 'none', transform: 'none'});
+      }
+    },
+
+    commit: function() {
+      if (this.isTagging) {
+        this.asset.incTag($('#tag-input')[0].value, this.renderCallback());
+      }
+      if (this.isCropping) {
+        var $img = $('#workspace img');
+        var width = $img.width();
+        var height = $img.height();
+        var box = this.$crop.ui.selection.last;
+        this.asset.addFilter(
+          'crop',
+          {x1: box.x / width,
+           y1: box.y / height,
+           x2: box.x2 / width,
+           y2: box.y2 / height},
+          this.renderCallback());
+        this.cancel();
+      }
+      if (this.isRanging) {
+        var value = $('#range').find('input[type=range]')[0].value;
+        var filter = this.isRanging;
+        var data = {};
+        if (filter === 'rotate' || filter === 'hue')
+          data.degrees = value;
+        else
+          data.percent = value;
+        this.asset.addFilter(filter, data, this.renderCallback());
+        this.cancel();
+      }
+    },
+
+    startCrop: function() {
+      if (this.$crop)
+        this.$crop.destroy();
+
+      var $img = $('#workspace img');
+      var width = $img.width();
+      var height = $img.height();
+      var self = this;
+
+      $img.Jcrop({
+        boxHeight: height,
+        boxWidth: width,
+        keySupport: false,
+        setSelect: [20, 20, width - 20, height - 20],
+        bgOpacity: 0.8,
+        allowSelect: true
+      }, function() {
+        self.isCropping = true;
+        self.$target.toggleClass('cropping', true);
+        self.$crop = this;
+      });
+    },
+
+    startRange: function(attribute) {
+      this.isRanging = attribute;
+      this.$target.toggleClass('ranging', true);
+      var attrs = {min: 0, max: 200, value: 100};
+      if (attribute === 'hue')
+        attrs = {min: 0, max: 360, value: 0};
+      if (attribute === 'rotate')
+        attrs = {min: -180, max: 180, value: 0};
+      $('#range').find('input[type=range]').attr(attrs).trigger('input');
+    },
+
+    startTagging: function() {
+      this.isTagging = true;
+      this.$target.toggleClass('tagging', true);
+      $('#tag-input')[0].value = '';
+      $('#tag-input').focus();
+    }
+  };
+
+  var handleKeydown = function(e) {
+    // enter   - show editor
+    // bksp    - delete current image
+    // down, j - move to next image
+    // up, k   - move to previous image
+    // pgdown  - move 10 images forward
+    // pgup    - move 10 images back
+    // s       - toggle star tag
+    // x       - toggle select
+    // E       - export selected
+    // A       - select all
+    //
+    // In Edit Mode:
+    // escape - hide editor
+    // c      - start cropping
+    // z      - undo most recent change
+    // !      - apply autocontrast
+    // t      - focus tag input
+    // ]/[    - rotate 90 deg cw/ccw
+    // }/{    - rotate 1 deg cw/ccw
+    // p/P    - increment/decrement year
+    // o/O    - increment/decrement month
+    // i/I    - increment/decrement day
+    // u/U    - increment/decrement hour
+
+    //console.log(e);
+
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+    var key = e.keyCode;
+
+    if ($(e.target).is('input, textarea') &&
+        (key !== KEYS.enter) && (key !== KEYS.escape))
+      return;
+
+    e.preventDefault();
+
+    if (key === KEYS.escape) {
+      if (editor) {
+        if (editor.isCropping || editor.isRanging || editor.isTagging) {
+          editor.cancel();
+        } else {
+          editor.hide();
+          editor = null;
+        }
+      }
+    }
+
+    if (key === KEYS.enter) {
+      if (editor) {
+        if (editor.isCropping || editor.isRanging || editor.isTagging) {
+          editor.commit();
+        } else {
+          editor.edit(thumbs.asset);
+        }
+      } else {
+        ensureEditor();
+      }
+    }
+
+    if (key === KEYS.e && e.shiftKey)
+      showExportDialog();
+
+    if (key === KEYS.j || key === KEYS.right || key === KEYS.down) {
+      thumbs.incCursor();
+      if (editor)
+        editor.edit(thumbs.asset);
+    }
+
+
+    if (key === KEYS.k || key === KEYS.left || key === KEYS.up) {
+      thumbs.decCursor();
+      if (editor)
+        editor.edit(thumbs.asset);
+    }
+
+    if (key === KEYS.pagedown) {
+      thumbs.incCursor(10);
+      if (editor)
+        editor.edit(thumbs.asset);
+    }
+
+    if (key === KEYS.pageup) {
+      thumbs.decCursor(10);
+      if (editor)
+        editor.edit(thumbs.asset);
+    }
+
+    if (key === KEYS.a && e.shiftKey)
+      thumbs.selectAll();
+
+    if (key === KEYS.x)
+      if (thumbs.asset)
+        thumbs.asset.toggleSelect();
+
+    if (key === KEYS.backspace || key === KEYS.delete) {
+      if (confirm('Really delete "' + thumbs.asset.rec.path + '"?')) {
+        thumbs.remove();
+        if (editor)
+          editor.edit(thumbs.asset);
+      }
+    }
+
+    if (key === KEYS.t) {
+      ensureEditor();
+      editor.startTagging();
+    }
+
+    if (editor) {
+      if (key === KEYS['['])
+        editor.asset.rotate(e.shiftKey ? -1 : -90, editor.renderCallback());
+      if (key === KEYS[']'])
+        editor.asset.rotate(e.shiftKey ? 1 : 90, editor.renderCallback());
+
+      if (key === KEYS.p)
+        editor.asset.incrementDate((e.shiftKey ? '+' : '-') + '1y', editor.renderCallback());
+      if (key === KEYS.o)
+        editor.asset.incrementDate((e.shiftKey ? '+' : '-') + '1m', editor.renderCallback());
+      if (key === KEYS.i)
+        editor.asset.incrementDate((e.shiftKey ? '+' : '-') + '1d', editor.renderCallback());
+      if (key === KEYS.u)
+        editor.asset.incrementDate((e.shiftKey ? '+' : '-') + '1h', editor.renderCallback());
+
+      if (key === KEYS['1'] && e.shiftKey)  // !
+        editor.asset.autocontrast(1, editor.renderCallback());
+
+      if (key === KEYS.z)
+        editor.asset.undoLastFilter(editor.renderCallback());
+
+      if (key === KEYS.c)
+        editor.startCrop();
+    }
+  };
+
+  $(document).keydown(handleKeydown);
+
+  $('#editor').on('click', '#magic', function(e) {
+    editor.asset.autocontrast(1, editor.renderCallback()); });
+
+  $('#editor').on('click', '#brightness', function(e) { editor.startRange('brightness'); });
+  $('#editor').on('click', '#contrast', function(e) { editor.startRange('contrast'); });
+  $('#editor').on('click', '#saturation', function(e) { editor.startRange('saturation'); });
+  $('#editor').on('click', '#hue', function(e) { editor.startRange('hue'); });
+
+  $('#editor').on('click', '#rotate', function(e) { editor.startRange('rotate'); });
+  $('#editor').on('click', '#rotate-ccw-90', function(e) {
+    editor.asset.rotate(-90, editor.renderCallback()); });
+  $('#editor').on('click', '#rotate-cw-90', function(e) {
+    editor.asset.rotate(90, editor.renderCallback()); });
+  $('#editor').on('click', '#hflip', function(e) {
+    editor.asset.hflip(editor.renderCallback()); });
+  $('#editor').on('click', '#vflip', function(e) {
+    editor.asset.vflip(editor.renderCallback()); });
+
+  $('#editor').on('click', '#crop', function(e) { editor.startCrop(); });
+
+  $('#editor').on('click', '#cancel', function(e) { editor.cancel(); });
+  $('#editor').on('click', '#commit', function(e) { editor.commit(); });
+
+  $('#editor').on('click', '#filters a', function(e) {
+    editor.asset.removeFilter($(this).data('filter'),
+                             $(this).data('index'),
+                             editor.renderCallback());
+  })
+
+  $('#editor').on('mouseenter', '#tags-tab', function(e) { editor.startTagging(); });
+  $('#editor').on('mouseleave', '#tags-tab', function(e) { editor.cancel(); });
+
+  $('#thumbs').on('click', '.thumb', function(e) {
+    var asset = $(e.target).closest('li')[0].asset;
+    if (e.ctrlKey || e.metaKey || e.altKey) {
+      asset.toggleSelect();
+    } else {
+      thumbs.clearSelection();
+      thumbs.setCursor(asset);
+      if (editor)
+        editor.edit(thumbs.asset);
+    };
+  });
+
+  $(document).on('submit', '#export', function(e) { $.featherlight.close(); });
+*/
+
+exports.default = _default;
+},{"react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","react-image-crop":"../node_modules/react-image-crop/dist/ReactCrop.min.js","react-select":"../node_modules/react-select/dist/react-select.browser.esm.js","axios":"../node_modules/axios/index.js"}],"label.jsx":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _react = _interopRequireWildcard(require("react"));
+
+var _reactRouterDom = require("react-router-dom");
+
+var _reactSelect = _interopRequireDefault(require("react-select"));
+
+var _axios = _interopRequireDefault(require("axios"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function () { return cache; }; return cache; }
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+
+var Label = function Label() {
+  return _react.default.createElement("div", {
+    className: "label"
+  }, "LABEL ", (0, _reactRouterDom.useParams)().id);
+};
+
+var _default = Label;
+/*
+const TagSelections = (props) => (
+    <Select
+    clearButton
+    defaultSelected={options.slice(0, 5)}
+    labelKey="name"
+    multiple
+    options={options}
+    placeholder="Tags..." />)
+
+*/
+
+exports.default = _default;
+},{"react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","react-select":"../node_modules/react-select/dist/react-select.browser.esm.js","axios":"../node_modules/axios/index.js"}],"cluster.jsx":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _react = _interopRequireWildcard(require("react"));
+
+var _reactRouterDom = require("react-router-dom");
+
+var _axios = _interopRequireDefault(require("axios"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function () { return cache; }; return cache; }
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+
+var Cluster = function Cluster() {
+  return _react.default.createElement("div", {
+    className: "cluster"
+  }, "CLUSTER ", (0, _reactRouterDom.useParams)().query);
+};
+
+var _default = Cluster;
+exports.default = _default;
+},{"react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","axios":"../node_modules/axios/index.js"}],"index.jsx":[function(require,module,exports) {
+"use strict";
+
+var _react = _interopRequireDefault(require("react"));
+
+var _reactRouterDom = require("react-router-dom");
+
+var _reactDom = _interopRequireDefault(require("react-dom"));
+
+var _moment = _interopRequireDefault(require("moment"));
+
+var _db = _interopRequireDefault(require("./db"));
+
+var _browse = _interopRequireDefault(require("./browse"));
+
+var _view = _interopRequireDefault(require("./view"));
+
+var _edit = _interopRequireDefault(require("./edit"));
+
+var _label = _interopRequireDefault(require("./label"));
+
+var _cluster = _interopRequireDefault(require("./cluster"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var KEYS = {
   tab: 9,
@@ -55345,377 +56217,10 @@ var KEYS = {
   "[": 219,
   "]": 221
 };
-var DB = new _dexie.default("illuminatus");
-DB.version(1).stores({
-  state: "++id"
-});
-/*
-class App extends Component {
-    constructor() {
-        super();
-        this.state = {
-            query: [],
-            current: -1,
-        };
-    }
 
-    setCurrent(idx) {
-        this.setState(state => {
-            if (state.editor && idx !== state.current) {
-                DB.history.add({
-                    item: state.playlist[state.current],
-                    when: new Date().toISOString(),
-                    action: "skip",
-                });
-            }
-            this.audio.pause();
-            if (0 <= idx && idx < state.playlist.length) {
-                this.audio.src = `/item/${state.playlist[idx].id}/file`;
-                this.audio.play();
-                return {current: idx};
-            } else {
-                this.audio.src = "";
-                return {current: -1};
-            }
-        });
-    }
-
-    render() {
-        return (<>
-            <ThumbsContainer />
-            <Tagging />
-            <Editing current={this.state.current}
-                     setCurrent={this.setCurrent} /></>);
-    }
-}
-*/
-
-var Tagging =
-/*#__PURE__*/
-function (_Component) {
-  _inherits(Tagging, _Component);
-
-  function Tagging() {
-    _classCallCheck(this, Tagging);
-
-    return _possibleConstructorReturn(this, _getPrototypeOf(Tagging).apply(this, arguments));
-  }
-
-  _createClass(Tagging, [{
-    key: "render",
-    value: function render() {
-      return _react.default.createElement("div", null, "Tagging");
-    }
-  }]);
-
-  return Tagging;
-}(_react.Component);
-
-var EditTools = function EditTools() {
-  return _react.default.createElement("ul", null, _react.default.createElement("li", null, _react.default.createElement("a", {
-    id: "magic"
-  }, _react.default.createElement("span", {
-    className: "dingbat"
-  }, "\u2618"), " Magic")), _react.default.createElement("li", {
-    className: "sep"
-  }), _react.default.createElement("li", null, _react.default.createElement("a", {
-    id: "brightness"
-  }, _react.default.createElement("span", {
-    className: "dingbat"
-  }, "\u2600"), " Brightness")), _react.default.createElement("li", null, _react.default.createElement("a", {
-    id: "contrast"
-  }, _react.default.createElement("span", {
-    className: "dingbat"
-  }, "\u25D1"), " Contrast")), _react.default.createElement("li", null, _react.default.createElement("a", {
-    id: "saturation"
-  }, _react.default.createElement("span", {
-    className: "dingbat"
-  }, "\u25A7"), " Saturation")), _react.default.createElement("li", null, _react.default.createElement("a", {
-    id: "hue"
-  }, _react.default.createElement("span", {
-    className: "dingbat"
-  }, "\uD83D\uDD8C"), " Hue")), _react.default.createElement("li", {
-    className: "sep"
-  }), _react.default.createElement("li", null, _react.default.createElement("a", {
-    id: "rotate"
-  }, _react.default.createElement("span", {
-    className: "dingbat"
-  }, "\u21BB"), " Rotate")), _react.default.createElement("li", null, _react.default.createElement("a", {
-    id: "cw-90"
-  }, _react.default.createElement("span", {
-    className: "dingbat"
-  }, "\u2935"), " Clockwise 90\xB0")), _react.default.createElement("li", null, _react.default.createElement("a", {
-    id: "ccw-90"
-  }, _react.default.createElement("span", {
-    className: "dingbat"
-  }, "\u2934"), " Counter-clockwise 90\xB0")), _react.default.createElement("li", null, _react.default.createElement("a", {
-    id: "hflip"
-  }, _react.default.createElement("span", {
-    className: "dingbat"
-  }, "\u2194"), " Flip Horizontal")), _react.default.createElement("li", null, _react.default.createElement("a", {
-    id: "vflip"
-  }, _react.default.createElement("span", {
-    className: "dingbat"
-  }, "\u2195"), " Flip Vertical")), _react.default.createElement("li", {
-    className: "sep"
-  }), _react.default.createElement("li", null, _react.default.createElement("a", {
-    id: "crop"
-  }, _react.default.createElement("span", {
-    className: "dingbat"
-  }, "\u2702"), " Crop")));
+var Nav = function Nav() {
+  return _react.default.createElement("nav", null);
 };
-
-var TagTools = function TagTools(_ref) {
-  var tags = _ref.tags;
-  return _react.default.createElement("ul", null, tags.map(function (tag) {
-    return _react.default.createElement("li", {
-      className: "tag group-{tag.group}"
-    }, tag.name);
-  }), _react.default.createElement("li", null, _react.default.createElement("input", {
-    id: "tag-input",
-    type: "text"
-  })));
-};
-
-var FilterTools = function FilterTools(_ref2) {
-  var filters = _ref2.filters;
-  return _react.default.createElement("ul", null, filters.map(function (filter) {
-    return _react.default.createElement("li", null, _react.default.createElement("a", {
-      "data-filter": "{filter}",
-      "data-index": "{index}"
-    }, _react.default.createElement("span", {
-      className: "dingbat"
-    }, "\u2718"), " ", filter));
-  }));
-};
-
-var StampTools = function StampTools(_ref3) {
-  var stamp = _ref3.stamp;
-  return _react.default.createElement("ul", null, _react.default.createElement("li", null, _react.default.createElement("a", {
-    id: ""
-  }, "Y: ", stamp.year)), _react.default.createElement("li", null, _react.default.createElement("a", {
-    id: ""
-  }, "M: ", stamp.month)), _react.default.createElement("li", null, _react.default.createElement("a", {
-    id: ""
-  }, "D: ", stamp.day)), _react.default.createElement("li", null, _react.default.createElement("a", {
-    id: ""
-  }, "H: ", stamp.hour)));
-};
-
-var Editing =
-/*#__PURE__*/
-function (_Component2) {
-  _inherits(Editing, _Component2);
-
-  function Editing(props) {
-    var _this;
-
-    _classCallCheck(this, Editing);
-
-    _this = _possibleConstructorReturn(this, _getPrototypeOf(Editing).call(this, props));
-    _this.state = {
-      asset: {
-        tags: [],
-        filters: [],
-        stamp: {}
-      },
-      format: {},
-      uniq: 1,
-      isRanging: false,
-      isCropping: false,
-      crop: {
-        unit: "%"
-      }
-    };
-    _this.setCurrent = _this.setCurrent.bind(_assertThisInitialized(_this));
-    return _this;
-  }
-
-  _createClass(Editing, [{
-    key: "setCurrent",
-    value: function setCurrent() {}
-  }, {
-    key: "setCrop",
-    value: function setCrop() {}
-  }, {
-    key: "render",
-    value: function render() {
-      var _this2 = this;
-
-      var _this$state = this.state,
-          asset = _this$state.asset,
-          format = _this$state.format,
-          uniq = _this$state.uniq;
-      return _react.default.createElement("div", {
-        id: "editing"
-      }, _react.default.createElement("div", {
-        id: "tools"
-      }, _react.default.createElement("ul", {
-        className: "toolbar",
-        id: "basic-tools"
-      }, _react.default.createElement("li", null, _react.default.createElement("span", {
-        className: "dingbat"
-      }, "\u2692"), " Edit ", _react.default.createElement(EditTools, null)), _react.default.createElement("li", null, _react.default.createElement("span", {
-        className: "dingbat"
-      }, "\uD83C\uDFF7"), " Tags ", _react.default.createElement(TagTools, {
-        tags: asset.tags
-      })), _react.default.createElement("li", null, _react.default.createElement("span", {
-        className: "dingbat"
-      }, "\u261E"), " Filters ", _react.default.createElement(FilterTools, {
-        filters: asset.filters
-      })), _react.default.createElement("li", null, _react.default.createElement("span", {
-        className: "dingbat"
-      }, "\u23F0"), " ", asset.stamp.title, " ", _react.default.createElement(StampTools, {
-        stamp: asset.stamp
-      })), _react.default.createElement("li", null, _react.default.createElement("span", {
-        id: "path"
-      }, asset.path))), _react.default.createElement("ul", {
-        className: "toolbar",
-        id: "ephemeral-tools"
-      }, _react.default.createElement("li", {
-        id: "cancel"
-      }, _react.default.createElement("span", {
-        className: "dingbat"
-      }, "\u2718"), " Cancel"), _react.default.createElement("li", {
-        id: "commit"
-      }, _react.default.createElement("span", {
-        className: "dingbat"
-      }, "\u2714"), " Save"), _react.default.createElement("li", {
-        id: "range"
-      }, _react.default.createElement("input", {
-        type: "range",
-        min: "0",
-        max: "200",
-        defaultValue: "100",
-        step: "1"
-      }), _react.default.createElement("span", {
-        id: "range-value"
-      })))), _react.default.createElement("div", {
-        id: "workspace"
-      }, _react.default.createElement("div", {
-        id: "grid"
-      }), asset.is_video ? _react.default.createElement("video", {
-        controls: true,
-        src: "/thumb/{format.path}/{asset.thumb}.{format.ext}?{uniq}"
-      }) : asset.is_audio ? _react.default.createElement("audio", {
-        controls: true,
-        src: "/thumb/{format.path}/{asset.thumb}.{format.ext}?{uniq}"
-      }) : asset.is_photo ? _react.default.createElement("img", {
-        src: "/thumb/{format.path}/{asset.thumb}.{format.ext}?{this.state.uniq}"
-      }) : "", _react.default.createElement(_reactImageCrop.default, {
-        src: this.state.asset.src,
-        crop: this.state.crop,
-        onChange: function onChange(newCrop) {
-          return _this2.setCrop(newCrop);
-        }
-      })));
-    }
-  }]);
-
-  return Editing;
-}(_react.Component);
-
-var ThumbsContainer =
-/*#__PURE__*/
-function (_Component3) {
-  _inherits(ThumbsContainer, _Component3);
-
-  function ThumbsContainer(props) {
-    _classCallCheck(this, ThumbsContainer);
-
-    return _possibleConstructorReturn(this, _getPrototypeOf(ThumbsContainer).call(this, props));
-  }
-
-  _createClass(ThumbsContainer, [{
-    key: "render",
-    value: function render() {
-      return _react.default.createElement(Thumbs, {
-        assets: [{
-          id: 1,
-          medium: "photo",
-          path: "foo",
-          thumb: "thumb"
-        }]
-      });
-    }
-  }]);
-
-  return ThumbsContainer;
-}(_react.Component);
-
-var Tag = function Tag(_ref4) {
-  var name = _ref4.name,
-      group = _ref4.group;
-  return _react.default.createElement("li", {
-    className: "tag group-{group}"
-  }, name);
-};
-
-var Thumbs = function Thumbs(_ref5) {
-  var assets = _ref5.assets;
-  return _react.default.createElement("ul", {
-    id: "thumbs"
-  }, assets.map(function (asset) {
-    return _react.default.createElement("li", {
-      className: "asset",
-      key: asset.id
-    }, _react.default.createElement("span", {
-      className: "cursor star"
-    }, "*"), _react.default.createElement("img", {
-      className: asset.medium,
-      src: "/thumb/".concat(asset.path, "/").concat(asset.thumb, ".jpg")
-    }));
-  }));
-};
-
-var TagSelections = function TagSelections(props) {
-  return _react.default.createElement(_reactSelect.default, {
-    clearButton: true,
-    defaultSelected: options.slice(0, 5),
-    labelKey: "name",
-    multiple: true,
-    options: options,
-    placeholder: "Tags..."
-  });
-};
-/*
-const Playlist = ({playlist, current, player, toggle, remove, clear, setCurrent}) => (
-    <ul id="playlist">{playlist.map((item, i) => (
-        <li key={i}>
-        <PlaylistItem item={item}
-                      active={current === i}
-                      playPause={current === i ? toggle :  () => setCurrent(i)}
-                      remove={() => remove(i)}
-                      player={player} />
-        </li>
-    ))}{(playlist.length > 0) && <li id="clear" onClick={clear}>&times;</li>}</ul>
-)
-
-const Album = ({album, tracks, add}) => (
-  <div className="album">
-    <div onClick={tracks.length > 0 ? () => add(tracks) : null}
-         className="art" style={{backgroundImage: `url(/album/${album.id}/art)`}}></div>
-    <div onClick={tracks.length > 0 ? () => add(tracks) : null}
-         className="title">{album.album}</div>
-    <div onClick={tracks.length > 0 ? () => add(tracks) : null}
-         className="artist">{album.albumartist}</div>
-    <ul className="tracks">{tracks.map(track => {
-        const title = <div className="title">{track.title}</div>;
-        const artist = track.artist === track.albumartist ?
-                       "" : <div className="artist">{track.artist}</div>;
-        return <li className="track"
-                   onClick={() => add([track])}
-                   key={track.id}>{title}{artist}</li>;
-    })}</ul>
-  </div>)
-
-const Song = ({song, add}) => (
-  <div className="song" onClick={() => add([song])}>
-    <div className="title">{song.title}</div>
-    <div className="artist">{song.artist === song.albumartist ? "" : song.artist}</div>
-  </div>)
-*/
-
 
 var Index = function Index() {
   return _react.default.createElement("div", {
@@ -55723,48 +56228,17 @@ var Index = function Index() {
   }, "INDEX");
 };
 
-var Browse = function Browse() {
-  return _react.default.createElement("div", {
-    className: "browse"
-  }, "BROWSE ", (0, _reactRouterDom.useParams)().query);
-};
-
-var View = function View() {
-  return _react.default.createElement("div", {
-    className: "view"
-  }, "VIEW ", (0, _reactRouterDom.useParams)().id);
-};
-
-var Edit = function Edit() {
-  return _react.default.createElement("div", {
-    className: "edit"
-  }, "EDIT ", (0, _reactRouterDom.useParams)().id);
-};
-
-var Cluster = function Cluster() {
-  return _react.default.createElement("div", {
-    className: "cluster"
-  }, "CLUSTER ", (0, _reactRouterDom.useParams)().id);
-};
-
-var Label = function Label() {
-  return _react.default.createElement("div", {
-    className: "label"
-  }, "LABEL ", (0, _reactRouterDom.useParams)().id);
-};
-
-_reactDom.default.render(_react.default.createElement(_reactRouterDom.BrowserRouter, null, _react.default.createElement(_reactRouterDom.Route, {
-  path: "/view/:id"
-}, _react.default.createElement(View, null)), _react.default.createElement(_reactRouterDom.Route, {
-  path: "/edit/:id"
-}, _react.default.createElement(Edit, null)), _react.default.createElement(_reactRouterDom.Route, {
-  path: "/label/:id"
-}, _react.default.createElement(Label, null)), _react.default.createElement(_reactRouterDom.Route, {
-  path: "/cluster/:id"
-}, _react.default.createElement(Cluster, null)), _react.default.createElement(_reactRouterDom.Route, {
+_reactDom.default.render(_react.default.createElement(_reactRouterDom.BrowserRouter, null, _react.default.createElement(Nav, null), _react.default.createElement(_reactRouterDom.Switch, null, _react.default.createElement(_reactRouterDom.Route, {
   path: "/browse/:query"
-}, _react.default.createElement(Browse, null)), _react.default.createElement(_reactRouterDom.Route, {
-  exact: true,
+}, _react.default.createElement(_browse.default, null)), _react.default.createElement(_reactRouterDom.Route, {
+  path: "/cluster/:id"
+}, _react.default.createElement(_cluster.default, null)), _react.default.createElement(_reactRouterDom.Route, {
+  path: "/label/:id"
+}, _react.default.createElement(_label.default, null)), _react.default.createElement(_reactRouterDom.Route, {
+  path: "/edit/:id"
+}, _react.default.createElement(_edit.default, null)), _react.default.createElement(_reactRouterDom.Route, {
+  path: "/view/:id"
+}, _react.default.createElement(_view.default, null)), _react.default.createElement(_reactRouterDom.Route, {
   path: "/"
-}, _react.default.createElement(Index, null))), document.getElementById("root"));
-},{"react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","react-dom":"../node_modules/react-dom/index.js","react-image-crop":"../node_modules/react-image-crop/dist/ReactCrop.min.js","react-select":"../node_modules/react-select/dist/react-select.browser.esm.js","dexie":"../node_modules/dexie/dist/dexie.es.js","moment":"../node_modules/moment/moment.js","axios":"../node_modules/axios/index.js"}]},{},["index.jsx"], null)
+}, _react.default.createElement(Index, null)))), document.getElementById("root"));
+},{"react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","react-dom":"../node_modules/react-dom/index.js","moment":"../node_modules/moment/moment.js","./db":"db.jsx","./browse":"browse.jsx","./view":"view.jsx","./edit":"edit.jsx","./label":"label.jsx","./cluster":"cluster.jsx"}]},{},["index.jsx"], null)

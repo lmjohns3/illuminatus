@@ -193,7 +193,7 @@ class Asset(Model):
         return sorted(h for h in self.hashes if h.flavor == 'diff8')
 
     @staticmethod
-    def matching(sess, query, order=None, limit=None):
+    def matching(sess, query, order=None, limit=None, offset=None):
         '''Find one or more media assets by parsing a query.
 
         Parameters
@@ -206,6 +206,8 @@ class Asset(Model):
             Order assets by this field.
         limit : int
             Limit the number of returned assets.
+        offset : int
+            Start at this position in the asset list.
 
         Returns
         -------
@@ -218,6 +220,8 @@ class Asset(Model):
             rs = rs.order_by(parse_order(order))
         if limit:
             rs = rs.limit(limit)
+        if offset:
+            rs = rs.offset(offset)
         return rs
 
     def to_dict(self, exclude_tags=()):
@@ -259,7 +263,7 @@ class Asset(Model):
         '''
         hash = self.path_hash
         if fmt is None:
-            fmt = Format(**kwargs)
+            fmt = metadata.Format(**kwargs)
         dirname = os.path.join(root, str(fmt), hash[:2])
         if not os.path.exists(dirname):
             os.makedirs(dirname)
@@ -413,7 +417,7 @@ class Hash(Model):
     id = Column(Integer, primary_key=True)
     nibbles = Column(String, index=True, nullable=False)
     flavor = Column(String, index=True, nullable=False)
-    offset_sec = Column(Float, nullable=False, default=0.0)
+    time = Column(Float, nullable=False, default=0.0)
     asset_id = Column(ForeignKey('assets.id'), index=True)
 
     class Flavor:
@@ -425,6 +429,9 @@ class Hash(Model):
     def __str__(self):
         return ':'.join((click.style(self.flavor, fg='white'),
                          click.style(self.nibbles, fg='white', bold=True)))
+
+    def __lt__(self, other):
+        return self.nibbles < other.nibbles
 
     @classmethod
     def compute_md5sum(cls, path):
@@ -500,8 +507,8 @@ class Hash(Model):
         raise NotImplementedError
 
     @classmethod
-    def compute_video_diff(cls, path, size=8):
-        raise NotImplementedError
+    def compute_video_diff(cls, path, time, size=8):
+        return cls(nibbles='', flavor=Hash.Flavor.DIFF_8, time=time)
 
     def select_neighbors(self, sess, within=1):
         '''Get all neighboring hashes from the database.
@@ -525,7 +532,7 @@ class Hash(Model):
         return dict(
             nibbles=self.nibbles,
             flavor=self.flavor,
-            offset_sec=self.offset_sec,
+            time=self.time,
         )
 
 
@@ -595,14 +602,13 @@ class QueryParser(parsimonious.NodeVisitor):
     query    = union ( __ union )*
     union    = negation ( __ 'or' __ negation )*
     negation = ( 'not' __ )? set
-    set      = stamp / path / medium / hash / tag / text / group
-    stamp    = ~'(before|after):[-\d]+'
+    set      = group / stamp / path / medium / hash / text
+    group    = '(' _ query _ ')'
+    stamp    = ~'(before|during|after):[-\d]+'
     path     = ~'path:\S+?'
     medium   = ~'(photo|video|audio)'
     hash     = ~'hash:[a-z0-9]+'
-    tag      = ~'tag:[-:\w]+'
-    text     = ~'(?!or\b)(?!not\b)("[^ ()"]+"|[^ ()]+)'
-    group    = '(' _ query _ ')'
+    text     = ~'"?[^ ()"]+"?'
     _        = ~'\s*'
     __       = ~'\s+'
     ''')
@@ -631,9 +637,11 @@ class QueryParser(parsimonious.NodeVisitor):
 
     def visit_stamp(self, node, children):
         comp, value = node.text.split(':', 1)
-        value = arrow.get(value, ['YYYY', 'YYYY-MM', 'YYYY-MM-DD']).datetime
+        value = arrow.get(value, ['YYYY', 'YYYY-MM', 'YYYY-MM-DD']).date
         column = Asset.stamp
-        return column < value if comp == 'before' else column > value
+        return (column < value if comp == 'before' else
+                column > value if comp == 'after' else
+                column.startswith(value))
 
     def visit_path(self, node, children):
         return Asset.path.contains(node.text[4:])
@@ -644,11 +652,9 @@ class QueryParser(parsimonious.NodeVisitor):
     def visit_medium(self, node, children):
         return Asset.medium == node.text.split(':', 1)[1].capitalize()
 
-    def visit_tag(self, node, children):
-        return Asset.tags.any(Tag.name == node.text[4:])
-
     def visit_text(self, node, children):
         s = node.text.strip('"')
+        print(s)
         return (Asset.description.contains(s) |
                 Asset.tags.any(Tag.name == s))
 
