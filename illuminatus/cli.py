@@ -1,6 +1,7 @@
 import click
 import collections
 import contextlib
+import json
 import os
 import sys
 
@@ -73,16 +74,17 @@ def help(ctx):
     \b
     - TAG -- assets that are tagged with TAG
     - before:YYYY-MM-DD -- assets with timestamps on or before YYYY-MM-DD
+    - during:YYYY-MM -- assets with timestamps in the range YYYY-MM
     - after:YYYY-MM-DD -- assets with timestamps on or after YYYY-MM-DD
     - path:STRING -- assets whose source path contains the given STRING
     - hash:STRING -- assets whose hash contains the given STRING
-    - medium:M -- assets in medium M (audio, photo, video)
+    - audio/photo/video -- assets that are audio, photo, or video
 
     Each of the terms in a query is combined using one of the three set
     operators:
 
     \b
-    - X and Y -- media in set X and in set Y
+    - X Y -- media in set X and in set Y
     - X or Y -- media in set X or set Y
     - not Y -- media not in set Y
 
@@ -95,13 +97,13 @@ def help(ctx):
     \b
     - cake
       selects everything tagged "cake"
-    - cake and not ice-cream
+    - cake not ice-cream
       selects everything tagged "cake" that is not also tagged "ice-cream"
-    - cake and ice-cream
+    - cake ice-cream
       selects everything tagged with both "cake" and "ice-cream"
-    - cake and before:2010-03-14
+    - cake before:2010-03-14
       selects everything tagged "cake" from before pi day 2010
-    - cake and (before:2010-03-14 or after:2011-03-14)
+    - cake (before:2010-03-14 or after:2011-03-14)
       selects everything tagged "cake" that wasn't between pi day 2010 and
       pi day 2011
 
@@ -119,7 +121,7 @@ def help(ctx):
     -----
     - ext: Output filename extension.
     - fps: Frames per second when exporting audio or video.
-    - channels [1]: Number of channels in exported audio files.
+    - channels: Number of channels in exported audio files.
 
     \b
     Examples
@@ -151,12 +153,9 @@ def help(ctx):
     - ext: Output filename extension.
     - bbox: Maximum size of the output frames.
     - fps: Frames per second when exporting audio or video.
-    - palette [255]: Number of colors in the palette for exported animated GIFs.
-    - vcodec [libx264]: Codec to use for exported video.
-    - acodec [aac]: Codec to use for audio in exported videos.
-    - abitrate [128k]: Bits per second for audio in exported videos.
-    - crf [30]: Quality scale for exporting videos.
-    - preset [medium]: Speed preset for exporting videos.
+    - palette: Number of colors in the palette for exported animated GIFs.
+    - abr: Kilobits per second for audio in exported videos.
+    - vbr: Kilobits per second for video in exported videos.
 
     \b
     Examples
@@ -165,8 +164,8 @@ def help(ctx):
     - 100
       exports video as mp4 scaled down to fit inside a 100x100 box -- this is
       the shortest way of specifying a video format
-    - ext=mp4,bbox=100x100
-      same as above, giving explicit option names for extension and bounding box
+    - ext=mp4,bbox=100x100,vbr=1024
+      same as above, giving explicit option names
     - gif,100,fps=3,palette=64
       exports video as 64-color animated GIFs at 3 frames per second
     '''
@@ -198,7 +197,7 @@ def ls(ctx, query, order, limit):
                 str(asset.md5_hash),
                 ' '.join(str(h) for h in asset.diff8_hashes),
                 ' '.join(t.name_string for t in
-                         sorted(asset.tags, key=lambda t: (t.group[0], t.name))),
+                         sorted(asset.tags, key=lambda t: (t.group, t.name))),
                 click.style(asset.path),
             )))
 
@@ -371,7 +370,7 @@ def thumbnail(ctx, query, thumbnails, audio_format, photo_format, video_format,
     See "illuminatus help" for help on QUERY and SPEC syntax.
     '''
     with session(ctx) as sess:
-        Thumbnailer(
+        importexport.Thumbnailer(
             db.Asset.matching(sess, ' '.join(query)),
             root=thumbnails,
             overwrite=overwrite,
@@ -410,12 +409,6 @@ def serve(ctx, host, port, debug, hide_originals, thumbnails, **kwargs):
     app.config['SQLALCHEMY_ECHO'] = debug
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_DATABASE_URI'] = db.db_uri(path=ctx.obj['db_path'])
-    app.config['thumbnails'] = thumbnails
-    app.config['hide-originals'] = hide_originals
-    fmts = app.config['formats'] = {}
-    for key, value in kwargs.items():
-        default = db.Asset.EXTENSIONS[metadata.Medium[key.split('_')[1].capitalize()]]
-        fmt = metadata.Format.parse(value)
-        fmts[key] = dict(path=str(fmt), ext=fmt.ext or default)
+    app.config['config'] = metadata.load_config(config)
     sql.init_app(app)
-    app.run(host=host, port=port, debug=debug, threaded=True)
+    app.run(host=host, port=port, debug=debug, threaded=False, processes=8)

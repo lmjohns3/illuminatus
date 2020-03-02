@@ -1,24 +1,36 @@
 import arrow
 import base64
 import click
-import collections
 import contextlib
+import enum
+import functools
 import hashlib
+import json
 import numpy as np
 import os
 import parsimonious.grammar
 import PIL.Image
-import PIL.ImageCms
 import re
 import sqlalchemy
 import sqlalchemy.ext.declarative
-import ujson
 
 from sqlalchemy import Column, DateTime, Enum, Float, ForeignKey, Integer, String, Table
 from sqlalchemy.orm.attributes import flag_modified
 
 from . import metadata
 from . import tools
+
+
+class TextJson(sqlalchemy.types.TypeDecorator):
+    impl = sqlalchemy.types.TEXT
+
+    def process_bind_param(self, value, dialect):
+        return None if value is None else json.dumps(value)
+
+    def process_result_value(self, value, dialect):
+        return None if value is None else json.loads(value)
+
+JSON = sqlalchemy.types.JSON().with_variant(TextJson, 'sqlite')
 
 
 Model = sqlalchemy.ext.declarative.declarative_base()
@@ -31,45 +43,39 @@ class Tag(Model):
     name = Column(String, index=True, nullable=False)
 
     def __repr__(self):
-        return '<Tag {}>'.format(self.name)
+        return f'<Tag {self.name}>'
 
-    Group = collections.namedtuple('Group', 'match color bold')
-
+    # Regular expression matchers for different "groups" of tags. The order here
+    # is used to sort the tags on an asset. Tags not matching any of these
+    # groups are "user-defined" and will sort before or after these.
     GROUPS = (
-        Group(r'(19|20)\d\d', 'yellow', False),
-        Group(r'january', 'yellow', False),
-        Group(r'february', 'yellow', False),
-        Group(r'march', 'yellow', False),
-        Group(r'april', 'yellow', False),
-        Group(r'may', 'yellow', False),
-        Group(r'june', 'yellow', False),
-        Group(r'july', 'yellow', False),
-        Group(r'august', 'yellow', False),
-        Group(r'september', 'yellow', False),
-        Group(r'october', 'yellow', False),
-        Group(r'november', 'yellow', False),
-        Group(r'december', 'yellow', False),
-        Group(r'\d(st|nd|rd|th)', 'yellow', False),
-        Group(r'\d\d(st|nd|rd|th)', 'yellow', False),
-        Group(r'monday', 'yellow', False),
-        Group(r'tuesday', 'yellow', False),
-        Group(r'wednesday', 'yellow', False),
-        Group(r'thursday', 'yellow', False),
-        Group(r'friday', 'yellow', False),
-        Group(r'saturday', 'yellow', False),
-        Group(r'sunday', 'yellow', False),
-        Group(r'\dam', 'yellow', False),
-        Group(r'\d\dam', 'yellow', False),
-        Group(r'\dpm', 'yellow', False),
-        Group(r'\d\dpm', 'yellow', False),
-        Group(r'kit:\S+', 'green', False),
-        Group(r'f/\d(\.\d+)?', 'green', False),
-        Group(r'f/\d\d(\.\d+)?', 'green', False),
-        Group(r'\dmm', 'green', False),
-        Group(r'\d\dmm', 'green', False),
-        Group(r'\d\d\dmm', 'green', False),
-        Group(r'\d\d\d\dmm', 'green', False),
-        Group(r'geo:\S+', 'cyan', False),
+        # Year.
+        r'(19|20)\d\d',
+
+        # Month.
+        'january', 'february', 'march', 'april', 'may', 'june', 'july',
+        'august', 'september', 'october', 'november', 'december',
+
+        # Day of month.
+        r'\d(st|nd|rd|th)', r'\d\d(st|nd|rd|th)',
+
+        # Day of week.
+        'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday',
+
+        # Time of day.
+        r'\dam', r'\d\dam', r'\dpm', r'\d\dpm',
+
+        # Camera.
+        r'(e-m\d|iphone|pixel|powershot)\S+',
+
+        # Aperture.
+        r'f/\d', r'f/\d\d', r'f/\d\d\d',
+
+        # Focal length.
+        r'\dmm', r'\d\dmm', r'\d\d\dmm', r'\d\d\d\dmm',
+
+        # Geolocation.
+        r'country:\S+', r'state:\S+', r'city:\S+', r'place:\S+',
     )
 
     @staticmethod
@@ -80,48 +86,20 @@ class Tag(Model):
             sess.add(tag)
         return tag
 
-    @staticmethod
-    def with_asset_counts(sess):
-        def by_group(tag_dict):
-            return tag_dict['group'][0], tag_dict['name']
-        q = (sess.query(Tag, sqlalchemy.func.count(AssetTag.c.asset_id))
-             .join(AssetTag)
-             .group_by(Tag.name))
-        return sorted((t.to_dict(c) for t, c in q.all()), key=by_group)
-
     @property
     def group(self):
-        i = 0
         for i, group in enumerate(Tag.GROUPS):
-            if re.match(group.match, self.name):
-                return i, group
-        return i, None
+            if group == self.name or re.match(group, self.name):
+                return i
+        return -1
 
     @property
     def name_string(self):
-        _, g = self.group
-        if g is not None:
-            return click.style(self.name, fg=g.color, bold=g.bold)
         return click.style(self.name, fg='blue', bold=True)
 
     def to_dict(self):
-        return dict(
-            id=self.id,
-            name=self.name,
-            group=self.group,
-        )
+        return dict(id=self.id, name=self.name, group=self.group)
 
-
-class TextJson(sqlalchemy.types.TypeDecorator):
-    impl = sqlalchemy.types.TEXT
-
-    def process_bind_param(self, value, dialect):
-        return None if value is None else ujson.dumps(value)
-
-    def process_result_value(self, value, dialect):
-        return None if value is None else ujson.loads(value)
-
-JSON = sqlalchemy.types.JSON().with_variant(TextJson, 'sqlite')
 
 asset_tags = Table('asset_tags',
                    Model.metadata,
@@ -133,22 +111,33 @@ similar = Table('similar',
                 Column('a_id', ForeignKey('assets.id'), index=True),
                 Column('b_id', ForeignKey('assets.id')))
 
+
 class Asset(Model):
     __tablename__ = 'assets'
 
-    id = Column(Integer, primary_key=True)
-    path = Column(String, unique=True, nullable=False)
-    medium = Column(Enum(metadata.Medium), index=True, nullable=False)
-    stamp = Column(DateTime, index=True, nullable=False)
-    description = Column(String, nullable=False, default='')
-    width = Column(Integer, index=True, nullable=False, default=0)
-    height = Column(Integer, index=True, nullable=False, default=0)
-    duration = Column(Float, index=True, nullable=False, default=0.0)
-    lat = Column(Float, index=True, nullable=False, default=0.0)
-    lng = Column(Float, index=True, nullable=False, default=0.0)
-    filters = Column(JSON, nullable=False, default=[])
+    @enum.unique
+    class Medium(enum.Enum):
+        '''Enumeration of different supported media types.'''
+        Audio = 1
+        Photo = 2
+        Video = 3
 
-    hashes = sqlalchemy.orm.relationship('Hash', backref='asset')
+    id = Column(Integer, primary_key=True)
+
+    medium = Column(Enum(Medium), index=True, nullable=False)
+    stamp = Column(DateTime, index=True, nullable=False)
+
+    path = Column(String, nullable=False)
+    description = Column(String, nullable=False, default='')
+
+    width = Column(Integer)
+    height = Column(Integer)
+    duration = Column(Float)
+    fps = Column(Float)
+    lat = Column(Float, index=True)
+    lng = Column(Float, index=True)
+
+    filters = Column(JSON, nullable=False, default=[])
 
     tags = sqlalchemy.orm.relationship('Tag',
                                        secondary=asset_tags,
@@ -161,17 +150,9 @@ class Asset(Model):
                                           primaryjoin=id == similar.c.a_id,
                                           secondaryjoin=id == similar.c.b_id)
 
-    TOOLS = {metadata.Medium.Audio: tools.Sox,
-             metadata.Medium.Video: tools.Ffmpeg,
-             metadata.Medium.Photo: tools.Convert}
-
-    EXTENSIONS = {metadata.Medium.Audio: 'mp3',
-                  metadata.Medium.Video: 'mp4',
-                  metadata.Medium.Photo: 'jpg'}
-
     @property
     def shape(self):
-        return self.width, self.height
+        return self.width, self.height, self.duration
 
     @property
     def basename(self):
@@ -182,15 +163,15 @@ class Asset(Model):
     def path_hash(self):
         '''A string containing the hash of this asset's path.'''
         digest = hashlib.md5(self.path.encode('utf-8')).digest()
-        return base64.b32encode(digest).strip(b'=').lower().decode('utf-8')
+        return base64.b64encode(digest, b'-_').strip(b'=').decode('utf-8')
 
     @property
     def md5_hash(self):
-        return [h for h in self.hashes if h.flavor == 'md5'][0]
+        return [h for h in self.hashes if h.flavor == Hash.Flavor.MD5][0]
 
     @property
     def diff8_hashes(self):
-        return sorted(h for h in self.hashes if h.flavor == 'diff8')
+        return sorted(h for h in self.hashes if h.flavor == Hash.Flavor.DIFF_8)
 
     @staticmethod
     def matching(sess, query, order=None, limit=None, offset=None):
@@ -233,8 +214,10 @@ class Asset(Model):
             filters=self.filters,
             stamp=arrow.get(self.stamp).isoformat(),
             description=self.description,
-            shape=(self.width, self.height),
+            width=self.width,
+            height=self.height,
             duration=self.duration,
+            fps=self.fps,
             latlng=(self.lat, self.lng),
             hashes=[h.to_dict() for h in self.hashes],
             tags=[t.to_dict() for t in self.tags
@@ -262,20 +245,23 @@ class Asset(Model):
         The path to the exported file, or None if nothing was exported.
         '''
         hash = self.path_hash
+
         if fmt is None:
             fmt = metadata.Format(**kwargs)
+
         dirname = os.path.join(root, str(fmt), hash[:2])
         if not os.path.exists(dirname):
             os.makedirs(dirname)
-        ext = fmt.ext or Asset.EXTENSIONS[self.medium]
-        output = os.path.join(dirname, '{}.{}'.format(hash, ext))
+
+        ext = fmt.extension_for(self.medium)
+
+        output = os.path.join(dirname, f'{hash}.{ext}')
         if os.path.exists(output) and not overwrite:
             return None
-        tool = Asset.TOOLS[self.medium]
-        tool(self.path, self.shape, self.filters).export(fmt, output)
-        if self.medium == metadata.Medium.Video:
-            poster = os.path.splitext(output)[0] + '.jpg'
-            tool(self.path, self.shape, self.filters).export(fmt, poster)
+
+        (tools.ffmpeg,
+         tools.graphicsmagick)[self.medium == Asset.Medium.Photo](self, fmt, output)
+
         return output
 
     def _maybe_hide_original(self, hide_original=False):
@@ -303,30 +289,23 @@ class Asset(Model):
         if not os.path.isfile(self.path):
             return
 
-        meta = tools.Exiftool(self.path).parse()
-
-        stamp = metadata.get_timestamp(self.path, meta).datetime
-        if stamp is not None or self.stamp is None:
-            self.stamp = stamp
-
-        for t in metadata.gen_datetime_tags(arrow.get(self.stamp)):
+        meta = metadata.Metadata(self.path)
+        self.lat, self.lng = meta.latitude, meta.longitude
+        self.width, self.height, self.duration = meta.width, meta.height, meta.duration
+        for t in meta.tags:
             self.tags.add(Tag.get_or_create(sess, t))
 
-        self.width = metadata.get_width(meta)
-        self.height = metadata.get_height(meta)
-        self.duration = metadata.get_duration(meta)
-
-        self.lat = metadata.get_latitude(meta)
-        self.lng = metadata.get_longitude(meta)
-
-        for t in metadata.gen_metadata_tags(meta):
-            self.tags.add(Tag.get_or_create(sess, t))
+        stamp = meta.stamp or arrow.get(os.path.getmtime(path))
+        if stamp:
+            self.stamp = stamp.datetime
+            for t in metadata.tags_from_stamp(stamp):
+                self.tags.add(Tag.get_or_create(sess, t))
 
         self.hashes.append(Hash.compute_md5sum(self.path))
-        if self.medium == metadata.Medium.Photo:
+        if self.medium == Asset.Medium.Photo:
             self.hashes.append(Hash.compute_photo_diff(self.path))
             self.hashes.append(Hash.compute_photo_histogram(self.path))
-        if self.medium == metadata.Medium.Video:
+        if self.medium == Asset.Medium.Video:
             for o in range(0, int(self.duration), 30):
                 self.hashes.append(Hash.compute_video_diff(self.path, o + 15))
 
@@ -395,39 +374,57 @@ class Asset(Model):
         while index < 0:
             index += len(self.filters)
         if index >= len(self.filters):
-            raise IndexError('{}: does not have {} filters'.format(
-                self.path, index))
+            raise IndexError(f'{self.path}: does not have {index} filters')
         actual_filter = self.filters[index]['filter']
         if actual_filter != filter:
-            raise KeyError('{}: filter {} has key {!r}, expected {!r}'.format(
-                self.path, index, actual_filter, filter))
+            raise KeyError(f'{self.path}: filter {index} has key '
+                           f'{actual_filter!r}, expected {filter!r}')
         self.filters.pop(index)
         flag_modified(self, 'filters')
 
 
-# a map from bit pattern to hex digit, e.g. (True, False, True, True) --> 'b'
-_HEX_DIGITS = {
-    tuple(b == '1' for b in '{:04b}'.format(i)): '{:x}'.format(i)
-    for i in range(16)
-}
+class Proposal(Model):
+    __tablename__ = 'proposals'
+
+    @enum.unique
+    class Result(enum.Enum):
+        Proposed = 0
+        Rejected = 1
+        Accepted = 2
+
+    id = Column(Integer, primary_key=True)
+    asset_id = Column('asset_id', ForeignKey('assets.id'), index=True)
+    tag_id = Column('tag_id', ForeignKey('tags.id'), index=True)
+    score = Column(Float, index=True, nullable=False)
+    result = Column(Enum(Result), index=True)
+    source = Column(String)
+
+    asset = sqlalchemy.orm.relationship(Asset, backref='proposals')
+    tag = sqlalchemy.orm.relationship(Tag, backref='proposals')
+
 
 class Hash(Model):
     __tablename__ = 'hashes'
 
-    id = Column(Integer, primary_key=True)
-    nibbles = Column(String, index=True, nullable=False)
-    flavor = Column(String, index=True, nullable=False)
-    time = Column(Float, nullable=False, default=0.0)
-    asset_id = Column(ForeignKey('assets.id'), index=True)
-
-    class Flavor:
+    @enum.unique
+    class Flavor(enum.Enum):
         '''Enumeration of different supported hash types.'''
-        MD5 = 'md5'
-        DIFF_8 = 'diff8'
-        HSL_HIST = 'hslhist'
+        MD5 = 0
+        DIFF_8 = 1
+        DIFF_16 = 2
+        HSL_HIST = 100
+        RGB_HIST = 101
+
+    id = Column(Integer, primary_key=True)
+    asset_id = Column(ForeignKey('assets.id'), index=True)
+    nibbles = Column(String, index=True, nullable=False)
+    flavor = Column(Enum(Flavor), index=True, nullable=False)
+    time = Column(Float)
+
+    asset = sqlalchemy.orm.relationship(Asset, backref='hashes')
 
     def __str__(self):
-        return ':'.join((click.style(self.flavor, fg='white'),
+        return ':'.join((click.style(self.flavor.name, fg='white'),
                          click.style(self.nibbles, fg='white', bold=True)))
 
     def __lt__(self, other):
@@ -458,22 +455,21 @@ class Hash(Model):
         ----------
         path : str
             Path to an image file on disk.
-        size : {8}, optional
+        size : int, optional
             Number of pixels, `s`, per side for the image. The hash will have
-            `s * s` bits. Only implemented value is 8, giving a 64-bit hash.
+            `s * s` bits. Must correspond to one of the available DIFF_N hash
+            flavors.
 
         Returns
         -------
         A Hash instance representing the diff hash.
         '''
-        if size != 8:
-            raise ValueError('Diff hash size must be 8, got {}'.format(size))
         gray = PIL.Image.open(path).convert('L')
         pixels = np.asarray(gray.resize((size + 1, size), PIL.Image.ANTIALIAS))
-        bits = (pixels[:, 1:] > pixels[:, :-1]).flatten()
-        nibbles = ''.join(_HEX_DIGITS[tuple(b)] for b in
-                          np.split(bits, list(range(4, len(bits), 4))))
-        return cls(nibbles=nibbles, flavor=Hash.Flavor.DIFF_8)
+        diff = (pixels[:, 1:] > pixels[:, :-1]).ravel()
+        value = int(''.join('01'[b] for b in diff), 2)
+        return cls(nibbles=('{:0%dx}' % (size * size / 4)).format(value),
+                   flavor=Hash.Flavor[f'DIFF_{size}'])
 
     @classmethod
     def compute_photo_histogram(cls, path):
@@ -490,16 +486,10 @@ class Hash(Model):
             logp = np.log(eps + parts) - np.log(eps * len(parts) + sum(parts))
             lo, hi = np.percentile(logp, [1, 99])
             quantized = np.linspace(lo, hi, 16).searchsorted(np.clip(logp, lo, hi))
-            return ''.join('{:x}'.format(b) for b in quantized)
+            return ''.join(f'{b:x}' for b in quantized)
 
-        #counts = PIL.Image.open(path).convert('L').histogram()
-        #return cls(nibbles=quantize(counts, 16), flavor=Hash.Flavor.L_HIST)
-
-        hist = PIL.Image.open(path).convert('HSV').histogram()
-        hhist, shist, vhist = np.split(np.asarray(hist), 3)
-        return cls(nibbles=''.join((quantize(hhist, 16),
-                                    quantize(shist, 8),
-                                    quantize(vhist, 8))),
+        hist = np.asarray(PIL.Image.open(path).convert('HSV').histogram())
+        return cls(nibbles=''.join(quantize(h, 8) for h in np.split(hist, 3)),
                    flavor=Hash.Flavor.HSL_HIST)
 
     @classmethod
@@ -536,66 +526,43 @@ class Hash(Model):
         )
 
 
-# a map from hex digit to hex digits that differ in 1 bit.
-_HEX_NEIGHBORS = {
-    '{:x}'.format(i): tuple('{:x}'.format(i ^ (1 << j)) for j in range(4))
-    for i in range(16)
-}
+# a map from each hex digit to the hex digits that differ in 1 bit.
+_HEX_NEIGHBORS = ('1248', '0359', '306a', '217b',
+                  '560c', '471d', '742e', '653f',
+                  '9ac0', '8bd1', 'b8e2', 'a9f3',
+                  'de84', 'cf95', 'fca6', 'edb7')
 
-def _neighboring_hashes(nibbles, within=1):
+def _neighboring_hashes(start, distance=1):
     '''Pull all neighboring hashes within a given Hamming distance.
 
     Parameters
     ----------
-    nibbles : str
+    start : str
         Hexadecimal string representing the source hash value.
-    within : int, optional
-        Identify all hashes within this Hamming distance.
+    distance : int, optional
+        Identify all hashes within this Hamming distance from the start.
 
     Returns
     -------
     The set of hashes that are within the given distance from the original.
-    Does not include the original.
+    Does not include the start.
     '''
-    nearby = set()
-    if not nibbles:
-        return nearby
-    frontier = {nibbles}
-    while within:
-        within -= 1
-        next_frontier = set()
-        for node in frontier:
-            if node not in nearby:
-                for i, c in enumerate(node):
-                    for d in _HEX_NEIGHBORS[c]:
-                        next_frontier.add(node[:i] + d + node[i+1:])
-        nearby |= frontier
-        frontier = next_frontier
-    return (nearby | frontier) - {nibbles}
+    neighborhood, frontier = set(), {start}
+    for _ in range(distance):
+        frontier_ = set()
+        for node in frontier - neighborhood:
+            for i, c in enumerate(node):
+                for d in _HEX_NEIGHBORS[int(c, 16)]:
+                    frontier_.add(node[:i] + d + node[i+1:])
+        neighborhood |= frontier
+        frontier = frontier_
+    return (neighborhood | frontier) - {start}
 
 
 class QueryParser(parsimonious.NodeVisitor):
     '''Media can be queried using a special query syntax; we parse it here.
 
-    The query syntax permits the following atoms, each of which represents a
-    set of media assets in the database:
-
-    - after:S -- selects media with timestamps greater than or equal to S
-    - before:S -- selects media with timestamps less than or equal to S
-    - path:S -- selects media with S in their paths
-    - fp:S -- selects media asset with fingerprint S
-    - S -- selects media tagged with S
-
-    The specified sets can be combined using any combination of:
-
-    - x y -- contains media in both sets x and y
-    - x or y -- contains media in either set x or set y
-    - not y -- contains media not in set y
-
-    Any of the operators above can be combined multiple times, and parentheses
-    can be used to group sets together. For example, a and b or c selects media
-    matching both a and b, or c, while a and (b or c) matches both a and d,
-    where d consists of things in b or c.
+    See docstring about query syntax in cli.py.
     '''
 
     grammar = parsimonious.Grammar(r'''
@@ -681,12 +648,8 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
     cur.close()
 
 
-def db_uri(path):
-    return 'sqlite:///{}'.format(path)
-
-
 def engine(path, echo=False):
-    return sqlalchemy.create_engine(db_uri(path), echo=echo)
+    return sqlalchemy.create_engine(f'sqlite:///{path}', echo=echo)
 
 
 def init(path):

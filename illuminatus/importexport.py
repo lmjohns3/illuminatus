@@ -1,6 +1,7 @@
 import click
 import collections
 import glob
+import mimetypes
 import multiprocessing as mp
 import os
 import re
@@ -12,6 +13,8 @@ import zipfile
 from . import db
 from . import metadata
 
+_DEBUG = 0
+
 
 def _process(jobs_queue, callback):
     while True:
@@ -22,6 +25,8 @@ def _process(jobs_queue, callback):
 
 
 def run_workqueue(jobs, callback, num_workers=mp.cpu_count()):
+    if _DEBUG:
+        return [callback(j) for j in jobs]
     jobs_queue = mp.Queue()
     workers = [mp.Process(target=_process, args=(jobs_queue, callback))
                for _ in range(num_workers)]
@@ -40,7 +45,7 @@ def run_workqueue(jobs, callback, num_workers=mp.cpu_count()):
         [w.terminate() for w in workers]
 
 
-def walk(self, roots):
+def walk(roots):
     '''Recursively visit all files under the given root directories.
 
     Parameters
@@ -64,6 +69,28 @@ def walk(self, roots):
                             yield os.path.abspath(os.path.join(base, name))
             else:
                 yield match
+
+
+def _guess_medium(path):
+    '''Determine the appropriate medium for a given path.
+
+    Parameters
+    ----------
+    path : str
+        Filesystem path where the asset is stored.
+
+    Returns
+    -------
+    A string naming an asset medium. Returns None if no known media types
+    handle the given path.
+    '''
+    mime, _ = mimetypes.guess_type(path)
+    for pattern, medium in (('audio/.*', db.Asset.Medium.Audio),
+                            ('video/.*', db.Asset.Medium.Video),
+                            ('image/.*', db.Asset.Medium.Photo)):
+        if re.match(pattern, mime):
+            return medium
+    return None
 
 
 class Importer:
@@ -110,7 +137,7 @@ class Importer:
                         click.style('=', fg='blue'),
                         click.style(path, fg='red')))
                     return
-                medium = metadata.medium_for(path)
+                medium = _guess_medium(path)
                 if medium is None:
                     click.echo('{} Unknown {}'.format(
                         click.style('?', fg='yellow'),
@@ -166,10 +193,10 @@ class Thumbnailer:
 
     def __call__(self, asset):
         fmt = getattr(self, '{}_format'.format(asset.medium.name.lower()))
-        if fmt is None:
+        if not fmt:
             return
         output = asset.export(fmt=fmt, root=self.root, overwrite=self.overwrite)
-        if output is None:
+        if not output:
             return
         click.echo('{} {} -> {}'.format(click.style('T', fg='cyan'),
                                         click.style(asset.path, fg='red'),

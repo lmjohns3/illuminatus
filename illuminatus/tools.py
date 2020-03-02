@@ -1,351 +1,284 @@
 import click
+import contextlib
 import itertools
 import math
+import os
 import subprocess
-import ujson
-
-
-FILTER_ARGS = dict(
-    rotate='degrees',
-    brightness='percent',
-    saturation='percent',
-    hue='degrees',
-    contrast='percent',
-    autocontrast='percent',
-    crop='x1 x2 y1 y2',
-    hflip='',
-    vflip='',
-)
+import tempfile
 
 _DEBUG = 0
 
 
-class Tool:
-    '''A parent class for command-line tools to manipulate media files.'''
+def _run(*cmd):
+    if _DEBUG > 0:
+        click.echo(' '.join(cmd))
+    return subprocess.run(cmd, capture_output=_DEBUG == 0)
 
-    def __init__(self, path, shape=None, filters=()):
-        self.path = path
-        self.shape = shape
-        self._filters = []
-        for kwargs in filters:
-            self.apply_filter(**kwargs)
-        self._already_run = False
 
-    @property
-    def input_args(self):
-        return [self.path]
+def _crop_after_rotate(width, height, degrees):
+    '''Get the crop box that removes black triangles from a rotated photo.
 
-    @property
-    def filter_args(self):
-        return list(itertools.chain.from_iterable(f.split() for f in self._filters))
+    Suppose the original image has width w and height h.
 
-    def export(self, fmt, output):
-        '''Run the tool to create an export output.
+    The width W and height H of the maximal crop box are given by:
 
-        Parameters
-        ----------
-        fmt : `Format`
-            A `Format` class giving parameters for the output format.
-        output : str
-            Filename for the exported output.
-        '''
-        self._run(output)
+        W: w * cos(t) + h * sin(t)
+        H: w * sin(t) + h * cos(t)
 
-    def _run(self, *output_args):
-        '''Run this tool.
+    and the corners of the crop box are (counterclockwise from +x-axis):
 
-        Parameters
-        ----------
-        output_args : str
-            Extra arguments to add to the command line for this tool.
+        A: (h * sin(t), 0)
+        B: (0, h * cos(t))
+        C: (W - h * sin(t), H)
+        D: (W, H - h * cos(t))
 
-        Returns
-        -------
-        The subprocess object that is running the command.
-        '''
-        cmd = list(self.BINARY)
-        self._add_args(cmd, *output_args)
-        if self._already_run:
-            raise RuntimeError('Attempted to run twice: {!r}'.format(cmd))
-        self._already_run = True
-        if _DEBUG > 0:
-            click.echo('{} {!r}'.format(click.style('$', fg='red'), cmd))
-        return subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        AB:  y = h * cos(t) - x * cos(t) / sin(t)
+        DA:  y = (x - h * sin(t)) * (H - h * cos(t)) / (W - h * sin(t))
 
-    def _add_args(self, cmd, *output_args):
-        '''Add arguments to a command to be run.'''
-        cmd.extend(self.input_args)
-        cmd.extend(self.filter_args)
-        cmd.extend(output_args)
+    I used sympy to solve the equations for lines AB (evaluated at point
+    (a, b) on that line) and DA (evaluated at point (W - a, b)):
 
-    def apply_filter(self, **kwargs):
-        '''Apply a filter using this tool.
+        b = h * cos(t) - a * cos(t) / sin(t)
+        b = (W - a - h * sin(t)) * (H - h * cos(t)) / (W - h * sin(t))
 
-        Parameters
-        ----------
-        kwargs : dict
-            A dictionary containing filter arguments. It must contain a
-            "filter" key that names the filter to apply.
-        '''
-        if _DEBUG > 0:
-            click.echo('Applying filter {!r}'.format(kwargs))
+    The solution is given as:
+
+        a = f * (w * sin(t) - h * cos(t))
+        b = f * (h * sin(t) - w * cos(t))
+        f = sin(t) * cos(t) / (sin(t)**2 - cos(t)**2)
+
+    Parameters
+    ----------
+    width : int
+        Width in pixels of original image before rotation.
+    height : int
+        Height in pixels of original image before rotation.
+    degrees : float
+        Degrees of rotation.
+
+    Returns
+    -------
+    width : int
+        Width of cropped region.
+    height : int
+        Height of cropped region.
+    x : int
+        Offset of left edge of cropped region from outer bounding box of
+        rotated image.
+    y : int
+        Offset of top edge of cropped region from outer bounding box of
+        rotated image.
+    '''
+    angle = math.radians(degrees)
+    C = abs(math.cos(angle))
+    S = abs(math.sin(angle))
+    W = width * C + height * S
+    H = width * S + height * C
+    f = C * S / (S * S - C * C)
+    a = f * (width * S - height * C)
+    b = f * (height * S - width * C)
+    return int(W - 2 * a), int(H - 2 * b), int(a), int(b)
+
+
+def _apply_filters(asset, runners):
+    '''Apply a filter using this tool.
+
+    Parameters
+    ----------
+    asset : :class:`Asset`
+        Asset to use for media data.
+    runners : dict
+        A dictionary mapping strings to callables that implement different filters.
+    '''
+    w, h, t = asset.width, asset.height, asset.duration
+    for kwargs in asset.filters:
         flt = kwargs.pop('filter')
         if flt == 'rotate':
             angle = kwargs['degrees']
-            w, h = self.shape
-            self.filter_rotate(angle)
-            if abs(angle % 90) > 0.1:
-                self.filter_crop(*Tool._crop_after_rotate(w, h, angle))
+            runners['rotate'](angle)
+            if angle % 90 != 0:
+                w, h, x, y = _crop_after_rotate(w, h, angle)
+                runners['crop'](w, h, x, y)
         elif flt == 'crop':
-            w, h = self.shape
             px1, py1 = kwargs['x1'], kwargs['y1']
             px2, py2 = kwargs['x2'], kwargs['y2']
             x1, y1 = int(w * px1), int(h * py1)
             x2, y2 = int(w * px2), int(h * py2)
-            self.filter_crop(x2 - x1, y2 - y1, x1, y1)
+            w, h = x2 - x1, y2 - y1
+            runners['crop'](w, h, x1, y1)
+        elif flt == 'scale':
+            f = kwargs['factor']
+            w = int(f * w)
+            w -= w % 2
+            h = int(f * h)
+            h -= h % 2
+            runners['scale'](w, h)
+        elif flt == 'cut':
+            start = kwargs.get('start', 0)
+            duration = kwargs.get('duration', t - start)
+            t -= duration
+            runners['cut'](t, start, duration)
         else:
-            method = getattr(self, 'filter_{}'.format(flt))
-            method(**kwargs)
-
-    @staticmethod
-    def _crop_after_rotate(width, height, degrees):
-        '''Get the crop box that removes black triangles from a rotated photo.
-
-        Suppose the original image has width w and height h.
-
-        The width W and height H of the maximal crop box are given by:
-
-            W: w * cos(t) + h * sin(t)
-            H: w * sin(t) + h * cos(t)
-
-        and the corners of the crop box are (counterclockwise from +x-axis):
-
-            A: (h * sin(t), 0)
-            B: (0, h * cos(t))
-            C: (W - h * sin(t), H)
-            D: (W, H - h * cos(t))
-
-            AB:  y = h * cos(t) - x * cos(t) / sin(t)
-            DA:  y = (x - h * sin(t)) * (H - h * cos(t)) / (W - h * sin(t))
-
-        I used sympy to solve the equations for lines AB (evaluated at point
-        (a, b) on that line) and DA (evaluated at point (W - a, b)):
-
-            b = h * cos(t) - a * cos(t) / sin(t)
-            b = (W - a - h * sin(t)) * (H - h * cos(t)) / (W - h * sin(t))
-
-        The solution is given as:
-
-            a = f * (w * sin(t) - h * cos(t))
-            b = f * (h * sin(t) - w * cos(t))
-            f = sin(t) * cos(t) / (sin(t)**2 - cos(t)**2)
-
-        Parameters
-        ----------
-        width : int
-            Width in pixels of original image before rotation.
-        height : int
-            Height in pixels of original image before rotation.
-        degrees : float
-            Degrees of rotation.
-
-        Returns
-        -------
-        width : int
-            Width of cropped region.
-        height : int
-            Height of cropped region.
-        x : int
-            Offset of left edge of cropped region from outer bounding box of
-            rotated image.
-        y : int
-            Offset of top edge of cropped region from outer bounding box of
-            rotated image.
-        '''
-        angle = math.radians(degrees)
-        C = abs(math.cos(angle))
-        S = abs(math.sin(angle))
-        W = width * C + height * S
-        H = width * S + height * C
-        f = C * S / (S * S - C * C)
-        a = f * (width * S - height * C)
-        b = f * (height * S - width * C)
-        return [int(W - 2 * a), int(H - 2 * b), int(a), int(b)]
+            runners[flt](**kwargs)
 
 
-class Ffmpeg(Tool):
-    '''Ffmpeg is a tool for manipulating video files.'''
-
-    BINARY = ('ffmpeg', )
-
-    @property
-    def input_args(self):
-        return ['-i', self.path]
-
-    @property
-    def filter_args(self):
-        return ['-vf', ','.join(self._filters)]
-
-    def filter_autocontrast(self, percent):
-        self._filters.append('histeq=strength={}'.format(percent / 100))
-
-    def filter_saturation(self, percent):
-        self._filters.append('hue=s={}'.format(percent / 100))
-
-    def filter_brightness(self, percent):
-        self._filters.append('hue=b={}'.format(percent / 100 - 1))
-
-    def filter_hue(self, degrees):
-        self._filters.append('hue=h={}'.format(degrees))
-
-    def filter_scale(self, factor):
-        w, h = self.shape
-        w = int(factor * w)
-        w -= w % 2
-        h = int(factor * h)
-        h -= h % 2
-        self._set_bbox(w, h)
-        self.shape = w, h
-
-    def filter_crop(self, w, h, x, y):
-        self._filters.append('crop={}:{}:{}:{}'.format(w, h, x, y))
-        self.shape = w, h
-
-    def filter_rotate(self, degrees):
-        r = math.radians(degrees)
-        self._filters.append('rotate={0}:ow=rotw({0}):oh=roth({0})'.format(r))
-
-    def filter_hflip(self):
-        self._filters.append('hflip')
-
-    def filter_vflip(self):
-        self._filters.append('vflip')
-
-    def filter_fps(self, fps):
-        self._filters.append('fps={}'.format(fps))
-
-    def _set_bbox(self, w, h):
-        flt = 'scale={}:{}:force_original_aspect_ratio=decrease:flags=lanczos'
-        self._filters.append(flt.format(w, h))
-
-    def export(self, fmt, output):
-        self._set_bbox(*fmt.bbox)
-
-        if fmt.fps is not None:
-            self.filter_fps(fmt.fps)
-
-        args = []
-
-        if output.lower().endswith('.gif'):
-            pal = 'split[x][z];[z]palettegen={}[y];[x][y]paletteuse'
-            self._filters.append(pal.format(fmt.palette))
-            self._filters.append('loop=0')
-
-        elif output.lower().endswith('.jpg'):
-            self._filters.append('thumbnail')
-            args.extend(['-frames:v', '1'])
-
-        else:
-            if fmt.vcodec:
-                args.extend(['-c:v', str(fmt.vcodec), '-crf', str(fmt.crf),
-                             '-preset', str(fmt.preset), '-pix_fmt', 'yuv420p',
-                             '-movflags', '+faststart'])
-            else:
-                args.append('-vn')
-            if fmt.acodec:
-                args.extend(['-c:a', str(fmt.acodec), '-b:a', str(fmt.abitrate)])
-            else:
-                args.append('-an')
-
-        args.append(output)
-        return self._run(*args)
+@contextlib.contextmanager
+def _complex_filter(graph):
+    if graph:
+        with tempfile.NamedTemporaryFile(mode='w+') as script:
+            for i, entry in enumerate(graph):
+                if i:
+                    script.write(';\n')
+                script.write(entry)
+            script.flush()
+            yield script.name
+    else:
+        yield None
 
 
-class Convert(Tool):
-    '''GraphicsMagick (or ImageMagick) is a tool for manipulating images.'''
+def ffmpeg(asset, fmt, output):
+    '''Ffmpeg is a tool for manipulating audio and video files.
 
-    BINARY = ('gm', 'convert')
+    Parameters
+    ----------
+    asset : :class:`Asset`
+        Asset to use for media data.
+    fmt : :class:`Format`
+        Format for output.
+    output : str
+        Path for the output.
+    '''
+    # A list of extracted parts from the original video; these will be extracted
+    # and concatenated (in the order in this list) before applying filters.
+    extracts = []
+    filters = []
 
-    @property
-    def input_args(self):
-        return [self.path, '-auto-orient']
+    for i, (start, duration) in enumerate(extracts):
+        # https://superuser.com/questions/681885
+        yield ','.join(f'[0:v]trim=0:{start}',
+                       f'setpts=PTS-STARTPTS',
+                       f'format=yuv420p[v{i}]')
+        yield ','.join(f'[0:a]atrim=0:{start}', f'asetpts=PTS-STARTPTS[a{i}]')
+        if start + duration < length:
+            yield ','.join(f'[src_{n}:v]trim={start + duration}:{length}',
+                           f'setpts=PTS-STARTPTS',
+                           f'format=yuv420p[vid_{n}_2]')
+            yield ','.join(f'[src_{n}:a]atrim={start + duration}:{length}',
+                           f'asetpts=PTS-STARTPTS[aud_{n}_2]')
+        if start > 0 and start + duration < length:
+            yield f'[vid_{n}_1][aud_{n}_1][vid_{n}_2][aud_{n}_2]concat=n=2:v=1:a=1'
 
-    def filter_autocontrast(self, percent):
-        self._filters.append(
-            '-set histogram-threshold {} -normalize'.format(percent))
+    def scale(w, h):
+        return f'scale={w}:{h}:force_original_aspect_ratio=decrease:flags=lanczos'
 
-    def filter_contrast(self, percent):
-        if percent < 100:
-            self._filters.append('+contrast')
-        if percent > 100:
-            self._filters.append('-contrast')
+    def rotate(r):
+        return f'rotate={r}:ow=rotw({r}):oh=roth({r})'
 
-    def filter_brightness(self, percent):
-        self._filters.append('-modulate {},100,100'.format(percent))
+    _apply_filters(asset, dict(
+        autocontrast=lambda percent: filters.append(f'histeq=strength={percent / 100}'),
+        brightness=lambda percent: filters.append(f'hue=b={percent / 100 - 1}'),
+        crop=lambda w, h, x, y: filters.append(f'crop={w}:{h}:{x}:{y}'),
+        extract=lambda start, duration: extracts.append((start, duration)),
+        fps=lambda fps: filters.append(f'fps={fps}'),
+        hflip=lambda: filters.append('hflip'),
+        hue=lambda degrees: filters.append(f'hue=h={degrees}'),
+        rotate=lambda degrees: filters.append(rotate(math.radians(degrees))),
+        saturation=lambda percent: filters.append(f'hue=s={percent / 100}'),
+        scale=lambda w, h: filters.append(scale(w, h)),
+        vflip=lambda: filters.append('vflip'),
+    ))
 
-    def filter_saturation(self, percent):
-        self._filters.append('-modulate 100,{},100'.format(percent))
+    is_audio = asset.medium.name.lower() == 'audio'
+    stem = os.path.splitext(output)[0]
+    ext = fmt.extension_for(asset.medium)
 
-    def filter_hue(self, degrees):
-        while degrees < 0:
-            degrees += 360
-        if degrees > 180:
-            # map 181 degrees to -179, 270 to -90, etc.
-            degrees -= 360
-        self._filters.append('-modulate 100,100,{}'.format(degrees / 180))
+    if ext == 'png':
+        w, h = fmt.bbox
+        t = asset.duration / 2
+        start, end = max(0, t - 30), min(asset.duration, t + 30)
+        trim = f'atrim={start}:{end}'
+        spec = f'showspectrumpic=s={w}x{h}:color=viridis:scale=log:fscale=log'
+        _run('ffmpeg', '-y', '-i', asset.path, '-af', f'{trim},{spec}', f'{stem}.png')
 
-    def filter_hflip(self):
-        self._filters.append('-flop')
+    elif ext == 'gif':
+        w, h = fmt.bbox
+        t = asset.duration / 2
+        start, end = max(0, t - 5), min(asset.duration, t + 5)
+        _run('ffmpeg', '-y', '-i', asset.path, '-ss', f'{t}', '-an', '-vf', scale(w, h),
+              '-frames:v', '1', f'{stem}.png')
+        _run('ffmpeg', '-y', '-i', asset.path, '-loop', '-1', '-an', '-vf', ';'.join([
+            f'trim={start}:{end},fps={fmt.fps},{scale(w, h)},split[u][q]',
+            '[u]fifo[v]', '[q]palettegen[p]', '[v][p]paletteuse',
+        ]), f'{stem}.gif')
 
-    def filter_vflip(self):
-        self._filters.append('-flip')
+    elif ext == 'flac':
+        with _complex_filter(graph) as script:
+            args = ['ffmpeg', '-y', '-i', asset.path]
+            if script:
+                args.extend(('-filter_complex_script', script))
+            if fmt.samplerate:
+                args.extend(('-ar', f'{fmt.samplerate}'))
+            args.extend(('-f', ext, output))
+            _run(*args)
 
-    def filter_crop(self, w, h, x, y):
-        self._filters.append('-crop {}x{}+{}+{}'.format(w, h, x, y))
-        self.shape = w, h
+    elif ext == 'mp4':
+        graph.append(scale(*fmt.bbox))
+        if fmt.fps:
+            graph.append(f'fps={fmt.fps}')
+        with _complex_filter(graph) as script:
+            # https://superuser.com/questions/1296374
+            _run('ffmpeg', '-y', '-i', asset.path, '-filter_complex_script', script,
+                 '-c:v', 'hevc_nvenc', '-level:v', '4.1', '-profile:v', 'main',
+                 '-rc:v', 'vbr_hq', '-rc-lookahead:v', '32', '-refs:v', '16',
+                 '-bf:v', '2', '-coder:v', 'cabac', '-f', ext, output)
 
-    def filter_scale(self, factor):
-        w, h = self.shape
-        w = int(factor * w)
-        w -= w % 2
-        h = int(factor * h)
-        h -= h % 2
-        self._filters.append('-scale {}x{}'.format(w, h))
-        self.shape = w, h
-
-    def filter_rotate(self, degrees):
-        self._filters.append('-rotate {}'.format(degrees))
-
-    def export(self, fmt, output):
-        wi, hi = self.shape
-        wo, ho = fmt.bbox
-        if wo < wi / 2 and ho < hi / 2:
-            prescale = '-scale {}x{}'.format(int(1.2 * wo), int(1.2 * ho))
-            self._filters.insert(0, prescale)
-        self._filters.append('+profile *')
-        self._filters.append('-thumbnail {}x{}'.format(wo, ho))
-        self._run(output)
-
-
-class Exiftool(Tool):
-    '''Exiftool is used to extract metadata from images and videos.'''
-
-    BINARY = ('exiftool', '-json', '-d', '%Y-%m-%d %H:%M:%S')
-
-    def parse(self):
-        output = self._run().stdout.decode('utf-8').strip()
-        return ujson.loads(output)[0] if output.startswith('[{') else {}
+    elif ext == 'webm':
+        graph.append(scale(*fmt.bbox))
+        if fmt.fps:
+            graph.append(f'fps={fmt.fps}')
+        with _complex_filter(graph) as script:
+            _run('ffmpeg', '-y', '-i', asset.path, '-filter_complex_script', script,
+                 '-pass', '1', '-row-mt', '1', '-b:v', '0', '-crf', f'{fmt.crf or 30}',
+                 '-f', ext, '/dev/null')
+            _run('ffmpeg', '-y', '-i', asset.path, '-filter_complex_script', script,
+                 '-pass', '2', '-row-mt', '1', '-b:v', '0', '-crf', f'{fmt.crf or 30}',
+                 '-f', ext, output)
+'''
+n = int(asset.duration / 30)
+for i in range(n):
+run('-ss', f'{(i + 0.5) * asset.duration / n}',
+'-filter:v', "select='eq(pict_type, PICT_TYPE_I)'",
+'-frames:v', '1', '-vsync', 'vfr', '-f', 'png', output)
+'''
 
 
-class Sox(Tool):
-    '''Sox is a tool for manipulating sound files.'''
+def graphicsmagick(asset, fmt, output):
+    '''GraphicsMagick is a tool for manipulating images.
 
-    BINARY = ('sox', )
-
-    def filter_crop(self, offset, length):
-        self._filters.append('trim {} {}'.format(offset, length))
-
-    def _add_args(self, cmd, *output_args):
-        cmd.extend(self.input_args)
-        cmd.extend(output_args)
-        cmd.extend(self.filter_args)
+    Parameters
+    ----------
+    asset : :class:`Asset`
+        Asset to use for media data.
+    fmt : :class:`Format`
+        Format for output.
+    output : str
+        Path for the output.
+    '''
+    cmd = []
+    _apply_filters(asset, dict(
+        autocontrast=lambda percent: cmd.extend(
+            ('-set', 'histogram-threshold', f'{percent}', '-normalize')),
+        brightness=lambda percent: cmd.extend(('-modulate', f'{percent},100,100')),
+        contrast=lambda percent: (cmd.append('+contrast') if percent < 100 else
+                                  cmd.append('-contrast') if percent > 100 else None),
+        crop=lambda w, h, x, y: cmd.extend(('-crop', f'{w}x{h}+{x}+{y}')),
+        hflip=lambda: cmd.append('-flop'),
+        hue=lambda degrees: cmd.extend(('-modulate', f'100,100,{100 * degrees % 360 / 180}')),
+        rotate=lambda degrees: cmd.extend(('-rotate', f'{degrees}')),
+        saturation=lambda percent: cmd.extend(('-modulate', f'100,{percent},100')),
+        scale=lambda w, h: cmd.extend(('-scale', f'{w}x{h}')),
+        vflip=lambda: cmd.append('-flip'),
+    ))
+    w, h = fmt.bbox
+    _run(*('gm', 'convert', asset.path, '-auto-orient') +
+         tuple(cmd) + ('+profile', '*', '-thumbnail', f'{w}x{h}', output))
