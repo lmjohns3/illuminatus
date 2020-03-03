@@ -4,6 +4,7 @@ import contextlib
 import flask
 import flask_socketio
 import flask_sqlalchemy
+import json
 import os
 import shutil
 import tempfile
@@ -27,6 +28,11 @@ def handle_foo_event(json):
     return 'a'
 
 
+@app.route('/rest/formats/')
+def formats():
+    return flask.jsonify(app.config['formats'])
+
+
 @app.route('/rest/query/<string:query>/')
 def assets(query):
     req = flask.request
@@ -42,13 +48,12 @@ def assets(query):
 @app.route('/rest/export/<string:query>/', methods=['POST'])
 def export(query):
     req = flask.request
-    formats = {
-        '{}_format'.format(medium): metadata.Format.parse(req.form[medium])
-        for medium in ('audio', 'photo', 'video')}
-
     db = app.config['db']
     dirname = tempfile.mkdtemp()
-    importexport.Exporter(db.tags, db.select(query), **formats).run(
+
+    importexport.Exporter(
+        db.tags, db.select(query), json.loads(req.form[formats]),
+    ).run(
         output=os.path.join(dirname, req.form['name'] + '.zip'),
         hide_tags=req.form.get('hide_tags', '').split(),
         hide_metadata_tags=req.form.get('hide_metadata_tags', '') == '1',
@@ -87,11 +92,24 @@ def delete_asset(id):
     return flask.jsonify('ok')
 
 
+FILTER_ARGS = dict(
+    autocontrast='percent',
+    brightness='percent',
+    contrast='percent',
+    crop='x1 x2 y1 y2',
+    hflip='',
+    hue='degrees',
+    rotate='degrees',
+    saturation='percent',
+    trim='',
+    vflip='',
+)
+
 @app.route('/rest/asset/<int:id>/filters/<string:filter>/', methods=['POST'])
 def add_filter(id, filter):
     req = flask.request
     kwargs = dict(filter=filter)
-    for arg in tools.FILTER_ARGS[filter].split():
+    for arg in FILTER_ARGS[filter].split():
         kwargs[arg] = float(req.form[arg])
     asset = _get_asset(id)
     asset.add_filter(kwargs)
@@ -113,9 +131,9 @@ def delete_filter(id, filter, index):
     return flask.jsonify(asset.to_dict())
 
 
-@app.route('/asset/thumb/<int:id>/')
-def thumb(id):
-    return flask.send_file(_get_asset(id).path)
+@app.route('/asset/<path:path>')
+def thumb(path):
+    return flask.send_file(os.path.join(app.config['thumbnails'], path))
 
 
 @app.route('/manifest.json')

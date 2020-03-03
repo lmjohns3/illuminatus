@@ -158,8 +158,8 @@ def ffmpeg(asset, fmt, output):
     ----------
     asset : :class:`Asset`
         Asset to use for media data.
-    fmt : :class:`Format`
-        Format for output.
+    fmt : dict
+        Formatting args for output.
     output : str
         Path for the output.
     '''

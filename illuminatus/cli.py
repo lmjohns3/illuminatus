@@ -62,7 +62,7 @@ def cli(ctx, db_path, log_sql, log_tools):
 @cli.command()
 @click.pass_context
 def help(ctx):
-    '''Help on QUERYs and format SPECs.
+    '''Help on QUERYs.
 
     \b
     Queries
@@ -106,68 +106,6 @@ def help(ctx):
     - cake (before:2010-03-14 or after:2011-03-14)
       selects everything tagged "cake" that wasn't between pi day 2010 and
       pi day 2011
-
-    \b
-    Format Specifications
-    =====================
-
-    Illuminatus can export media in a variety of output formats. To specify
-    which format you'd like to use for output, provide one or more format
-    specifications using the --audio-format, --photo-format and
-    --video-format flags. Each specification can include the following
-
-    \b
-    Audio
-    -----
-    - ext: Output filename extension.
-    - fps: Frames per second when exporting audio or video.
-    - channels: Number of channels in exported audio files.
-
-    \b
-    Examples
-
-    \b
-    - fps=8000
-      export audio clips as AAC at 8kHz -- this is the shortest way of
-      specifying an audio format
-
-    \b
-    Photo
-    -----
-    - ext: Output filename extension.
-    - bbox: Maximum size of the output images.
-
-    \b
-    Examples
-
-    \b
-    - 100
-      export photos as jpg scaled down to fit inside a 100x100 box -- this is
-      the shortest way of specifying a photo format
-    - ext=jpg,bbox=100x100
-      same as above, giving explicit option names
-
-    \b
-    Video
-    -----
-    - ext: Output filename extension.
-    - bbox: Maximum size of the output frames.
-    - fps: Frames per second when exporting audio or video.
-    - palette: Number of colors in the palette for exported animated GIFs.
-    - abr: Kilobits per second for audio in exported videos.
-    - vbr: Kilobits per second for video in exported videos.
-
-    \b
-    Examples
-
-    \b
-    - 100
-      exports video as mp4 scaled down to fit inside a 100x100 box -- this is
-      the shortest way of specifying a video format
-    - ext=mp4,bbox=100x100,vbr=1024
-      same as above, giving explicit option names
-    - gif,100,fps=3,palette=64
-      exports video as 64-color animated GIFs at 3 frames per second
     '''
     print(ctx.get_help())
 
@@ -255,6 +193,7 @@ def rm(ctx, query, hide_original):
 
 
 @cli.command()
+@click.option('--config', metavar='FILE', help='read format config from FILE')
 @click.option('--output', metavar='FILE', help='save export zip to FILE')
 @click.option('--hide-tags', multiple=True, metavar='REGEXP [REGEXP...]',
               help='Exclude tags matching REGEXP from exported items.')
@@ -264,26 +203,18 @@ def rm(ctx, query, hide_original):
               help='Include tags from media metadata like EXIF.')
 @click.option('--hide-omnipresent-tags', default=False, is_flag=True,
               help='Do not remove tags that are present in all items.')
-@click.option('--audio-format', metavar='SPEC', default='abitrate=128k',
-              help='Export audio in these formats.')
-@click.option('--photo-format', metavar='SPEC', default='800',
-              help='Export photos in these formats.')
-@click.option('--video-format', metavar='SPEC', default='800',
-              help='Export videos in these formats.')
 @click.argument('query', nargs=-1)
 @click.pass_context
-def export(ctx, query, audio_format, photo_format, video_format, **kwargs):
+def export(ctx, query, config, **kwargs):
     '''Export a zip file matching a QUERY.
 
-    See "illuminatus help" for help on QUERY and SPEC syntax.
+    See "illuminatus help" for help on QUERY syntax.
     '''
     with session(ctx) as sess:
         count = importexport.Exporter(
             sess.query(db.Tag).all(),
             db.Asset.matching(sess, ' '.join(query)),
-            audio_format=metadata.Format.parse(audio_format),
-            photo_format=metadata.Format.parse(photo_format),
-            video_format=metadata.Format.parse(video_format),
+            json.load(config),
         ).run(**kwargs)
         click.echo('Exported {} assets to {}'.format(
             click.style(str(count), fg='cyan'),
@@ -353,30 +284,21 @@ def modify(ctx, query, stamp, inc_tag, dec_tag, remove_tag, add_path_tags):
 @cli.command()
 @click.option('--thumbnails', metavar='DIR',
               help='Save thumbnails in a directory under DIR.')
-@click.option('--audio-format', default='', metavar='SPEC',
-              help='Save audio thumbnails in this format.')
-@click.option('--photo-format', default='', metavar='SPEC',
-              help='Save photo thumbnails in this format.')
-@click.option('--video-format', default='', metavar='SPEC',
-              help='Save video thumbnails in this format.')
 @click.option('--overwrite/--no-overwrite', default=False,
               help='When set, overwrite existing thumbnails.')
 @click.argument('query', nargs=-1)
 @click.pass_context
-def thumbnail(ctx, query, thumbnails, audio_format, photo_format, video_format,
-              overwrite):
+def thumbnail(ctx, query, thumbnails, overwrite):
     '''Create thumbnails for assets matching a QUERY.
 
-    See "illuminatus help" for help on QUERY and SPEC syntax.
+    See "illuminatus help" for help on QUERY syntax.
     '''
     with session(ctx) as sess:
         importexport.Thumbnailer(
             db.Asset.matching(sess, ' '.join(query)),
             root=thumbnails,
             overwrite=overwrite,
-            audio_format=metadata.Format.parse(audio_format),
-            photo_format=metadata.Format.parse(photo_format),
-            video_format=metadata.Format.parse(video_format),
+            formats=json.load(os.path.join(thumbnails, 'config.json')),
         ).run()
 
 
@@ -389,26 +311,15 @@ def thumbnail(ctx, query, thumbnails, audio_format, photo_format, video_format,
 @click.option('--hide-originals/--no-hide-originals', default=False)
 @click.option('--thumbnails', metavar='PATH',
               help='Absolute PATH for thumbnailed media content.')
-@click.option('--small-audio-format', default='', metavar='SPEC',
-              help='Format for small audio format "thumbnails".')
-@click.option('--small-photo-format', default='', metavar='SPEC',
-              help='Format for small photo format "thumbnails".')
-@click.option('--small-video-format', default='', metavar='SPEC',
-              help='Format for small video format "thumbnails".')
-@click.option('--large-audio-format', default='', metavar='SPEC',
-              help='Format for large audio format "thumbnails".')
-@click.option('--large-photo-format', default='', metavar='SPEC',
-              help='Format for large photo format "thumbnails".')
-@click.option('--large-video-format', default='', metavar='SPEC',
-              help='Format for large video format "thumbnails".')
 @click.pass_context
-def serve(ctx, host, port, debug, hide_originals, thumbnails, **kwargs):
+def serve(ctx, host, port, debug, hide_originals, thumbnails):
     '''Start an HTTP server for asset metadata.'''
     from .serve import app
     from .serve import sql
     app.config['SQLALCHEMY_ECHO'] = debug
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_DATABASE_URI'] = db.db_uri(path=ctx.obj['db_path'])
-    app.config['config'] = metadata.load_config(config)
+    app.config['hide-originals'] = hide_originals
+    app.config['formats'] = json.load(os.path.join(thumbnails, 'config.json'))
     sql.init_app(app)
     app.run(host=host, port=port, debug=debug, threaded=False, processes=8)

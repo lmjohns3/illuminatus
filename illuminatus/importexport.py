@@ -7,7 +7,6 @@ import os
 import re
 import sys
 import tempfile
-import ujson
 import zipfile
 
 from . import db
@@ -170,37 +169,33 @@ class Thumbnailer:
         A filesystem path for saving thumbnails.
     overwrite : bool
         If True, we'll overwrite existing thumbnails.
-    audio_format : :class:`Format`
-        A Format for audio thumbnails.
-    photo_format : :class:`Format`
-        A Format for photo thumbnails.
-    video_format : :class:`Format`
-        A Format for video thumbnails.
+    formats : list of dict
+        The formats we should use for making thumbnails.
     '''
 
-    def __init__(self, assets, root=None, overwrite=False, audio_format=None,
-                 video_format=None, photo_format=None):
+    def __init__(self, assets, root=None, overwrite=False, formats=None):
         self.assets = assets
         self.root = root
         self.overwrite = overwrite
-        self.audio_format = audio_format
-        self.photo_format = photo_format
-        self.video_format = video_format
+        self.formats = formats
 
     def run(self):
         '''Export thumbnails for media to files on disk.'''
         run_workqueue(self.assets, self)
 
     def __call__(self, asset):
-        fmt = getattr(self, '{}_format'.format(asset.medium.name.lower()))
-        if not fmt:
-            return
-        output = asset.export(fmt=fmt, root=self.root, overwrite=self.overwrite)
-        if not output:
-            return
-        click.echo('{} {} -> {}'.format(click.style('T', fg='cyan'),
-                                        click.style(asset.path, fg='red'),
-                                        click.style(output, fg='green')))
+        for fmt in self.formats:
+            if fmt.get('medium', '') != asset.medium.name.lower():
+                continue
+            path = self.root
+            if 'path' in fmt:
+                path = os.path.join(path, fmt['path'])
+            output = asset.export(fmt=fmt['format'], root=path, overwrite=self.overwrite)
+            if not output:
+                continue
+            click.echo('{} {} -> {}'.format(click.style('*', fg='cyan'),
+                                            click.style(asset.path, fg='red'),
+                                            click.style(output, fg='green')))
 
 
 class Exporter:
@@ -211,22 +206,15 @@ class Exporter:
     all_tags : list of :class:`db.Tag`
         All tags defined in the database.
     assets : list of :class:`db.Asset`
-        A list of the media assets to export.
-    audio_format : :class:`Format`
-        A Format for audio thumbnails.
-    photo_format : :class:`Format`
-        A Format for photo thumbnails.
-    video_format : :class:`Format`
-        A Format for video thumbnails.
+        A list of the assets to export.
+    formats : list of dict
+        The formats that we should use for the export.
     '''
 
-    def __init__(self, all_tags, assets, audio_format=None, video_format=None,
-                 photo_format=None):
+    def __init__(self, all_tags, assets, formats):
         self.all_tags = all_tags
         self.assets = assets
-        self.audio_format = audio_format
-        self.photo_format = photo_format
-        self.video_format = video_format
+        self.formats = formats
 
     def run(self, output, hide_tags=(), hide_metadata_tags=False,
             hide_datetime_tags=False, hide_omnipresent_tags=False):
@@ -244,7 +232,7 @@ class Exporter:
             content to.
         hide_tags : list of str, optional
             A list of regular expressions matching tags to be excluded from the
-            export information. For example, '^a' will exclude all tags
+            export information. For example, 'a.*' will exclude all tags
             starting with the letter "a". Default is to export all tags.
         hide_metadata_tags : bool, optional
             If True, export tags derived from EXIF data (e.g., ISO:1000, f/2,
@@ -283,16 +271,20 @@ class Exporter:
             self.root = root
             run_workqueue(self.assets, self)
             with open(index, 'w') as handle:
-                ujson.dump([asset.to_dict(exclude_tags=hide_names)
-                            for asset in self.assets], handle)
+                json.dump([asset.to_dict(exclude_tags=hide_names)
+                           for asset in self.assets], handle)
             _create_zip(output, root)
 
         return len(self.assets)
 
     def __call__(self, asset):
-        fmt = getattr(self, '{}_format'.format(asset.medium.name.lower()))
-        if fmt is not None:
-            asset.export(fmt=fmt, root=self.root)
+        for fmt in self.formats:
+            if fmt.get('medium', '') != asset.medium.name.lower():
+                continue
+            path = self.root
+            if 'path' in fmt:
+                path = os.path.join(path, fmt['path'])
+            asset.export(fmt=fmt['format'], root=path)
 
 
 # This is mostly from zipfile.py in the Python source.

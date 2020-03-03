@@ -224,18 +224,15 @@ class Asset(Model):
                   if t.name not in exclude_tags],
         )
 
-    def export(self, root, fmt=None, overwrite=False, **kwargs):
+    def export(self, root, fmt, overwrite):
         '''Export a version of this media asset to another location.
-
-        Additional keyword arguments are used to create a :class:`Format` if
-        `fmt` is `None`.
 
         Parameters
         ----------
         root : str
-            Save exported media under this root path.
-        fmt : :class:`Format`, optional
-            Export media with the given :class:`Format`.
+            Save exported asset under this root path.
+        fmt : dict
+            Export asset with the given format specifier.
         overwrite : bool, optional
             If an exported file already exists, this flag determines what to
             do. If `True` overwrite it; otherwise (the default), return.
@@ -246,16 +243,11 @@ class Asset(Model):
         '''
         hash = self.path_hash
 
-        if fmt is None:
-            fmt = metadata.Format(**kwargs)
-
         dirname = os.path.join(root, str(fmt), hash[:2])
         if not os.path.exists(dirname):
             os.makedirs(dirname)
 
-        ext = fmt.extension_for(self.medium)
-
-        output = os.path.join(dirname, f'{hash}.{ext}')
+        output = os.path.join(dirname, f'{hash}.{fmt["ext"]}')
         if os.path.exists(output) and not overwrite:
             return None
 
