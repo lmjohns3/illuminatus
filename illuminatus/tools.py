@@ -123,7 +123,22 @@ def _apply_filters(asset, runners):
 
 
 @contextlib.contextmanager
-def _complex_filter(graph):
+def _complex_filter(extracts, filters):
+    for i, (start, duration) in enumerate(extracts):
+        # https://superuser.com/questions/681885
+        yield ','.join(f'[0:v]trim=0:{start}',
+                       f'setpts=PTS-STARTPTS',
+                       f'format=yuv420p[v{i}]')
+        yield ','.join(f'[0:a]atrim=0:{start}', f'asetpts=PTS-STARTPTS[a{i}]')
+        if start + duration < length:
+            yield ','.join(f'[src_{n}:v]trim={start + duration}:{length}',
+                           f'setpts=PTS-STARTPTS',
+                           f'format=yuv420p[vid_{n}_2]')
+            yield ','.join(f'[src_{n}:a]atrim={start + duration}:{length}',
+                           f'asetpts=PTS-STARTPTS[aud_{n}_2]')
+        if start > 0 and start + duration < length:
+            yield f'[vid_{n}_1][aud_{n}_1][vid_{n}_2][aud_{n}_2]concat=n=2:v=1:a=1'
+
     if graph:
         with tempfile.NamedTemporaryFile(mode='w+') as script:
             for i, entry in enumerate(graph):
@@ -153,30 +168,23 @@ def ffmpeg(asset, fmt, output):
     extracts = []
     filters = []
 
-    for i, (start, duration) in enumerate(extracts):
-        # https://superuser.com/questions/681885
-        yield ','.join(f'[0:v]trim=0:{start}',
-                       f'setpts=PTS-STARTPTS',
-                       f'format=yuv420p[v{i}]')
-        yield ','.join(f'[0:a]atrim=0:{start}', f'asetpts=PTS-STARTPTS[a{i}]')
-        if start + duration < length:
-            yield ','.join(f'[src_{n}:v]trim={start + duration}:{length}',
-                           f'setpts=PTS-STARTPTS',
-                           f'format=yuv420p[vid_{n}_2]')
-            yield ','.join(f'[src_{n}:a]atrim={start + duration}:{length}',
-                           f'asetpts=PTS-STARTPTS[aud_{n}_2]')
-        if start > 0 and start + duration < length:
-            yield f'[vid_{n}_1][aud_{n}_1][vid_{n}_2][aud_{n}_2]concat=n=2:v=1:a=1'
-
     def scale(w, h):
         return f'scale={w}:{h}:force_original_aspect_ratio=decrease:flags=lanczos'
 
     def rotate(r):
         return f'rotate={r}:ow=rotw({r}):oh=roth({r})'
 
+    def sigmoid(ratio):
+        def curve(x):
+            return (x ** ratio if x < 0.5 else
+                    1 - curve(1 - x) if x > 0.5 else
+                    0.5)
+        return ' '.join(f'{x}/{curve(x)}' for x in (0.0, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0))
+
     _apply_filters(asset, dict(
         autocontrast=lambda percent: filters.append(f'histeq=strength={percent / 100}'),
         brightness=lambda percent: filters.append(f'hue=b={percent / 100 - 1}'),
+        contrast=lambda percent: filters.append(f"curves=m='{sigmoid(percent / 100)}'"),
         crop=lambda w, h, x, y: filters.append(f'crop={w}:{h}:{x}:{y}'),
         extract=lambda start, duration: extracts.append((start, duration)),
         fps=lambda fps: filters.append(f'fps={fps}'),
@@ -188,61 +196,61 @@ def ffmpeg(asset, fmt, output):
         vflip=lambda: filters.append('vflip'),
     ))
 
-    is_audio = asset.medium.name.lower() == 'audio'
     stem = os.path.splitext(output)[0]
     ext = fmt.extension_for(asset.medium)
 
-    if ext == 'png':
-        w, h = fmt.bbox
-        t = asset.duration / 2
-        start, end = max(0, t - 30), min(asset.duration, t + 30)
-        trim = f'atrim={start}:{end}'
-        spec = f'showspectrumpic=s={w}x{h}:color=viridis:scale=log:fscale=log'
-        _run('ffmpeg', '-y', '-i', asset.path, '-af', f'{trim},{spec}', f'{stem}.png')
+    if asset.medium.name.lower() == 'photo':
+        _run('ffmpeg', '-y', '-i', asset.path, '-vf', ','.join(filters), output)
 
+    elif asset.medium.name.lower() == 'audio':
+        if ext == 'png':
+            # Make a spectrogram image of the middle 60 seconds.
+            w, h = fmt.bbox
+            t = asset.duration / 2
+            start, end = max(0, t - 30), min(asset.duration, t + 30)
+            trim = f'atrim={start}:{end}'
+            spec = f'showspectrumpic=s={w}x{h}:color=viridis:scale=log:fscale=log'
+            _run('ffmpeg', '-y', '-i', asset.path, '-af', f'{trim},{spec}', f'{stem}.png')
+
+        else:
+            with _complex_filter(extracts, filters) as script:
+                _run('ffmpeg', '-y', '-i', asset.path, '-filter_complex_script', script,
+                     '-ar', f'{fmt.ar or 44100}', '-f', ext, output)
+
+    # asset.medium.name.lower() == 'video':
     elif ext == 'gif':
         w, h = fmt.bbox
         t = asset.duration / 2
         start, end = max(0, t - 5), min(asset.duration, t + 5)
+        # Make a poster image from the middle of the video.
         _run('ffmpeg', '-y', '-i', asset.path, '-ss', f'{t}', '-an', '-vf', scale(w, h),
               '-frames:v', '1', f'{stem}.png')
+        # Make an animated gif from the middle 10 seconds.
         _run('ffmpeg', '-y', '-i', asset.path, '-loop', '-1', '-an', '-vf', ';'.join([
             f'trim={start}:{end},fps={fmt.fps},{scale(w, h)},split[u][q]',
             '[u]fifo[v]', '[q]palettegen[p]', '[v][p]paletteuse',
         ]), f'{stem}.gif')
 
-    elif ext == 'flac':
-        with _complex_filter(graph) as script:
-            args = ['ffmpeg', '-y', '-i', asset.path]
-            if script:
-                args.extend(('-filter_complex_script', script))
-            if fmt.samplerate:
-                args.extend(('-ar', f'{fmt.samplerate}'))
-            args.extend(('-f', ext, output))
-            _run(*args)
-
     elif ext == 'mp4':
-        graph.append(scale(*fmt.bbox))
+        filters.append(scale(*fmt.bbox))
         if fmt.fps:
-            graph.append(f'fps={fmt.fps}')
-        with _complex_filter(graph) as script:
+            filters.append(f'fps={fmt.fps}')
+        with _complex_filter(extracts, filters) as script:
             # https://superuser.com/questions/1296374
             _run('ffmpeg', '-y', '-i', asset.path, '-filter_complex_script', script,
                  '-c:v', 'hevc_nvenc', '-level:v', '4.1', '-profile:v', 'main',
                  '-rc:v', 'vbr_hq', '-rc-lookahead:v', '32', '-refs:v', '16',
-                 '-bf:v', '2', '-coder:v', 'cabac', '-f', ext, output)
+                 '-bf:v', '2', '-coder:v', 'cabac', '-ar', f'{fmt.ar or 44100}',
+                 '-ac', f'{fmt.ac or 2}', '-f', ext, output)
 
     elif ext == 'webm':
-        graph.append(scale(*fmt.bbox))
+        filters.append(scale(*fmt.bbox))
         if fmt.fps:
-            graph.append(f'fps={fmt.fps}')
-        with _complex_filter(graph) as script:
+            filters.append(f'fps={fmt.fps}')
+        with _complex_filter(extracts, filters) as script:
             _run('ffmpeg', '-y', '-i', asset.path, '-filter_complex_script', script,
-                 '-pass', '1', '-row-mt', '1', '-b:v', '0', '-crf', f'{fmt.crf or 30}',
-                 '-f', ext, '/dev/null')
-            _run('ffmpeg', '-y', '-i', asset.path, '-filter_complex_script', script,
-                 '-pass', '2', '-row-mt', '1', '-b:v', '0', '-crf', f'{fmt.crf or 30}',
-                 '-f', ext, output)
+                 '-row-mt', '1', '-b:v', '0', '-crf', f'{fmt.crf or 30}',
+                 '-ar', f'{fmt.ar or 44100}', '-ac', f'{fmt.ac or 2}', '-f', ext, output)
 '''
 n = int(asset.duration / 30)
 for i in range(n):
@@ -250,35 +258,3 @@ run('-ss', f'{(i + 0.5) * asset.duration / n}',
 '-filter:v', "select='eq(pict_type, PICT_TYPE_I)'",
 '-frames:v', '1', '-vsync', 'vfr', '-f', 'png', output)
 '''
-
-
-def graphicsmagick(asset, fmt, output):
-    '''GraphicsMagick is a tool for manipulating images.
-
-    Parameters
-    ----------
-    asset : :class:`Asset`
-        Asset to use for media data.
-    fmt : :class:`Format`
-        Format for output.
-    output : str
-        Path for the output.
-    '''
-    cmd = []
-    _apply_filters(asset, dict(
-        autocontrast=lambda percent: cmd.extend(
-            ('-set', 'histogram-threshold', f'{percent}', '-normalize')),
-        brightness=lambda percent: cmd.extend(('-modulate', f'{percent},100,100')),
-        contrast=lambda percent: (cmd.append('+contrast') if percent < 100 else
-                                  cmd.append('-contrast') if percent > 100 else None),
-        crop=lambda w, h, x, y: cmd.extend(('-crop', f'{w}x{h}+{x}+{y}')),
-        hflip=lambda: cmd.append('-flop'),
-        hue=lambda degrees: cmd.extend(('-modulate', f'100,100,{100 * degrees % 360 / 180}')),
-        rotate=lambda degrees: cmd.extend(('-rotate', f'{degrees}')),
-        saturation=lambda percent: cmd.extend(('-modulate', f'100,{percent},100')),
-        scale=lambda w, h: cmd.extend(('-scale', f'{w}x{h}')),
-        vflip=lambda: cmd.append('-flip'),
-    ))
-    w, h = fmt.bbox
-    _run(*('gm', 'convert', asset.path, '-auto-orient') +
-         tuple(cmd) + ('+profile', '*', '-thumbnail', f'{w}x{h}', output))

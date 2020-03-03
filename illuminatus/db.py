@@ -259,8 +259,7 @@ class Asset(Model):
         if os.path.exists(output) and not overwrite:
             return None
 
-        (tools.ffmpeg,
-         tools.graphicsmagick)[self.medium == Asset.Medium.Photo](self, fmt, output)
+        tools.ffmpeg(self, fmt, output)
 
         return output
 
