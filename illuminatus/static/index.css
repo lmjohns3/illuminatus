@@ -20,15 +20,6 @@ html {
 .browse .asset img.photo { border-color: #111; }
 .browse .asset.selected img { border-color: #fff; }
 
-/* TAGS */
-
-.tag.group-y { background-color: #f90; }
-.tag.group-m { background-color: #fc0; }
-.tag.group-d { background-color: #ff0; }
-.tag.group-w { background-color: #ff6; }
-.tag.group-h { background-color: #ffc; }
-.tag.group-user { background-color: #0c0; }
-
 /* EDITOR */
 
 #tools * { z-index: 3; }

@@ -1,7 +1,9 @@
 import React from "react"
-import {BrowserRouter as Router, Route, Link, Redirect, Switch} from "react-router-dom"
+import {BrowserRouter as Router, Route, Switch} from "react-router-dom"
 import ReactDOM from "react-dom"
 import moment from "moment"
+
+import {BrowserView, MobileView, isBrowser, isMobile} from "react-device-detect";
 
 import DB from "./db"
 import Browse from "./browse"
@@ -9,7 +11,6 @@ import View from "./view"
 import Edit from "./edit"
 import Label from "./label"
 import Cluster from "./cluster"
-
 
 const KEYS = {
   tab: 9, enter: 13, escape: 27, space: 32,
