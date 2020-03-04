@@ -1,0 +1,17 @@
+{
+    "root": "/tmp/thumbs",
+    "formats": [
+        {"path": "small",  "medium": "photo", "format": {
+            "ext": "jpg", "bbox": [200, 200]}},
+        {"path": "small",  "medium": "audio", "format": {
+            "ext": "png", "bbox": [200, 200]}},
+        {"path": "small",  "medium": "video", "format": {
+            "ext": "gif", "bbox": [200, 200], "fps": 10}},
+        {"path": "medium", "medium": "photo", "format": {
+            "ext": "jpg", "bbox": [1000, 1000]}},
+        {"path": "medium", "medium": "audio", "format": {
+            "ext": "mp3", "abr": 192}},
+        {"path": "medium", "medium": "video", "format": {
+            "ext": "mp4", "bbox": [1000, 1000], "abr": 192, "vbr": 2000}}
+    ]
+}

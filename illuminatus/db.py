@@ -151,13 +151,16 @@ class Asset(Model):
                                           secondaryjoin=id == similar.c.b_id)
 
     @property
-    def shape(self):
-        return self.width, self.height, self.duration
+    def is_audio(self):
+        return self.medium == Asset.Medium.Audio
 
     @property
-    def basename(self):
-        '''The base filename for this asset.'''
-        return os.path.basename(self.path)
+    def is_photo(self):
+        return self.medium == Asset.Medium.Photo
+
+    @property
+    def is_video(self):
+        return self.medium == Asset.Medium.Video
 
     @property
     def path_hash(self):
@@ -167,10 +170,12 @@ class Asset(Model):
 
     @property
     def md5_hash(self):
+        '''MD5 hash of the contents of the asset.'''
         return [h for h in self.hashes if h.flavor == Hash.Flavor.MD5][0]
 
     @property
     def diff8_hashes(self):
+        '''Diff-8 hashes of the contents of the asset.'''
         return sorted(h for h in self.hashes if h.flavor == Hash.Flavor.DIFF_8)
 
     @staticmethod
@@ -243,11 +248,11 @@ class Asset(Model):
         '''
         hash = self.path_hash
 
-        dirname = os.path.join(root, str(fmt), hash[:2])
+        dirname = os.path.join(root, hash[:2])
         if not os.path.exists(dirname):
             os.makedirs(dirname)
 
-        output = os.path.join(dirname, f'{hash}.{fmt["ext"]}')
+        output = os.path.join(dirname, f'{hash}.{fmt.ext}')
         if os.path.exists(output) and not overwrite:
             return None
 

@@ -193,8 +193,8 @@ def rm(ctx, query, hide_original):
 
 
 @cli.command()
-@click.option('--config', metavar='FILE', help='read format config from FILE')
-@click.option('--output', metavar='FILE', help='save export zip to FILE')
+@click.option('--config', metavar='FILE', help='Read format config from FILE.')
+@click.option('--output', metavar='FILE', help='Save export zip to FILE.')
 @click.option('--hide-tags', multiple=True, metavar='REGEXP [REGEXP...]',
               help='Exclude tags matching REGEXP from exported items.')
 @click.option('--hide-datetime-tags', default=False, is_flag=True,
@@ -212,9 +212,9 @@ def export(ctx, query, config, **kwargs):
     '''
     with session(ctx) as sess:
         count = importexport.Exporter(
-            sess.query(db.Tag).all(),
-            db.Asset.matching(sess, ' '.join(query)),
-            json.load(config),
+            all_tags=sess.query(db.Tag).all(),
+            assets=db.Asset.matching(sess, ' '.join(query)),
+            formats=json.load(open(config))['formats'],
         ).run(**kwargs)
         click.echo('Exported {} assets to {}'.format(
             click.style(str(count), fg='cyan'),
@@ -282,23 +282,24 @@ def modify(ctx, query, stamp, inc_tag, dec_tag, remove_tag, add_path_tags):
 
 
 @cli.command()
-@click.option('--thumbnails', metavar='DIR',
-              help='Save thumbnails in a directory under DIR.')
+@click.option('--config', metavar='FILE',
+              help='Config FILE for thumbnailed media content.')
 @click.option('--overwrite/--no-overwrite', default=False,
               help='When set, overwrite existing thumbnails.')
 @click.argument('query', nargs=-1)
 @click.pass_context
-def thumbnail(ctx, query, thumbnails, overwrite):
+def thumbnail(ctx, query, config, overwrite):
     '''Create thumbnails for assets matching a QUERY.
 
     See "illuminatus help" for help on QUERY syntax.
     '''
+    config = json.load(open(config))
     with session(ctx) as sess:
         importexport.Thumbnailer(
             db.Asset.matching(sess, ' '.join(query)),
-            root=thumbnails,
+            root=config['root'],
             overwrite=overwrite,
-            formats=json.load(os.path.join(thumbnails, 'config.json')),
+            formats=config['formats'],
         ).run()
 
 
@@ -309,8 +310,8 @@ def thumbnail(ctx, query, thumbnails, overwrite):
               help='Run server on PORT.')
 @click.option('--debug/--no-debug', default=False)
 @click.option('--hide-originals/--no-hide-originals', default=False)
-@click.option('--thumbnails', metavar='PATH',
-              help='Absolute PATH for thumbnailed media content.')
+@click.option('--thumbnails', metavar='FILE',
+              help='Config FILE for thumbnailed media content.')
 @click.pass_context
 def serve(ctx, host, port, debug, hide_originals, thumbnails):
     '''Start an HTTP server for asset metadata.'''
@@ -318,8 +319,8 @@ def serve(ctx, host, port, debug, hide_originals, thumbnails):
     from .serve import sql
     app.config['SQLALCHEMY_ECHO'] = debug
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SQLALCHEMY_DATABASE_URI'] = db.db_uri(path=ctx.obj['db_path'])
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{ctx.obj["db_path"]}'
     app.config['hide-originals'] = hide_originals
-    app.config['formats'] = json.load(os.path.join(thumbnails, 'config.json'))
+    app.config['thumbnails'] = json.load(open(thumbnails))
     sql.init_app(app)
     app.run(host=host, port=port, debug=debug, threaded=False, processes=8)

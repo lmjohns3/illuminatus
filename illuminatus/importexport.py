@@ -15,6 +15,10 @@ from . import metadata
 _DEBUG = 0
 
 
+def _to_tuple(kwargs):
+    return collections.namedtuple('Format', sorted(kwargs))(**kwargs)
+
+
 def _process(jobs_queue, callback):
     while True:
         job = jobs_queue.get()
@@ -187,15 +191,16 @@ class Thumbnailer:
         for fmt in self.formats:
             if fmt.get('medium', '') != asset.medium.name.lower():
                 continue
-            path = self.root
+            root = self.root
             if 'path' in fmt:
-                path = os.path.join(path, fmt['path'])
-            output = asset.export(fmt=fmt['format'], root=path, overwrite=self.overwrite)
+                root = os.path.join(root, fmt['path'])
+            output = asset.export(
+                fmt=_to_tuple(fmt['format']), root=root, overwrite=self.overwrite)
             if not output:
                 continue
             click.echo('{} {} -> {}'.format(click.style('*', fg='cyan'),
                                             click.style(asset.path, fg='red'),
-                                            click.style(output, fg='green')))
+                                            output))
 
 
 class Exporter:
@@ -279,12 +284,12 @@ class Exporter:
 
     def __call__(self, asset):
         for fmt in self.formats:
-            if fmt.get('medium', '') != asset.medium.name.lower():
+            if fmt.medium != asset.medium.name.lower():
                 continue
-            path = self.root
+            root = self.root
             if 'path' in fmt:
-                path = os.path.join(path, fmt['path'])
-            asset.export(fmt=fmt['format'], root=path)
+                root = os.path.join(root, fmt['path'])
+            asset.export(fmt=_to_tuple(fmt['format']), root=root)
 
 
 # This is mostly from zipfile.py in the Python source.
