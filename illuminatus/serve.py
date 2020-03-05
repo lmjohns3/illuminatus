@@ -30,29 +30,30 @@ def handle_foo_event(json):
 
 @app.route('/rest/formats/')
 def formats():
-    return flask.jsonify(app.config['formats'])
+    return flask.jsonify(app.config['thumbnails']['formats'])
 
 
-@app.route('/rest/query/<string:query>/')
+@app.route('/rest/query/<path:query>')
 def assets(query):
     req = flask.request
-    assets = (db.Asset.matching(sql.session, query)
+    assets = (db.Asset.matching(sql.session, ' '.join(filter(None, query.split('/'))))
               .order_by(db.parse_order(req.args.get('order', 'stamp')))
               .limit(int(req.args.get('limit', 99999)))
               .offset(int(req.args.get('offset', 0)))
               .all())
-    print(len(assets))
     return flask.jsonify(assets=[a.to_dict() for a in assets])
 
 
-@app.route('/rest/export/<string:query>/', methods=['POST'])
+@app.route('/rest/export/<path:query>', methods=['POST'])
 def export(query):
     req = flask.request
     db = app.config['db']
     dirname = tempfile.mkdtemp()
 
     importexport.Exporter(
-        db.tags, db.select(query), json.loads(req.form[formats]),
+        db.Tag.query(sql.session).all(),
+        db.Asset.matching(sql.session, ' '.join(filter(None, query.split('/')))),
+        json.loads(req.form[formats]),
     ).run(
         output=os.path.join(dirname, req.form['name'] + '.zip'),
         hide_tags=req.form.get('hide_tags', '').split(),
@@ -133,7 +134,7 @@ def delete_filter(id, filter, index):
 
 @app.route('/asset/<path:path>')
 def thumb(path):
-    return flask.send_file(os.path.join(app.config['thumbnails'], path))
+    return flask.send_file(os.path.join(app.config['thumbnails']['root'], path))
 
 
 @app.route('/manifest.json')
@@ -149,10 +150,10 @@ def manifest():
 
 
 @app.route('/')
-@app.route('/edit/<int:id>/')
-@app.route('/label/<int:id>/')
-@app.route('/cluster/<int:id>/')
-@app.route('/browse/<string:query>/')
-@app.route('/view/<string:query>/<int:offset>/')
+@app.route('/edit/<string:hash>/')
+@app.route('/label/<string:hash>/')
+@app.route('/cluster/<string:hash>/')
+@app.route('/view/<string:hash>/')
+@app.route('/browse/<path:query>')
 def index(*args, **kwargs):
     return flask.render_template('index.html')

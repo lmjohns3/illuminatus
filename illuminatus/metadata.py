@@ -18,29 +18,26 @@ _TIMESTAMP_FORMATS = ['YYYY-MM-DD HH:mm:ss', 'YYYY:MM:DD HH:mm:ss']
 _GEO_PATTERN = r'(?P<deg>\d+) deg (?P<min>\d+)\' (?P<sec>\d+(\.\d*)?)" (?P<sgn>[{}])'
 
 
-def _geo_to_degrees(raw, pattern, positive):
+def _geo_to_degrees(raw, axis):
     '''Convert a geo metadata field to float degrees.
 
     Parameters
     ----------
     raw : str
         Raw metadata string possibly containing a geo coordinate.
-    pattern : str
-        Regular expression pattern for finding geo coordinate fields.
-    positive : str
-        The compass direction that should be considered positive (N for
-        latitude or E for longitude).
+    axis : {'NS', 'EW'}
+        Axis for values along one geo coordinate.
 
     Returns
     -------
     A floating point number of degrees, or None if nothing could be found.
     '''
-    match = re.search(pattern, raw)
+    match = re.search(_GEO_PATTERN.format(axis), raw)
     if match is None:
         return None
     m = match.groupdict()
     deg = int(m['deg']) + int(m['min']) / 60 + float(m['sec']) / 3600
-    return [-1, 1][m['sgn'] == positive] * deg
+    return [-1, 1][m['sgn'] == axis[0]] * deg
 
 
 class Metadata:
@@ -110,19 +107,17 @@ class Metadata:
     @property
     def latitude(self):
         '''The latitude of an asset from exif metadata.'''
-        pattern = _GEO_PATTERN.format('NS')
-        lat = _geo_to_degrees(self._data.get('GPSLatitude', ''), pattern, 'N')
+        lat = _geo_to_degrees(self._data.get('GPSLatitude', ''), 'NS')
         if lat is None:
-            lat = _geo_to_degrees(self._data.get('GPSPosition', ''), pattern, 'N')
+            lat = _geo_to_degrees(self._data.get('GPSPosition', ''), 'NS')
         return lat
 
     @property
     def longitude(self):
         '''The longitude of an asset from exif metadata.'''
-        pattern = _GEO_PATTERN.format('EW')
-        lng = _geo_to_degrees(self._data.get('GPSLongitude', ''), pattern, 'E')
+        lng = _geo_to_degrees(self._data.get('GPSLongitude', ''), 'EW')
         if lng is None:
-            lng = _geo_to_degrees(self._data.get('GPSPosition', ''), pattern, 'E')
+            lng = _geo_to_degrees(self._data.get('GPSPosition', ''), 'EW')
         return lng
 
     @property
@@ -137,7 +132,7 @@ class Metadata:
 
         fstop = self._data.get('FNumber', '')
         if isinstance(fstop, (int, float)) or re.match(r'(\d+)(\.\d+)?', fstop):
-            yield f'f/{int(float(fstop))}'
+            yield f'ƒ{int(float(fstop))}'
 
         mm = self._data.get('FocalLengthIn35mmFormat',
                             self._data.get('FocalLength', ''))
@@ -145,6 +140,7 @@ class Metadata:
             match = re.match(r'(\d+)(\.\d+)?\s*mm', mm)
             mm = match.group(1) if match else None
         if mm:
+            # Round to 2 significant digits.
             yield f'{int(float("%.2g" % float(mm)))}mm'
 
 

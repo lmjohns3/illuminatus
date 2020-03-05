@@ -1,5 +1,71 @@
 html {
   background: #888;
+  font-family: sans-serif;
+}
+
+*:hover {
+  opacity: 1.0 !important;
+}
+
+.tags {
+  margin: 0;
+  padding: 0.5rem;
+}
+
+.tags .block .drawer {
+  background-color: #444;
+  border-radius: 0.3rem;
+  margin: 0 0.2rem 0.2rem 0;
+  padding: 0.3rem 0.1rem 0.4rem 0.2rem;
+}
+
+.tags .block .icon {
+  cursor: pointer;
+  font-size: larger;
+  margin: 0 0.2rem 0.2rem 0;
+}
+
+.tags .block .tag {
+  border-radius: 0.2rem;
+  color: #111;
+  cursor: pointer;
+  display: inline-block;
+  font-size: smaller;
+  margin: 0 0.2rem 0.2rem 0;
+  padding: 0.2rem 0.4rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.browse {
+  align-items: center;
+  display: flex;
+  flex-flow: row wrap;
+  padding: 0 1rem 1rem 0;
+}
+
+.browse .asset {
+  position: relative;
+  cursor: pointer;
+  flex: 0 0 100px;
+  margin: 0.5rem 0 0 0.5rem;
+  text-align: center;
+}
+
+.browse .asset .video-icon {
+  background-color: #f65;
+  border: solid 1px #111;
+  border-radius: 3px;
+  color: #111;
+  font-size: 20px;
+  left: calc(50% - 14px);
+  padding: 3px 8px 4px;
+  position: absolute;
+  top: calc(50% - 15px);
+}
+
+.browse .asset:hover .video-icon {
+  display: none;
 }
 
 .browse .asset.cursor .cursor {

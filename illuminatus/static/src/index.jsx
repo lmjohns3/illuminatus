@@ -1,5 +1,5 @@
-import React from "react"
-import {BrowserRouter as Router, Route, Switch} from "react-router-dom"
+import React, {useEffect} from "react"
+import {BrowserRouter, Route, useLocation} from "react-router-dom"
 import ReactDOM from "react-dom"
 import moment from "moment"
 
@@ -27,16 +27,19 @@ const KEYS = {
 
 const Nav = () => <nav></nav>
 const Index = () => <div className="index">INDEX</div>
+const ScrollToTop = () => {
+  useEffect(() => window.scrollTo(0, 0), [useLocation().pathname]);
+  return null;
+}
 
 ReactDOM.render(
-<Router>
+<BrowserRouter>
+  <ScrollToTop />
   <Nav />
-  <Switch>
-    <Route path="/browse/:query"><Browse /></Route>
-    <Route path="/cluster/:id"><Cluster /></Route>
-    <Route path="/label/:id"><Label /></Route>
-    <Route path="/edit/:id"><Edit /></Route>
-    <Route path="/view/:id"><View /></Route>
-    <Route path="/"><Index /></Route>
-  </Switch>
-</Router>, document.getElementById("root"))
+  <Route path="/browse/:query+"><Browse /></Route>
+  <Route path="/cluster/:id"><Cluster /></Route>
+  <Route path="/label/:id"><Label /></Route>
+  <Route path="/edit/:id"><Edit /></Route>
+  <Route path="/view/:id"><View /></Route>
+  <Route exact path="/"><Index /></Route>
+</BrowserRouter>, document.getElementById("root"))

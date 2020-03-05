@@ -48,7 +48,7 @@ class Tag(Model):
     # Regular expression matchers for different "groups" of tags. The order here
     # is used to sort the tags on an asset. Tags not matching any of these
     # groups are "user-defined" and will sort before or after these.
-    GROUPS = (
+    PATTERNS = (
         # Year.
         r'(19|20)\d\d',
 
@@ -66,10 +66,10 @@ class Tag(Model):
         r'\dam', r'\d\dam', r'\dpm', r'\d\dpm',
 
         # Camera.
-        r'(e-m\d|iphone|pixel|powershot)\S+',
+        r'kit:\S+',
 
         # Aperture.
-        r'f/\d', r'f/\d\d', r'f/\d\d\d',
+        r'ƒ-\d', r'ƒ-\d\d', r'ƒ-\d\d\d',
 
         # Focal length.
         r'\dmm', r'\d\dmm', r'\d\d\dmm', r'\d\d\d\dmm',
@@ -98,7 +98,7 @@ class Tag(Model):
         return click.style(self.name, fg='blue', bold=True)
 
     def to_dict(self):
-        return dict(id=self.id, name=self.name, group=self.group)
+        return dict(id=self.id, name=self.name)
 
 
 asset_tags = Table('asset_tags',
@@ -116,11 +116,11 @@ class Asset(Model):
     __tablename__ = 'assets'
 
     @enum.unique
-    class Medium(enum.Enum):
+    class Medium(str, enum.Enum):
         '''Enumeration of different supported media types.'''
-        Audio = 1
-        Photo = 2
-        Video = 3
+        Audio = 'audio'
+        Photo = 'photo'
+        Video = 'video'
 
     id = Column(Integer, primary_key=True)
 
@@ -383,10 +383,10 @@ class Proposal(Model):
     __tablename__ = 'proposals'
 
     @enum.unique
-    class Result(enum.Enum):
-        Proposed = 0
-        Rejected = 1
-        Accepted = 2
+    class Result(str, enum.Enum):
+        Proposed = 'proposed'
+        Rejected = 'rejected'
+        Accepted = 'accepted'
 
     id = Column(Integer, primary_key=True)
     asset_id = Column('asset_id', ForeignKey('assets.id'), index=True)
@@ -403,13 +403,13 @@ class Hash(Model):
     __tablename__ = 'hashes'
 
     @enum.unique
-    class Flavor(enum.Enum):
+    class Flavor(str, enum.Enum):
         '''Enumeration of different supported hash types.'''
-        MD5 = 0
-        DIFF_8 = 1
-        DIFF_16 = 2
-        HSL_HIST = 100
-        RGB_HIST = 101
+        MD5 = 'md5'
+        DIFF_8 = 'diff-8'
+        DIFF_16 = 'diff-16'
+        HSL_HIST = 'hsl-hist'
+        RGB_HIST = 'rgb-hist'
 
     id = Column(Integer, primary_key=True)
     asset_id = Column(ForeignKey('assets.id'), index=True)
@@ -617,7 +617,6 @@ class QueryParser(parsimonious.NodeVisitor):
 
     def visit_text(self, node, children):
         s = node.text.strip('"')
-        print(s)
         return (Asset.description.contains(s) |
                 Asset.tags.any(Tag.name == s))
 
