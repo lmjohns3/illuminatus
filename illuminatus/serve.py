@@ -70,6 +70,11 @@ def export(query):
     return flask.send_file(output, as_attachment=True)
 
 
+@app.route('/rest/asset/<int:id>/', methods=['GET'])
+def get_asset(id):
+    return flask.jsonify(_get_asset(id).to_dict())
+
+
 @app.route('/rest/asset/<int:id>/', methods=['PUT'])
 def update_asset(id):
     req = flask.request
