@@ -1,61 +1,62 @@
-import React, {useState} from "react"
+import React, {Fragment, useState} from "react"
 import {Link, useLocation} from "react-router-dom"
-import Select from "react-select"
 import {hsluvToHex} from "hsluv"
 
 const TAG_PATTERNS = [
   // Year.
-  {re: /(19|20)\d\d/, hue: 90, block: 0},
+  {re: /^(19|20)\d\d$/, hue: 90, block: 0},
   // Month.
-  {re: /january/, hue: 120, block: 0},
-  {re: /february/, hue: 120, block: 0},
-  {re: /march/, hue: 120, block: 0},
-  {re: /april/, hue: 120, block: 0},
-  {re: /may/, hue: 120, block: 0},
-  {re: /june/, hue: 120, block: 0},
-  {re: /july/, hue: 120, block: 0},
-  {re: /august/, hue: 120, block: 0},
-  {re: /september/, hue: 120, block: 0},
-  {re: /october/, hue: 120, block: 0},
-  {re: /november/, hue: 120, block: 0},
-  {re: /december/, hue: 120, block: 0},
+  {re: /^january$/, hue: 120, block: 0},
+  {re: /^february$/, hue: 120, block: 0},
+  {re: /^march$/, hue: 120, block: 0},
+  {re: /^april$/, hue: 120, block: 0},
+  {re: /^may$/, hue: 120, block: 0},
+  {re: /^june$/, hue: 120, block: 0},
+  {re: /^july$/, hue: 120, block: 0},
+  {re: /^august$/, hue: 120, block: 0},
+  {re: /^september$/, hue: 120, block: 0},
+  {re: /^october$/, hue: 120, block: 0},
+  {re: /^november$/, hue: 120, block: 0},
+  {re: /^december$/, hue: 120, block: 0},
   // Day of month.
-  {re: /\d(st|nd|rd|th)/, hue: 150, block: 0},
-  {re: /\d\d(st|nd|rd|th)/, hue: 150, block: 0},
+  {re: /^\d(st|nd|rd|th)$/, hue: 150, block: 0},
+  {re: /^\d\d(st|nd|rd|th)$/, hue: 150, block: 0},
   // Day of week.
-  {re: /sunday/, hue: 180, block: 0},
-  {re: /monday/, hue: 180, block: 0},
-  {re: /tuesday/, hue: 180, block: 0},
-  {re: /wednesday/, hue: 180, block: 0},
-  {re: /thursday/, hue: 180, block: 0},
-  {re: /friday/, hue: 180, block: 0},
-  {re: /saturday/, hue: 180, block: 0},
+  {re: /^sunday$/, hue: 180, block: 0},
+  {re: /^monday$/, hue: 180, block: 0},
+  {re: /^tuesday$/, hue: 180, block: 0},
+  {re: /^wednesday$/, hue: 180, block: 0},
+  {re: /^thursday$/, hue: 180, block: 0},
+  {re: /^friday$/, hue: 180, block: 0},
+  {re: /^saturday$/, hue: 180, block: 0},
   // Time of day.
-  {re: /\dam/, hue: 210, block: 1},
-  {re: /\d\dam/, hue: 210, block: 1},
-  {re: /\dpm/, hue: 210, block: 1},
-  {re: /\d\dpm/, hue: 210, block: 1},
+  {re: /^12am$/, hue: 210, block: 1},
+  {re: /^\dam$/, hue: 210, block: 1},
+  {re: /^\d\dam$/, hue: 210, block: 1},
+  {re: /^12pm$/, hue: 210, block: 1},
+  {re: /^\dpm$/, hue: 210, block: 1},
+  {re: /^\d\dpm$/, hue: 210, block: 1},
   // Camera.
-  {re: /kit:\S+/, hue: 240, block: 2},
+  {re: /^kit:\S+$/, hue: 240, block: 2},
   // Aperture.
-  {re: /ƒ-\d/, hue: 240, block: 2},
-  {re: /ƒ-\d\d/, hue: 240, block: 2},
-  {re: /ƒ-\d\d\d/, hue: 240, block: 2},
+  {re: /^ƒ-\d$/, hue: 240, block: 2},
+  {re: /^ƒ-\d\d$/, hue: 240, block: 2},
+  {re: /^ƒ-\d\d\d$/, hue: 240, block: 2},
   // Focal length.
-  {re: /\dmm/, hue: 240, block: 2},
-  {re: /\d\dmm/, hue: 240, block: 2},
-  {re: /\d\d\dmm/, hue: 240, block: 2},
-  {re: /\d\d\d\dmm/, hue: 240, block: 2},
+  {re: /^\dmm$/, hue: 240, block: 2},
+  {re: /^\d\dmm$/, hue: 240, block: 2},
+  {re: /^\d\d\dmm$/, hue: 240, block: 2},
+  {re: /^\d\d\d\dmm$/, hue: 240, block: 2},
   // Geolocation.
-  {re: /country:\S+/, hue: 270, block: 3},
-  {re: /state:\S+/, hue: 270, block: 3},
-  {re: /city:\S+/, hue: 270, block: 3},
-  {re: /place:\S+/, hue: 270, block: 3},
+  {re: /^country:\S+$/, hue: 270, block: 3},
+  {re: /^state:\S+$/, hue: 270, block: 3},
+  {re: /^city:\S+$/, hue: 270, block: 3},
+  {re: /^place:\S+$/, hue: 270, block: 3},
   // User-defined.
-  {re: /.*/, hue: 0, block: 4},
+  {re: /^.*$/, hue: 0, block: 4},
 ]
 
-export default function Tags({assets}) {
+export default function Tags({assets, startVisible}) {
   if (assets.length === 0)
     return null;
 
@@ -87,23 +88,24 @@ export default function Tags({assets}) {
     });
   });
 
-  console.log(tags);
-  console.log(blocks);
+  console.log("tags", tags);
+  console.log("blocks", blocks);
 
   return <div className="tags">{
     blocks.map(block => <Block key={block.icon}
                                block={block}
                                tags={tags}
+                               startVisible={startVisible}
                                assetCount={assets.length} />)
   }</div>;
 }
 
 
-const Block = ({block, tags, assetCount}) => {
+const Block = ({block, tags, startVisible, assetCount}) => {
   if ((block.active.length <= 0) && (block.other.length <= 0))
     return null;
 
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(startVisible);
 
   // Sort tags within each block by the index of their pattern, then by name.
   const cmp = (m, n) => {
@@ -114,19 +116,15 @@ const Block = ({block, tags, assetCount}) => {
   block.active.sort(cmp);
   block.other.sort(cmp);
 
-  const render = names => <span>{
-    names.map(name => <Tag key={tags[name].id}
-                           tag={tags[name]}
-                           assetCount={assetCount} />)
-  }</span>;
+  const render = names => names.map(
+    name => <Tag key={name} tag={tags[name]} assetCount={assetCount} />
+  );
 
-  return <span className="block">
+  return <Fragment>
     {render(block.active)}
-    <span className="drawer">
-      <span className="icon" onClick={() => setVisible(!visible)}>{block.icon}</span>
-      {visible ? render(block.other) : null}
-    </span>
-  </span>;
+    <span className="icon" onClick={() => setVisible(!visible)}>{block.icon}</span>
+    {visible ? render(block.other) : null}
+  </Fragment>;
 }
 
 
@@ -136,6 +134,6 @@ const Tag = ({tag, assetCount}) => {
     href = useLocation().pathname.replace(new RegExp(`/${tag.name}/`), "/");
   return <Link to={href} className="tag" style={{
     backgroundColor: hsluvToHex([tag.hue, 100, 90]),
-    opacity: Math.log(3 + tag.count) / Math.log(assetCount),
+    opacity: Math.log(3 + tag.count) / Math.log(1 + assetCount),
   }}>{tag.name}</Link>;
 }

@@ -1,5 +1,6 @@
 html {
-  background: #888;
+  background: #111;
+  color: #111;
   font-family: sans-serif;
 }
 
@@ -7,91 +8,100 @@ html {
   opacity: 1.0 !important;
 }
 
+/* tags */
+
 .tags {
-  margin: 0;
-  padding: 0.5rem;
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
 }
 
-.tags .block .drawer {
-  background-color: #444;
-  border-radius: 0.3rem;
-  margin: 0 0.2rem 0.2rem 0;
-  padding: 0.3rem 0.1rem 0.4rem 0.2rem;
+.tags .icon, .tags .tag {
+  flex: 0 0 auto;
+  margin: 2px;
+  padding: 1px 5px;
 }
 
-.tags .block .icon {
+.tags .icon {
   cursor: pointer;
   font-size: larger;
-  margin: 0 0.2rem 0.2rem 0;
 }
 
-.tags .block .tag {
-  border-radius: 0.2rem;
-  color: #111;
-  cursor: pointer;
-  display: inline-block;
-  font-size: smaller;
-  margin: 0 0.2rem 0.2rem 0;
-  padding: 0.2rem 0.4rem;
+.tags .tag {
+  border-radius: 3px;
   text-decoration: none;
   white-space: nowrap;
 }
 
-.browse {
-  align-items: center;
-  display: flex;
-  flex-flow: row wrap;
-  padding: 0 1rem 1rem 0;
+/* browse */
+
+.browse .tags {
+  padding: 8px;
 }
 
-.browse .asset {
+.browse .thumbs {
+  padding: 8px;
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  justify-content: space-evenly;
+}
+
+.browse .thumbs .thumb {
+  flex: 0 0 150px;
   position: relative;
-  cursor: pointer;
-  flex: 0 0 100px;
-  margin: 0.5rem 0 0 0.5rem;
+  margin: 5px;
   text-align: center;
 }
 
-.browse .asset .video-icon {
+.browse .thumbs .thumb img {
+  max-height: 150px;
+  max-width: 150px;
+  border-radius: 5px;
+}
+
+.browse .thumbs .thumb .video-icon {
+  position: absolute;
+  top: calc(50% - 15px);
+  left: calc(50% - 15px);
+  font-size: 20px;
   background-color: #f65;
   border: solid 1px #111;
   border-radius: 3px;
-  color: #111;
-  font-size: 20px;
-  left: calc(50% - 14px);
-  padding: 3px 8px 4px;
-  position: absolute;
-  top: calc(50% - 15px);
+  padding: 5px 6px 4px 8px;
 }
 
-.browse .asset:hover .video-icon {
+.browse .thumbs .thumb:hover .video-icon {
   display: none;
 }
 
-.browse .asset.cursor .cursor {
-  display: block;
-  color: #111;
-  top: -0.5rem;
-  left: -0.5rem;
+/* view */
+
+.view {
+  text-align: center;
 }
 
-.browse .asset .star {
-  position: absolute;
-  bottom: -0.5rem;
-  left: -0.5rem;
+.view .tags {
+  padding: 8px;
+  max-height: 10vh;
 }
 
-.browse .asset img.video { border-color: #f6c; }
-.browse .asset img.audio { border-color: #f90; }
-.browse .asset img.photo { border-color: #111; }
-.browse .asset.selected img { border-color: #fff; }
+.view .asset {
+  max-height: 90vh;
+}
 
-/* EDITOR */
+.view .asset * {
+  max-height: 90vh;
+  max-width: 100%;
+  border-radius: 13px;
+}
+
+/* edit */
 
 #tools * { z-index: 3; }
 
 #workspace {
-    height: calc(100% - 1.5rem);
+    height: calc(100% - 21px);
     width: auto;
     overflow: hidden;
     position: relative;

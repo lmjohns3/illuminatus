@@ -19,40 +19,36 @@ export default function Browse() {
   const getFormat = (size, medium) => {
     let match = null;
     formats.forEach(fmt => {
-      if (fmt.path === size && fmt.medium === medium) match = fmt;
+      if ((fmt.path === size) && (fmt.medium === medium)) {
+        match = fmt;
+      }
     });
     return match;
   };
 
-  return <div>
+  if ((assets.length === 0) || (formats.length === 0)) return null;
+
+  return <div className="browse">
     <Tags assets={assets} />
-    <Thumbs assets={assets} getFormat={getFormat} />
+    <div class="thumbs">{
+      assets.map(asset => <Thumb key={asset.id}
+                                 asset={asset}
+                                 format={getFormat("small", asset.medium).format} />)
+    }</div>
   </div>;
 }
 
 
-const Thumbs = ({assets, getFormat}) => {
-  return <div className="browse" style={{
-  }}>{assets.map(asset => <Asset key={asset.id} asset={asset} getFormat={getFormat} />)}</div>;
-}
-
-
-const Asset = ({asset, getFormat}) => {
-  const imageStyle = {
-    maxHeight: "100px",
-    maxWidth: "100px",
-  };
+const Thumb = ({asset, format}) => {
   const ph = asset.path_hash
       , isVideo = asset.medium === "video"
-      , fmt = getFormat("small", asset.medium)
       , source = ext => `/asset/small/${ph.slice(0, 2)}/${ph}.${ext}`
-      , initialSrc = source(isVideo ? "png" : fmt.format.ext);
-  return <div className="asset"><Link to={`/view/${asset.id}/`}>
+      , initialSrc = source(isVideo ? "png" : format.ext);
+  return <Link className="thumb" to={`/view/${asset.id}/`}>
     <img className={asset.medium}
          src={initialSrc}
-         onMouseEnter={e => { console.log("enter", e.target); if (isVideo) e.target.src = source("gif"); }}
-         onMouseLeave={e => { console.log("leave", e.target); if (isVideo) e.target.src = initialSrc; }}
-         style={imageStyle} />
+         onMouseEnter={e => { if (isVideo) e.target.src = source("gif"); }}
+         onMouseLeave={e => { if (isVideo) e.target.src = initialSrc; }}/>
     {isVideo ? <span className="video-icon">▶</span> : null}
-  </Link></div>;
+  </Link>;
 }
