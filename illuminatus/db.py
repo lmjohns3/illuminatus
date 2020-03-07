@@ -300,7 +300,6 @@ class Asset(Model):
             for t in metadata.tags_from_stamp(stamp):
                 self.tags.add(Tag.get_or_create(sess, t))
 
-        self.hashes.append(Hash.compute_content_hash(self.path))
         if self.medium == Asset.Medium.Photo:
             self.hashes.append(Hash.compute_photo_diff(self.path, 16))
             self.hashes.append(Hash.compute_photo_histogram(self.path, 'HSL', 96))
@@ -403,11 +402,12 @@ class Hash(Model):
     @enum.unique
     class Flavor(str, enum.Enum):
         '''Enumeration of different supported hash types.'''
-        CONTENTS = 'contents'
         DIFF_8 = 'diff-8'
         DIFF_16 = 'diff-16'
-        HSL_HIST = 'hsl-hist-48'
-        RGB_HIST = 'rgb-hist-48'
+        HSL_HIST_48 = 'hsl-hist-48'
+        HSL_HIST_96 = 'hsl-hist-96'
+        RGB_HIST_48 = 'rgb-hist-48'
+        RGB_HIST_96 = 'rgb-hist-96'
 
     id = Column(Integer, primary_key=True)
     asset_id = Column(ForeignKey('assets.id'), index=True)
@@ -424,22 +424,11 @@ class Hash(Model):
     def __lt__(self, other):
         return self.nibbles < other.nibbles
 
-    @classmethod
-    def compute_content_hash(cls, path):
-        '''Compute a hash based on the contents of a file.
-
-        Parameters
-        ----------
-        path : str
-            Path to a file on disk.
-
-        Returns
-        -------
-        A Hash instance representing the hash of this file's contents.
-        '''
-        with open(path, 'rb') as handle:
-            nibbles = hashlib.blake2s(handle.read()).hexdigest()
-        return cls(nibbles=nibbles, flavor=Hash.Flavor.CONTENTS)
+    @staticmethod
+    def bits_to_nibbles(bits):
+        flat = bits.ravel()
+        return ('{:0%dx}' % (flat.size // 4, )).format(
+            int(''.join(flat.astype(int).astype(str)), 2))
 
     @classmethod
     def compute_photo_diff(cls, path, size=8):
@@ -460,19 +449,15 @@ class Hash(Model):
         '''
         gray = PIL.Image.open(path).convert('L')
         pixels = np.asarray(gray.resize((size + 1, size), PIL.Image.ANTIALIAS))
-        diff = pixels[:, 1:] > pixels[:, :-1]
-        value = int(''.join(diff.ravel().astype(int).astype(str)), 2)
-        return cls(nibbles=('{:0%dx}' % (size * size / 4)).format(value),
+        return cls(nibbles=bits_to_nibbles(pixels[:, 1:] > pixels[:, :-1]),
                    flavor=Hash.Flavor[f'DIFF_{size}'])
 
     @classmethod
     def compute_photo_histogram(cls, path, planes='HSV', size=48):
         hist = np.asarray(PIL.Image.open(path).convert(planes).histogram())
         chunks = np.asarray([c.sum() for c in np.split(hist, size)])
-        logp = np.log(1e-6 + chunks) - np.log(1e-6 * len(chunks) + sum(chunks))
-        lo, hi = np.percentile(logp, [1, 99])
-        nibbles = np.linspace(lo, hi, 16).searchsorted(np.clip(logp, lo, hi))
-        return cls(nibbles=''.join(nibbles),
+        # This makes 50% of bits into ones, is that a good idea?
+        return cls(nibbles=bits_to_nibbles(chunks > np.percentile(chunks, 50)),
                    flavor=Hash.Flavor[f'{planes}_HIST_{size}'])
 
     @classmethod
