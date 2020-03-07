@@ -165,18 +165,19 @@ class Asset(Model):
     @property
     def path_hash(self):
         '''A string containing the hash of this asset's path.'''
-        digest = hashlib.md5(self.path.encode('utf-8')).digest()
+        digest = hashlib.blake2s(self.path.encode('utf-8')).digest()
         return base64.b64encode(digest, b'-_').strip(b'=').decode('utf-8')
 
     @property
-    def md5_hash(self):
-        '''MD5 hash of the contents of the asset.'''
-        return [h for h in self.hashes if h.flavor == Hash.Flavor.MD5][0]
+    def contents_hash(self):
+        '''Hash of the contents of the asset.'''
+        return [h for h in self.hashes if h.flavor == Hash.Flavor.CONTENTS][0]
 
     @property
     def diff8_hashes(self):
         '''Diff-8 hashes of the contents of the asset.'''
-        return sorted(h for h in self.hashes if h.flavor == Hash.Flavor.DIFF_8)
+        return sorted(
+            h for h in self.hashes if h.flavor == Hash.Flavor.DIFF_8 and h.nibbles)
 
     @staticmethod
     def matching(sess, query, order=None, limit=None, offset=None):
@@ -223,7 +224,8 @@ class Asset(Model):
             height=self.height,
             duration=self.duration,
             fps=self.fps,
-            latlng=(self.lat, self.lng),
+            lat=self.lat,
+            lng=self.lng,
             hashes=[h.to_dict() for h in self.hashes],
             tags=[t.to_dict() for t in self.tags
                   if t.name not in exclude_tags],
@@ -287,7 +289,8 @@ class Asset(Model):
 
         meta = metadata.Metadata(self.path)
         self.lat, self.lng = meta.latitude, meta.longitude
-        self.width, self.height, self.duration = meta.width, meta.height, meta.duration
+        self.width, self.height = meta.width, meta.height
+        self.duration = meta.duration
         for t in meta.tags:
             self.tags.add(Tag.get_or_create(sess, t))
 
@@ -297,13 +300,13 @@ class Asset(Model):
             for t in metadata.tags_from_stamp(stamp):
                 self.tags.add(Tag.get_or_create(sess, t))
 
-        self.hashes.append(Hash.compute_md5sum(self.path))
+        self.hashes.append(Hash.compute_content_hash(self.path))
         if self.medium == Asset.Medium.Photo:
-            self.hashes.append(Hash.compute_photo_diff(self.path))
-            self.hashes.append(Hash.compute_photo_histogram(self.path))
+            self.hashes.append(Hash.compute_photo_diff(self.path, 16))
+            self.hashes.append(Hash.compute_photo_histogram(self.path, 'HSL', 96))
         if self.medium == Asset.Medium.Video:
-            for o in range(0, int(self.duration), 30):
-                self.hashes.append(Hash.compute_video_diff(self.path, o + 15))
+            for o in range(0, int(self.duration), 10):
+                self.hashes.append(Hash.compute_video_diff(self.path, o + 5))
 
     def update_stamp(self, when):
         '''Update the timestamp for this asset.
@@ -405,11 +408,11 @@ class Hash(Model):
     @enum.unique
     class Flavor(str, enum.Enum):
         '''Enumeration of different supported hash types.'''
-        MD5 = 'md5'
+        CONTENTS = 'contents'
         DIFF_8 = 'diff-8'
         DIFF_16 = 'diff-16'
-        HSL_HIST = 'hsl-hist'
-        RGB_HIST = 'rgb-hist'
+        HSL_HIST = 'hsl-hist-48'
+        RGB_HIST = 'rgb-hist-48'
 
     id = Column(Integer, primary_key=True)
     asset_id = Column(ForeignKey('assets.id'), index=True)
@@ -427,8 +430,8 @@ class Hash(Model):
         return self.nibbles < other.nibbles
 
     @classmethod
-    def compute_md5sum(cls, path):
-        '''Compute an MD5 sum based on the contents of a file.
+    def compute_content_hash(cls, path):
+        '''Compute a hash based on the contents of a file.
 
         Parameters
         ----------
@@ -437,11 +440,11 @@ class Hash(Model):
 
         Returns
         -------
-        A Hash instance representing the MD5 sum of this file's contents.
+        A Hash instance representing the hash of this file's contents.
         '''
         with open(path, 'rb') as handle:
-            nibbles = hashlib.md5(handle.read()).hexdigest()
-        return cls(nibbles=nibbles, flavor=Hash.Flavor.MD5)
+            nibbles = hashlib.blake2s(handle.read()).hexdigest()
+        return cls(nibbles=nibbles, flavor=Hash.Flavor.CONTENTS)
 
     @classmethod
     def compute_photo_diff(cls, path, size=8):
@@ -462,31 +465,20 @@ class Hash(Model):
         '''
         gray = PIL.Image.open(path).convert('L')
         pixels = np.asarray(gray.resize((size + 1, size), PIL.Image.ANTIALIAS))
-        diff = (pixels[:, 1:] > pixels[:, :-1]).ravel()
-        value = int(''.join('01'[b] for b in diff), 2)
+        diff = pixels[:, 1:] > pixels[:, :-1]
+        value = int(''.join(diff.ravel().astype(int).astype(str)), 2)
         return cls(nibbles=('{:0%dx}' % (size * size / 4)).format(value),
                    flavor=Hash.Flavor[f'DIFF_{size}'])
 
     @classmethod
-    def compute_photo_histogram(cls, path):
-        #img = PIL.ImageCms.applyTransform(
-        #    PIL.Image.open(path).convert('RGB'),
-        #    PIL.ImageCms.buildTransformFromOpenProfiles(
-        #        PIL.ImageCms.createProfile('sRGB'),
-        #        PIL.ImageCms.createProfile('LAB'),
-        #        'RGB', 'LAB'))
-
-        def quantize(counts, bins):
-            eps = 1e-6
-            parts = np.array([sum(c) for c in np.split(np.array(counts), bins)])
-            logp = np.log(eps + parts) - np.log(eps * len(parts) + sum(parts))
-            lo, hi = np.percentile(logp, [1, 99])
-            quantized = np.linspace(lo, hi, 16).searchsorted(np.clip(logp, lo, hi))
-            return ''.join(f'{b:x}' for b in quantized)
-
-        hist = np.asarray(PIL.Image.open(path).convert('HSV').histogram())
-        return cls(nibbles=''.join(quantize(h, 8) for h in np.split(hist, 3)),
-                   flavor=Hash.Flavor.HSL_HIST)
+    def compute_photo_histogram(cls, path, planes='HSV', size=48):
+        hist = np.asarray(PIL.Image.open(path).convert(planes).histogram())
+        chunks = np.asarray([c.sum() for c in np.split(hist, size)])
+        logp = np.log(1e-6 + chunks) - np.log(1e-6 * len(chunks) + sum(chunks))
+        lo, hi = np.percentile(logp, [1, 99])
+        nibbles = np.linspace(lo, hi, 16).searchsorted(np.clip(logp, lo, hi))
+        return cls(nibbles=''.join(nibbles),
+                   flavor=Hash.Flavor[f'{planes}_HIST_{size}'])
 
     @classmethod
     def compute_audio_diff(cls, path, size=8):
@@ -494,7 +486,7 @@ class Hash(Model):
 
     @classmethod
     def compute_video_diff(cls, path, time, size=8):
-        return cls(nibbles='', flavor=Hash.Flavor.DIFF_8, time=time)
+        return cls(nibbles='', flavor=Hash.Flavor[f'DIFF_{size}'], time=time)
 
     def select_neighbors(self, sess, within=1):
         '''Get all neighboring hashes from the database.

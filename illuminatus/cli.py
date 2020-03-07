@@ -132,7 +132,7 @@ def ls(ctx, query, order, limit):
     with session(ctx) as sess:
         for asset in db.Asset.matching(sess, ' '.join(query), order, limit):
             click.echo(' '.join((
-                str(asset.md5_hash),
+                str(asset.contents_hash),
                 ' '.join(str(h) for h in asset.diff8_hashes),
                 ' '.join(t.name_string for t in
                          sorted(asset.tags, key=lambda t: (t.group, t.name))),
@@ -141,7 +141,7 @@ def ls(ctx, query, order, limit):
 
 
 @cli.command()
-@click.option('--hash', default='md5', metavar='[md5|diff8]',
+@click.option('--hash', default='diff-8', metavar='[diff-8|hsl-hist-48|...]',
               help='Group assets by this hash.')
 @click.argument('query', nargs=-1)
 @click.pass_context
@@ -151,7 +151,7 @@ def dupe(ctx, query, hash):
     See "illuminatus help" for help on QUERY syntax.
     '''
     def get_hash(asset):
-        hashes = [h for h in asset.hashes if h.flavor == hash]
+        hashes = [h for h in asset.hashes if h.flavor.value == hash]
         if len(hashes) == 1:
             return str(hashes[0])
         return None
