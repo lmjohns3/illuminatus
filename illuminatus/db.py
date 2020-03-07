@@ -139,7 +139,7 @@ class Asset(Model):
 
     filters = Column(JSON, nullable=False, default=[])
 
-    tags = sqlalchemy.orm.relationship('Tag',
+    tags = sqlalchemy.orm.relationship(Tag,
                                        secondary=asset_tags,
                                        collection_class=set,
                                        backref='assets',
@@ -382,24 +382,19 @@ class Asset(Model):
         flag_modified(self, 'filters')
 
 
-class Proposal(Model):
-    __tablename__ = 'proposals'
-
-    @enum.unique
-    class Result(str, enum.Enum):
-        Proposed = 'proposed'
-        Rejected = 'rejected'
-        Accepted = 'accepted'
+class Label(Model):
+    __tablename__ = 'labels'
 
     id = Column(Integer, primary_key=True)
     asset_id = Column('asset_id', ForeignKey('assets.id'), index=True)
     tag_id = Column('tag_id', ForeignKey('tags.id'), index=True)
-    score = Column(Float, index=True, nullable=False)
-    result = Column(Enum(Result), index=True)
     source = Column(String)
+    score = Column(Float, index=True, nullable=False)
+    yeas = Column(Integer, index=True, default=0)
+    nays = Column(Integer, index=True, default=0)
 
-    asset = sqlalchemy.orm.relationship(Asset, backref='proposals')
-    tag = sqlalchemy.orm.relationship(Tag, backref='proposals')
+    asset = sqlalchemy.orm.relationship(Asset, backref='labels')
+    tag = sqlalchemy.orm.relationship(Tag, backref='labels')
 
 
 class Hash(Model):
