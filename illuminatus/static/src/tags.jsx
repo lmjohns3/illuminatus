@@ -56,7 +56,7 @@ const TAG_PATTERNS = [
   {re: /^.*$/, hue: 0, block: 4},
 ]
 
-export default function Tags({assets, startVisible}) {
+export default function Tags({assets, startVisible, tagHref}) {
   if (assets.length === 0)
     return null;
 
@@ -88,20 +88,18 @@ export default function Tags({assets, startVisible}) {
     });
   });
 
-  console.log("tags", tags);
-  console.log("blocks", blocks);
-
   return <div className="tags">{
     blocks.map(block => <Block key={block.icon}
                                block={block}
                                tags={tags}
                                startVisible={startVisible}
-                               assetCount={assets.length} />)
+                               assetCount={assets.length}
+                               tagHref={tagHref} />)
   }</div>;
 }
 
 
-const Block = ({block, tags, startVisible, assetCount}) => {
+const Block = ({block, tags, startVisible, assetCount, tagHref}) => {
   if ((block.active.length <= 0) && (block.other.length <= 0))
     return null;
 
@@ -117,7 +115,10 @@ const Block = ({block, tags, startVisible, assetCount}) => {
   block.other.sort(cmp);
 
   const render = names => names.map(
-    name => <Tag key={name} tag={tags[name]} assetCount={assetCount} />
+    name => <Tag key={name}
+                 tag={tags[name]}
+                 assetCount={assetCount}
+                 href={tagHref(tags[name])} />
   );
 
   return <Fragment>
@@ -128,10 +129,7 @@ const Block = ({block, tags, startVisible, assetCount}) => {
 }
 
 
-const Tag = ({tag, assetCount}) => {
-  let href = `${tag.name}/`;
-  if (tag.active)
-    href = useLocation().pathname.replace(new RegExp(`/${tag.name}/`), "/");
+const Tag = ({tag, assetCount, href}) => {
   return <Link to={href} className="tag" style={{
     backgroundColor: hsluvToHex([tag.hue, 100, 90]),
     opacity: Math.log(3 + tag.count) / Math.log(1 + assetCount),

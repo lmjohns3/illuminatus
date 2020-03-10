@@ -36,10 +36,9 @@ ReactDOM.render(
 <BrowserRouter>
   <ScrollToTop />
   <Nav />
-  <Route path="/browse/:query+"><Browse /></Route>
-  <Route path="/cluster/:id"><Cluster /></Route>
-  <Route path="/label/:id"><Label /></Route>
-  <Route path="/edit/:id"><Edit /></Route>
-  <Route path="/view/:id"><View /></Route>
+  <Route path="/view/:query*"><View /></Route>
+  <Route path="/cluster/:hash"><Cluster /></Route>
+  <Route path="/label/:hash"><Label /></Route>
+  <Route path="/edit/:hash"><Edit /></Route>
   <Route exact path="/"><Index /></Route>
 </BrowserRouter>, document.getElementById("root"))
