@@ -157,14 +157,8 @@ def _apply_filters(asset):
 
 
 def _generate_chains(use_video, use_audio, slices, filters):
-    def _pads(p):
-        return ([f'{p}v'] if use_video else []) + (
-                [f'{p}a'] if use_audio else [])
-
-    use_video, use_audio = int(use_video), int(use_audio)
-    pads = []
-
     # https://superuser.com/questions/681885
+    pads = []
     for i, (start, duration) in enumerate(slices):
         if use_video:
             pads.append(f'{i+1}v')
@@ -175,23 +169,22 @@ def _generate_chains(use_video, use_audio, slices, filters):
             pads.append(f'{i+1}a')
             yield ['0:a'], [f'atrim={start}:{start + duration}',
                             'asetpts=PTS-STARTPTS'], [pads[-1]]
-
     if pads:
-        out = _pads('concat')
-        n = len(pads) // (use_video + use_audio)
-        yield pads, [f'concat=n={n}:v={use_video}:a={use_audio}'], out
-        pads = out
-
+        outs = (([f'outv'] if use_video else []) +
+                ([f'outa'] if use_audio else []))
+        use_v = int(use_video)
+        use_a = int(use_audio)
+        n = len(pads) // (use_v + use_a)
+        yield pads, [f'concat=n={n}:v={use_v}:a={use_a}'], outs
     if filters:
-        yield [], filters, _pads('filter')
+        yield [], filters, ['outv']
 
 
 _encoder_args = dict(
     # https://superuser.com/questions/1296374
-    mp4=('-c:v hevc_nvenc -level:v 4.1 -profile:v main -rc:v vbr_hq '
-         '-rc-lookahead:v 32 -refs:v 16 -bf:v 2 -coder:v cabac '
-         '-avoid_negative_ts 1'),
-    webm='-row-mt 1 -b:v 0 -avoid_negative_ts 1',
+    mp4=('-c:v h264_nvenc -level:v 4.1 -profile:v main -rc:v vbr_hq '
+         '-rc-lookahead:v 32 -c:a aac'),
+    webm='-c:v libvpx-vp9 -c:a libopus -row-mt 1',
 )
 
 
@@ -214,9 +207,9 @@ def ffmpeg(asset, fmt, output):
         filters.append(f'fps={fmt.fps}')
 
     format_args = []
-    for attr in 'ar ac crf'.split():
+    for attr in 'ar ac crf quality speed'.split():
         if hasattr(fmt, attr):
-            formag_args.extend((f'-{attr}', f'{getattr(fmt, attr)}'))
+            format_args.extend((f'-{attr}', f'{getattr(fmt, attr)}'))
     format_args = tuple(format_args)
 
     stem = os.path.splitext(output)[0]
@@ -224,9 +217,9 @@ def ffmpeg(asset, fmt, output):
     def run(*args):
         cmd = ('ffmpeg', '-y', '-i', asset.path) + format_args + args
         if _DEBUG > 0:
-            print()
-            click.echo(' '.join(cmd))
-            print()
+            click.echo('{}: {}'.format(
+                click.style('FFMPEG', bold=True),
+                click.style(' '.join(cmd), bold=True, fg='blue')))
         return subprocess.run(cmd, capture_output=_DEBUG == 0)
 
     # Audio --> png: make a spectrogram image of the middle 60 seconds.
@@ -246,9 +239,18 @@ def ffmpeg(asset, fmt, output):
         run(*args + (f'fps={fmt.fps},{scale},{palette}', '-loop', '-1', f'{stem}.gif'))
         return run(*args + (scale, '-frames:v', '1', f'{stem}.png'))
 
+    # Video --> webp: make an animation from the middle 10 seconds of a video,
+    # and a poster image from the start of that clip.
+    if asset.is_video and fmt.ext == 'webp':
+        args = ('-ss', f'{max(0, asset.duration / 2 - 5)}', '-t', '10', '-an', '-vf')
+        scale = _scale(*fmt.bbox)
+        run(*args + (f'fps={fmt.fps},{scale}', '-codec:v', 'libwebp', f'{stem}.webp'))
+        return run(*args + (scale, '-frames:v', '1', f'{stem}.png'))
+
     # Default output, no more funny business.
     with tempfile.NamedTemporaryFile(mode='w+') as script:
-        pads = None
+        pads = []
+        video_pad, audio_pad = '0:v?', '0:a?'
         for inputs, chain, outputs in _generate_chains(
                 use_video=asset.is_video or asset.is_photo,
                 use_audio=asset.is_video or asset.is_audio,
@@ -259,18 +261,27 @@ def ffmpeg(asset, fmt, output):
             script.write(','.join(chain))
             script.write(''.join(f'[{o}]' for o in outputs))
             pads = outputs
+            for p in pads:
+                if p.endswith('v'):
+                    video_pad = f'[{p}]'
+                if p.endswith('a'):
+                    audio_pad = f'[{p}]'
         script.flush()
         if _DEBUG:
-            print()
+            print('-------->8-------')
             subprocess.run(['cat', script.name])
             print()
-            print()
+            print('-------8<--------')
         args = []
         if outputs:
-            args.extend(('-filter_complex_script', script.name))
-            for p in pads:
-                args.extend(('-map', f'[{p}]'))
-        run(*args + _encoder_args.get(fmt.ext, '').split() + [output])
+            args.extend(('-filter_complex_script', script.name,
+                         '-map', video_pad, '-map', audio_pad))
+        if hasattr(fmt, 'abr'):
+            args.extend(('-b:a', f'{fmt.abr}k'))
+        if hasattr(fmt, 'vbr'):
+            args.extend(('-b:v', f'{fmt.vbr}k'))
+        run(*args + _encoder_args.get(fmt.ext, '').split() + [
+            '-avoid_negative_ts', '1', '-g', '240', output])
 '''
 n = int(asset.duration / 30)
 for i in range(n):

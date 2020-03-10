@@ -15,7 +15,7 @@ from . import metadata
 _DEBUG = 0
 
 
-def _to_tuple(kwargs):
+def _to_format(kwargs):
     return collections.namedtuple('Format', sorted(kwargs))(**kwargs)
 
 
@@ -27,10 +27,12 @@ def _process(jobs_queue, callback):
         callback(job)
 
 
-def run_workqueue(jobs, callback, num_workers=mp.cpu_count()):
+def run_workqueue(jobs, callback, num_workers=None):
     if _DEBUG:
         return [callback(j) for j in jobs]
     jobs_queue = mp.Queue()
+    if not num_workers:
+        num_workers = mp.cpu_count()
     workers = [mp.Process(target=_process, args=(jobs_queue, callback))
                for _ in range(num_workers)]
     [w.start() for w in workers]
@@ -185,7 +187,10 @@ class Thumbnailer:
 
     def run(self):
         '''Export thumbnails for media to files on disk.'''
-        run_workqueue(self.assets, self)
+        for medium in db.Asset.Medium:
+            assets = [a for a in self.assets if a.medium == medium]
+            if assets:
+                run_workqueue(assets, self, int(medium == db.Asset.Medium.Video))
 
     def __call__(self, asset):
         for fmt in self.formats:
@@ -195,7 +200,7 @@ class Thumbnailer:
             if 'path' in fmt:
                 root = os.path.join(root, fmt['path'])
             output = asset.export(
-                fmt=_to_tuple(fmt['format']), root=root, overwrite=self.overwrite)
+                fmt=_to_format(fmt['format']), root=root, overwrite=self.overwrite)
             if not output:
                 continue
             click.echo('{} {} -> {}'.format(click.style('*', fg='cyan'),
@@ -289,7 +294,7 @@ class Exporter:
             root = self.root
             if 'path' in fmt:
                 root = os.path.join(root, fmt['path'])
-            asset.export(fmt=_to_tuple(fmt['format']), root=root)
+            asset.export(fmt=_to_format(fmt['format']), root=root)
 
 
 # This is mostly from zipfile.py in the Python source.
