@@ -128,11 +128,11 @@ class Metadata:
             model = re.sub(pattern, '', model).strip()
         model = re.sub(r"\W+", "-", model)
         if model:
-            yield model
+            yield f'kit:{model}'
 
         fstop = self._data.get('FNumber', '')
         if isinstance(fstop, (int, float)) or re.match(r'(\d+)(\.\d+)?', fstop):
-            yield f'ƒ{int(float(fstop))}'
+            yield f'ƒ-{int(float(fstop))}'
 
         mm = self._data.get('FocalLengthIn35mmFormat',
                             self._data.get('FocalLength', ''))
