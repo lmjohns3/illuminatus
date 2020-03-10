@@ -6,12 +6,12 @@
         {"path": "small",  "medium": "audio", "format": {
             "ext": "png", "bbox": [200, 200]}},
         {"path": "small",  "medium": "video", "format": {
-            "ext": "gif", "bbox": [200, 200], "fps": 10}},
+            "ext": "webp", "bbox": [200, 200], "fps": 10}},
         {"path": "medium", "medium": "photo", "format": {
             "ext": "jpg", "bbox": [1000, 1000]}},
         {"path": "medium", "medium": "audio", "format": {
-            "ext": "mp3", "abr": 192}},
+            "ext": "mp3", "abr": 100}},
         {"path": "medium", "medium": "video", "format": {
-            "ext": "mp4", "bbox": [1000, 1000], "abr": 192, "vbr": 2000}}
+            "ext": "mp4", "bbox": [800, 800]}}
     ]
 }
