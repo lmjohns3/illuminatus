@@ -87,9 +87,9 @@ class Tag(Model):
         return tag
 
     @property
-    def group(self):
-        for i, group in enumerate(Tag.GROUPS):
-            if group == self.name or re.match(group, self.name):
+    def pattern(self):
+        for i, pattern in enumerate(Tag.PATTERNS):
+            if pattern == self.name or re.match(pattern, self.name):
                 return i
         return -1
 
@@ -123,12 +123,11 @@ class Asset(Model):
         Video = 'video'
 
     id = Column(Integer, primary_key=True)
-
+    path = Column(String, nullable=False)
+    path_hash = Column(String, nullable=False, unique=True)
+    description = Column(String, nullable=False, default='')
     medium = Column(Enum(Medium), index=True, nullable=False)
     stamp = Column(DateTime, index=True, nullable=False)
-
-    path = Column(String, nullable=False)
-    description = Column(String, nullable=False, default='')
 
     width = Column(Integer)
     height = Column(Integer)
@@ -161,12 +160,6 @@ class Asset(Model):
     @property
     def is_video(self):
         return self.medium == Asset.Medium.Video
-
-    @property
-    def path_hash(self):
-        '''A string containing the hash of this asset's path.'''
-        digest = hashlib.blake2s(self.path.encode('utf-8')).digest()
-        return base64.b64encode(digest, b'-_').strip(b'=').decode('utf-8')
 
     @property
     def contents_hash(self):
@@ -284,6 +277,9 @@ class Asset(Model):
 
     def _init(self, sess):
         '''Initialize a newly created asset.'''
+        digest = hashlib.blake2s(self.path.encode('utf-8')).digest()
+        self.path_hash = base64.b64encode(digest, b'-_').strip(b'=').decode('utf-8')
+
         if not os.path.isfile(self.path):
             return
 
@@ -302,7 +298,7 @@ class Asset(Model):
 
         if self.medium == Asset.Medium.Photo:
             self.hashes.append(Hash.compute_photo_diff(self.path, 16))
-            self.hashes.append(Hash.compute_photo_histogram(self.path, 'HSL', 96))
+            self.hashes.append(Hash.compute_photo_histogram(self.path, 'RGB', 96))
         if self.medium == Asset.Medium.Video:
             for o in range(0, int(self.duration), 10):
                 self.hashes.append(Hash.compute_video_diff(self.path, o + 5))
@@ -396,6 +392,12 @@ class Label(Model):
     tag = sqlalchemy.orm.relationship(Tag, backref='labels')
 
 
+def bits_to_nibbles(bits):
+    flat = bits.ravel()
+    return ('{:0%dx}' % (flat.size // 4, )).format(
+        int(''.join(flat.astype(int).astype(str)), 2))
+
+
 class Hash(Model):
     __tablename__ = 'hashes'
 
@@ -424,12 +426,6 @@ class Hash(Model):
     def __lt__(self, other):
         return self.nibbles < other.nibbles
 
-    @staticmethod
-    def bits_to_nibbles(bits):
-        flat = bits.ravel()
-        return ('{:0%dx}' % (flat.size // 4, )).format(
-            int(''.join(flat.astype(int).astype(str)), 2))
-
     @classmethod
     def compute_photo_diff(cls, path, size=8):
         '''Compute a similarity hash for an image.
@@ -453,7 +449,7 @@ class Hash(Model):
                    flavor=Hash.Flavor[f'DIFF_{size}'])
 
     @classmethod
-    def compute_photo_histogram(cls, path, planes='HSV', size=48):
+    def compute_photo_histogram(cls, path, planes='RGB', size=48):
         hist = np.asarray(PIL.Image.open(path).convert(planes).histogram())
         chunks = np.asarray([c.sum() for c in np.split(hist, size)])
         # This makes 50% of bits into ones, is that a good idea?

@@ -19,8 +19,8 @@ sql = flask_sqlalchemy.SQLAlchemy()
 socketio = flask_socketio.SocketIO(app)
 
 
-def _get_asset(id):
-    return sql.session.query(db.Asset).get(id)
+def _get_asset(hash):
+    return sql.session.query(db.Asset).filter(db.Asset.path_hash.startswith(hash)).one()
 
 
 @socketio.on('foo event')
@@ -70,18 +70,18 @@ def export(query):
     return flask.send_file(output, as_attachment=True)
 
 
-@app.route('/rest/asset/<int:id>/', methods=['GET'])
-def get_asset(id):
-    return flask.jsonify(_get_asset(id).to_dict())
+@app.route('/rest/asset/<string:hash>/', methods=['GET'])
+def get_asset(hash):
+    return flask.jsonify(_get_asset(hash).to_dict())
 
 
-@app.route('/rest/asset/<int:id>/', methods=['PUT'])
-def update_asset(id):
+@app.route('/rest/asset/<string:hash>/', methods=['PUT'])
+def update_asset(hash):
     req = flask.request
     stamp = req.form.get('stamp', '')
     add_tags = req.form.get('add_tags', '').split()
     remove_tags = req.form.get('remove_tags', '').split()
-    asset = _get_asset(id)
+    asset = _get_asset(hash)
     for tag in add_tags:
         asset.add_tag(tag)
     for tag in remove_tags:
@@ -92,9 +92,9 @@ def update_asset(id):
     return flask.jsonify(asset.to_dict())
 
 
-@app.route('/rest/asset/<int:id>/', methods=['DELETE'])
-def delete_asset(id):
-    _get_asset(id).delete(hide_original=app.config['hide-originals'])
+@app.route('/rest/asset/<string:hash>/', methods=['DELETE'])
+def delete_asset(hash):
+    _get_asset(hash).delete(hide_original=app.config['hide-originals'])
     return flask.jsonify('ok')
 
 
@@ -111,13 +111,13 @@ FILTER_ARGS = dict(
     vflip='',
 )
 
-@app.route('/rest/asset/<int:id>/filters/<string:filter>/', methods=['POST'])
-def add_filter(id, filter):
+@app.route('/rest/asset/<string:hash>/filters/<string:filter>/', methods=['POST'])
+def add_filter(hash, filter):
     req = flask.request
     kwargs = dict(filter=filter)
     for arg in FILTER_ARGS[filter].split():
         kwargs[arg] = float(req.form[arg])
-    asset = _get_asset(id)
+    asset = _get_asset(hash)
     asset.add_filter(kwargs)
     asset.save()
     root = app.config['db'].root
@@ -126,9 +126,9 @@ def add_filter(id, filter):
     return flask.jsonify(asset.to_dict())
 
 
-@app.route('/rest/asset/<int:id>/filters/<string:filter>/<int:index>/', methods=['DELETE'])
-def delete_filter(id, filter, index):
-    asset = _get_asset(id)
+@app.route('/rest/asset/<string:hash>/filters/<string:filter>/<int:index>/', methods=['DELETE'])
+def delete_filter(hash, filter, index):
+    asset = _get_asset(hash)
     asset.remove_filter(filter, index)
     asset.save()
     root = app.config['db'].root

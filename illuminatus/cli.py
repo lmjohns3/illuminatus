@@ -56,7 +56,8 @@ def cli(ctx, db_path, log_sql, log_tools):
     ctx.obj = dict(db_path=db_path, db_echo=log_sql)
 
     if log_tools:
-        tools._DEBUG = 2
+        tools._DEBUG = 1
+        importexport._DEBUG = 1
 
 
 @cli.command()
@@ -132,17 +133,16 @@ def ls(ctx, query, order, limit):
     with session(ctx) as sess:
         for asset in db.Asset.matching(sess, ' '.join(query), order, limit):
             click.echo(' '.join((
-                str(asset.contents_hash),
                 ' '.join(str(h) for h in asset.diff8_hashes),
                 ' '.join(t.name_string for t in
-                         sorted(asset.tags, key=lambda t: (t.group, t.name))),
+                         sorted(asset.tags, key=lambda t: (t.pattern, t.name))),
                 click.style(asset.path),
             )))
 
 
 @cli.command()
 @click.option('--hash', default='diff-8', metavar='[diff-8|hsl-hist-48|...]',
-              help='Group assets by this hash.')
+              help='Check for asset neighbors using this hash.')
 @click.argument('query', nargs=-1)
 @click.pass_context
 def dupe(ctx, query, hash):
@@ -150,24 +150,14 @@ def dupe(ctx, query, hash):
 
     See "illuminatus help" for help on QUERY syntax.
     '''
-    def get_hash(asset):
-        hashes = [h for h in asset.hashes if h.flavor.value == hash]
-        if len(hashes) == 1:
-            return str(hashes[0])
-        return None
-
     with session(ctx) as sess:
-        groups = collections.defaultdict(set)
         for asset in db.Asset.matching(sess, ' '.join(query)):
-            h = get_hash(asset)
-            if h is not None:
-                groups[h].add(asset)
-        for h, group in groups.items():
-            if len(group) > 1:
-                click.echo()
-                click.echo(h)
-                for i, asset in enumerate(sorted(group, key=lambda a: a.path)):
-                    click.echo('{} {}'.format('*' if i else ' ', asset.path))
+            for c in asset.hashes:
+                if c.flavor.value != hash:
+                    continue
+                click.echo('* {}'.format(asset.path))
+                for n in c.select_neighbors(sess, within=1).join(db.Asset):
+                    click.echo('> {}'.format(n.asset.path))
 
 
 @cli.command()
