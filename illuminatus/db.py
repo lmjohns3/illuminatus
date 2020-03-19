@@ -63,7 +63,7 @@ class Tag(Model):
         'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday',
 
         # Time of day.
-        r'\dam', r'\d\dam', r'\dpm', r'\d\dpm',
+        r'12am', r'\dam', r'\d\dam', r'12pm', r'\dpm', r'\d\dpm',
 
         # Camera.
         r'kit:\S+',
@@ -76,6 +76,9 @@ class Tag(Model):
 
         # Geolocation.
         r'country:\S+', r'state:\S+', r'city:\S+', r'place:\S+',
+
+        # User-defined: everything else.
+        r'.*',
     )
 
     @staticmethod
