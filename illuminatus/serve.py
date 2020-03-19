@@ -41,7 +41,7 @@ def assets(query):
               .limit(int(req.args.get('limit', 99999)))
               .offset(int(req.args.get('offset', 0)))
               .all())
-    return flask.jsonify(assets=[a.to_dict() for a in assets])
+    return flask.jsonify([a.to_dict() for a in assets])
 
 
 @app.route('/rest/export/<path:query>', methods=['POST'])
