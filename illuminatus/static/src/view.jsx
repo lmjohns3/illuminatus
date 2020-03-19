@@ -6,73 +6,81 @@ import axios from "axios"
 import Tags from "./tags"
 
 
+const hrefForTag = (tag, path) => (tag.active
+    ? path.replace(new RegExp(`/${tag.name}/`), "/")
+    : `${tag.name}/`);
+
+
 export default function View() {
+  // Get format info for the app.
   const [formats, setFormats] = useState([]);
   useEffect(() => {
     axios("/rest/formats/").then(res => setFormats(res.data));
   }, []);
 
+  const getExt = (size, medium) => {
+    let match = null;
+    formats.forEach(f => { if ((f.path === size) && (f.medium === medium)) match = f; });
+    return match ? match.format.ext : null;
+  };
+
+  // Get assets matching our view query.
   const query = useParams().query, [assets, setAssets] = useState([]);
   useEffect(() => {
-    axios(`/rest/query/${query}`).then(res => setAssets(res.data.assets));
+    axios(`/rest/query/${query}`).then(res => setAssets(res.data));
   }, [query]);
 
-  if ((assets.length === 0) || (formats.length === 0)) return null;
+  // Keep track if there is a single asset being viewed.
+  const [viewIndex, setViewIndex] = useState(-1);
+  let viewAsset = null;
+  if ((0 <= viewIndex) && (viewIndex < assets.length)) {
+    const asset = assets[viewIndex];
+    viewAsset = <Asset asset={asset} ext={getExt("medium", asset.medium)} />;
+  }
 
-  const getFormat = (size, medium) => {
-    let match = null;
-    formats.forEach(fmt => {
-      if ((fmt.path === size) && (fmt.medium === medium)) {
-        match = fmt;
-      }
-    });
-    return match;
-  };
-
-  const tagHref = tag => {
-    let href = `${tag.name}/`;
-    if (tag.active)
-      href = useLocation().pathname.replace(new RegExp(`/${tag.name}/`), "/");
-    return href;
-  };
-
-  return <div className="view">
-    <Tags assets={assets} tagHref={tagHref} />
-    <div className="thumbs">{
-      assets.map(asset => <Thumb key={asset.id}
-                                 asset={asset}
-                                 format={getFormat("small", asset.medium).format} />)
-    }</div>
+  return <div className={`view ${viewAsset ? 'viewing' : 'browsing'}`}>
+    <Tags assets={assets} href={hrefForTag} />
+    <div className="thumbs">{assets.map(
+        (asset, idx) => <Thumb key={asset.id}
+                               asset={asset}
+                               ext={getExt("small", asset.medium)}
+                               handleClick={() => setViewIndex(idx)} />
+    )}</div>
+    {viewAsset}
   </div>;
 }
 
 
-const Thumb = ({asset, format}) => {
+const Thumb = ({asset, ext, handleClick}) => {
   const ph = asset.path_hash
       , isVideo = asset.medium === "video"
-      , source = ext => `/asset/small/${ph.slice(0, 2)}/${ph}.${ext}`
-      , initialSrc = source(isVideo ? "png" : format.ext);
-  return <Link className="thumb" to={`/view/${ph.slice(0, 8)}/`}>
+      , source = e => `/asset/small/${ph.slice(0, 2)}/${ph}.${e}`
+      , initialSrc = source(isVideo ? "png" : ext);
+  return <span className="thumb" onClick={handleClick}>
     <img className={asset.medium}
          src={initialSrc}
-         onMouseEnter={e => { if (isVideo) e.target.src = source("webp"); }}
+         onMouseEnter={e => { if (isVideo) e.target.src = source(ext); }}
          onMouseLeave={e => { if (isVideo) e.target.src = initialSrc; }}/>
     {isVideo ? <span className="video-icon">▶</span> : null}
-  </Link>;
+  </span>;
 }
 
 
-const View = ({format, asset}) => {
+const Asset = ({asset, ext}) => {
   const ph = asset.path_hash
-      , src = `/asset/medium/${ph.slice(0, 2)}/${ph}.${format.ext}`;
-  return <div className="view">
-    <Tags assets={[asset]} startVisible={true} tagHref={tag => `/browse/${tag.name}/`} />
-    <div className="asset">{
+      , src = `/asset/medium/${ph.slice(0, 2)}/${ph}.${ext}`;
+  return <div className="asset">
+    <Tags assets={[asset]} startVisible={true} href={null} />
+    {
       asset.medium === "video" ? <video autoPlay controls><source src={src} /></video> :
       asset.medium === "audio" ? <audio autoPlay controls><source src={src} /></audio> :
                                  <img src={src} />
-    }</div>
-    <div className="similar">
-    </div>
+    }
+    <h2>Foo</h2>
+    {
+      asset.medium === "video" ? <video autoPlay controls><source src={src} /></video> :
+      asset.medium === "audio" ? <audio autoPlay controls><source src={src} /></audio> :
+                                 <img key="b" src={src} />
+    }
   </div>;
 }

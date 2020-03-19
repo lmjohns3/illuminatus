@@ -56,7 +56,7 @@ const TAG_PATTERNS = [
   {re: /^.*$/, hue: 0, block: 4},
 ]
 
-export default function Tags({assets, startVisible, tagHref}) {
+export default function Tags({assets, startVisible, href}) {
   if (assets.length === 0)
     return null;
 
@@ -94,12 +94,12 @@ export default function Tags({assets, startVisible, tagHref}) {
                                tags={tags}
                                startVisible={startVisible}
                                assetCount={assets.length}
-                               tagHref={tagHref} />)
+                               href={href} />)
   }</div>;
 }
 
 
-const Block = ({block, tags, startVisible, assetCount, tagHref}) => {
+const Block = ({block, tags, startVisible, assetCount, href}) => {
   if ((block.active.length <= 0) && (block.other.length <= 0))
     return null;
 
@@ -115,10 +115,7 @@ const Block = ({block, tags, startVisible, assetCount, tagHref}) => {
   block.other.sort(cmp);
 
   const render = names => names.map(
-    name => <Tag key={name}
-                 tag={tags[name]}
-                 assetCount={assetCount}
-                 href={tagHref(tags[name])} />
+    name => <Tag key={name} tag={tags[name]} assetCount={assetCount} href={href} />
   );
 
   return <Fragment>
@@ -130,8 +127,10 @@ const Block = ({block, tags, startVisible, assetCount, tagHref}) => {
 
 
 const Tag = ({tag, assetCount, href}) => {
-  return <Link to={href} className="tag" style={{
+  const path = useLocation().pathname
+      , span = <span className="tag" style={{
     backgroundColor: hsluvToHex([tag.hue, 100, 90]),
     opacity: Math.log(3 + tag.count) / Math.log(1 + assetCount),
-  }}>{tag.name}</Link>;
+  }}>{tag.name}</span>;
+  return href ? <Link to={href(tag.name, path)}>{span}</Link> : span;
 }
