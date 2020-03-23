@@ -2,7 +2,7 @@ import arrow
 import collections
 import contextlib
 import flask
-import flask_socketio
+# import flask_socketio
 import flask_sqlalchemy
 import json
 import os
@@ -16,16 +16,16 @@ from . import tools
 
 app = flask.Flask('illuminatus')
 sql = flask_sqlalchemy.SQLAlchemy()
-socketio = flask_socketio.SocketIO(app)
 
 
 def _get_asset(hash):
     return sql.session.query(db.Asset).filter(db.Asset.path_hash.startswith(hash)).one()
 
 
-@socketio.on('foo event')
-def handle_foo_event(json):
-    return 'a'
+# socketio = flask_socketio.SocketIO(app)
+# @socketio.on('foo event')
+# def handle_foo_event(json):
+#     return 'a'
 
 
 @app.route('/rest/formats/')
