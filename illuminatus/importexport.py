@@ -29,7 +29,9 @@ def _process(jobs_queue, callback):
 
 def run_workqueue(jobs, callback, num_workers=None):
     if _DEBUG:
-        return [callback(j) for j in jobs]
+        for job in jobs:
+            callback(job)
+        return
     jobs_queue = mp.Queue()
     if not num_workers:
         num_workers = mp.cpu_count()
@@ -151,7 +153,7 @@ class Importer:
                 asset = db.Asset(path=path, medium=medium)
                 asset.tags |= self.tags
                 components = os.path.dirname(path).split(os.sep)[::-1]
-                for i in range(self.path_tags):
+                for i in range(min(len(components) - 1, self.path_tags)):
                     asset.tags.add(db.Tag.get_or_create(sess, components[i]))
                 sess.add(asset)
                 click.echo('{} Added {}'.format(
@@ -161,7 +163,7 @@ class Importer:
             return
         except:
             _, exc, tb = sys.exc_info()
-            click.echo('! Error {} {}\n{}'.format(path, exc, ''.join(tb)))
+            click.echo('! Error {} {}\n{}'.format(path, exc, tb))
 
 
 class Thumbnailer:
