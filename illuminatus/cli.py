@@ -11,6 +11,16 @@ from . import metadata
 from . import tools
 
 
+def display(asset):
+    return (
+        asset.path_hash,
+        ' '.join(sorted(str(h) for h in asset.hashes if h.flavor.value != 'DIFF_16')),
+        ' '.join(t.name_string for t in
+                 sorted(asset.tags, key=lambda t: (t.pattern, t.name))),
+        click.style(asset.path),
+    )
+
+
 def ensure_db_config(ctx):
     if ctx.obj.get('db_path') is None:
         ctx.obj['db_path'] = os.path.abspath(os.path.expanduser(
@@ -132,32 +142,29 @@ def ls(ctx, query, order, limit):
     '''
     with session(ctx) as sess:
         for asset in db.Asset.matching(sess, ' '.join(query), order, limit):
-            click.echo(' '.join((
-                ' '.join(str(h) for h in asset.diff8_hashes),
-                ' '.join(t.name_string for t in
-                         sorted(asset.tags, key=lambda t: (t.pattern, t.name))),
-                click.style(asset.path),
-            )))
+            click.echo(' '.join(display(asset)))
 
 
 @cli.command()
-@click.option('--hash', default='diff-8', metavar='[diff-8|hsl-hist-48|...]',
+@click.option('--hash', default='DIFF_4', metavar='[DIFF_8|RGB_HIST_32|...]',
               help='Check for asset neighbors using this hash.')
+@click.option('--distance', default=1, metavar='N',
+              help='Look within a Hamming distance of N for hash neighbors.')
 @click.argument('query', nargs=-1)
 @click.pass_context
-def dupe(ctx, query, hash):
+def dupe(ctx, query, hash, distance):
     '''List duplicate assets matching a QUERY.
 
     See "illuminatus help" for help on QUERY syntax.
     '''
     with session(ctx) as sess:
         for asset in db.Asset.matching(sess, ' '.join(query)):
-            for c in asset.hashes:
-                if c.flavor.value != hash:
-                    continue
-                click.echo('* {}'.format(asset.path))
-                for n in c.select_neighbors(sess, within=1).join(db.Asset):
-                    click.echo('> {}'.format(n.asset.path))
+            neighbors = asset.select_similar(sess, hash=hash, distance=distance)
+            if neighbors:
+                click.echo(' '.join(display(asset)))
+                for neighbor in neighbors:
+                    click.echo(' '.join(('-->', ) + display(neighbor)))
+                click.echo('')
 
 
 @cli.command()

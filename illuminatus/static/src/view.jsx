@@ -69,6 +69,10 @@ const Thumb = ({asset, ext, handleClick}) => {
 const Asset = ({asset, ext}) => {
   const ph = asset.path_hash
       , src = `/asset/medium/${ph.slice(0, 2)}/${ph}.${ext}`;
+  const [similar, setSimilar] = useState([]);
+  useEffect(() => {
+    axios(`/rest/asset/${ph}/similar/?distance=3`).then(res => setSimilar(res.data));
+  }, [asset]);
   return <div className="asset">
     <Tags assets={[asset]} startVisible={true} href={null} />
     {
@@ -76,11 +80,10 @@ const Asset = ({asset, ext}) => {
       asset.medium === "audio" ? <audio autoPlay controls><source src={src} /></audio> :
                                  <img src={src} />
     }
-    <h2>Foo</h2>
-    {
-      asset.medium === "video" ? <video autoPlay controls><source src={src} /></video> :
-      asset.medium === "audio" ? <audio autoPlay controls><source src={src} /></audio> :
-                                 <img key="b" src={src} />
-    }
+    <div className="similar">{
+      similar.map(a => <Thumb key={a.id} asset={a} ext={ext} handleClick={null} />)
+    }</div>
   </div>;
 }
+
+// ✏🗑 ⛔

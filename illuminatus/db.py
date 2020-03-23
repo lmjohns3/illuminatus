@@ -109,11 +109,6 @@ asset_tags = Table('asset_tags',
                    Column('asset_id', ForeignKey('assets.id'), index=True),
                    Column('tag_id', ForeignKey('tags.id'), index=True))
 
-similar = Table('similar',
-                Model.metadata,
-                Column('a_id', ForeignKey('assets.id'), index=True),
-                Column('b_id', ForeignKey('assets.id')))
-
 
 class Asset(Model):
     __tablename__ = 'assets'
@@ -147,11 +142,6 @@ class Asset(Model):
                                        backref='assets',
                                        lazy='joined')
 
-    similar = sqlalchemy.orm.relationship('Asset',
-                                          secondary=similar,
-                                          primaryjoin=id == similar.c.a_id,
-                                          secondaryjoin=id == similar.c.b_id)
-
     @property
     def is_audio(self):
         return self.medium == Asset.Medium.Audio
@@ -164,16 +154,13 @@ class Asset(Model):
     def is_video(self):
         return self.medium == Asset.Medium.Video
 
-    @property
-    def contents_hash(self):
-        '''Hash of the contents of the asset.'''
-        return [h for h in self.hashes if h.flavor == Hash.Flavor.CONTENTS][0]
-
-    @property
-    def diff8_hashes(self):
-        '''Diff-8 hashes of the contents of the asset.'''
-        return sorted(
-            h for h in self.hashes if h.flavor == Hash.Flavor.DIFF_8 and h.nibbles)
+    def select_similar(self, sess, hash='DIFF_4', distance=1):
+        similar = set()
+        for h in self.hashes:
+            if h.flavor.value == hash:
+                for neighbor in h.select_neighbors(sess, distance):
+                    similar.add(neighbor.asset)
+        return similar
 
     @staticmethod
     def matching(sess, query, order=None, limit=None, offset=None):
@@ -300,8 +287,10 @@ class Asset(Model):
                 self.tags.add(Tag.get_or_create(sess, t))
 
         if self.medium == Asset.Medium.Photo:
+            self.hashes.append(Hash.compute_photo_diff(self.path, 4))
+            self.hashes.append(Hash.compute_photo_diff(self.path, 8))
             self.hashes.append(Hash.compute_photo_diff(self.path, 16))
-            self.hashes.append(Hash.compute_photo_histogram(self.path, 'RGB', 96))
+            self.hashes.append(Hash.compute_photo_histogram(self.path, 'RGB', 16))
         if self.medium == Asset.Medium.Video:
             for o in range(0, int(self.duration), 10):
                 self.hashes.append(Hash.compute_video_diff(self.path, o + 5))
@@ -407,12 +396,13 @@ class Hash(Model):
     @enum.unique
     class Flavor(str, enum.Enum):
         '''Enumeration of different supported hash types.'''
-        DIFF_8 = 'diff-8'
-        DIFF_16 = 'diff-16'
-        HSL_HIST_48 = 'hsl-hist-48'
-        HSL_HIST_96 = 'hsl-hist-96'
-        RGB_HIST_48 = 'rgb-hist-48'
-        RGB_HIST_96 = 'rgb-hist-96'
+        DIFF_4 = 'DIFF_4'
+        DIFF_8 = 'DIFF_8'
+        DIFF_16 = 'DIFF_16'
+        HSL_HIST_16 = 'HSL_HIST_16'
+        HSL_HIST_32 = 'HSL_HIST_32'
+        RGB_HIST_16 = 'RGB_HIST_16'
+        RGB_HIST_32 = 'RGB_HIST_32'
 
     id = Column(Integer, primary_key=True)
     asset_id = Column(ForeignKey('assets.id'), index=True)
@@ -452,9 +442,9 @@ class Hash(Model):
                    flavor=Hash.Flavor[f'DIFF_{size}'])
 
     @classmethod
-    def compute_photo_histogram(cls, path, planes='RGB', size=48):
+    def compute_photo_histogram(cls, path, planes='RGB', size=16):
         hist = np.asarray(PIL.Image.open(path).convert(planes).histogram())
-        chunks = np.asarray([c.sum() for c in np.split(hist, size)])
+        chunks = np.asarray([c.sum() for c in np.split(hist, 3 * size)])
         # This makes 50% of bits into ones, is that a good idea?
         return cls(nibbles=bits_to_nibbles(chunks > np.percentile(chunks, 50)),
                    flavor=Hash.Flavor[f'{planes}_HIST_{size}'])
@@ -467,14 +457,14 @@ class Hash(Model):
     def compute_video_diff(cls, path, time, size=8):
         return cls(nibbles='', flavor=Hash.Flavor[f'DIFF_{size}'], time=time)
 
-    def select_neighbors(self, sess, within=1):
+    def select_neighbors(self, sess, distance=1):
         '''Get all neighboring hashes from the database.
 
         Parameters
         ----------
         sess : SQLAlchemy
             Database session.
-        within : int, optional
+        distance : int, optional
             Select all existing hashes within this Hamming distance.
 
         Returns
@@ -482,7 +472,7 @@ class Hash(Model):
         A query object over neighboring hashes from our hash.
         '''
         return sess.query(Hash).filter(
-            Hash.nibbles.in_(_neighboring_hashes(self.nibbles, within)),
+            Hash.nibbles.in_(_neighboring_hashes(self.nibbles, distance)),
             Hash.flavor == self.flavor)
 
     def to_dict(self):
@@ -494,10 +484,10 @@ class Hash(Model):
 
 
 # a map from each hex digit to the hex digits that differ in 1 bit.
-_HEX_NEIGHBORS = ('1248', '0359', '306a', '217b',
-                  '560c', '471d', '742e', '653f',
-                  '9ac0', '8bd1', 'b8e2', 'a9f3',
-                  'de84', 'cf95', 'fca6', 'edb7')
+_HEX_NEIGHBORS = {'0': '1248', '1': '0359', '2': '306a', '3': '217b',
+                  '4': '560c', '5': '471d', '6': '742e', '7': '653f',
+                  '8': '9ac0', '9': '8bd1', 'a': 'b8e2', 'b': 'a9f3',
+                  'c': 'de84', 'd': 'cf95', 'e': 'fca6', 'f': 'edb7'}
 
 def _neighboring_hashes(start, distance=1):
     '''Pull all neighboring hashes within a given Hamming distance.
@@ -505,25 +495,23 @@ def _neighboring_hashes(start, distance=1):
     Parameters
     ----------
     start : str
-        Hexadecimal string representing the source hash value.
+        Hexadecimal string representing a starting hash value.
     distance : int, optional
         Identify all hashes within this Hamming distance from the start.
 
-    Returns
+    Yields
     -------
-    The set of hashes that are within the given distance from the original.
-    Does not include the start.
+    The unique hashes that are within the given distance from the start,
+    not including the start.
     '''
-    neighborhood, frontier = set(), {start}
-    for _ in range(distance):
-        frontier_ = set()
-        for node in frontier - neighborhood:
-            for i, c in enumerate(node):
-                for d in _HEX_NEIGHBORS[int(c, 16)]:
-                    frontier_.add(node[:i] + d + node[i+1:])
-        neighborhood |= frontier
-        frontier = frontier_
-    return (neighborhood | frontier) - {start}
+    visited, frontier = set(), {start}
+    for _ in range(min(distance, 3)):
+        visited |= frontier
+        frontier = {f'{nibbles[:i]}{d}{nibbles[i+1:]}'
+                    for nibbles in frontier
+                    for i, c in enumerate(nibbles)
+                    for d in _HEX_NEIGHBORS[c]} - visited
+        yield from frontier
 
 
 class QueryParser(parsimonious.NodeVisitor):

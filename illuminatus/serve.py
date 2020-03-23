@@ -75,6 +75,14 @@ def get_asset(hash):
     return flask.jsonify(_get_asset(hash).to_dict())
 
 
+@app.route('/rest/asset/<string:hash>/similar/', methods=['GET'])
+def get_similar_assets(hash):
+    asset = asset = _get_asset(hash)
+    distance = int(flask.request.args.get('distance', 2))
+    similar = asset.select_similar(sql.session, distance)
+    return flask.jsonify([a.to_dict() for a in similar])
+
+
 @app.route('/rest/asset/<string:hash>/', methods=['PUT'])
 def update_asset(hash):
     req = flask.request
