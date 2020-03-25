@@ -2,64 +2,35 @@ import arrow
 
 from util import *
 
-from illuminatus import assets
-
 
 def test_exists(sess):
-    A = assets.Asset
-    assert sess.query(A).filter(A.path == PHOTO_PATH).count() == 1
-    assert sess.query(A).filter(A.path == 'foo.deb').count() == 0
+    assert sess.query(Asset).filter(Asset.path == PHOTO_PATH).count() == 1
+    assert sess.query(Asset).filter(Asset.path == 'foo.deb').count() == 0
 
 
 def test_update(sess):
-    A = illuminatus.Asset
-    photo1 = sess.query(A).get(1)
+    photo1 = sess.query(Asset).get(1)
     photo1.tags.add('foo')
     sess.add(photo1)
-    photo2 = sess.query(A).get(1)
+    photo2 = sess.query(Asset).get(1)
     assert photo1.path == photo2.path
     assert photo1.stamp == photo2.stamp
 
 
-def test_add_remove_tags(empty_db):
-    with illuminatus.session(empty_db) as sess:
-        sess.add(illuminatus.Asset(path='foo',
-                                   medium=illuminatus.Medium.Photo,
-                                   stamp=arrow.get().datetime))
-    with illuminatus.session(empty_db) as sess:
-        asset = sess.query(A).filter(A.path == 'foo').one()
-        assert 'hello' not in set(t.name for t in asset.tags)
-    with illuminatus.session(empty_db) as sess:
-        asset = sess.query(A).filter(A.path == 'foo').one()
-        asset.increment_tag('hello')
-        sess.add(asset)
-    with illuminatus.session(empty_db) as sess:
-        asset = sess.query(A).filter(A.path == 'foo').one()
-        assert 'hello' in set(t.name for t in asset.tags)
-    with illuminatus.session(empty_db) as sess:
-        asset = sess.query(A).filter(A.path == 'foo').one()
-        asset.remove_tag('hello')
-        sess.add(asset)
-    with illuminatus.session(empty_db) as sess:
-        asset = sess.query(A).filter(A.path == 'foo').one()
-        assert 'hello' not in set(t.name for t in asset.tags)
-
-
 @pytest.mark.parametrize('when, expected', [
-    ('+3y', '2003-03-10T11:12:00+00:00'),
-    ('-3y', '1997-03-10T11:12:00+00:00'),
-    ('+3m', '2000-06-10T11:12:00+00:00'),
-    ('-3m', '1999-12-10T11:12:00+00:00'),
-    ('+3d', '2000-03-13T11:12:00+00:00'),
-    ('-3d', '2000-03-07T11:12:00+00:00'),
-    ('+3h', '2000-03-10T14:12:00+00:00'),
-    ('-3h', '2000-03-10T08:12:00+00:00'),
-    ('2000-01-01 01:01:01', '2000-01-01T01:01:01+00:00'),
-    ('', '2000-03-10T11:12:00+00:00'),
+    ('+3y', '2016-04-07T14:01:07'),
+    ('-3y', '2010-04-07T14:01:07'),
+    ('+3m', '2013-07-07T14:01:07'),
+    ('-3m', '2013-01-07T14:01:07'),
+    ('+3d', '2013-04-10T14:01:07'),
+    ('-3d', '2013-04-04T14:01:07'),
+    ('+3h', '2013-04-07T17:01:07'),
+    ('-3h', '2013-04-07T11:01:07'),
+    ('2000-01-01 01:01:01', '2000-01-01T01:01:01'),
+    ('', '2013-04-07T14:01:07'),
 ])
-def test_update_stamp(empty_db, when, expected):
-    with illuminatus.session(empty_db) as sess:
-        asset = illuminatus.Asset()
-        asset.stamp = arrow.get('2000-03-10T11:12:00+00:00').datetime
-        asset.update_stamp(when)
-        assert asset.stamp == arrow.get(expected).datetime
+def test_update_stamp(sess, when, expected):
+    asset = sess.query(Asset).get(1)
+    asset.update_from_metadata()
+    asset.update_stamp(when)
+    assert asset.stamp == arrow.get(expected).datetime

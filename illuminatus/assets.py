@@ -1,3 +1,4 @@
+import arrow
 import collections
 import enum
 import json
@@ -34,10 +35,10 @@ class Asset(db.Model):
         Video = 'video'
 
     id = db.Column(db.Integer, primary_key=True)
-    path = db.Column(db.String, nullable=False)
     slug = db.Column(db.String, unique=True, nullable=False)
     medium = db.Column(db.Enum(Medium), index=True, nullable=False)
-    stamp = db.Column(db.DateTime, index=True, nullable=False)
+
+    path = db.Column(db.String, nullable=False)
     description = db.Column(db.String, nullable=False, default='')
 
     width = db.Column(db.Integer)
@@ -46,6 +47,7 @@ class Asset(db.Model):
     fps = db.Column(db.Float)
     lat = db.Column(db.Float, index=True)
     lng = db.Column(db.Float, index=True)
+    stamp = db.Column(db.DateTime, index=True)
 
     filters = db.Column(db.String, nullable=False, default='[]')
 
@@ -109,7 +111,7 @@ class Asset(db.Model):
         when : str
             A modifier for the stamp for this asset.
         '''
-        for t in metadata.gen_datetime_tags(arrow.get(self.stamp)):
+        for t in metadata.tags_from_stamp(arrow.get(self.stamp)):
             self.tags.remove(t)
 
         try:
@@ -120,9 +122,9 @@ class Asset(db.Model):
             for spec in re.findall(r'[-+]\d+[ymdh]', when):
                 sign, shift, granularity = spec[0], spec[1:-1], spec[-1]
                 kwargs[fields[granularity]] = (-1 if sign == '-' else 1) * int(shift)
-            self.stamp = arrow.get(self.stamp).replace(**kwargs).datetime
+            self.stamp = arrow.get(self.stamp).shift(**kwargs).datetime
 
-        for t in metadata.gen_datetime_tags(arrow.get(self.stamp)):
+        for t in metadata.tags_from_stamp(arrow.get(self.stamp)):
             self.tags.add(t)
 
     def add_filter(self, filter):

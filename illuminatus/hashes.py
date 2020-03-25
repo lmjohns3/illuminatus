@@ -118,6 +118,10 @@ def _bits_to_nibbles(bits):
         int(''.join(flat.astype(int).astype(str)), 2))
 
 
+def _bit_diff_rate(a, b):
+    return bin(int(a, 16) ^ int(b, 16)).count('1') / len(a) / 4
+
+
 # a map from each hex digit to the hex digits that differ in 1 bit.
 _HEX_NEIGHBORS = {'0': '1248', '1': '0359', '2': '306a', '3': '217b',
                   '4': '560c', '5': '471d', '6': '742e', '7': '653f',
@@ -143,7 +147,6 @@ def _neighbors(start, max_diff=0.99):
     if not start:
         return
     visited, frontier = {start}, {start}
-    diff = lambda n: bin(int(n, 16) ^ int(start, 16)).count('1') / len(start) / 4
     while frontier:
         yield from frontier
         next_frontier = set()
@@ -151,7 +154,7 @@ def _neighbors(start, max_diff=0.99):
             for i, c in enumerate(nibbles):
                 for d in _HEX_NEIGHBORS[c]:
                     n = f'{nibbles[:i]}{d}{nibbles[i+1:]}'
-                    if n not in visited and diff(n) < max_diff:
+                    if n not in visited and _bit_diff_rate(start, n) < max_diff:
                         next_frontier.add(n)
                         visited.add(n)
         frontier = next_frontier
