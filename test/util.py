@@ -34,11 +34,15 @@ RECORDS = [
 
 MEDIA = pytest.mark.datafiles(PHOTO_PATH, AUDIO_PATH, VIDEO_PATH)
 
+Asset = illuminatus.Asset
+Hash = illuminatus.Hash
+Tag = illuminatus.Tag
+
 
 @pytest.fixture(scope='session')
 def engine():
     with tempfile.NamedTemporaryFile(prefix='illuminatus-test-') as path:
-        engine = illuminatus.db.engine(path.name, echo=True)
+        engine = illuminatus.db.engine(path.name, echo=False)
         illuminatus.db.Session.configure(bind=engine)
         yield engine
 
@@ -50,12 +54,12 @@ def tables(engine):
         illuminatus.db.Session.configure(bind=conn)
         for rec in RECORDS:
             slug = os.path.basename(rec['path']).split('.')[0]
-            asset = illuminatus.Asset(medium=rec['medium'],
-                                       path=rec['path'],
-                                       slug=slug,
-                                       stamp=arrow.get(rec['stamp']).datetime,
-                                       tags=rec['tags'])
-            asset.hashes.add(illuminatus.Hash(nibbles=slug, flavor='DIFF_4'))
+            asset = Asset(medium=rec['medium'],
+                          path=rec['path'],
+                          slug=slug,
+                          stamp=arrow.get(rec['stamp']).datetime,
+                          tags=rec['tags'])
+            asset.hashes.add(Hash(nibbles=slug, flavor='DIFF_4'))
             sess = illuminatus.db.Session()
             sess.add(asset)
             sess.commit()

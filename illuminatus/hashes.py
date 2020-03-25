@@ -14,12 +14,16 @@ class Hash(db.Model):
     class Flavor(str, enum.Enum):
         '''Enumeration of different supported hash types.'''
         DIFF_4 = 'DIFF_4'
+        DIFF_6 = 'DIFF_6'
         DIFF_8 = 'DIFF_8'
-        DIFF_16 = 'DIFF_16'
+
+        HSL_HIST_4 = 'HSL_HIST_4'
+        HSL_HIST_8 = 'HSL_HIST_8'
         HSL_HIST_16 = 'HSL_HIST_16'
-        HSL_HIST_32 = 'HSL_HIST_32'
+
+        RGB_HIST_4 = 'RGB_HIST_4'
+        RGB_HIST_8 = 'RGB_HIST_8'
         RGB_HIST_16 = 'RGB_HIST_16'
-        RGB_HIST_32 = 'RGB_HIST_32'
 
     id = db.Column(db.Integer, primary_key=True)
     asset_id = db.Column(db.ForeignKey('assets.id', ondelete='CASCADE'), nullable=False)
@@ -34,13 +38,16 @@ class Hash(db.Model):
     def __lt__(self, other):
         return self.nibbles < other.nibbles
 
+    def __repr__(self):
+        return f'<Hash {self.flavor}:{self.nibbles}@{self.time}>'
+
     @property
     def click(self):
         return ':'.join((click.style(self.flavor.name, fg='white'),
                          click.style(self.nibbles, fg='white', bold=True)))
 
     @classmethod
-    def compute_photo_diff(cls, path, size=8):
+    def compute_photo_diff(cls, path, size=4):
         '''Compute a similarity hash for an image.
 
         Parameters
@@ -58,15 +65,15 @@ class Hash(db.Model):
         '''
         gray = PIL.Image.open(path).convert('L')
         pixels = np.asarray(gray.resize((size + 1, size), PIL.Image.ANTIALIAS))
-        return cls(nibbles=bits_to_nibbles(pixels[:, 1:] > pixels[:, :-1]),
+        return cls(nibbles=_bits_to_nibbles(pixels[:, 1:] > pixels[:, :-1]),
                    flavor=Hash.Flavor[f'DIFF_{size}'])
 
     @classmethod
-    def compute_photo_histogram(cls, path, planes='RGB', size=16):
+    def compute_photo_histogram(cls, path, planes='RGB', size=4):
         hist = np.asarray(PIL.Image.open(path).convert(planes).histogram())
         chunks = np.asarray([c.sum() for c in np.split(hist, 3 * size)])
         # This makes 50% of bits into ones, is that a good idea?
-        return cls(nibbles=bits_to_nibbles(chunks > np.percentile(chunks, 50)),
+        return cls(nibbles=_bits_to_nibbles(chunks > np.percentile(chunks, 50)),
                    flavor=Hash.Flavor[f'{planes}_HIST_{size}'])
 
     @classmethod

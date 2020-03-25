@@ -1,9 +1,12 @@
 import enum
+import json
+import os
 import re
 import sqlalchemy
 import sqlalchemy.ext.associationproxy
 
 from . import db
+from . import ffmpeg
 from .tags import Tag
 
 
@@ -163,6 +166,60 @@ class Asset(db.Model):
         filters.pop(index)
         self.filters = json.dumps(filters)
 
+    def export(self, dirname, format, basename=None, overwrite=False):
+        '''Export a version of an asset to another file.
+
+        Parameters
+        ----------
+        dirname : str
+            Save exported asset in this directory.
+        format : tuple
+            Export asset with the given format specifier.
+        basename : str, optional
+            Basename for the exported file; defaults to using the asset's slug.
+        overwrite : bool, optional
+            If an exported file already exists, this flag determines what to
+            do. If `True` overwrite it; otherwise (the default), return.
+        '''
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+        output = os.path.join(dirname, f'{basename or self.slug}.{format.ext}')
+        if overwrite or not os.path.exists(output):
+            ffmpeg.run(self, format, output)
+
+    def update_from_metadata(self):
+        '''
+        '''
+        meta = metadata.Metadata(self.path)
+        self.lat, self.lng = meta.latitude, meta.longitude
+        self.width, self.height = meta.width, meta.height
+        self.duration = meta.duration
+        for tag in meta.tags:
+            self.tags.add(tag)
+
+        stamp = meta.stamp or arrow.get(os.path.getmtime(self.path))
+        if stamp:
+            self.stamp = stamp.datetime
+            for tag in metadata.tags_from_stamp(stamp):
+                self.tags.add(tag)
+
+    def compute_content_hashes(self):
+        if self.medium == Asset.Medium.Photo:
+            self.hashes.extend((
+                Hash.compute_photo_diff(self.path, 4),
+                Hash.compute_photo_diff(self.path, 8),
+                Hash.compute_photo_diff(self.path, 16),
+                Hash.compute_photo_histogram(self.path, 'RGB', 16),
+            ))
+
+        if self.medium == Asset.Medium.Video and self.duration:
+            for o in range(0, int(self.duration), 10):
+                self.hashes.append(Hash.compute_video_diff(self.path, o + 5))
+
+    def hide_original(self):
+        dirname, basename = os.path.dirname(self.path), os.path.basename(self.path)
+        os.rename(self.path, os.path.join(dirname, f'.illuminatus-removed-{basename}'))
+
 
 @sqlalchemy.event.listens_for(db.Session, 'transient_to_pending')
 def _persist(sess, asset):
@@ -174,6 +231,4 @@ def _persist(sess, asset):
             sess.expunge(tag)
         with sess.no_autoflush:
             tags.add(sess.query(Tag).filter_by(name=tag.name).scalar() or tag)
-    print(asset)
-    print(tags)
     asset._tags = tags

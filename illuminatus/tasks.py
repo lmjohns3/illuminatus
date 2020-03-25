@@ -1,7 +1,7 @@
 import celery
 import os
 
-from illuminatus import Asset, Hash, Tag, db, ffmpeg, metadata
+import illuminatus
 
 app = celery.Celery('illuminatus')
 app.config_from_object('celeryconfig')
@@ -36,62 +36,29 @@ def one_asset(id):
 
 @app.task(base=Task)
 def export(id, dirname, format, basename=None):
-    '''Export a version of an asset to another file.
-
-    Parameters
-    ----------
-    dirname : str
-        Save exported asset in this directory.
-    format : tuple
-        Export asset with the given format specifier.
-    overwrite : bool, optional
-        If an exported file already exists, this flag determines what to
-        do. If `True` overwrite it; otherwise (the default), return.
-    '''
-    asset = export.session.query(Asset).get(id)
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
-    output = os.path.join(dirname, f'{basename or asset.slug}.{format.ext}')
-    if overwrite or not os.path.exists(output):
-        ffmpeg.run(asset, format, output)
+    '''Export a copy of an asset (usually resized/edited/etc.) to a file.'''
+    export.session.query(Asset).get(id).export(dirname, format, basename)
 
 
 @app.task(base=Task)
-def compute_tags(id):
-    asset = compute_tags.session.query(Asset).get(id)
-
-    meta = metadata.Metadata(asset.path)
-    asset.lat, asset.lng = meta.latitude, meta.longitude
-    asset.width, asset.height = meta.width, meta.height
-    asset.duration = meta.duration
-    for tag in meta.tags:
-        asset.tags.add(tag)
-
-    stamp = meta.stamp or arrow.get(os.path.getmtime(asset.path))
-    if stamp:
-        asset.stamp = stamp.datetime
-        for tag in metadata.tags_from_stamp(stamp):
-            asset.tags.add(tag)
+def update_from_metadata(id):
+    '''Update tags for an asset based on metadata.'''
+    sess = update_from_metadata.session
+    asset = sess.query(illuminatus.Asset).get(id)
+    asset.update_from_metadata()
+    sess.add(asset)
 
 
 @app.task(base=Task)
-def compute_hashes(id):
-    asset = compute_hashes.session.query(Asset).get(id)
-    if asset.medium == Asset.Medium.Photo:
-        asset.hashes.extend((
-            Hash.compute_photo_diff(asset.path, 4),
-            Hash.compute_photo_diff(asset.path, 8),
-            Hash.compute_photo_diff(asset.path, 16),
-            Hash.compute_photo_histogram(asset.path, 'RGB', 16),
-        ))
-    if asset.medium == Asset.Medium.Video:
-        for o in range(0, int(asset.duration), 10):
-            asset.hashes.append(Hash.compute_video_diff(asset.path, o + 5))
+def compute_content_hashes(id):
+    '''Compute content-based hashes for an asset.'''
+    sess = compute_content_hashes.session
+    asset = sess.query(Asset).get(id)
+    asset.compute_content_hashes()
+    sess.add(asset)
 
 
 @app.task(base=Task)
 def hide_original(id):
     '''Rename the original source for this asset.'''
-    path = hide_original.session.query(Asset).get(id).path
-    dirname, basename = os.path.dirname(path), os.path.basename(path)
-    os.rename(path, os.path.join(dirname, f'.illuminatus-removed-{basename}'))
+    hide_original.session.query(Asset).get(id).hide_original()
