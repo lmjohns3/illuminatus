@@ -11,9 +11,6 @@ class Tag(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, unique=True, nullable=False)
 
-    def __repr__(self):
-        return f'<Tag {self.name}>'
-
     # Regular expression matchers for different "groups" of tags. The order here
     # is used to sort the tags on an asset. Tags not matching any of these
     # groups are "user-defined" and will sort before or after these.
@@ -50,17 +47,17 @@ class Tag(db.Model):
         r'.*',
     )
 
+    def __repr__(self):
+        colors = ('red', 'yellow', 'green', 'cyan', 'blue', 'magenta')
+        color = colors[self.pattern % len(colors)]
+        return click.style(f' {self.name} ', bg=color, fg='black')
+
     @property
     def pattern(self):
         for i, pattern in enumerate(Tag.PATTERNS):
             if pattern == self.name or re.match(pattern, self.name):
                 return i
         return -1
-
-    @property
-    def click(self):
-        colors = ('red', 'yellow', 'green', 'cyan', 'blue', 'magenta')
-        return click.style(self.name, fg=colors[self.pattern % len(colors)])
 
     def to_dict(self):
         return dict(id=self.id, name=self.name)
