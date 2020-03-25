@@ -52512,6 +52512,17 @@ var Asset = function Asset(_ref2) {
       ext = _ref2.ext;
   var ph = asset.path_hash,
       src = "/asset/medium/".concat(ph.slice(0, 2), "/").concat(ph, ".").concat(ext);
+
+  var _useState7 = (0, _react.useState)([]),
+      _useState8 = _slicedToArray(_useState7, 2),
+      similar = _useState8[0],
+      setSimilar = _useState8[1];
+
+  (0, _react.useEffect)(function () {
+    (0, _axios.default)("/rest/asset/".concat(ph, "/similar/?distance=3")).then(function (res) {
+      return setSimilar(res.data);
+    });
+  }, [asset]);
   return _react.default.createElement("div", {
     className: "asset"
   }, _react.default.createElement(_tags.default, {
@@ -52530,21 +52541,17 @@ var Asset = function Asset(_ref2) {
     src: src
   })) : _react.default.createElement("img", {
     src: src
-  }), _react.default.createElement("h2", null, "Foo"), asset.medium === "video" ? _react.default.createElement("video", {
-    autoPlay: true,
-    controls: true
-  }, _react.default.createElement("source", {
-    src: src
-  })) : asset.medium === "audio" ? _react.default.createElement("audio", {
-    autoPlay: true,
-    controls: true
-  }, _react.default.createElement("source", {
-    src: src
-  })) : _react.default.createElement("img", {
-    key: "b",
-    src: src
-  }));
-};
+  }), _react.default.createElement("div", {
+    className: "similar"
+  }, similar.map(function (a) {
+    return _react.default.createElement(Thumb, {
+      key: a.id,
+      asset: a,
+      ext: ext,
+      handleClick: null
+    });
+  })));
+}; // ✏🗑 ⛔
 },{"react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","react-select":"../node_modules/react-select/dist/react-select.browser.esm.js","axios":"../node_modules/axios/index.js","./tags":"tags.jsx"}],"../node_modules/react-image-crop/dist/ReactCrop.min.js":[function(require,module,exports) {
 var define;
 !function (e, t) {

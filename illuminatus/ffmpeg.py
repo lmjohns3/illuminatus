@@ -76,8 +76,10 @@ def _crop_after_rotate(width, height, degrees):
 def _scale(w, h):
     return f'scale={w}:{h}:force_original_aspect_ratio=decrease:flags=lanczos'
 
+
 def _rotate(r):
     return f'rotate={r}:ow=rotw({r}):oh=roth({r})'
+
 
 def _sigmoid(ratio):
     def curve(x):
@@ -188,7 +190,7 @@ _encoder_args = dict(
 )
 
 
-def ffmpeg(asset, fmt, output):
+def run(asset, fmt, output):
     '''Ffmpeg is a tool for manipulating audio and video files.
 
     Parameters

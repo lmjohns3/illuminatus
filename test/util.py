@@ -1,10 +1,11 @@
 import arrow
 import illuminatus
-import illuminatus.tools
+import illuminatus.ffmpeg
 import os
 import pytest
+import tempfile
 
-illuminatus.tools._DEBUG = 2
+illuminatus.ffmpeg._DEBUG = 1
 
 TESTDATA = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'testdata')
 
@@ -18,38 +19,57 @@ VIDEO_ID = 3
 
 RECORDS = [
     {'path': PHOTO_PATH,
-     'medium': illuminatus.Medium.Photo,
+     'medium': illuminatus.Asset.Medium.Photo,
      'stamp': '2015-06-02T09:07',
-     'tag_weights': dict(a=1, b=2, c=3)},
+     'tags': set('ab')},
     {'path': AUDIO_PATH,
-     'medium': illuminatus.Medium.Audio,
+     'medium': illuminatus.Asset.Medium.Audio,
      'stamp': '2016-01-02T03:04',
-     'tag_weights': dict(b=2, c=3)},
+     'tags': set('ac')},
     {'path': VIDEO_PATH,
-     'medium': illuminatus.Medium.Video,
+     'medium': illuminatus.Asset.Medium.Video,
      'stamp': '2010-03-09T05:03',
-     'tag_weights': dict(c=3)},
+     'tags': set('bc')},
 ]
 
-MEDIA = pytest.mark.datafiles(*tuple(rec['path'] for rec in RECORDS))
+MEDIA = pytest.mark.datafiles(PHOTO_PATH, AUDIO_PATH, VIDEO_PATH)
 
 
-@pytest.fixture
-def empty_db(tmpdir):
-    path = str(tmpdir.mkdir('illuminatus').join('empty.db'))
-    illuminatus.db.init(path)
-    return path
+@pytest.fixture(scope='session')
+def engine():
+    with tempfile.NamedTemporaryFile(prefix='illuminatus-test-') as path:
+        engine = illuminatus.db.engine(path.name, echo=True)
+        illuminatus.db.Session.configure(bind=engine)
+        yield engine
 
 
-@pytest.fixture
-def test_db(tmpdir):
-    path = str(tmpdir.mkdir('illuminatus').join('test.db'))
-    illuminatus.db.init(path)
-    with illuminatus.db.session(path) as sess:
-        for i, rec in enumerate(RECORDS):
-            asset = illuminatus.Asset(path=rec['path'],
-                                      medium=rec['medium'],
-                                      tag_weights=rec['tag_weights'],
-                                      stamp=arrow.get(rec['stamp']).datetime)
+@pytest.fixture(scope='session')
+def tables(engine):
+    illuminatus.db.Model.metadata.create_all(engine)
+    with engine.connect() as conn:
+        illuminatus.db.Session.configure(bind=conn)
+        for rec in RECORDS:
+            slug = os.path.basename(rec['path']).split('.')[0]
+            asset = illuminatus.Asset(medium=rec['medium'],
+                                       path=rec['path'],
+                                       slug=slug,
+                                       stamp=arrow.get(rec['stamp']).datetime,
+                                       tags=rec['tags'])
+            asset.hashes.add(illuminatus.Hash(nibbles=slug, flavor='DIFF_4'))
+            sess = illuminatus.db.Session()
             sess.add(asset)
-    return path
+            sess.commit()
+    yield
+    illuminatus.db.Model.metadata.drop_all(engine)
+
+
+@pytest.fixture(scope='function')
+def sess(engine, tables):
+    with engine.connect() as conn:
+        illuminatus.db.Session.configure(bind=conn)
+        tx = conn.begin_nested()
+        sess = illuminatus.db.Session()
+        sess.begin_nested()
+        yield sess
+        sess.close()
+        tx.rollback()

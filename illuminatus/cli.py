@@ -1,39 +1,39 @@
 import click
-import collections
 import contextlib
 import json
+import logging
 import os
 import sys
 
 from . import db
 from . import importexport
-from . import metadata
-from . import tools
+from . import tasks
 
-
-def display(asset):
-    return (
-        asset.path_hash,
-        ' '.join(sorted(str(h) for h in asset.hashes if h.flavor.value != 'DIFF_16')),
-        ' '.join(t.name_string for t in
-                 sorted(asset.tags, key=lambda t: (t.pattern, t.name))),
-        click.style(asset.path),
-    )
-
-
-def ensure_db_config(ctx):
-    if ctx.obj.get('db_path') is None:
-        ctx.obj['db_path'] = os.path.abspath(os.path.expanduser(
-            click.prompt('Illuminatus database file')))
+from .assets import Asset
 
 
 @contextlib.contextmanager
-def session(ctx, hide_original_on_delete=False):
-    ensure_db_config(ctx)
-    with db.session(path=ctx.obj['db_path'],
-                    echo=ctx.obj['db_echo'],
-                    hide_original_on_delete=hide_original_on_delete) as sess:
+def transaction():
+    sess = Session()
+    try:
         yield sess
+        sess.commit()
+    except:
+        sess.rollback()
+        raise
+    finally:
+        sess.close()
+
+
+def display(asset, include_tags='.*', exclude_tags=None):
+    tags = sorted((t for t in asset.tags if re.match(include_tags, t.name)),
+                  key=lambda t: (t.pattern, t.name))
+    return (
+        asset.slug,
+        ' '.join(sorted(str(h) for h in asset.hashes if len(h.nibbles) < 8)),
+        ' '.join(t.name_string for t in tags),
+        click.style(asset.path),
+    )
 
 
 @click.group()
@@ -50,24 +50,22 @@ def cli(ctx, db_path, log_sql, log_tools):
     if ctx.invoked_subcommand == 'help' or '--help' in sys.argv:
         return
 
-    '''
-    for color in 'black white red magenta yellow green cyan blue'.split():
-        click.echo('{} {}'.format(
-            click.style('{:7s}'.format(color), fg=color, bold=False),
-            click.style('{:7s}'.format(color), fg=color, bold=True)))
-    '''
-
     if ctx.invoked_subcommand != 'init':
         if not os.path.isfile(db_path):
             raise RuntimeError('Illuminatus database not found: {}'.format(
                 click.style(db_path, fg='cyan')))
 
+    if not db_path:
+        db_path = click.prompt('Illuminatus database file')
     db_path = os.path.abspath(os.path.expanduser(db_path))
-    ctx.obj = dict(db_path=db_path, db_echo=log_sql)
+    ctx.obj = dict(db_path=db_path)
+
+    # Configure sqlalchemy sessions to connect to our database.
+    db.Session.configure(bind=db.engine(path=db_path, echo=log_sql))
 
     if log_tools:
-        tools._DEBUG = 1
-        importexport._DEBUG = 1
+        from . import ffmpeg
+        ffmpeg._DEBUG = 1
 
 
 @cli.command()
@@ -125,8 +123,7 @@ def help(ctx):
 @click.pass_context
 def init(ctx):
     '''Initialize a new database.'''
-    ensure_db_config(ctx)
-    db.init(ctx.obj['db_path'])
+    models.Model.metadata.create_all(db.engine(ctx.obj['db_path']))
 
 
 @cli.command()
@@ -140,8 +137,8 @@ def ls(ctx, query, order, limit):
 
     See "illuminatus help" for help on QUERY syntax.
     '''
-    with session(ctx) as sess:
-        for asset in db.Asset.matching(sess, ' '.join(query), order, limit):
+    with db.transaction() as sess:
+        for asset in models.Asset.matching(sess, ' '.join(query), order, limit):
             click.echo(' '.join(display(asset)))
 
 
@@ -157,8 +154,8 @@ def dupe(ctx, query, hash, distance):
 
     See "illuminatus help" for help on QUERY syntax.
     '''
-    with session(ctx) as sess:
-        for asset in db.Asset.matching(sess, ' '.join(query)):
+    with db.transaction() as sess:
+        for asset in models.Asset.matching(sess, ' '.join(query)):
             neighbors = asset.select_similar(sess, hash=hash, distance=distance)
             if neighbors:
                 click.echo(' '.join(display(asset)))
@@ -183,10 +180,11 @@ def rm(ctx, query, hide_original):
     prefix. An offline process (e.g., a cron script) can garbage-collect these
     renamed files as needed.
     '''
-    with session(ctx, hide_original_on_delete=hide_original) as sess:
-        for asset in db.Asset.matching(sess, ' '.join(query)):
-            asset.delete()
-            sess.add(asset)
+    with db.transaction() as sess:
+        for asset in queries.matching(sess.query(models.Asset), query):
+            if hide_original:
+                tasks.hide_original(asset.path)
+            sess.delete(asset)
 
 
 @cli.command()
@@ -207,12 +205,12 @@ def export(ctx, query, config, **kwargs):
 
     See "illuminatus help" for help on QUERY syntax.
     '''
-    with session(ctx) as sess:
-        count = importexport.Exporter(
-            all_tags=sess.query(db.Tag).all(),
-            assets=db.Asset.matching(sess, ' '.join(query)),
-            formats=json.load(open(config))['formats'],
-        ).run(**kwargs)
+    with open(config) as handle:
+        formats = json.load(handle)['formats']
+    with db.transaction() as sess:
+        all_tags = sess.query(db.Tag).all()
+        assets = db.Asset.matching(sess, ' '.join(query))
+        count = importexport.export(assets, all_tags, formats, **kwargs)
         click.echo('Exported {} assets to {}'.format(
             click.style(str(count), fg='cyan'),
             click.style(kwargs['output'], fg='red')))
@@ -231,20 +229,28 @@ def import_(ctx, source, tag, path_tags):
     If any source is a directory, all assets under that directory will be
     imported recursively.
     '''
-    importexport.Importer(lambda: session(ctx), tag, path_tags).run(source)
+    for path in importexport.walk(source):
+        try:
+            with db.transaction() as sess:
+                asset = importexport.import_asset(sess, path, tags, path_tags)
+            if asset:
+                tasks.compute_hashes(asset)
+        except KeyboardInterrupt:
+            break
+        except:
+            logging.exception(f'! Error importing {path}')
 
 
 @cli.command()
 @click.option('--stamp', type=str,
               help='Modify the timestamp of matching records.')
-@click.option('--inc-tag', type=str, multiple=True, metavar='TAG [TAG...]')
-@click.option('--dec-tag', type=str, multiple=True, metavar='TAG [TAG...]')
+@click.option('--add-tag', type=str, multiple=True, metavar='TAG [TAG...]')
 @click.option('--remove-tag', type=str, multiple=True, metavar='TAG [TAG...]')
 @click.option('--add-path-tags', default=0, metavar='N',
               help='Add N parent directories as tags.')
 @click.argument('query', nargs=-1)
 @click.pass_context
-def modify(ctx, query, stamp, inc_tag, dec_tag, remove_tag, add_path_tags):
+def modify(ctx, query, stamp, add_tag, remove_tag, add_path_tags):
     '''Modify assets matching a QUERY.
 
     See "illuminatus help" for help on QUERY syntax.
@@ -261,18 +267,16 @@ def modify(ctx, query, stamp, inc_tag, dec_tag, remove_tag, add_path_tags):
     shift the timestamp of all matching media three years later and two hours
     earlier. Here x can be 'y' (year), 'm' (month), 'd' (day), or 'h' (hour).
     '''
-    with session(ctx, hide_original_on_delete=hide_original) as sess:
+    with db.transaction() as sess:
         for asset in db.Asset.matching(sess, ' '.join(query)):
-            for tag in inc_tag:
-                asset.increment_tag(tag)
-            for tag in dec_tag:
-                asset.decrement_tag(tag)
+            for tag in add_tag:
+                asset.add_tag(tag)
             for tag in remove_tag:
                 asset.remove_tag(tag)
             if add_path_tags > 0:
                 components = os.path.dirname(asset.path).split(os.sep)[::-1]
-                for i in range(add_path_tags):
-                    tags.append(components[i])
+                for i in range(min(len(components) - 1, add_path_tags)):
+                    asset.tags.add(components[i])
             if stamp:
                 asset.update_stamp(stamp)
             sess.add(asset)
@@ -290,14 +294,20 @@ def thumbnail(ctx, query, config, overwrite):
 
     See "illuminatus help" for help on QUERY syntax.
     '''
-    config = json.load(open(config))
-    with session(ctx) as sess:
-        importexport.Thumbnailer(
-            db.Asset.matching(sess, ' '.join(query)),
-            root=config['root'],
-            overwrite=overwrite,
-            formats=config['formats'],
-        ).run()
+    with open(config) as handle:
+        config = json.load(handle)
+    with db.transaction() as sess:
+        for asset in db.Asset.matching(sess, ' '.join(query)):
+            for fmt in config['formats']:
+                if fmt.get('medium', '').lower() == asset.medium.name.lower():
+                    root = config['root']
+                    if 'path' in fmt:
+                        root = os.path.join(root, fmt['path'])
+                    output = asset.export(fmt=_to_format(fmt['format']),
+                                          root=root, overwrite=overwrite)
+                    click.echo('{} {} -> {}'.format(click.style('*', fg='cyan'),
+                                                    click.style(asset.path, fg='red'),
+                                                    output))
 
 
 @cli.command()
@@ -316,8 +326,9 @@ def serve(ctx, host, port, debug, hide_originals, thumbnails):
     from .serve import sql
     app.config['SQLALCHEMY_ECHO'] = debug
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{ctx.obj["db_path"]}'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + ctx.obj["db_path"]
     app.config['hide-originals'] = hide_originals
-    app.config['thumbnails'] = json.load(open(thumbnails))
+    with open(thumbnails) as handle:
+        app.config['thumbnails'] = json.load(handle)
     sql.init_app(app)
     app.run(host=host, port=port, debug=debug, threaded=False, processes=8)

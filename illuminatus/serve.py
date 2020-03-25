@@ -11,15 +11,13 @@ import tempfile
 
 from . import db
 from . import importexport
-from . import metadata
-from . import tools
 
 app = flask.Flask('illuminatus')
 sql = flask_sqlalchemy.SQLAlchemy()
 
 
-def _get_asset(hash):
-    return sql.session.query(db.Asset).filter(db.Asset.path_hash.startswith(hash)).one()
+def _get_asset(slug):
+    return sql.session.query(Asset).filter(Asset.slug.startswith(slug)).one()
 
 
 # socketio = flask_socketio.SocketIO(app)
@@ -35,31 +33,31 @@ def formats():
 
 @app.route('/rest/query/<path:query>')
 def assets(query):
-    req = flask.request
-    assets = (db.Asset.matching(sql.session, ' '.join(filter(None, query.split('/'))))
-              .order_by(db.parse_order(req.args.get('order', 'stamp')))
-              .limit(int(req.args.get('limit', 99999)))
-              .offset(int(req.args.get('offset', 0)))
-              .all())
+    get = flask.request.args.get
+    assets = query.assets(sql.session,
+                          query.split('/'),
+                          order=get('order', 'stamp'),
+                          limit=int(get('limit', 99999)),
+                          offset=int(get('offset', 0))).all()
     return flask.jsonify([a.to_dict() for a in assets])
 
 
 @app.route('/rest/export/<path:query>', methods=['POST'])
 def export(query):
-    req = flask.request
+    get = flask.request.form.get
     db = app.config['db']
     dirname = tempfile.mkdtemp()
 
     importexport.Exporter(
         db.Tag.query(sql.session).all(),
-        db.Asset.matching(sql.session, ' '.join(filter(None, query.split('/')))),
-        json.loads(req.form[formats]),
+        query.assets(sql.session, query.split('/')),
+        json.loads(get('formats')),
     ).run(
-        output=os.path.join(dirname, req.form['name'] + '.zip'),
-        hide_tags=req.form.get('hide_tags', '').split(),
-        hide_metadata_tags=req.form.get('hide_metadata_tags', '') == '1',
-        hide_datetime_tags=req.form.get('hide_datetime_tags', '') == '1',
-        hide_omnipresent_tags=req.form.get('hide_omnipresent_tags', '1') == '1',
+        output=os.path.join(dirname, f'{get("name").zip}'),
+        hide_tags=get('hide_tags', '').split(),
+        hide_metadata_tags=get('hide_metadata_tags', '') == '1',
+        hide_datetime_tags=get('hide_datetime_tags', '') == '1',
+        hide_omnipresent_tags=get('hide_omnipresent_tags', '1') == '1',
     )
 
     @flask.after_this_request
@@ -70,39 +68,37 @@ def export(query):
     return flask.send_file(output, as_attachment=True)
 
 
-@app.route('/rest/asset/<string:hash>/', methods=['GET'])
-def get_asset(hash):
-    return flask.jsonify(_get_asset(hash).to_dict())
+@app.route('/rest/asset/<string:slug>/', methods=['GET'])
+def get_asset(slug):
+    return flask.jsonify(_get_asset(slug).to_dict())
 
 
-@app.route('/rest/asset/<string:hash>/similar/', methods=['GET'])
-def get_similar_assets(hash):
-    asset = asset = _get_asset(hash)
+@app.route('/rest/asset/<string:slug>/similar/', methods=['GET'])
+def get_similar_assets(slug):
+    asset = asset = _get_asset(slug)
     distance = int(flask.request.args.get('distance', 2))
     similar = asset.select_similar(sql.session, distance)
     return flask.jsonify([a.to_dict() for a in similar])
 
 
-@app.route('/rest/asset/<string:hash>/', methods=['PUT'])
-def update_asset(hash):
-    req = flask.request
-    stamp = req.form.get('stamp', '')
-    add_tags = req.form.get('add_tags', '').split()
-    remove_tags = req.form.get('remove_tags', '').split()
-    asset = _get_asset(hash)
-    for tag in add_tags:
+@app.route('/rest/asset/<string:slug>/', methods=['PUT'])
+def update_asset(slug):
+    get = flask.request.form.get
+    asset = _get_asset(slug)
+    for tag in get('add_tags', '').split():
         asset.add_tag(tag)
-    for tag in remove_tags:
+    for tag in get('remove_tags', '').split():
         asset.remove_tag(tag)
+    stamp = get('stamp', '')
     if stamp:
         asset.update_stamp(stamp)
     asset.save()
     return flask.jsonify(asset.to_dict())
 
 
-@app.route('/rest/asset/<string:hash>/', methods=['DELETE'])
-def delete_asset(hash):
-    _get_asset(hash).delete(hide_original=app.config['hide-originals'])
+@app.route('/rest/asset/<string:slug>/', methods=['DELETE'])
+def delete_asset(slug):
+    _get_asset(slug).delete(hide_original=app.config['hide-originals'])
     return flask.jsonify('ok')
 
 
@@ -119,13 +115,13 @@ FILTER_ARGS = dict(
     vflip='',
 )
 
-@app.route('/rest/asset/<string:hash>/filters/<string:filter>/', methods=['POST'])
-def add_filter(hash, filter):
-    req = flask.request
+
+@app.route('/rest/asset/<string:slug>/filters/<string:filter>/', methods=['POST'])
+def add_filter(slug, filter):
     kwargs = dict(filter=filter)
     for arg in FILTER_ARGS[filter].split():
-        kwargs[arg] = float(req.form[arg])
-    asset = _get_asset(hash)
+        kwargs[arg] = float(flask.request.form[arg])
+    asset = _get_asset(slug)
     asset.add_filter(kwargs)
     asset.save()
     root = app.config['db'].root
@@ -134,9 +130,10 @@ def add_filter(hash, filter):
     return flask.jsonify(asset.to_dict())
 
 
-@app.route('/rest/asset/<string:hash>/filters/<string:filter>/<int:index>/', methods=['DELETE'])
-def delete_filter(hash, filter, index):
-    asset = _get_asset(hash)
+@app.route('/rest/asset/<string:slug>/filters/<string:filter>/<int:index>/',
+           methods=['DELETE'])
+def delete_filter(slug, filter, index):
+    asset = _get_asset(slug)
     asset.remove_filter(filter, index)
     asset.save()
     root = app.config['db'].root
@@ -163,10 +160,10 @@ def manifest():
 
 
 @app.route('/')
-@app.route('/edit/<string:hash>/')
-@app.route('/label/<string:hash>/')
-@app.route('/cluster/<string:hash>/')
-@app.route('/view/<string:hash>/')
+@app.route('/edit/<string:slug>/')
+@app.route('/label/<string:slug>/')
+@app.route('/cluster/<string:slug>/')
+@app.route('/view/<string:slug>/')
 @app.route('/browse/<path:query>')
 def index(*args, **kwargs):
     return flask.render_template('index.html')
