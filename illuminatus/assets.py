@@ -1,3 +1,4 @@
+import collections
 import enum
 import json
 import os
@@ -7,7 +8,12 @@ import sqlalchemy.ext.associationproxy
 
 from . import db
 from . import ffmpeg
+from . import metadata
 from .tags import Tag
+
+
+def Format(**kwargs):
+    return collections.namedtuple('Format', sorted(kwargs))(**kwargs)
 
 
 asset_tags = db.Table(

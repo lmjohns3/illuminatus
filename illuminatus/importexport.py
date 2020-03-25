@@ -6,16 +6,11 @@ import hashlib
 import mimetypes
 import os
 import re
-import sys
 import tempfile
 import zipfile
 
-from . import db
-from . import metadata
-
-
-def _to_format(kwargs):
-    return collections.namedtuple('Format', sorted(kwargs))(**kwargs)
+from .assets import Asset, Format
+from .tags import Tag
 
 
 def walk(roots):
@@ -58,9 +53,9 @@ def _guess_medium(path):
     handle the given path.
     '''
     mime, _ = mimetypes.guess_type(path)
-    for pattern, medium in (('audio/.*', db.Asset.Medium.Audio),
-                            ('video/.*', db.Asset.Medium.Video),
-                            ('image/.*', db.Asset.Medium.Photo)):
+    for pattern, medium in (('audio/.*', Asset.Medium.Audio),
+                            ('video/.*', Asset.Medium.Video),
+                            ('image/.*', Asset.Medium.Photo)):
         if re.match(pattern, mime):
             return medium
     return None
@@ -82,9 +77,9 @@ def import_asset(sess, path, tags=(), path_tags=0):
     '''
     digest = hashlib.blake2s(path.encode('utf-8')).digest()
     slug = base64.b64encode(digest, b'-_').strip(b'=').decode('utf-8')
-    match = models.Asset.slug == slug
+    match = Asset.slug == slug
 
-    if sess.query(models.Asset).filter(match).count():
+    if sess.query(Asset).filter(match).count():
         click.echo('{} Already have {}'.format(
             click.style('=', fg='blue'),
             click.style(path, fg='red')))
@@ -102,7 +97,7 @@ def import_asset(sess, path, tags=(), path_tags=0):
     for i in range(min(len(components) - 1, path_tags)):
         tags.add(components[i])
 
-    asset = models.Asset(path=path, medium=medium, slug=slug)
+    asset = Asset(path=path, medium=medium, slug=slug)
     for tag in tags:
         asset.tags.add(tag)
     sess.add(asset)
@@ -153,9 +148,9 @@ def export(assets, all_tags, formats, output,
     '''
     hide_patterns = list(hide_tags)
     if hide_metadata_tags:
-        hide_patterns.append(db.Tag.METADATA_PATTERN)
+        hide_patterns.append(Tag.METADATA_PATTERN)
     if hide_datetime_tags:
-        hide_patterns.append(db.Tag.DATETIME_PATTERN)
+        hide_patterns.append(Tag.DATETIME_PATTERN)
 
     hide_names = set()
     for pattern in hide_patterns:
@@ -182,7 +177,7 @@ def export(assets, all_tags, formats, output,
                     path = root
                     if 'path' in fmt:
                         path = os.path.join(path, fmt['path'])
-                    asset.export(fmt=_to_format(fmt['format']), root=path)
+                    asset.export(path, Format(**fmt['format']))
             data.append(asset.to_dict(exclude_tags=hide_names))
         with open(index, 'w') as handle:
             json.dump(data, handle)

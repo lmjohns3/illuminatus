@@ -1,7 +1,5 @@
 from util import *
 
-from illuminatus import ffmpeg
-
 
 @pytest.mark.parametrize('filters', [
     [],
@@ -16,14 +14,14 @@ from illuminatus import ffmpeg
 ])
 def test_video_filters(sess, tmpdir, filters):
     video = sess.query(Asset).get(VIDEO_ID)
+    video.update_from_metadata()
     for filter in filters:
         video.add_filter(filter)
 
     root = tmpdir.mkdir('export')
-    mp4 = root.join(f'{video.slug}.mp4')
     assert root.listdir() == []
-    video.export(str(root), ())
-    assert sorted(root.listdir()) == [str(mp4).replace('.mp4', '.jpg'), mp4]
+    video.export(str(root), Format(ext='mp4'))
+    assert sorted(root.listdir()) == [str(root.join(f'{video.slug}.mp4'))]
 
 
 @pytest.mark.parametrize('filters', [
@@ -40,10 +38,11 @@ def test_video_filters(sess, tmpdir, filters):
 ])
 def test_photo_filters(sess, tmpdir, filters):
     photo = sess.query(Asset).get(PHOTO_ID)
+    photo.update_from_metadata()
     for filter in filters:
         photo.add_filter(filter)
 
     root = tmpdir.mkdir('export')
     assert root.listdir() == []
-    photo.export(str(root), ())
-    assert thumb.listdir() == [root.join(f'{photo.slug}.jpg')]
+    photo.export(str(root), Format(ext='jpg'))
+    assert sorted(root.listdir()) == [str(root.join(f'{photo.slug}.jpg'))]

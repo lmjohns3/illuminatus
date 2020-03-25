@@ -1,5 +1,6 @@
 import click
 import itertools
+import json
 import math
 import os
 import subprocess
@@ -112,7 +113,7 @@ def _apply_filters(asset):
     runners = dict(
         autocontrast=lambda percent: filters.append(f'histeq=strength={percent / 100}'),
         brightness=lambda percent: filters.append(f'hue=b={percent / 100 - 1}'),
-        contrast=lambda percent: filters.append(f"curves=m='{sigmoid(percent / 100)}'"),
+        contrast=lambda percent: filters.append(f"curves=m='{_sigmoid(percent / 100)}'"),
         crop=lambda w, h, x, y: filters.append(f'crop={w}:{h}:{x}:{y}'),
         extract=lambda start, duration: slices.append((start, duration)),
         fps=lambda fps: filters.append(f'fps={fps}'),
@@ -125,7 +126,7 @@ def _apply_filters(asset):
     )
 
     w, h, t = asset.width, asset.height, asset.duration
-    for kwargs in asset.filters:
+    for kwargs in json.loads(asset.filters):
         flt = kwargs.pop('filter')
         if flt == 'rotate':
             angle = kwargs['degrees']
@@ -275,7 +276,7 @@ def run(asset, fmt, output):
             print()
             print('-------8<--------')
         args = []
-        if outputs:
+        if pads:
             args.extend(('-filter_complex_script', script.name,
                          '-map', video_pad, '-map', audio_pad))
         if hasattr(fmt, 'abr'):

@@ -1,10 +1,10 @@
 import arrow
 import illuminatus
-import illuminatus.ffmpeg
 import os
 import pytest
 import tempfile
 
+import illuminatus.ffmpeg
 illuminatus.ffmpeg._DEBUG = 1
 
 TESTDATA = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'testdata')
@@ -35,6 +35,7 @@ RECORDS = [
 MEDIA = pytest.mark.datafiles(PHOTO_PATH, AUDIO_PATH, VIDEO_PATH)
 
 Asset = illuminatus.Asset
+Format = illuminatus.Format
 Hash = illuminatus.Hash
 Tag = illuminatus.Tag
 

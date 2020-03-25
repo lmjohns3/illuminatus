@@ -1,6 +1,5 @@
 from . import db
-from . import metadata
 
-from .assets import Asset
+from .assets import Asset, Format
 from .hashes import Hash
 from .tags import Tag
