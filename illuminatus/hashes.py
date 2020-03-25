@@ -84,14 +84,14 @@ class Hash(db.Model):
     def compute_video_diff(cls, path, time, size=8):
         return cls(nibbles='', flavor=Hash.Flavor[f'DIFF_{size}'], time=time)
 
-    def neighbors(self, sess, min_similarity=0.99):
+    def neighbors(self, sess, max_diff):
         '''Get all neighboring hashes from the database.
 
         Parameters
         ----------
         sess : SQLAlchemy
             Database session.
-        min_similarity : float, optional
+        max_diff : float, optional
             Select all existing hashes within this fraction of changed bits.
 
         Returns
@@ -101,7 +101,7 @@ class Hash(db.Model):
         return (
             sess.query(Hash)
             .filter(Hash.flavor == self.flavor)
-            .filter(Hash.nibbles.in_(_neighbors(self.nibbles, min_similarity)))
+            .filter(Hash.nibbles.in_(_neighbors(self.nibbles, max_diff)))
             .yield_per(1000)
         )
 
@@ -125,14 +125,14 @@ _HEX_NEIGHBORS = {'0': '1248', '1': '0359', '2': '306a', '3': '217b',
                   'c': 'de84', 'd': 'cf95', 'e': 'fca6', 'f': 'edb7'}
 
 
-def _neighbors(start, min_similarity=0.99):
+def _neighbors(start, max_diff=0.99):
     '''Pull all neighboring hashes within a similarity ball from the start.
 
     Parameters
     ----------
     start : str
         Hexadecimal string representing a starting hash value.
-    min_similarity : float, optional
+    max_diff : float, optional
         Identify all hashes within this fraction of changed bits from the start.
 
     Yields
@@ -140,12 +140,18 @@ def _neighbors(start, min_similarity=0.99):
     The unique hashes that are within the given fraction of changed bits from
     the start.
     '''
-    visited, frontier = set(), {start}
-    yield start
-    for _ in range(3):
-        visited |= frontier
-        frontier = {f'{nibbles[:i]}{d}{nibbles[i+1:]}'
-                    for nibbles in frontier
-                    for i, c in enumerate(nibbles)
-                    for d in _HEX_NEIGHBORS[c]} - visited
+    if not start:
+        return
+    visited, frontier = {start}, {start}
+    diff = lambda n: bin(int(n, 16) ^ int(start, 16)).count('1') / len(start) / 4
+    while frontier:
         yield from frontier
+        next_frontier = set()
+        for nibbles in frontier:
+            for i, c in enumerate(nibbles):
+                for d in _HEX_NEIGHBORS[c]:
+                    n = f'{nibbles[:i]}{d}{nibbles[i+1:]}'
+                    if n not in visited and diff(n) < max_diff:
+                        next_frontier.add(n)
+                        visited.add(n)
+        frontier = next_frontier
