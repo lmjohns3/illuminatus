@@ -1,7 +1,9 @@
 import arrow
 import collections
 import enum
+import itertools
 import json
+import logging
 import os
 import re
 import sqlalchemy
@@ -10,6 +12,7 @@ import sqlalchemy.ext.associationproxy
 from . import db
 from . import ffmpeg
 from . import metadata
+from .hashes import Hash
 from .tags import Tag
 
 
@@ -174,69 +177,73 @@ class Asset(db.Model):
         filters.pop(index)
         self.filters = json.dumps(filters)
 
-    def export(self, dirname, format, basename=None, overwrite=False):
+    def export(self, dirname, basename=None, overwrite=False, **kwargs):
         '''Export a version of an asset to another file.
 
         Parameters
         ----------
         dirname : str
             Save exported asset in this directory.
-        format : tuple
-            Export asset with the given format specifier.
         basename : str, optional
             Basename for the exported file; defaults to using the asset's slug.
         overwrite : bool, optional
             If an exported file already exists, this flag determines what to
             do. If `True` overwrite it; otherwise (the default), return.
+        **kwargs :
+            Additional keyword arguments containing formatting settings: frame
+            rate, bounding box, etc.
         '''
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
-        output = os.path.join(dirname, f'{basename or self.slug}.{format.ext}')
+        kwargs_ext = kwargs.get('ext')
+        basename_ext = os.path.splitext(basename)[1].strip('.') if basename else None
+        if kwargs_ext and basename_ext and kwargs_ext != basename_ext:
+            logging.warn('Export basename %s != extension %s',
+                         basename_ext, kwargs_ext)
+        if kwargs_ext is None:
+            kwargs_ext = basename_ext
+        output = os.path.join(dirname, basename or f'{self.slug}.{kwargs_ext}')
         if overwrite or not os.path.exists(output):
-            ffmpeg.run(self, format, output)
+            if not os.path.exists(dirname):
+                os.makedirs(dirname)
+            ffmpeg.run(self, output, **kwargs)
 
     def update_from_metadata(self):
-        '''
-        '''
+        '''Update this asset based on metadata in the file.'''
         meta = metadata.Metadata(self.path)
         self.lat, self.lng = meta.latitude, meta.longitude
         self.width, self.height = meta.width, meta.height
         self.duration = meta.duration
-        for tag in meta.tags:
-            self.tags.add(tag)
-
+        self.tags.update(meta.tags)
         stamp = meta.stamp or arrow.get(os.path.getmtime(self.path))
         if stamp:
             self.stamp = stamp.datetime
-            for tag in metadata.tags_from_stamp(stamp):
-                self.tags.add(tag)
+            self.tags.update(metadata.tags_from_stamp(stamp))
 
     def compute_content_hashes(self):
+        '''Compute hashes of asset content.'''
         if self.medium == Asset.Medium.Photo:
-            self.hashes.extend((
-                Hash.compute_photo_diff(self.path, 4),
-                Hash.compute_photo_diff(self.path, 8),
-                Hash.compute_photo_diff(self.path, 16),
-                Hash.compute_photo_histogram(self.path, 'RGB', 16),
-            ))
+            for size in (4, 6, 8):
+                self.hashes.add(Hash.compute_photo_diff(self.path, size))
+            for size in (4, 8, 16):
+                self.hashes.add(Hash.compute_photo_histogram(self.path, 'RGB', size))
 
         if self.medium == Asset.Medium.Video and self.duration:
             for o in range(0, int(self.duration), 10):
-                self.hashes.append(Hash.compute_video_diff(self.path, o + 5))
+                self.hashes.add(Hash.compute_video_diff(self.path, o + 5))
 
     def hide_original(self):
+        '''Hide the original asset file by renaming it with a . prefix.'''
         dirname, basename = os.path.dirname(self.path), os.path.basename(self.path)
         os.rename(self.path, os.path.join(dirname, f'.illuminatus-removed-{basename}'))
 
 
-@sqlalchemy.event.listens_for(db.Session, 'transient_to_pending')
-def _persist(sess, asset):
-    if not isinstance(asset, Asset):
-        return
-    tags = set()
-    for tag in asset._tags:
-        if tag in sess:
-            sess.expunge(tag)
-        with sess.no_autoflush:
-            tags.add(sess.query(Tag).filter_by(name=tag.name).scalar() or tag)
-    asset._tags = tags
+@sqlalchemy.event.listens_for(db.Session, 'before_flush')
+def use_existing_tags(sess, context, instances):
+    for asset in itertools.chain(sess.new, sess.dirty):
+        if isinstance(asset, Asset) and any(t.id is None for t in asset._tags):
+            requested = Tag.name.in_(asset.tags)
+            existing = dict(sess.query(Tag.name, Tag).filter(requested))
+            for tag in list(asset._tags):
+                if tag.name in existing:
+                    asset.tags.discard(tag.name)
+                    asset._tags.add(existing[tag.name])
+                    sess.expunge(tag)

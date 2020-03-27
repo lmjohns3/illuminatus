@@ -39,12 +39,8 @@ class Hash(db.Model):
         return self.nibbles < other.nibbles
 
     def __repr__(self):
-        return f'<Hash {self.flavor}:{self.nibbles}@{self.time}>'
-
-    @property
-    def click(self):
-        return ':'.join((click.style(self.flavor.name, fg='white'),
-                         click.style(self.nibbles, fg='white', bold=True)))
+        return '#'.join((click.style(self.flavor.value, fg='blue'),
+                         click.style(self.nibbles, fg='cyan', bold=True)))
 
     @classmethod
     def compute_photo_diff(cls, path, size=4):

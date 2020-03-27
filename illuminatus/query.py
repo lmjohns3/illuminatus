@@ -117,8 +117,10 @@ def assets(sess, *query, order=None, limit=None, offset=None):
     -------
       A result set of :class:`Asset`s matching the query.
     '''
-    query = ' '.join(itertools.chain(query))
-    q = sess.query(Asset).filter(QueryParser().parse(query))
+    query = ' '.join(itertools.chain.from_iterable(query))
+    q = sess.query(Asset)
+    if query:
+        q = q.filter(QueryParser().parse(query))
     if order:
         q = q.order_by(parse_order(order))
     if limit:

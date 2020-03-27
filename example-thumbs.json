@@ -1,17 +1,14 @@
 {
-    "root": "/tmp/thumbs",
-    "formats": [
-        {"path": "small",  "medium": "photo", "format": {
-            "ext": "jpg", "bbox": [200, 200]}},
-        {"path": "small",  "medium": "audio", "format": {
-            "ext": "png", "bbox": [200, 200]}},
-        {"path": "small",  "medium": "video", "format": {
-            "ext": "webp", "bbox": [200, 200], "fps": 10}},
-        {"path": "medium", "medium": "photo", "format": {
-            "ext": "jpg", "bbox": [1000, 1000]}},
-        {"path": "medium", "medium": "audio", "format": {
-            "ext": "mp3", "abr": 100}},
-        {"path": "medium", "medium": "video", "format": {
-            "ext": "mp4", "bbox": [800, 800]}}
-    ]
+  "photo": {
+    "small": {"ext": "png", "bbox": [320, 320]},
+    "medium": {"ext": "jpg", "bbox": [1280, 1280]}
+  },
+  "video": {
+    "small": {"ext": "webp", "bbox": [320, 320], "fps": 10},
+    "medium": {"ext": "mp4", "bbox": [1280, 1280]}
+  },
+  "audio": {
+    "small": {"ext": "png", "bbox": [320, 320]},
+    "medium": {"ext": "mp3", "abr": 100}
+  }
 }

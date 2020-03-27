@@ -1,12 +1,13 @@
 import click
 import contextlib
 import json
-import logging
 import os
+import re
 import sys
 
 from . import db
 from . import importexport
+from . import query
 from . import tasks
 
 from .assets import Asset
@@ -14,7 +15,8 @@ from .assets import Asset
 
 @contextlib.contextmanager
 def transaction():
-    sess = Session()
+    '''Run a databse session with proper setup and cleanup.'''
+    sess = db.Session()
     try:
         yield sess
         sess.commit()
@@ -26,14 +28,30 @@ def transaction():
 
 
 def display(asset, include_tags='.*', exclude_tags=None):
-    tags = sorted((t for t in asset.tags if re.match(include_tags, t.name)),
+    tags = sorted((t for t in asset._tags if re.match(include_tags, t.name)),
                   key=lambda t: (t.pattern, t.name))
     return (
         asset.slug,
         ' '.join(sorted(str(h) for h in asset.hashes if len(h.nibbles) < 8)),
-        ' '.join(t.name_string for t in tags),
+        ' '.join(str(t) for t in tags),
         click.style(asset.path),
     )
+
+
+def matching_assets(q):
+    '''Get assets matching a query, using a local session (i.e., read-only).'''
+    with transaction() as sess:
+        yield from query.assets(sess, q)
+
+
+def progressbar(items, label):
+    '''Show a progress bar using the given items and label.'''
+    with click.progressbar(list(items), label=label, width=0, color=True) as bar:
+        for task in bar:
+            try:
+                task.get()
+            except:
+                pass
 
 
 @click.group()
@@ -62,6 +80,7 @@ def cli(ctx, db_path, log_sql, log_tools):
 
     # Configure sqlalchemy sessions to connect to our database.
     db.Session.configure(bind=db.engine(path=db_path, echo=log_sql))
+    tasks.app.conf.update(illuminatus_db=db_path)
 
     if log_tools:
         from . import ffmpeg
@@ -123,7 +142,7 @@ def help(ctx):
 @click.pass_context
 def init(ctx):
     '''Initialize a new database.'''
-    models.Model.metadata.create_all(db.engine(ctx.obj['db_path']))
+    db.Model.metadata.create_all(db.engine(ctx.obj['db_path']))
 
 
 @cli.command()
@@ -137,9 +156,8 @@ def ls(ctx, query, order, limit):
 
     See "illuminatus help" for help on QUERY syntax.
     '''
-    with db.transaction() as sess:
-        for asset in models.Asset.matching(sess, ' '.join(query), order, limit):
-            click.echo(' '.join(display(asset)))
+    for asset in matching_assets(query, order=order, limit=limit):
+        click.echo(' '.join(display(asset)))
 
 
 @cli.command()
@@ -154,14 +172,13 @@ def dupe(ctx, query, hash, distance):
 
     See "illuminatus help" for help on QUERY syntax.
     '''
-    with db.transaction() as sess:
-        for asset in models.Asset.matching(sess, ' '.join(query)):
-            neighbors = asset.select_similar(sess, hash=hash, distance=distance)
-            if neighbors:
-                click.echo(' '.join(display(asset)))
-                for neighbor in neighbors:
-                    click.echo(' '.join(('-->', ) + display(neighbor)))
-                click.echo('')
+    for asset in matching_assets( query):
+        neighbors = asset.neighbors(sess, hash=hash, distance=distance)
+        if neighbors:
+            click.echo(' '.join(display(asset)))
+            for neighbor in neighbors:
+                click.echo(' '.join(('-->', ) + display(neighbor)))
+            click.echo('')
 
 
 @cli.command()
@@ -180,10 +197,10 @@ def rm(ctx, query, hide_original):
     prefix. An offline process (e.g., a cron script) can garbage-collect these
     renamed files as needed.
     '''
-    with db.transaction() as sess:
-        for asset in queries.matching(sess.query(models.Asset), query):
+    with transaction() as sess:
+        for asset in query.assets(sess, query):
             if hide_original:
-                tasks.hide_original(asset.path)
+                asset.hide_original()
             sess.delete(asset)
 
 
@@ -192,28 +209,23 @@ def rm(ctx, query, hide_original):
 @click.option('--output', metavar='FILE', help='Save export zip to FILE.')
 @click.option('--hide-tags', multiple=True, metavar='REGEXP [REGEXP...]',
               help='Exclude tags matching REGEXP from exported items.')
-@click.option('--hide-datetime-tags', default=False, is_flag=True,
-              help='Include tags related to timestamp data.')
-@click.option('--hide-metadata-tags', default=False, is_flag=True,
-              help='Include tags from media metadata like EXIF.')
 @click.option('--hide-omnipresent-tags', default=False, is_flag=True,
               help='Do not remove tags that are present in all items.')
 @click.argument('query', nargs=-1)
 @click.pass_context
-def export(ctx, query, config, **kwargs):
+def export(ctx, query, config, output, hide_tags, hide_omnipresent_tags):
     '''Export a zip file matching a QUERY.
 
     See "illuminatus help" for help on QUERY syntax.
     '''
-    with open(config) as handle:
-        formats = json.load(handle)['formats']
-    with db.transaction() as sess:
-        all_tags = sess.query(db.Tag).all()
-        assets = db.Asset.matching(sess, ' '.join(query))
-        count = importexport.export(assets, all_tags, formats, **kwargs)
-        click.echo('Exported {} assets to {}'.format(
-            click.style(str(count), fg='cyan'),
-            click.style(kwargs['output'], fg='red')))
+    assets = list(matching_assets(query))
+    with tempfile.NamedTemporaryDirectory() as root:
+        def items():
+            yield from importexport.export_for_zip(assets, root.name, config)
+        progressbar(items(), 'Export')
+        importexport.export_zip(
+            assets, root.name, output, hide_tags, hide_omnipresent_tags)
+    click.echo(output)
 
 
 @cli.command('import')
@@ -229,16 +241,12 @@ def import_(ctx, source, tag, path_tags):
     If any source is a directory, all assets under that directory will be
     imported recursively.
     '''
-    for path in importexport.walk(source):
-        try:
-            with db.transaction() as sess:
-                asset = importexport.import_asset(sess, path, tags, path_tags)
-            if asset:
-                tasks.compute_hashes(asset)
-        except KeyboardInterrupt:
-            break
-        except:
-            logging.exception(f'! Error importing {path}')
+    def items():
+        for path in importexport.walk(source):
+            res = importexport.maybe_import_asset(path, tag, path_tags)
+            if res is not None:
+                yield res
+    progressbar(items(), 'Metadata')
 
 
 @cli.command()
@@ -267,47 +275,37 @@ def modify(ctx, query, stamp, add_tag, remove_tag, add_path_tags):
     shift the timestamp of all matching media three years later and two hours
     earlier. Here x can be 'y' (year), 'm' (month), 'd' (day), or 'h' (hour).
     '''
-    with db.transaction() as sess:
-        for asset in db.Asset.matching(sess, ' '.join(query)):
+    with transaction() as sess:
+        for asset in query.assets(sess, query):
             for tag in add_tag:
-                asset.add_tag(tag)
+                asset.tags.add(tag)
             for tag in remove_tag:
-                asset.remove_tag(tag)
-            if add_path_tags > 0:
-                components = os.path.dirname(asset.path).split(os.sep)[::-1]
-                for i in range(min(len(components) - 1, add_path_tags)):
-                    asset.tags.add(components[i])
+                asset.tags.discard(tag)
+            for tag in os.path.dirname(asset.path).split(os.sep)[::-1][:add_path_tags]:
+                asset.tags.add(tag)
             if stamp:
                 asset.update_stamp(stamp)
             sess.add(asset)
 
 
 @cli.command()
+@click.option('--root', metavar='DIR',
+              help='Write thumbnails to DIR.')
 @click.option('--config', metavar='FILE',
               help='Config FILE for thumbnailed media content.')
 @click.option('--overwrite/--no-overwrite', default=False,
               help='When set, overwrite existing thumbnails.')
 @click.argument('query', nargs=-1)
 @click.pass_context
-def thumbnail(ctx, query, config, overwrite):
+def thumbnail(ctx, query, root, config, overwrite):
     '''Create thumbnails for assets matching a QUERY.
 
     See "illuminatus help" for help on QUERY syntax.
     '''
-    with open(config) as handle:
-        config = json.load(handle)
-    with db.transaction() as sess:
-        for asset in db.Asset.matching(sess, ' '.join(query)):
-            for fmt in config['formats']:
-                if fmt.get('medium', '').lower() == asset.medium.name.lower():
-                    root = config['root']
-                    if 'path' in fmt:
-                        root = os.path.join(root, fmt['path'])
-                    output = asset.export(fmt=_to_format(fmt['format']),
-                                          root=root, overwrite=overwrite)
-                    click.echo('{} {} -> {}'.format(click.style('*', fg='cyan'),
-                                                    click.style(asset.path, fg='red'),
-                                                    output))
+    def items():
+        yield from importexport.export_for_web(
+            matching_assets(query), root, config, overwrite)
+    progressbar(items(), 'Thumbnails')
 
 
 @cli.command()

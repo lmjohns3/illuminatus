@@ -1,64 +1,56 @@
 import celery
-import os
-
 import illuminatus
+import logging
+import os
+import random
+import sqlalchemy
+import time
 
 app = celery.Celery('illuminatus')
-app.config_from_object('celeryconfig')
+
+app.conf.update(
+    accept_content=['json'],
+    result_serializer='json',
+    task_serializer='json',
+    broker_url='redis://',
+    result_backend='redis://',
+    timezone='UTC',
+    enable_utc=True,
+)
 
 
 class Task(celery.Task):
-    # http://stackoverflow.com/q/31999269
 
-    _session = None
-
-    def after_return(self, *args, **kwargs):
-        if self._session is not None:
-            self._session.remove()
-
-    @property
     def session(self):
-        if self._session is None:
-            _, self._session = db.session(self.conf['db_uri'], verbose=False)
-        return self._session
+        return illuminatus.db.Session(
+            bind=illuminatus.db.engine(app.conf['illuminatus_db']),
+            autoflush=False)
+
+    def asset(self, sess, slug):
+        return sess.query(illuminatus.Asset).filter_by(slug=slug).scalar()
 
 
-@app.task(base=Task)
-def one_asset(id):
-    for i, asset in enumerate(one_asset.session.query(Asset)):
-        print()
-        print(asset.path)
-        for h in asset.hashes:
-            print(h.flavor, '=', h.nibbles)
-            for n in h.select_neighbors(one_asset.session, 2):
-                print('-->', n.asset.path)
+@app.task(base=Task, bind=True)
+def export(self, slug, dirname, basename=None, overwrite=False, **kwargs):
+    '''Export an asset (usually resized/edited/etc.) to a file on disk.'''
+    self.asset(self.session(), slug).export(
+        dirname, basename=basename, overwrite=overwrite, **kwargs)
 
 
-@app.task(base=Task)
-def export(id, dirname, format, basename=None):
-    '''Export a copy of an asset (usually resized/edited/etc.) to a file.'''
-    export.session.query(Asset).get(id).export(dirname, format, basename)
-
-
-@app.task(base=Task)
-def update_from_metadata(id):
-    '''Update tags for an asset based on metadata.'''
-    sess = update_from_metadata.session
-    asset = sess.query(illuminatus.Asset).get(id)
-    asset.update_from_metadata()
-    sess.add(asset)
-
-
-@app.task(base=Task)
-def compute_content_hashes(id):
-    '''Compute content-based hashes for an asset.'''
-    sess = compute_content_hashes.session
-    asset = sess.query(Asset).get(id)
-    asset.compute_content_hashes()
-    sess.add(asset)
-
-
-@app.task(base=Task)
-def hide_original(id):
-    '''Rename the original source for this asset.'''
-    hide_original.session.query(Asset).get(id).hide_original()
+@app.task(base=Task, bind=True)
+def update_from_content(self, slug):
+    '''Update tags and hashes for an asset based on file content.'''
+    for attempt in range(99):
+        sess = self.session()
+        asset = self.asset(sess, slug)
+        if not asset:
+            raise ValueError(slug)
+        asset.update_from_metadata()
+        asset.compute_content_hashes()
+        try:
+            sess.commit()
+            return
+        except sqlalchemy.exc.IntegrityError as _:
+            sess.rollback()
+            logging.info('%s error -- retry #%s ...', slug, attempt + 1)
+            time.sleep(10 * random.random())

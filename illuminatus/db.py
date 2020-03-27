@@ -22,4 +22,4 @@ def engine(path, echo=False):
 
 
 # Session gets bound to an engine in cli.py using db.Session.configure(...).
-Session = sqlalchemy.orm.sessionmaker()
+Session = sqlalchemy.orm.sessionmaker(autoflush=False)

@@ -183,7 +183,7 @@ def _generate_chains(use_video, use_audio, slices, filters):
         yield [], filters, ['outv']
 
 
-_encoder_args = dict(
+_ENCODER_ARGS = dict(
     # https://superuser.com/questions/1296374
     mp4=('-c:v h264_nvenc -level:v 4.1 -profile:v main -rc:v vbr_hq '
          '-rc-lookahead:v 32 -c:a aac'),
@@ -191,73 +191,74 @@ _encoder_args = dict(
 )
 
 
-def run(asset, fmt, output):
+def run(asset, output, **kwargs):
     '''Ffmpeg is a tool for manipulating audio and video files.
 
     Parameters
     ----------
     asset : :class:`Asset`
         Asset to use for media data.
-    fmt : dict
-        Formatting args for output.
     output : str
         Path for the output.
+    **kwargs : dict
+        Formatting arguments for output.
     '''
     slices, filters = _apply_filters(asset)
-    if hasattr(fmt, 'bbox'):
-        filters.append(_scale(*fmt.bbox))
-    if hasattr(fmt, 'fps'):
-        filters.append(f'fps={fmt.fps}')
-
-    format_args = []
-    for attr in 'ar ac crf quality speed'.split():
-        if hasattr(fmt, attr):
-            format_args.extend((f'-{attr}', f'{getattr(fmt, attr)}'))
-    format_args = tuple(format_args)
-
-    stem = os.path.splitext(output)[0]
+    if 'bbox' in kwargs:
+        filters.append(_scale(*kwargs['bbox']))
+    if 'fps' in kwargs:
+        filters.append(f'fps={kwargs["fps"]}')
 
     def run(*args):
-        cmd = ('ffmpeg', '-y', '-i', asset.path) + format_args + args
+        cmd = ['ffmpeg', '-y', '-i', asset.path]
+        for attr in 'ar ac crf quality speed'.split():
+            if attr in kwargs:
+                cmd.extend((f'-{attr}', f'{kwargs[attr]}'))
+        cmd.extend(args)
         if _DEBUG > 0:
-            click.echo('{}: {}'.format(
-                click.style('FFMPEG', bold=True),
-                click.style(' '.join(cmd), bold=True, fg='blue')))
+            click.echo('FFMPEG {}'.format(
+                click.style(' '.join(cmd), bold=True, fg='cyan')))
         return subprocess.run(cmd, capture_output=_DEBUG == 0)
 
+    stem, ext = os.path.splitext(output)
+    ext = ext.strip('.').lower()
+
     # Audio --> png: make a spectrogram image of the middle 60 seconds.
-    if asset.is_audio and fmt.ext == 'png':
+    if asset.is_audio and ext == 'png':
         t = asset.duration / 2
+        w, h = kwargs['bbox']
         trim = f'atrim={max(0, t - 30)}:{min(asset.duration, t + 30)}'
-        w, h = fmt.bbox
         spec = f'showspectrumpic=s={w}x{h}:color=viridis:scale=log:fscale=log'
-        return run('-af', f'{trim},{spec}', f'{stem}.png')
+        run('-af', f'{trim},{spec}', output)
+        return
 
     # Video --> gif: make an animated gif from the middle 10 seconds of a video,
     # and a poster image from the start of that clip.
-    if asset.is_video and fmt.ext == 'gif':
-        args = ('-ss', f'{max(0, asset.duration / 2 - 5)}', '-t', '10', '-an', '-vf')
-        scale = _scale(*fmt.bbox)
+    if asset.is_video and ext == 'gif':
+        args = f'-ss {max(0, asset.duration / 2 - 5)} -t 10 -an -vf'.split()
         palette = 'split[u][q];[u]fifo[v];[q]palettegen[p];[v][p]paletteuse'
-        run(*args + (f'fps={fmt.fps},{scale},{palette}', '-loop', '-1', f'{stem}.gif'))
-        return run(*args + (scale, '-frames:v', '1', f'{stem}.png'))
+        run(*args + [','.join(filters), '-frames:v', '1', f'{stem}.png'])
+        run(*args + [','.join(filters + [palette]), '-loop', '-1', output])
+        return
 
     # Video --> webp: make an animation from the middle 10 seconds of a video,
     # and a poster image from the start of that clip.
-    if asset.is_video and fmt.ext == 'webp':
-        args = ('-ss', f'{max(0, asset.duration / 2 - 5)}', '-t', '10', '-an', '-vf')
-        scale = _scale(*fmt.bbox)
-        run(*args + (f'fps={fmt.fps},{scale}', '-codec:v', 'libwebp', f'{stem}.webp'))
-        return run(*args + (scale, '-frames:v', '1', f'{stem}.png'))
+    if asset.is_video and ext == 'webp':
+        args = f'-ss {max(0, asset.duration / 2 - 5)} -t 10 -an -vf'.split()
+        run(*args + [','.join(filters), '-frames:v', '1', f'{stem}.png'])
+        run(*args + [','.join(filters), '-codec:v', 'libwebp', output])
+        return
 
-    # Default output, no more funny business.
+    chains = _generate_chains(
+        use_video=asset.is_video or asset.is_photo,
+        use_audio=asset.is_video or asset.is_audio,
+        slices=slices,
+        filters=filters)
+
     with tempfile.NamedTemporaryFile(mode='w+') as script:
-        pads = []
-        video_pad, audio_pad = '0:v?', '0:a?'
-        for inputs, chain, outputs in _generate_chains(
-                use_video=asset.is_video or asset.is_photo,
-                use_audio=asset.is_video or asset.is_audio,
-                slices=slices, filters=filters):
+        pads, video_pad, audio_pad = (), '0:v?', '0:a?'
+
+        for inputs, chain, outputs in chains:
             if pads:
                 script.write(';\n')
             script.write(''.join(f'[{i}]' for i in inputs))
@@ -269,22 +270,26 @@ def run(asset, fmt, output):
                     video_pad = f'[{p}]'
                 if p.endswith('a'):
                     audio_pad = f'[{p}]'
+
         script.flush()
         if _DEBUG:
             print('-------->8-------')
-            subprocess.run(['cat', script.name])
-            print()
+            subprocess.run(['cat', script.name], capture_output=False)
             print('-------8<--------')
+
         args = []
         if pads:
             args.extend(('-filter_complex_script', script.name,
-                         '-map', video_pad, '-map', audio_pad))
-        if hasattr(fmt, 'abr'):
-            args.extend(('-b:a', f'{fmt.abr}k'))
-        if hasattr(fmt, 'vbr'):
-            args.extend(('-b:v', f'{fmt.vbr}k'))
-        run(*args + _encoder_args.get(fmt.ext, '').split() + [
-            '-avoid_negative_ts', '1', '-g', '240', output])
+                         '-map', video_pad,
+                         '-map', audio_pad))
+        if 'abr' in kwargs:
+            args.extend(('-b:a', f'{kwargs["abr"]}k'))
+        if 'vbr' in kwargs:
+            args.extend(('-b:v', f'{kwargs["vbr"]}k'))
+
+        run(*args + _ENCODER_ARGS.get(ext, '').split() +
+            ['-avoid_negative_ts', '1', '-g', '240', output])
+
 '''
 n = int(asset.duration / 30)
 for i in range(n):

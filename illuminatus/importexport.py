@@ -3,12 +3,15 @@ import click
 import collections
 import glob
 import hashlib
+import logging
 import mimetypes
 import os
 import re
 import tempfile
 import zipfile
 
+from . import db
+from . import tasks
 from .assets import Asset, Format
 from .tags import Tag
 
@@ -39,35 +42,11 @@ def walk(roots):
                 yield match
 
 
-def _guess_medium(path):
-    '''Determine the appropriate medium for a given path.
-
-    Parameters
-    ----------
-    path : str
-        Filesystem path where the asset is stored.
-
-    Returns
-    -------
-    A string naming an asset medium. Returns None if no known media types
-    handle the given path.
-    '''
-    mime, _ = mimetypes.guess_type(path)
-    for pattern, medium in (('audio/.*', Asset.Medium.Audio),
-                            ('video/.*', Asset.Medium.Video),
-                            ('image/.*', Asset.Medium.Photo)):
-        if re.match(pattern, mime):
-            return medium
-    return None
-
-
-def import_asset(sess, path, tags=(), path_tags=0):
+def maybe_import_asset(path, tags=(), path_tags=0):
     '''Import a single asset into the database.
 
     Parameters
     ----------
-    sess : db.Session
-        Database session for the import.
     path : str
         A filesystem path to examine and possibly import.
     tags : set of str
@@ -75,46 +54,111 @@ def import_asset(sess, path, tags=(), path_tags=0):
     path_tags : int
         Number of path (directory) name components to add as tags.
     '''
+    color = lambda s, fg: click.style(s, fg=fg)
+    bold = click.style(path, bold=True)
+
     digest = hashlib.blake2s(path.encode('utf-8')).digest()
     slug = base64.b64encode(digest, b'-_').strip(b'=').decode('utf-8')
-    match = Asset.slug == slug
 
-    if sess.query(Asset).filter(match).count():
-        click.echo('{} Already have {}'.format(
-            click.style('=', fg='blue'),
-            click.style(path, fg='red')))
-        return None
-
-    medium = _guess_medium(path)
+    medium = None
+    mime, _ = mimetypes.guess_type(path)
+    for pattern, med in (('audio/.*', Asset.Medium.Audio),
+                            ('video/.*', Asset.Medium.Video),
+                            ('image/.*', Asset.Medium.Photo)):
+        if mime and re.match(pattern, mime):
+            medium = med
+            break
     if medium is None:
-        click.echo('{} Unknown {}'.format(
-            click.style('?', fg='yellow'),
-            click.style(path, fg='red')))
-        return None
+        click.echo(f'{color("?", "yellow")} {slug} {bold}')
+        return
 
-    tags = set(tags)
-    components = os.path.dirname(path).split(os.sep)[::-1]
-    for i in range(min(len(components) - 1, path_tags)):
-        tags.add(components[i])
+    sess = db.Session()
+    if sess.query(Asset).filter(Asset.slug == slug).count():
+        click.echo(f'{color("=", "blue")} {slug} {bold}')
+        sess.close()
+        return
 
     asset = Asset(path=path, medium=medium, slug=slug)
-    for tag in tags:
-        asset.tags.add(tag)
-    sess.add(asset)
+    asset.tags.update(tags)
+    asset.tags.update(os.path.dirname(path).split(os.sep)[::-1][:path_tags])
 
-    click.echo('{} Added {}'.format(
-            click.style('+', fg='green'),
-            click.style(path, fg='red')))
+    try:
+        sess.add(asset)
+        sess.commit()
+        click.echo(f'{color("+", "cyan")} {slug} {bold}')
+        return tasks.update_from_content.delay(slug)
+    except:
+        sess.rollback()
+        logging.error(f'{color("!", "red")} {slug} {bold}')
+        logging.exception('')
+    finally:
+        sess.close()
 
-    return asset
+
+def export_for_web(assets, root, config, overwrite):
+    '''Export assets asynchronously to a root dir in preparation for zipping.
+
+    Parameters
+    ----------
+    assets : list of :class:`db.Asset`
+        A list of the assets to export.
+    root : str
+        A directory containing thumbnails to include in the zip.
+    config : str
+        The name of a thumbnail format configuration file to load.
+    overwrite : bool
+        If True, overwrite existing thumbnails.
+
+    Yields
+    ------
+    Asynchronous results from each asset export task.
+    '''
+    with open(config) as handle:
+        config = json.load(handle)
+    for asset in assets:
+        for path, kwargs in config[asset.medium.value.lower()].items():
+            yield tasks.export.delay(asset.slug,
+                                     os.path.join(root, path, asset.slug[:2]),
+                                     overwrite=overwrite,
+                                     **kwargs)
 
 
-def export(assets, all_tags, formats, output,
-           hide_tags=(),
-           hide_metadata_tags=False,
-           hide_datetime_tags=False,
-           hide_omnipresent_tags=False):
-    '''Export media to a zip archive.
+def export_for_zip(assets, root, config):
+    '''Export assets asynchronously to a root dir in preparation for zipping.
+
+    Parameters
+    ----------
+    assets : list of :class:`db.Asset`
+        A list of the assets to export.
+    root : str
+        A directory containing thumbnails to include in the zip.
+    config : str
+        The name of a thumbnail format configuration file to load.
+
+    Yields
+    ------
+    Asynchronous results from each asset export task.
+    '''
+    with open(config) as handle:
+        config = json.load(handle)
+    for asset in assets:
+        medium = asset.medium.value.lower()
+        medium_ext = dict(audio='mp3', photo='jpg', video='mp4')[medium]
+        stems = [asset.stamp.isoformat()[:10], asset.slug[:4]]
+        for tag in sorted(asset._tags, key=lambda t: t.name):
+            if tag.pattern == tag.USER_PATTERN:
+                stems.append(tag.name)
+        stem = '-'.join(stems)
+        for path, kwargs in config[medium].items():
+            ext = kwargs.get('ext', medium_ext)
+            yield tasks.export.delay(asset.slug,
+                                     os.path.join(root, path),
+                                     basename=f'{stem}.{ext}',
+                                     **kwargs)
+
+
+def export_zip(assets, root, output, hide_tags=(), hide_omnipresent_tags=False):
+    '''Create a zip archive.
 
     The zip archive will contain:
 
@@ -125,10 +169,8 @@ def export(assets, all_tags, formats, output,
     ----------
     assets : list of :class:`db.Asset`
         A list of the assets to export.
-    all_tags : list of :class:`db.Tag`
-        All tags defined in the database.
-    formats : list of dict
-        The formats that we should use for the export.
+    root : str
+        A directory containing thumbnails to include in the zip.
     output : str or file
         The name of a zip file to save, or a file-like object to write zip
         content to.
@@ -136,63 +178,30 @@ def export(assets, all_tags, formats, output,
         A list of regular expressions matching tags to be excluded from the
         export information. For example, 'a.*' will exclude all tags
         starting with the letter "a". Default is to export all tags.
-    hide_metadata_tags : bool, optional
-        If True, export tags derived from EXIF data (e.g., ISO:1000, f/2,
-        etc.) The default is not to export this information.
-    hide_datetime_tags : bool, optional
-        If True, export tags derived from time information (e.g., November,
-        10am, etc.). The default is not to export this information.
     hide_omnipresent_tags : bool, optional
         If True, export tags present in all media. By default, tags that
         are present in all assets being exported will not be exported.
     '''
-    hide_patterns = list(hide_tags)
-    if hide_metadata_tags:
-        hide_patterns.append(Tag.METADATA_PATTERN)
-    if hide_datetime_tags:
-        hide_patterns.append(Tag.DATETIME_PATTERN)
+    tag_counts = collections.defaultdict(int)
+    for asset in assets:
+        for tag in asset.tags:
+            tag_counts[tag] += 1
 
-    hide_names = set()
-    for pattern in hide_patterns:
-        for tag in all_tags:
-            if re.match(pattern, tag.name):
-                hide_names.add(tag.name)
-    if hide_omnipresent_tags:
-        # count tag usage for this set of assets.
-        tag_counts = collections.defaultdict(int)
-        for asset in assets:
-            for tag in asset.tags:
-                tag_counts[tag.name] += 1
-        # remove tags that are applied to all assets.
-        for name, count in tag_counts.items():
-            if count == len(assets):
-                hide_names.add(name)
+    exclude_tags = {tag for tag, count in tag_counts.items()
+                    if (hide_omnipresent_tags and count == len(assets) or
+                        any(re.match(patt, tag) for patt in hide_tags))}
 
-    with tempfile.TemporaryDirectory() as root:
-        index = os.path.join(root, 'index.json')
-        data = []
-        for asset in assets:
-            for fmt in formats:
-                if fmt.medium.lower() == asset.medium.name.lower():
-                    path = root
-                    if 'path' in fmt:
-                        path = os.path.join(path, fmt['path'])
-                    asset.export(path, Format(**fmt['format']))
-            data.append(asset.to_dict(exclude_tags=hide_names))
-        with open(index, 'w') as handle:
-            json.dump(data, handle)
-        _create_zip(output, root)
+    items = [asset.to_dict(exclude_tags=exclude_tags) for asset in assets]
+    with open(os.path.join(root, 'index.json'), 'w') as handle:
+        json.dump(items, handle)
 
-    return len(assets)
-
-
-# This is mostly from zipfile.py in the Python source.
-def _create_zip(output, root):
+    # This is mostly from zipfile.py in the Python source.
     def add(zf, path, zippath):
         if os.path.isfile(path):
             zf.write(path, zippath, zipfile.ZIP_DEFLATED)
         elif os.path.isdir(path):
             for x in os.listdir(path):
                 add(zf, os.path.join(path, x), os.path.join(zippath, x))
+
     with zipfile.ZipFile(output, 'w') as zf:
         add(zf, root, os.path.splitext(os.path.basename(output))[0])

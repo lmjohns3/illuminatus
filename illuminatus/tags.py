@@ -47,10 +47,12 @@ class Tag(db.Model):
         r'.*',
     )
 
+    USER_PATTERN = len(PATTERNS) - 1
+
     def __repr__(self):
-        colors = ('red', 'yellow', 'green', 'cyan', 'blue', 'magenta')
-        color = colors[self.pattern % len(colors)]
-        return click.style(f' {self.name} ', bg=color, fg='black')
+        colors = (['red'] * 1 + ['yellow'] * 12 + ['green'] * 2 +
+                  ['cyan'] * 7 + ['blue'] * 8 + ['magenta'] * 4 + ['white'] * 1)
+        return click.style(f' {self.name} ', bg=colors[self.pattern], fg='black')
 
     @property
     def pattern(self):
