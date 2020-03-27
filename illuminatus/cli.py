@@ -46,7 +46,7 @@ def matching_assets(q):
 
 def progressbar(items, label):
     '''Show a progress bar using the given items and label.'''
-    with click.progressbar(list(items), label=label, width=0, color=True) as bar:
+    with click.progressbar(list(items), label=label, width=0, fill_char='█', color='yellow') as bar:
         for task in bar:
             try:
                 task.get()
