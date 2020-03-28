@@ -32,21 +32,24 @@ def display(asset, include_tags='.*', exclude_tags=None):
                   key=lambda t: (t.pattern, t.name))
     return (
         asset.slug,
-        ' '.join(sorted(str(h) for h in asset.hashes if len(h.nibbles) < 8)),
+        ' '.join(sorted(str(h) for h in asset.hashes if len(h.nibbles) < 10)),
         ' '.join(str(t) for t in tags),
         click.style(asset.path),
     )
 
 
-def matching_assets(q):
+query_assets = query.assets
+
+
+def matching_assets(q, **kwargs):
     '''Get assets matching a query, using a local session (i.e., read-only).'''
     with transaction() as sess:
-        yield from query.assets(sess, q)
+        yield from query_assets(sess, q, **kwargs)
 
 
 def progressbar(items, label):
     '''Show a progress bar using the given items and label.'''
-    with click.progressbar(list(items), label=label, width=0, fill_char='█', color='yellow') as bar:
+    with click.progressbar(list(items), label=label, width=0, fill_char='█') as bar:
         for task in bar:
             try:
                 task.get()
@@ -161,24 +164,26 @@ def ls(ctx, query, order, limit):
 
 
 @cli.command()
-@click.option('--hash', default='DIFF_4', metavar='[DIFF_8|RGB_HIST_32|...]',
+@click.option('--hash', default='DIFF_6',
+              metavar='[DIFF_4|DIFF_6|DIFF_8|RGB_HIST_32|...]',
               help='Check for asset neighbors using this hash.')
-@click.option('--distance', default=1, metavar='N',
-              help='Look within a Hamming distance of N for hash neighbors.')
+@click.option('--diff', default=0.1, metavar='R',
+              help='Look within fraction R of changed bits for neighbors.')
 @click.argument('query', nargs=-1)
 @click.pass_context
-def dupe(ctx, query, hash, distance):
+def dupe(ctx, query, hash, diff):
     '''List duplicate assets matching a QUERY.
 
     See "illuminatus help" for help on QUERY syntax.
     '''
-    for asset in matching_assets( query):
-        neighbors = asset.neighbors(sess, hash=hash, distance=distance)
-        if neighbors:
-            click.echo(' '.join(display(asset)))
-            for neighbor in neighbors:
-                click.echo(' '.join(('-->', ) + display(neighbor)))
-            click.echo('')
+    with transaction() as sess:
+        for asset in query_assets(sess, query):
+            neighbors = asset.similar(sess, hash=hash, max_diff=diff)
+            if neighbors:
+                click.echo(' '.join(display(asset)))
+                for neighbor in neighbors:
+                    click.echo(' '.join(('-->', ) + display(neighbor)))
+                click.echo('')
 
 
 @cli.command()
@@ -198,7 +203,7 @@ def rm(ctx, query, hide_original):
     renamed files as needed.
     '''
     with transaction() as sess:
-        for asset in query.assets(sess, query):
+        for asset in query_assets(sess, query):
             if hide_original:
                 asset.hide_original()
             sess.delete(asset)
@@ -276,7 +281,7 @@ def modify(ctx, query, stamp, add_tag, remove_tag, add_path_tags):
     earlier. Here x can be 'y' (year), 'm' (month), 'd' (day), or 'h' (hour).
     '''
     with transaction() as sess:
-        for asset in query.assets(sess, query):
+        for asset in query_assets(sess, query):
             for tag in add_tag:
                 asset.tags.add(tag)
             for tag in remove_tag:
@@ -289,22 +294,22 @@ def modify(ctx, query, stamp, add_tag, remove_tag, add_path_tags):
 
 
 @cli.command()
-@click.option('--root', metavar='DIR',
+@click.option('--thumbnails', metavar='DIR',
               help='Write thumbnails to DIR.')
-@click.option('--config', metavar='FILE',
+@click.option('--formats', metavar='FILE',
               help='Config FILE for thumbnailed media content.')
 @click.option('--overwrite/--no-overwrite', default=False,
               help='When set, overwrite existing thumbnails.')
 @click.argument('query', nargs=-1)
 @click.pass_context
-def thumbnail(ctx, query, root, config, overwrite):
+def thumbnail(ctx, query, thumbnails, formats, overwrite):
     '''Create thumbnails for assets matching a QUERY.
 
     See "illuminatus help" for help on QUERY syntax.
     '''
     def items():
         yield from importexport.export_for_web(
-            matching_assets(query), root, config, overwrite)
+            matching_assets(query), thumbnails, formats, overwrite)
     progressbar(items(), 'Thumbnails')
 
 
@@ -315,10 +320,14 @@ def thumbnail(ctx, query, root, config, overwrite):
               help='Run server on PORT.')
 @click.option('--debug/--no-debug', default=False)
 @click.option('--hide-originals/--no-hide-originals', default=False)
-@click.option('--thumbnails', metavar='FILE',
+@click.option('--thumbnails', metavar='DIR',
+              help='Read thumbnails from DIR.')
+@click.option('--formats', metavar='FILE',
               help='Config FILE for thumbnailed media content.')
+@click.option('--slug-size', default=999, metavar='N',
+              help='Use only the first N characters from asset slugs.')
 @click.pass_context
-def serve(ctx, host, port, debug, hide_originals, thumbnails):
+def serve(ctx, host, port, debug, hide_originals, thumbnails, formats, slug_size):
     '''Start an HTTP server for asset metadata.'''
     from .serve import app
     from .serve import sql
@@ -326,7 +335,9 @@ def serve(ctx, host, port, debug, hide_originals, thumbnails):
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + ctx.obj["db_path"]
     app.config['hide-originals'] = hide_originals
-    with open(thumbnails) as handle:
-        app.config['thumbnails'] = json.load(handle)
+    app.config['thumbnails'] = thumbnails
+    with open(formats) as handle:
+        app.config['formats'] = json.load(handle)
+    app.config['slug-size'] = slug_size
     sql.init_app(app)
     app.run(host=host, port=port, debug=debug, threaded=False, processes=8)
