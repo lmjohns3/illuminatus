@@ -50,8 +50,8 @@ class Tag(db.Model):
     USER_PATTERN = len(PATTERNS) - 1
 
     def __repr__(self):
-        colors = (['red'] * 1 + ['yellow'] * 12 + ['green'] * 2 +
-                  ['cyan'] * 7 + ['blue'] * 8 + ['magenta'] * 4 + ['white'] * 1)
+        colors = (['red'] * 1 + ['yellow'] * 12 + ['green'] * 2 + ['cyan'] * 7 +
+                  ['blue'] * 6 + ['magenta'] * 8 + ['white'] * 4 + ['red'] * 1)
         return click.style(f' {self.name} ', bg=colors[self.pattern], fg='black')
 
     @property
@@ -59,7 +59,7 @@ class Tag(db.Model):
         for i, pattern in enumerate(Tag.PATTERNS):
             if pattern == self.name or re.match(pattern, self.name):
                 return i
-        return -1
+        return None
 
     def to_dict(self):
         return dict(id=self.id, name=self.name)
