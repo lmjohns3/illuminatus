@@ -3,6 +3,7 @@ import click
 import collections
 import glob
 import hashlib
+import json
 import logging
 import mimetypes
 import os
@@ -95,7 +96,7 @@ def maybe_import_asset(path, tags=(), path_tags=0):
         sess.close()
 
 
-def export_for_web(assets, root, config, overwrite):
+def export_for_web(assets, root, formats, overwrite):
     '''Export assets asynchronously to a root dir in preparation for zipping.
 
     Parameters
@@ -104,7 +105,7 @@ def export_for_web(assets, root, config, overwrite):
         A list of the assets to export.
     root : str
         A directory containing thumbnails to include in the zip.
-    config : str
+    formats : str
         The name of a thumbnail format configuration file to load.
     overwrite : bool
         If True, overwrite existing thumbnails.
@@ -113,17 +114,17 @@ def export_for_web(assets, root, config, overwrite):
     ------
     Asynchronous results from each asset export task.
     '''
-    with open(config) as handle:
-        config = json.load(handle)
+    with open(formats) as handle:
+        formats = json.load(handle)
     for asset in assets:
-        for path, kwargs in config[asset.medium.value.lower()].items():
+        for path, kwargs in formats[asset.medium.value.lower()].items():
             yield tasks.export.delay(asset.slug,
-                                     os.path.join(root, path, asset.slug[:2]),
+                                     os.path.join(root, path, asset.slug[:1]),
                                      overwrite=overwrite,
                                      **kwargs)
 
 
-def export_for_zip(assets, root, config):
+def export_for_zip(assets, root, formats):
     '''Export assets asynchronously to a root dir in preparation for zipping.
 
     Parameters
@@ -132,15 +133,15 @@ def export_for_zip(assets, root, config):
         A list of the assets to export.
     root : str
         A directory containing thumbnails to include in the zip.
-    config : str
+    formats : str
         The name of a thumbnail format configuration file to load.
 
     Yields
     ------
     Asynchronous results from each asset export task.
     '''
-    with open(config) as handle:
-        config = json.load(handle)
+    with open(formats) as handle:
+        formats = json.load(handle)
     for asset in assets:
         medium = asset.medium.value.lower()
         medium_ext = dict(audio='mp3', photo='jpg', video='mp4')[medium]
@@ -149,7 +150,7 @@ def export_for_zip(assets, root, config):
             if tag.pattern == tag.USER_PATTERN:
                 stems.append(tag.name)
         stem = '-'.join(stems)
-        for path, kwargs in config[medium].items():
+        for path, kwargs in formats[medium].items():
             ext = kwargs.get('ext', medium_ext)
             yield tasks.export.delay(asset.slug,
                                      os.path.join(root, path),
