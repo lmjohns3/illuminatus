@@ -30,10 +30,11 @@ class QueryParser(parsimonious.NodeVisitor):
     query    = union ( __ union )*
     union    = negation ( __ or __ negation )*
     negation = ( not __ )? set
-    set      = !not !or ( group / stamp / path / hash / medium / text / tag )
+    set      = !not !or ( group / stamp / path / slug / hash / medium / text / tag )
     group    = '(' _ query _ ')'
     stamp    = ~r'(before|during|after):[-\d]+'
     path     = ~r'path:\S+'
+    slug     = ~r'slug:[-\w]+'
     hash     = ~r'hash:[-\w]+'
     medium   = ~'(photo|video|audio)'
     text     = ~'"[^"]+"'
@@ -79,6 +80,9 @@ class QueryParser(parsimonious.NodeVisitor):
     def visit_path(self, node, children):
         return Asset.path.contains(node.text[5:])
 
+    def visit_slug(self, node, children):
+        return Asset.slug.startswith(node.text[5:])
+
     def visit_hash(self, node, children):
         return Asset.hashes.any(Hash.nibbles.contains((node.text[5:])))
 
@@ -117,7 +121,7 @@ def assets(sess, *query, order=None, limit=None, offset=None):
     -------
       A result set of :class:`Asset`s matching the query.
     '''
-    query = ' '.join(itertools.chain.from_iterable(query))
+    query = ' '.join(itertools.chain.from_iterable(query)).strip()
     q = sess.query(Asset)
     if query:
         q = q.filter(QueryParser().parse(query))
