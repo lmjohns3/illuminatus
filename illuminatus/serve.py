@@ -12,6 +12,9 @@ import tempfile
 from . import db
 from . import importexport
 
+from .assets import Asset
+from .query import assets as matching_assets
+
 app = flask.Flask('illuminatus')
 sql = flask_sqlalchemy.SQLAlchemy()
 
@@ -28,17 +31,17 @@ def _get_asset(slug):
 
 @app.route('/rest/formats/')
 def formats():
-    return flask.jsonify(app.config['thumbnails']['formats'])
+    return flask.jsonify(app.config['formats'])
 
 
 @app.route('/rest/query/<path:query>')
 def assets(query):
     get = flask.request.args.get
-    assets = query.assets(sql.session,
-                          query.split('/'),
-                          order=get('order', 'stamp'),
-                          limit=int(get('limit', 99999)),
-                          offset=int(get('offset', 0))).all()
+    assets = matching_assets(sql.session,
+                             query.split('/'),
+                             order=get('order', 'stamp'),
+                             limit=int(get('limit', 99999)),
+                             offset=int(get('offset', 0))).all()
     return flask.jsonify([a.to_dict() for a in assets])
 
 
@@ -49,8 +52,7 @@ def export(query):
     dirname = tempfile.mkdtemp()
 
     importexport.Exporter(
-        db.Tag.query(sql.session).all(),
-        query.assets(sql.session, query.split('/')),
+        matching_assets(sql.session, query.split('/')),
         json.loads(get('formats')),
     ).run(
         output=os.path.join(dirname, f'{get("name").zip}'),
@@ -75,9 +77,10 @@ def get_asset(slug):
 
 @app.route('/rest/asset/<string:slug>/similar/', methods=['GET'])
 def get_similar_assets(slug):
-    asset = asset = _get_asset(slug)
-    distance = int(flask.request.args.get('distance', 2))
-    similar = asset.select_similar(sql.session, distance)
+    similar = _get_asset(slug).similar(
+        sql.session,
+        hash=flask.request.args.get('hash', 'DIFF_6'),
+        max_diff=float(flask.request.args.get('max-diff', 0.1)))
     return flask.jsonify([a.to_dict() for a in similar])
 
 
@@ -123,10 +126,9 @@ def add_filter(slug, filter):
         kwargs[arg] = float(flask.request.form[arg])
     asset = _get_asset(slug)
     asset.add_filter(kwargs)
-    asset.save()
-    root = app.config['db'].root
-    for s in app.config['sizes']:
-        asset.export(s, root, force=True)
+    for kwargs in app.config['formats'][asset.medium.name.lower()]:
+        tasks.export.delay(
+            asset.slug, app.config['thumbnails'], overwrite=True, **kwargs)
     return flask.jsonify(asset.to_dict())
 
 
@@ -135,16 +137,15 @@ def add_filter(slug, filter):
 def delete_filter(slug, filter, index):
     asset = _get_asset(slug)
     asset.remove_filter(filter, index)
-    asset.save()
-    root = app.config['db'].root
-    for s in app.config['sizes']:
-        asset.export(s, root, force=True)
+    for kwargs in app.config['formats'][asset.medium.name.lower()]:
+        tasks.export.delay(
+            asset.slug, app.config['thumbnails'], overwrite=True, **kwargs)
     return flask.jsonify(asset.to_dict())
 
 
 @app.route('/asset/<path:path>')
 def thumb(path):
-    return flask.send_file(os.path.join(app.config['thumbnails']['root'], path))
+    return flask.send_file(os.path.join(app.config['thumbnails'], path))
 
 
 @app.route('/manifest.json')

@@ -79,11 +79,11 @@ class Asset(db.Model):
     def click(self):
         return repr(self)
 
-    def similar(self, sess, hash='DIFF_4', min_similarity=0.9):
+    def similar(self, sess, hash='DIFF_4', max_diff=0.1):
         similar = set()
         for h in self.hashes:
             if h.flavor.value == hash:
-                for neighbor in h.neighbors(sess, min_similarity):
+                for neighbor in h.neighbors(sess, max_diff):
                     similar.add(neighbor.asset)
         return similar - {self}
 
@@ -103,7 +103,7 @@ class Asset(db.Model):
             lat=self.lat,
             lng=self.lng,
             hashes=[h.to_dict() for h in self.hashes],
-            tags=self.tags - set(exclude_tags),
+            tags=list(self.tags - set(exclude_tags)),
         )
 
     def update_stamp(self, when):
