@@ -18,12 +18,6 @@ export default function View() {
     axios("/rest/formats/").then(res => setFormats(res.data));
   }, []);
 
-  const getExt = (size, medium) => {
-    let match = null;
-    formats.forEach(f => { if ((f.path === size) && (f.medium === medium)) match = f; });
-    return match ? match.format.ext : null;
-  };
-
   // Get assets matching our view query.
   const query = useParams().query, [assets, setAssets] = useState([]);
   useEffect(() => {
@@ -35,7 +29,7 @@ export default function View() {
   let viewAsset = null;
   if ((0 <= viewIndex) && (viewIndex < assets.length)) {
     const asset = assets[viewIndex];
-    viewAsset = <Asset asset={asset} ext={getExt("medium", asset.medium)} />;
+    viewAsset = <Asset asset={asset} formats={formats} />;
   }
 
   return <div className={`view ${viewAsset ? 'viewing' : 'browsing'}`}>
@@ -43,7 +37,7 @@ export default function View() {
     <div className="thumbs">{assets.map(
         (asset, idx) => <Thumb key={asset.id}
                                asset={asset}
-                               ext={getExt("small", asset.medium)}
+                               formats={formats}
                                handleClick={() => setViewIndex(idx)} />
     )}</div>
     {viewAsset}
@@ -51,10 +45,11 @@ export default function View() {
 }
 
 
-const Thumb = ({asset, ext, handleClick}) => {
-  const ph = asset.path_hash
+const Thumb = ({asset, formats, handleClick}) => {
+  const s = asset.slug
+      , ext = formats[asset.medium]["small"].ext
       , isVideo = asset.medium === "video"
-      , source = e => `/asset/small/${ph.slice(0, 2)}/${ph}.${e}`
+      , source = e => `/asset/small/${s.slice(0, 1)}/${s}.${e}`
       , initialSrc = source(isVideo ? "png" : ext);
   return <span className="thumb" onClick={handleClick}>
     <img className={asset.medium}
@@ -66,12 +61,13 @@ const Thumb = ({asset, ext, handleClick}) => {
 }
 
 
-const Asset = ({asset, ext}) => {
-  const ph = asset.path_hash
-      , src = `/asset/medium/${ph.slice(0, 2)}/${ph}.${ext}`;
+const Asset = ({asset, formats}) => {
+  const s = asset.slug
+      , ext = formats[asset.medium]["medium"].ext
+      , src = `/asset/medium/${s.slice(0, 1)}/${s}.${ext}`;
   const [similar, setSimilar] = useState([]);
   useEffect(() => {
-    axios(`/rest/asset/${ph}/similar/?distance=3`).then(res => setSimilar(res.data));
+    axios(`/rest/asset/${s}/similar/?hash=DIFF_6&max-diff=0.1`).then(res => setSimilar(res.data));
   }, [asset]);
   return <div className="asset">
     <Tags assets={[asset]} startVisible={true} href={null} />
@@ -81,7 +77,7 @@ const Asset = ({asset, ext}) => {
                                  <img src={src} />
     }
     <div className="similar">{
-      similar.map(a => <Thumb key={a.id} asset={a} ext={ext} handleClick={null} />)
+      similar.map(a => <Thumb key={a.id} asset={a} formats={formats} handleClick={null} />)
     }</div>
   </div>;
 }

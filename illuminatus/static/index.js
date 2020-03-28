@@ -52280,14 +52280,16 @@ function Tags(_ref) {
   }]; // Count up the tags in our assets.
 
   assets.forEach(function (asset) {
-    asset.tags.forEach(function (tag) {
-      if (!tags[tag.name]) {
-        tags[tag.name] = tag;
-        tag.count = 0;
-        tag.active = new RegExp("/".concat(tag.name, "/")).test(pathname);
+    asset.tags.forEach(function (t) {
+      if (!tags[t]) {
+        var tag = {
+          name: t,
+          count: 0,
+          active: pathname.indexOf("/".concat(t, "/")) >= 0
+        };
         TAG_PATTERNS.some(function (pattern, p) {
-          if (pattern.re.test(tag.name)) {
-            blocks[pattern.block][tag.active ? "active" : "other"].push(tag.name);
+          if (pattern.re.test(t)) {
+            blocks[pattern.block][tag.active ? "active" : "other"].push(t);
             tag.hue = pattern.hue;
             tag.order = p;
             return true;
@@ -52295,9 +52297,10 @@ function Tags(_ref) {
 
           return false;
         });
+        tags[t] = tag;
       }
 
-      tags[tag.name].count++;
+      tags[t].count++;
     });
   });
   return _react.default.createElement("div", {
@@ -52421,16 +52424,7 @@ function View() {
     (0, _axios.default)("/rest/formats/").then(function (res) {
       return setFormats(res.data);
     });
-  }, []);
-
-  var getExt = function getExt(size, medium) {
-    var match = null;
-    formats.forEach(function (f) {
-      if (f.path === size && f.medium === medium) match = f;
-    });
-    return match ? match.format.ext : null;
-  }; // Get assets matching our view query.
-
+  }, []); // Get assets matching our view query.
 
   var query = (0, _reactRouterDom.useParams)().query,
       _useState3 = (0, _react.useState)([]),
@@ -52455,7 +52449,7 @@ function View() {
     var asset = assets[viewIndex];
     viewAsset = _react.default.createElement(Asset, {
       asset: asset,
-      ext: getExt("medium", asset.medium)
+      formats: formats
     });
   }
 
@@ -52470,7 +52464,7 @@ function View() {
     return _react.default.createElement(Thumb, {
       key: asset.id,
       asset: asset,
-      ext: getExt("small", asset.medium),
+      formats: formats,
       handleClick: function handleClick() {
         return setViewIndex(idx);
       }
@@ -52480,13 +52474,14 @@ function View() {
 
 var Thumb = function Thumb(_ref) {
   var asset = _ref.asset,
-      ext = _ref.ext,
+      formats = _ref.formats,
       handleClick = _ref.handleClick;
 
-  var ph = asset.path_hash,
+  var s = asset.slug,
+      ext = formats[asset.medium]["small"].ext,
       isVideo = asset.medium === "video",
       source = function source(e) {
-    return "/asset/small/".concat(ph.slice(0, 2), "/").concat(ph, ".").concat(e);
+    return "/asset/small/".concat(s.slice(0, 1), "/").concat(s, ".").concat(e);
   },
       initialSrc = source(isVideo ? "png" : ext);
 
@@ -52509,9 +52504,10 @@ var Thumb = function Thumb(_ref) {
 
 var Asset = function Asset(_ref2) {
   var asset = _ref2.asset,
-      ext = _ref2.ext;
-  var ph = asset.path_hash,
-      src = "/asset/medium/".concat(ph.slice(0, 2), "/").concat(ph, ".").concat(ext);
+      formats = _ref2.formats;
+  var s = asset.slug,
+      ext = formats[asset.medium]["medium"].ext,
+      src = "/asset/medium/".concat(s.slice(0, 1), "/").concat(s, ".").concat(ext);
 
   var _useState7 = (0, _react.useState)([]),
       _useState8 = _slicedToArray(_useState7, 2),
@@ -52519,7 +52515,7 @@ var Asset = function Asset(_ref2) {
       setSimilar = _useState8[1];
 
   (0, _react.useEffect)(function () {
-    (0, _axios.default)("/rest/asset/".concat(ph, "/similar/?distance=3")).then(function (res) {
+    (0, _axios.default)("/rest/asset/".concat(s, "/similar/?hash=DIFF_6&max-diff=0.1")).then(function (res) {
       return setSimilar(res.data);
     });
   }, [asset]);
@@ -52547,7 +52543,7 @@ var Asset = function Asset(_ref2) {
     return _react.default.createElement(Thumb, {
       key: a.id,
       asset: a,
-      ext: ext,
+      formats: formats,
       handleClick: null
     });
   })));
@@ -54125,7 +54121,7 @@ var ScrollToTop = function ScrollToTop() {
 };
 
 _reactDom.default.render(_react.default.createElement(_reactRouterDom.BrowserRouter, null, _react.default.createElement(_reactRouterDom.Route, {
-  path: "/view/:query*"
+  path: "/view/:query([^?]*)"
 }, _react.default.createElement(_view.default, null)), _react.default.createElement(_reactRouterDom.Route, {
   path: "/cluster/:hash"
 }, _react.default.createElement(_cluster.default, null)), _react.default.createElement(_reactRouterDom.Route, {

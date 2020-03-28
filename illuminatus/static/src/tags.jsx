@@ -65,26 +65,26 @@ export default function Tags({assets, startVisible, href}) {
     {icon: "⌚", active: [], other: []},
     {icon: "📷", active: [], other: []},
     {icon: "🌍", active: [], other: []},
-    {icon: "🙋", active: [], other: []}]
+    {icon: "🙋", active: [], other: []},
+  ];
 
   // Count up the tags in our assets.
   assets.forEach(asset => {
-    asset.tags.forEach(tag => {
-      if (!tags[tag.name]) {
-        tags[tag.name] = tag;
-        tag.count = 0;
-        tag.active = new RegExp(`/${tag.name}/`).test(pathname);
+    asset.tags.forEach(t => {
+      if (!tags[t]) {
+        const tag = {name: t, count: 0, active: pathname.indexOf(`/${t}/`) >= 0};
         TAG_PATTERNS.some((pattern, p) => {
-          if (pattern.re.test(tag.name)) {
-            blocks[pattern.block][tag.active ? "active" : "other"].push(tag.name);
+          if (pattern.re.test(t)) {
+            blocks[pattern.block][tag.active ? "active" : "other"].push(t);
             tag.hue = pattern.hue;
             tag.order = p;
             return true;
           }
           return false;
         });
+        tags[t] = tag;
       }
-      tags[tag.name].count++;
+      tags[t].count++;
     });
   });
 

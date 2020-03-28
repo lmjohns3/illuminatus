@@ -20,7 +20,7 @@ const ScrollToTop = () => {
 
 ReactDOM.render(
 <BrowserRouter>
-  <Route path="/view/:query*"><View /></Route>
+  <Route path="/view/:query([^?]*)"><View /></Route>
   <Route path="/cluster/:hash"><Cluster /></Route>
   <Route path="/label/:hash"><Label /></Route>
   <Route path="/edit/:hash"><Edit /></Route>
