@@ -5,7 +5,7 @@
   },
   "video": {
     "small": {"ext": "webp", "bbox": [320, 320], "fps": 10},
-    "medium": {"ext": "mp4", "bbox": [1280, 1280]}
+    "medium": {"ext": "webm", "bbox": [1280, 1280]}
   },
   "audio": {
     "small": {"ext": "png", "bbox": [320, 320]},
