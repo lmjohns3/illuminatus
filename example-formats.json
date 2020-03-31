@@ -1,11 +1,11 @@
 {
   "photo": {
     "small": {"ext": "png", "bbox": [320, 320]},
-    "medium": {"ext": "jpg", "bbox": [1280, 1280]}
+    "medium": {"ext": "jpg", "bbox": [1080, 1080]}
   },
   "video": {
     "small": {"ext": "webp", "bbox": [320, 320], "fps": 10},
-    "medium": {"ext": "webm", "bbox": [1280, 1280]}
+    "medium": {"ext": "mp4", "bbox": [1080, 1080], "fps": 24}
   },
   "audio": {
     "small": {"ext": "png", "bbox": [320, 320]},
