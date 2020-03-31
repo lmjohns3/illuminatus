@@ -176,21 +176,20 @@ def ls(ctx, query, order, limit):
 
 
 @cli.command()
-@click.option('--hash', default='DIFF_6',
-              metavar='[DIFF_4|DIFF_6|DIFF_8|RGB_HIST_32|...]',
+@click.option('--hash', default='diff-6', metavar='[diff-8|rgb-hist-16|...]',
               help='Check for asset neighbors using this hash.')
-@click.option('--diff', default=0.1, metavar='R',
+@click.option('--max-diff', default=0.01, metavar='R',
               help='Look within fraction R of changed bits for neighbors.')
 @click.argument('query', nargs=-1)
 @click.pass_context
-def dupe(ctx, query, hash, diff):
+def dupe(ctx, query, hash, max_diff):
     '''List duplicate assets matching a QUERY.
 
     See "illuminatus help" for help on QUERY syntax.
     '''
     with transaction() as sess:
         for asset in query_assets(sess, query):
-            neighbors = asset.similar(sess, hash=hash, max_diff=diff)
+            neighbors = asset.dupes(sess, hash=hash, max_diff=max_diff)
             if neighbors:
                 click.echo(' '.join(display(asset)))
                 for neighbor in neighbors:

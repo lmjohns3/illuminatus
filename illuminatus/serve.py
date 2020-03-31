@@ -23,6 +23,10 @@ def _get_asset(slug):
     return sql.session.query(Asset).filter(Asset.slug.startswith(slug)).one()
 
 
+def _json(items):
+    return flask.jsonify([item.to_dict() for item in items])
+
+
 # socketio = flask_socketio.SocketIO(app)
 # @socketio.on('foo event')
 # def handle_foo_event(json):
@@ -37,12 +41,11 @@ def formats():
 @app.route('/rest/query/<path:query>')
 def assets(query):
     get = flask.request.args.get
-    assets = matching_assets(sql.session,
-                             query.split('/'),
-                             order=get('order', 'stamp'),
-                             limit=int(get('limit', 99999)),
-                             offset=int(get('offset', 0))).all()
-    return flask.jsonify([a.to_dict(slug_size=app.config['slug-size']) for a in assets])
+    return _json(matching_assets(sql.session,
+                                 query.split('/'),
+                                 order=get('order', 'stamp'),
+                                 limit=int(get('limit', 99999)),
+                                 offset=int(get('offset', 0))).all())
 
 
 @app.route('/rest/export/<path:query>', methods=['POST'])
@@ -72,16 +75,22 @@ def export(query):
 
 @app.route('/rest/asset/<string:slug>/', methods=['GET'])
 def get_asset(slug):
-    return flask.jsonify(_get_asset(slug).to_dict(slug_size=app.config['slug-size']))
+    return flask.jsonify(_get_asset(slug).to_dict())
 
 
 @app.route('/rest/asset/<string:slug>/similar/', methods=['GET'])
 def get_similar_assets(slug):
-    similar = _get_asset(slug).similar(
+    return _json(_get_asset(slug).similar(
         sql.session,
-        hash=flask.request.args.get('hash', 'DIFF_6'),
-        max_diff=float(flask.request.args.get('max-diff', 0.1)))
-    return flask.jsonify([a.to_dict(slug_size=app.config['slug-size']) for a in similar])
+        limit=int(flask.request.args.get('limit', 10))))
+
+
+@app.route('/rest/asset/<string:slug>/dupes/', methods=['GET'])
+def get_duplicate_assets(slug):
+    return _json(_get_asset(slug).duplicates(
+        sql.session,
+        hash=flask.request.args.get('hash', 'diff-8'),
+        max_diff=float(flask.request.args.get('max-diff', 0.01))))
 
 
 @app.route('/rest/asset/<string:slug>/', methods=['PUT'])
@@ -95,8 +104,7 @@ def update_asset(slug):
     stamp = get('stamp', '')
     if stamp:
         asset.update_stamp(stamp)
-    asset.save()
-    return flask.jsonify(asset.to_dict(slug_size=app.config['slug-size']))
+    return flask.jsonify(asset.to_dict())
 
 
 @app.route('/rest/asset/<string:slug>/', methods=['DELETE'])
@@ -126,7 +134,7 @@ def add_filter(slug, filter):
         kwargs[arg] = float(flask.request.form[arg])
     asset = _get_asset(slug)
     asset.add_filter(kwargs)
-    medium = asset.medium.name.lower()
+    medium = asset.medium.value
     for path, kwargs in app.config['formats'][medium].items():
         kw = dict(slug=asset.slug,
                   dirname=app.config['thumbnails'],
@@ -134,7 +142,7 @@ def add_filter(slug, filter):
         kw.update(kwargs)
         queue = 'video' if medium == 'video' and path == 'medium' else 'celery'
         tasks.export.apply_async(kwargs=kw, queue=queue)
-    return flask.jsonify(asset.to_dict(slug_size=app.config['slug-size']))
+    return flask.jsonify(asset.to_dict())
 
 
 @app.route('/rest/asset/<string:slug>/filters/<string:filter>/<int:index>/',
@@ -142,7 +150,7 @@ def add_filter(slug, filter):
 def delete_filter(slug, filter, index):
     asset = _get_asset(slug)
     asset.remove_filter(filter, index)
-    medium = asset.medium.name.lower()
+    medium = asset.medium.value
     for path, kwargs in app.config['formats'][medium].items():
         kw = dict(slug=asset.slug,
                   dirname=app.config['thumbnails'],
@@ -150,7 +158,7 @@ def delete_filter(slug, filter, index):
         kw.update(kwargs)
         queue = 'video' if medium == 'video' and path == 'medium' else 'celery'
         tasks.export.apply_async(kwargs=kw, queue=queue)
-    return flask.jsonify(asset.to_dict(slug_size=app.config['slug-size']))
+    return flask.jsonify(asset.to_dict())
 
 
 @app.route('/asset/<path:path>')

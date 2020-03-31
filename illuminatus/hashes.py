@@ -13,17 +13,18 @@ class Hash(db.Model):
     @enum.unique
     class Flavor(str, enum.Enum):
         '''Enumeration of different supported hash types.'''
-        DIFF_4 = 'DIFF_4'
-        DIFF_6 = 'DIFF_6'
-        DIFF_8 = 'DIFF_8'
+        DIFF_4 = 'diff-4'
+        DIFF_6 = 'diff-6'
+        DIFF_8 = 'diff-8'
+        DIFF_10 = 'diff-10'
 
-        HSL_HIST_4 = 'HSL_HIST_4'
-        HSL_HIST_8 = 'HSL_HIST_8'
-        HSL_HIST_16 = 'HSL_HIST_16'
+        HSL_HIST_4 = 'hsl-hist-4'
+        HSL_HIST_8 = 'hsl-hist-8'
+        HSL_HIST_16 = 'hsl-hist-16'
 
-        RGB_HIST_4 = 'RGB_HIST_4'
-        RGB_HIST_8 = 'RGB_HIST_8'
-        RGB_HIST_16 = 'RGB_HIST_16'
+        RGB_HIST_4 = 'rgb-hist-4'
+        RGB_HIST_8 = 'rgb-hist-8'
+        RGB_HIST_16 = 'rgb-hist-16'
 
     id = db.Column(db.Integer, primary_key=True)
     asset_id = db.Column(db.ForeignKey('assets.id', ondelete='CASCADE'), nullable=False)
@@ -125,7 +126,7 @@ _HEX_NEIGHBORS = {'0': '1248', '1': '0359', '2': '306a', '3': '217b',
                   'c': 'de84', 'd': 'cf95', 'e': 'fca6', 'f': 'edb7'}
 
 
-def _neighbors(start, max_diff=0.99):
+def _neighbors(start, max_diff=0.01):
     '''Pull all neighboring hashes within a similarity ball from the start.
 
     Parameters
@@ -150,7 +151,7 @@ def _neighbors(start, max_diff=0.99):
             for i, c in enumerate(nibbles):
                 for d in _HEX_NEIGHBORS[c]:
                     n = f'{nibbles[:i]}{d}{nibbles[i+1:]}'
-                    if n not in visited and _bit_diff_rate(start, n) < max_diff:
+                    if n not in visited and _bit_diff_rate(start, n) <= max_diff:
                         next_frontier.add(n)
                         visited.add(n)
         frontier = next_frontier

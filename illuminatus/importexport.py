@@ -117,7 +117,7 @@ def export_for_web(assets, root, formats, overwrite):
     with open(formats) as handle:
         formats = json.load(handle)
     for asset in assets:
-        medium = asset.medium.name.lower()
+        medium = asset.medium.value
         for path, kwargs in formats[medium].items():
             kw = dict(slug=asset.slug,
                       overwrite=overwrite,
@@ -146,7 +146,7 @@ def export_for_zip(assets, root, formats):
     with open(formats) as handle:
         formats = json.load(handle)
     for asset in assets:
-        medium = asset.medium.name.lower()
+        medium = asset.medium.value
         medium_ext = dict(audio='mp3', photo='jpg', video='mp4')[medium]
         stems = [asset.stamp.isoformat()[:10], asset.slug[:4]]
         for tag in sorted(asset._tags, key=lambda t: t.name):
@@ -195,7 +195,9 @@ def export_zip(assets, root, output, hide_tags=(), hide_omnipresent_tags=False):
                     if (hide_omnipresent_tags and count == len(assets) or
                         any(re.match(patt, tag) for patt in hide_tags))}
 
-    items = [asset.to_dict(exclude_tags=exclude_tags) for asset in assets]
+    items = [asset.to_dict() for asset in assets]
+    for item in items:
+        item['tags'] = list(set(item['tags']) - exclude_tags)
     with open(os.path.join(root, 'index.json'), 'w') as handle:
         json.dump(items, handle)
 

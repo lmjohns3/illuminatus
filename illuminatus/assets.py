@@ -75,24 +75,36 @@ class Asset(db.Model):
     def is_video(self):
         return self.medium == Asset.Medium.Video
 
-    @property
-    def click(self):
-        return repr(self)
+    def contemporaneous(self, sess, limit=10):
+        cond = Asset.similar.stamp.startswith(self.stamp.isoformat()[:10])
+        return sorted(set(sess.query(Asset).filter(cond)) - {self},
+                      key=lambda a: abs((a.stamp - self.stamp).total_seconds()),
+                      reverse=True)[:limit]
 
-    def similar(self, sess, hash='DIFF_4', max_diff=0.1):
-        similar = set()
+    def similar(self, sess, limit=10):
+        if not hasattr(self, 'idf'):
+            self.idf = {tag: 1 / freq for tag, freq in
+                        (sess.query(Tag.name, sqlalchemy.func.count(asset_tags.c.asset_id))
+                         .join(asset_tags).group_by(Tag.id).order_by(Tag.id))}
+        cond = Asset._tags.any(Tag.name.in_(self.tags))
+        return sorted(set(sess.query(Asset).filter(cond)) - {self},
+                      key=lambda a: (sum(self.idf[t] for t in (a.tags & self.tags)) /
+                                     sum(self.idf[t] for t in (a.tags | self.tags))),
+                      reverse=True)[:limit]
+
+    def duplicates(self, sess, hash='diff-8', max_diff=0.01):
+        dupes = set()
         for h in self.hashes:
             if h.flavor.value == hash:
-                for neighbor in h.neighbors(sess, max_diff):
-                    similar.add(neighbor.asset)
-        return similar - {self}
+                dupes.update(n.asset for n in h.neighbors(sess, max_diff))
+        return dupes - {self}
 
-    def to_dict(self, slug_size=9999, exclude_tags=()):
+    def to_dict(self):
         return dict(
             id=self.id,
             path=self.path,
-            slug=self.slug[:slug_size],
-            medium=self.medium.name.lower(),
+            slug=self.slug,
+            medium=self.medium.value,
             filters=json.loads(self.filters),
             stamp=arrow.get(self.stamp).isoformat(),
             description=self.description,
@@ -103,7 +115,7 @@ class Asset(db.Model):
             lat=self.lat,
             lng=self.lng,
             hashes=[h.to_dict() for h in self.hashes],
-            tags=list(self.tags - set(exclude_tags)),
+            tags=list(self.tags),
         )
 
     def update_stamp(self, when):
