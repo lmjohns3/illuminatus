@@ -79,8 +79,7 @@ html {
   display: flex;
   flex-flow: row wrap;
   align-items: center;
-  justify-content: space-around;
-  background: #333;
+  justify-content: center;
 }
 
 .thumbs .thumb {
@@ -88,6 +87,7 @@ html {
   position: relative;
   margin: 5px;
   text-align: center;
+  cursor: pointer;
 }
 
 .thumbs .thumb img {
@@ -127,6 +127,14 @@ html {
   border-radius: 13px;
 }
 
+.asset h2 {
+  color: #999;
+}
+
+@keyframes spinner {
+  0% { background-color: #999; }
+  100% { background-color: transparent; }
+}
 
 /* edit */
 

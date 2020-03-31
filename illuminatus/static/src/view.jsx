@@ -2,13 +2,12 @@ import axios from 'axios'
 import moment from 'moment'
 import React, {useEffect, useReducer, useState} from 'react'
 import {BrowserView, MobileView, isBrowser, isMobile} from 'react-device-detect';
-import {useParams} from 'react-router-dom'
+import {useHistory, useParams} from 'react-router-dom'
 import Select from 'react-select'
 import { useSwipeable } from 'react-swipeable'
 
 import DB from './db'
 import Tags from './tags'
-import {useKeyPressCallback} from './hooks'
 
 
 const hrefForTag = (tag, path) => {
@@ -32,17 +31,19 @@ export default function View() {
   }, [query]);
 
   // Keep track if there is a single asset being viewed.
-  const h = window.Location.hash
+  const h = window.location.hash
       , hashCurrent = /#\d+/.test(h) ? parseInt(h.replace('#', '')) : null
+      , history = useHistory()
       , [current, setCurrent] = useState(hashCurrent);
+  const view = idx => { setCurrent(idx); history.replace(idx ? `#${idx}` : '#'); };
   useEffect(() => {
     const onKeyDown = ({key}) => {
       if (key === 'Escape') {
-        setCurrent(null);
+        view(null);
       } else if (current > 0 && (key === 'ArrowLeft' || key === 'ArrowUp')) {
-        setCurrent(current - 1);
+        view(current - 1);
       } else if (current < assets.length - 1 && (key === 'ArrowRight' || key === 'ArrowDown')) {
-        setCurrent(current + 1);
+        view(current + 1);
       }
     };
     if (current) {
@@ -50,14 +51,16 @@ export default function View() {
       return () => window.removeEventListener('keydown', onKeyDown);
     }
   }, [assets, current]);
-  useEffect(() => {
-    window.location.hash = current ? `#${current}` : '';
-  }, [current]);
+
+  // Track the scroll state on the thumbs view. Gets set when a thumb gets a click.
+  const [thumbsScroll, setThumbsScroll] = useState(0);
+  useEffect(() => { if (!current) window.scrollTo(0, thumbsScroll); }, [current]);
 
   // Show either the asset being viewed or thumbnails of all the assets.
-  if (current) {
+  if (current && 0 <= current && current < assets.length) {
     return <div className='view'>
-      <Asset asset={assets[current]} formats={formats} /></div>;
+      <Asset asset={assets[current]} formats={formats} close={() => view(null)} />
+    </div>;
   } else {
     return <div className='browse'>
       <Tags assets={assets} href={hrefForTag} />
@@ -65,7 +68,10 @@ export default function View() {
           (asset, idx) => <Thumb key={asset.id}
                                  asset={asset}
                                  formats={formats}
-                                 handleClick={() => setCurrent(idx)} />
+                                 handleClick={() => {
+                                   setThumbsScroll(window.scrollY);
+                                   view(idx);
+                                 }} />
       )}</div>
     </div>;
   }
@@ -91,28 +97,57 @@ const Thumb = ({asset, formats, handleClick}) => {
 // const handlers = useSwipeable({ onSwiped: (eventData) => eventHandler, ...config })
 // return (<div {...handlers}> You can swipe here </div>)
 
-const Asset = ({asset, formats}) => {
-  const s = asset.slug
+const Asset = ({asset, formats, close}) => {
+  const slug = asset.slug
       , ext = formats[asset.medium]['medium'].ext
-      , src = `/asset/medium/${s.slice(0, 1)}/${s}.${ext}`;
-  const [similar, setSimilar] = useState([]);
+      , src = `/asset/medium/${slug.slice(0, 1)}/${slug}.${ext}`;
+
+  const [similar, setSimilar] = useState({assets: [], loading: false});
   useEffect(() => {
-    axios(`/rest/asset/${s}/similar/?hash=DIFF_6&max-diff=0.1`).then(res => setSimilar(res.data));
+    setSimilar({assets: [], loading: true});
+    axios(`/rest/asset/${slug}/similar/`).then(
+      res => { setSimilar({assets: res.data, loading: false}); });
   }, [asset]);
+  const similarThumbs =
+    similar.loading ? <div><h2>Similar</h2><Spinner /></div> :
+    similar.assets.length > 0 ? <div>
+      <h2>Similar</h2>
+      <div className='thumbs similar'>{
+        similar.assets.map(a => <Thumb key={a.id} asset={a} formats={formats} handleClick={null} />)
+      }</div>
+  </div> : null;
+
+  const [dupes, setDupes] = useState({assets: [], loading: false});
+  useEffect(() => {
+    setDupes({assets: [], loading: true});
+    axios(`/rest/asset/${slug}/dupes/?hash=diff-8&max-diff=0.02`).then(
+      res => { setDupes({assets: res.data, loading: false}); });
+  }, [asset]);
+  const dupeThumbs =
+    dupes.loading ? <div><h2>Duplicates</h2><Spinner /></div> :
+    dupes.assets.length > 0 ? <div>
+      <h2>Duplicates</h2>
+      <div className='thumbs dupes'>{
+        dupes.assets.map(a => <Thumb key={a.id} asset={a} formats={formats} handleClick={null} />)
+      }</div>
+    </div> : null;
+
   return <div className='asset'>
     <Tags assets={[asset]} startVisible={true} href={hrefForTag} />
-    {
-      asset.medium === 'video' ? <video autoPlay controls><source src={src} /></video> :
-      asset.medium === 'audio' ? <audio autoPlay controls><source src={src} /></audio> :
-                                 <img src={src} />
-    }
-    <div className='similar'>{
-      similar.map(a => <Thumb key={a.id} asset={a} formats={formats} handleClick={null} />)
-    }</div>
+    {asset.medium === 'video' ? <video title={slug} autoPlay controls><source src={src} /></video> :
+     asset.medium === 'audio' ? <audio title={slug} autoPlay controls><source src={src} /></audio> :
+                                <img title={slug} src={src} />}
+    {similarThumbs}
+    {dupeThumbs}
     <div className='icon-buttons'>
-      <span className='icon-button'><span className='icon'>⚠</span></span>
+      <span className='icon-button' onClick={close}><span className='icon' style={{fontSize:'200%'}}>×</span></span>
+    </div>
+  </div>;
+}
+
+/*
       <span className='icon-button'><span className='icon'>🖉</span></span>
-      <span className='icon-button'><span className='icon' style={{fontSize:'200%'}}>×</span></span>
+      <span className='icon-button'><span className='icon'>⚠</span></span>
       <span className='icon-button'><span className='icon'>⮢</span></span>
       <span className='icon-button'><span className='icon'>⮣</span></span>
       <span className='icon-button'><span className='icon'>⤿</span></span>
@@ -126,6 +161,34 @@ const Asset = ({asset, formats}) => {
       <span className='icon-button'><span className='icon'>🚫</span></span>
       <span className='icon-button'><span className='icon'>✏</span></span>
       <span className='icon-button'><span className='icon'>☠</span></span>
-    </div>
+*/
+
+
+const Spinner = () => {
+  const bladeStyle = {
+    position: 'absolute',
+    left: '0.4629em',
+    bottom: '0',
+    width: '0.074em',
+    height: '0.2777em',
+    borderRadius: '0.0555em',
+    backgroundColor: 'transparent',
+    transformOrigin: 'center -0.2222em',
+    animation: 'spinner 1s infinite linear',
+  };
+  return <div style={{
+    fontSize: '34px', position: 'relative', display: 'inline-block', width: '1em', height: '1em'}}>
+    <div style={{...bladeStyle, animationDelay: '0.00000s', transform: 'rotate(  0deg)'}}></div>
+    <div style={{...bladeStyle, animationDelay: '0.08333s', transform: 'rotate( 30deg)'}}></div>
+    <div style={{...bladeStyle, animationDelay: '0.16666s', transform: 'rotate( 60deg)'}}></div>
+    <div style={{...bladeStyle, animationDelay: '0.25000s', transform: 'rotate( 90deg)'}}></div>
+    <div style={{...bladeStyle, animationDelay: '0.33333s', transform: 'rotate(120deg)'}}></div>
+    <div style={{...bladeStyle, animationDelay: '0.41666s', transform: 'rotate(150deg)'}}></div>
+    <div style={{...bladeStyle, animationDelay: '0.50000s', transform: 'rotate(180deg)'}}></div>
+    <div style={{...bladeStyle, animationDelay: '0.58333s', transform: 'rotate(210deg)'}}></div>
+    <div style={{...bladeStyle, animationDelay: '0.66666s', transform: 'rotate(240deg)'}}></div>
+    <div style={{...bladeStyle, animationDelay: '0.75000s', transform: 'rotate(270deg)'}}></div>
+    <div style={{...bladeStyle, animationDelay: '0.83333s', transform: 'rotate(300deg)'}}></div>
+    <div style={{...bladeStyle, animationDelay: '0.91666s', transform: 'rotate(330deg)'}}></div>
   </div>;
 }
