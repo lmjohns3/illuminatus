@@ -87,7 +87,7 @@ class QueryParser(parsimonious.NodeVisitor):
         return Asset.hashes.any(Hash.nibbles.contains((node.text[5:])))
 
     def visit_medium(self, node, children):
-        return Asset.medium.value == node.text
+        return Asset.medium == Asset.Medium[node.text.capitalize()]
 
     def visit_text(self, node, children):
         s = node.text.strip('"')
