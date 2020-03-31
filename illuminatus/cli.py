@@ -2,8 +2,10 @@ import click
 import contextlib
 import json
 import os
+import random
 import re
 import sys
+import time
 
 from . import db
 from . import importexport
@@ -49,12 +51,22 @@ def matching_assets(q, **kwargs):
 
 def progressbar(items, label):
     '''Show a progress bar using the given items and label.'''
-    with click.progressbar(list(items), label=label, width=0, fill_char='█') as bar:
-        for task in bar:
+    items = list(items)
+    kwargs = dict(length=len(items), label=label, width=0, fill_char='█')
+    with click.progressbar(**kwargs) as bar:
+        while items:
+            done = None
             try:
-                task.get()
+                for i, item in enumerate(items):
+                    if item.ready():
+                        done = i
+                        break
             except:
                 pass
+            if done is not None:
+                items.pop(done)
+                bar.update(1)
+            time.sleep(1)
 
 
 @click.group()
