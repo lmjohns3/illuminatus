@@ -186,7 +186,7 @@ def _generate_chains(use_video, use_audio, slices, filters):
 _ENCODER_ARGS = dict(
     # https://superuser.com/questions/1296374
     mp4=('-c:v h264_nvenc -level:v 4.1 -profile:v main -rc:v vbr_hq '
-         '-rc-lookahead:v 32 -c:a aac'),
+         '-rc-lookahead:v 32 -c:a aac -pix_fmt yuv420p'),
     webm='-c:v libvpx-vp9 -c:a libopus -row-mt 1',
 )
 
@@ -210,7 +210,10 @@ def run(asset, output, **kwargs):
         filters.append(f'fps={kwargs["fps"]}')
 
     def run(*args):
-        cmd = ['ffmpeg', '-y', '-i', asset.path]
+        cmd = ['ffmpeg', '-y',
+               '-filter_threads', '4',
+               '-filter_complex_threads', '4',
+               '-i', asset.path]
         for attr in 'ar ac crf quality speed'.split():
             if attr in kwargs:
                 cmd.extend((f'-{attr}', f'{kwargs[attr]}'))

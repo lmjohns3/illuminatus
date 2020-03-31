@@ -42,7 +42,7 @@ def assets(query):
                              order=get('order', 'stamp'),
                              limit=int(get('limit', 99999)),
                              offset=int(get('offset', 0))).all()
-    return flask.jsonify([a.to_dict() for a in assets])
+    return flask.jsonify([a.to_dict(slug_size=app.config['slug-size']) for a in assets])
 
 
 @app.route('/rest/export/<path:query>', methods=['POST'])
@@ -72,7 +72,7 @@ def export(query):
 
 @app.route('/rest/asset/<string:slug>/', methods=['GET'])
 def get_asset(slug):
-    return flask.jsonify(_get_asset(slug).to_dict())
+    return flask.jsonify(_get_asset(slug).to_dict(slug_size=app.config['slug-size']))
 
 
 @app.route('/rest/asset/<string:slug>/similar/', methods=['GET'])
@@ -81,7 +81,7 @@ def get_similar_assets(slug):
         sql.session,
         hash=flask.request.args.get('hash', 'DIFF_6'),
         max_diff=float(flask.request.args.get('max-diff', 0.1)))
-    return flask.jsonify([a.to_dict() for a in similar])
+    return flask.jsonify([a.to_dict(slug_size=app.config['slug-size']) for a in similar])
 
 
 @app.route('/rest/asset/<string:slug>/', methods=['PUT'])
@@ -96,7 +96,7 @@ def update_asset(slug):
     if stamp:
         asset.update_stamp(stamp)
     asset.save()
-    return flask.jsonify(asset.to_dict())
+    return flask.jsonify(asset.to_dict(slug_size=app.config['slug-size']))
 
 
 @app.route('/rest/asset/<string:slug>/', methods=['DELETE'])
@@ -126,10 +126,15 @@ def add_filter(slug, filter):
         kwargs[arg] = float(flask.request.form[arg])
     asset = _get_asset(slug)
     asset.add_filter(kwargs)
-    for kwargs in app.config['formats'][asset.medium.name.lower()]:
-        tasks.export.delay(
-            asset.slug, app.config['thumbnails'], overwrite=True, **kwargs)
-    return flask.jsonify(asset.to_dict())
+    medium = asset.medium.name.lower()
+    for path, kwargs in app.config['formats'][medium].items():
+        kw = dict(slug=asset.slug,
+                  dirname=app.config['thumbnails'],
+                  overwrite=True)
+        kw.update(kwargs)
+        queue = 'video' if medium == 'video' and path == 'medium' else 'celery'
+        tasks.export.apply_async(kwargs=kw, queue=queue)
+    return flask.jsonify(asset.to_dict(slug_size=app.config['slug-size']))
 
 
 @app.route('/rest/asset/<string:slug>/filters/<string:filter>/<int:index>/',
@@ -137,10 +142,15 @@ def add_filter(slug, filter):
 def delete_filter(slug, filter, index):
     asset = _get_asset(slug)
     asset.remove_filter(filter, index)
-    for kwargs in app.config['formats'][asset.medium.name.lower()]:
-        tasks.export.delay(
-            asset.slug, app.config['thumbnails'], overwrite=True, **kwargs)
-    return flask.jsonify(asset.to_dict())
+    medium = asset.medium.name.lower()
+    for path, kwargs in app.config['formats'][medium].items():
+        kw = dict(slug=asset.slug,
+                  dirname=app.config['thumbnails'],
+                  overwrite=True)
+        kw.update(kwargs)
+        queue = 'video' if medium == 'video' and path == 'medium' else 'celery'
+        tasks.export.apply_async(kwargs=kw, queue=queue)
+    return flask.jsonify(asset.to_dict(slug_size=app.config['slug-size']))
 
 
 @app.route('/asset/<path:path>')
@@ -164,7 +174,6 @@ def manifest():
 @app.route('/edit/<string:slug>/')
 @app.route('/label/<string:slug>/')
 @app.route('/cluster/<string:slug>/')
-@app.route('/view/<string:slug>/')
-@app.route('/browse/<path:query>')
+@app.route('/view/<path:query>')
 def index(*args, **kwargs):
     return flask.render_template('index.html')

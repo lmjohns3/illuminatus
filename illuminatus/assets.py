@@ -87,11 +87,11 @@ class Asset(db.Model):
                     similar.add(neighbor.asset)
         return similar - {self}
 
-    def to_dict(self, exclude_tags=()):
+    def to_dict(self, slug_size=9999, exclude_tags=()):
         return dict(
             id=self.id,
             path=self.path,
-            slug=self.slug,
+            slug=self.slug[:slug_size],
             medium=self.medium.name.lower(),
             filters=json.loads(self.filters),
             stamp=arrow.get(self.stamp).isoformat(),

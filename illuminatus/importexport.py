@@ -64,8 +64,8 @@ def maybe_import_asset(path, tags=(), path_tags=0):
     medium = None
     mime, _ = mimetypes.guess_type(path)
     for pattern, med in (('audio/.*', Asset.Medium.Audio),
-                            ('video/.*', Asset.Medium.Video),
-                            ('image/.*', Asset.Medium.Photo)):
+                         ('video/.*', Asset.Medium.Video),
+                         ('image/.*', Asset.Medium.Photo)):
         if mime and re.match(pattern, mime):
             medium = med
             break
@@ -117,11 +117,14 @@ def export_for_web(assets, root, formats, overwrite):
     with open(formats) as handle:
         formats = json.load(handle)
     for asset in assets:
-        for path, kwargs in formats[asset.medium.value.lower()].items():
-            yield tasks.export.delay(asset.slug,
-                                     os.path.join(root, path, asset.slug[:1]),
-                                     overwrite=overwrite,
-                                     **kwargs)
+        medium = asset.medium.name.lower()
+        for path, kwargs in formats[medium].items():
+            kw = dict(slug=asset.slug,
+                      overwrite=overwrite,
+                      dirname=os.path.join(root, path, asset.slug[:1]))
+            kw.update(kwargs)
+            queue = 'video' if medium == 'video' and path == 'medium' else 'celery'
+            yield tasks.export.apply_async(kwargs=kw, queue=queue)
 
 
 def export_for_zip(assets, root, formats):
@@ -143,7 +146,7 @@ def export_for_zip(assets, root, formats):
     with open(formats) as handle:
         formats = json.load(handle)
     for asset in assets:
-        medium = asset.medium.value.lower()
+        medium = asset.medium.name.lower()
         medium_ext = dict(audio='mp3', photo='jpg', video='mp4')[medium]
         stems = [asset.stamp.isoformat()[:10], asset.slug[:4]]
         for tag in sorted(asset._tags, key=lambda t: t.name):
@@ -151,12 +154,12 @@ def export_for_zip(assets, root, formats):
                 stems.append(tag.name)
         stem = '-'.join(stems)
         for path, kwargs in formats[medium].items():
-            ext = kwargs.get('ext', medium_ext)
-            yield tasks.export.delay(asset.slug,
-                                     os.path.join(root, path),
-                                     basename=f'{stem}.{ext}',
-                                     **kwargs)
-
+            kw = dict(slug=asset.slug,
+                      dirname=os.path.join(root, path),
+                      basename=f'{stem}.{kwargs.get("ext", medium_ext)}')
+            kw.update(kwargs)
+            queue = 'video' if medium == 'video' and path == 'medium' else 'celery'
+            yield tasks.export.apply_async(kwargs=kw, queue=queue)
 
 def export_zip(assets, root, output, hide_tags=(), hide_omnipresent_tags=False):
     '''Create a zip archive.
