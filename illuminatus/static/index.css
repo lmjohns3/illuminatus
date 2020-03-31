@@ -15,6 +15,33 @@ html {
   text-align: center;
 }
 
+.icon-buttons {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 34px;
+}
+
+.icon-button {
+  width: 34px;
+  height: 34px;
+  border-radius: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ccc;
+  color: #111;
+  cursor: pointer;
+  margin: 0 13px 13px 0;
+}
+.icon-button .icon {
+  flex: 1;
+  font-size: 120%;
+}
+.icon-button:hover {
+  background: #fff;
+}
+
 /* tags */
 
 .tags {
@@ -100,51 +127,6 @@ html {
   border-radius: 13px;
 }
 
-.view.viewing .thumbs {
-  position: fixed;
-  top: 0;
-  left: 0;
-}
-
-.view.viewing > .tags {
-  display: none;
-}
-
-@media (orientation: landscape) {
-  .view.viewing .thumbs {
-    flex-flow: column nowrap;
-    overflow-y: scroll;
-    overflow-x: hidden;
-    width: calc(var(--thumbnail-size) + 10px);
-    height: 100vh;
-  }
-
-  .asset {
-    margin-left: calc(var(--thumbnail-size) + 10px);
-  }
-
-  .asset img, .asset audio, .asset video {
-    max-width: calc(100vw - var(--thumbnail-size) - 32px);
-  }
-}
-
-@media (orientation: portrait) {
-  .view.viewing .thumbs {
-    flex-flow: row nowrap;
-    overflow-x: scroll;
-    overflow-y: hidden;
-    height: calc(var(--thumbnail-size) + 10px);
-    width: 100vw;
-  }
-
-  .asset {
-    margin-top: calc(var(--thumbnail-size) + 10px);
-  }
-
-  .asset img, .asset audio, .asset video {
-    max-height: calc(100vh - var(--thumbnail-size) - 64px);
-  }
-}
 
 /* edit */
 
