@@ -25,10 +25,12 @@ RECORDS = [
     {'path': AUDIO_PATH,
      'medium': 'audio',
      'stamp': '2016-01-02T03:04',
+     'duration': 50.834125,
      'tags': set('ac')},
     {'path': VIDEO_PATH,
      'medium': 'video',
      'stamp': '2010-03-09T05:03',
+     'duration': 5.334,
      'tags': set('bc')},
 ]
 
@@ -54,12 +56,11 @@ def tables(engine):
         illuminatus.db.Session.configure(bind=conn)
         for rec in RECORDS:
             slug = os.path.basename(rec['path']).split('.')[0]
-            asset = Asset(medium=rec['medium'],
-                          path=rec['path'],
-                          slug=slug,
-                          stamp=arrow.get(rec['stamp']).datetime,
-                          tags=rec['tags'])
-            asset.hashes.add(Hash(nibbles=slug, method='dhash-4'))
+            kw = rec
+            kw['slug'] = slug
+            kw['stamp'] = arrow.get(rec['stamp']).datetime
+            asset = Asset(**kw)
+            asset.hashes.add(Hash(nibbles=slug, method='dhash-0'))
             sess = illuminatus.db.Session()
             sess.add(asset)
             sess.commit()

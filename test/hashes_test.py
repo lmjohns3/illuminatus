@@ -6,7 +6,7 @@ from util import *
 @pytest.mark.parametrize('size, expected', [
     (4, '12e1'),
     (6, '98151ce07'),
-    (8, '8683054c6cb4f30f'),
+    (8, '8603054c6cb8f30f'),
 ])
 def test_photo_dhash(sess, size, expected):
     photo = sess.query(Asset).get(PHOTO_ID)

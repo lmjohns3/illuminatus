@@ -34,3 +34,25 @@ def test_update_stamp(sess, when, expected):
     asset.update_from_metadata()
     asset.update_stamp(when)
     assert asset.stamp == arrow.get(expected).datetime
+
+
+def test_photo_content_hashes(sess):
+    asset = sess.query(Asset).get(1)
+    asset.compute_content_hashes()
+    assert set(h.nibbles for h in asset.hashes) == {
+        'photo', '665', '12e1', '387c52', '1fc03b70330e', '8603054c6cb8f30f',
+        '3078e01d803300640007007111f13ec11ce116c9a6c9671d6e03354b1a7f80fc'}
+
+
+def test_audio_content_hashes(sess):
+    asset = sess.query(Asset).get(2)
+    asset.compute_content_hashes()
+    assert set(h.nibbles for h in asset.hashes) == {
+        'audio', '30202020a0a0a0b0', '0030303020302024', '2020202020202020',
+        '3010202020202020', '0888088898101064', 'b03030202020000c'}
+
+
+def test_video_content_hashes(sess):
+    asset = sess.query(Asset).get(3)
+    asset.compute_content_hashes()
+    assert set(h.nibbles for h in asset.hashes) == {'video', 'e8e0fcd8b8f8f8f4'}

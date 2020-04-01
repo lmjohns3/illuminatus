@@ -306,6 +306,22 @@ def run(asset, output, **kwargs):
         run(*args + _ENCODER_ARGS.get(ext, '').split() +
             ['-avoid_negative_ts', '1', '-g', '240', output])
 
+
+def convert_to_wav(path, sample_rate, output):
+    cmd = ['ffmpeg', '-y', '-i', path, '-ac', '1', '-ar', str(sample_rate), output]
+    if _DEBUG > 0:
+        click.echo('FFMPEG {}'.format(
+            click.style(' '.join(cmd), bold=True, fg='cyan')))
+    return subprocess.run(cmd, capture_output=_DEBUG == 0)
+
+
+def extract_frame(path, time, output):
+    cmd = ['ffmpeg', '-y', '-ss', str(time), '-i', path, '-frames:v', '1', output]
+    if _DEBUG > 0:
+        click.echo('FFMPEG {}'.format(
+            click.style(' '.join(cmd), bold=True, fg='cyan')))
+    return subprocess.run(cmd, capture_output=_DEBUG == 0)
+
 '''
 n = int(asset.duration / 30)
 for i in range(n):

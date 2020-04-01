@@ -2,12 +2,15 @@ import arrow
 import collections
 import itertools
 import json
+import librosa
 import logging
+import numpy as np
 import os
 import PIL.Image
 import re
 import sqlalchemy
 import sqlalchemy.ext.associationproxy
+import tempfile
 
 from . import db
 from . import ffmpeg
@@ -249,23 +252,30 @@ class Asset(db.Model):
     def compute_content_hashes(self):
         '''Compute hashes of asset content.'''
         if self.is_photo:
-            img = _open_and_auto_orient(self.path, self.orientation)
+            rgb = self._open_and_auto_orient()
             for size in (4, 8, 16):
-                self.hashes.add(Hash.compute_photo_histogram(img, 'rgb', size))
-            hsl = img.convert('HSL')
-            for size in (4, 8, 16):
-                self.hashes.add(Hash.compute_photo_histogram(img, 'hsl', size))
-            gray = img.convert('L')
+                self.hashes.add(Hash.compute_photo_histogram(rgb, 'rgb', size))
+            gray = rgb.convert('L')
             for size in (4, 8, 16):
                 self.hashes.add(Hash.compute_photo_dhash(gray, size))
 
         if self.is_audio and self.duration:
-            for o in range(0, int(self.duration), 10):
-                self.hashes.add(Hash.compute_audio_dhash(self.path, o + 5, 8))
+            sr = 16000
+            with tempfile.NamedTemporaryFile(suffix='.wav') as ntf:
+                # compute fft with windows separated by 1000 samples
+                ffmpeg.convert_to_wav(self.path, sr, ntf.name)
+                arr, _ = librosa.core.load(ntf.name, sr)
+            spec = np.log(librosa.feature.melspectrogram(
+                arr, sr, n_fft=2048, hop_length=1000, n_mels=64)).T
+            for t in range(0, len(spec), 10 * sr // 1000):
+                self.hashes.add(Hash.compute_audio_dhash(spec, t, 8))
 
         if self.is_video and self.duration:
-            for o in range(0, int(self.duration), 10):
-                self.hashes.add(Hash.compute_video_dhash(self.path, o + 5, 8))
+            for t in range(0, int(self.duration), 10):
+                with tempfile.NamedTemporaryFile(suffix='.jpg') as ntf:
+                    ffmpeg.extract_frame(self.path, t, ntf.name)
+                    img = PIL.Image.open(ntf.name).convert('L')
+                self.hashes.add(Hash.compute_video_dhash(img, t, 8))
 
     def hide_original(self):
         '''Hide the original asset file by renaming it with a . prefix.'''

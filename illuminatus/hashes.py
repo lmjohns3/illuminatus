@@ -6,6 +6,14 @@ import sqlalchemy
 from . import db
 
 
+# http://www.hackerfactor.com/blog/index.php?/archives/529-Kind-of-Like-That.html
+def _dhash(img, size):
+    if isinstance(img, np.ndarray):
+        img = PIL.Image.fromarray(img)
+    arr = np.array(img.resize((size + 1, size)))
+    return _bits_to_nibbles(arr[:, 1:] > arr[:, :-1])
+
+
 class Hash(db.Model):
     __tablename__ = 'hashes'
 
@@ -39,12 +47,9 @@ class Hash(db.Model):
         A Hash instance representing the diff hash.
         '''
         w, h = img.size
-        crop, x, y = min(w, h) // 2, w // 2, h // 2
-        pixels = np.asarray(img.crop((x - crop, y - crop, x + crop, y + crop))
-                            .resize((size + 1, size), PIL.Image.ANTIALIAS))
-        print('pixels', pixels.shape)
-        return cls(nibbles=_bits_to_nibbles(pixels[:, 1:] > pixels[:, :-1]),
-                   method=f'dhash-{size}')
+        c, x, y = min(w, h) // 2, w // 2, h // 2
+        return cls(method=f'dhash-{size}',
+                   nibbles=_dhash(img.crop((x - c, y - c, x + c, y + c)), size))
 
     @classmethod
     def compute_photo_histogram(cls, img, planes, size):
@@ -74,12 +79,25 @@ class Hash(db.Model):
                    method=f'{planes}-{size}'.lower())
 
     @classmethod
-    def compute_audio_dhash(cls, path, time, size):
-        pass
+    def compute_audio_dhash(cls, img, time, size):
+        '''Compute a dhash for an audio spectrogram at a specific time.
+
+        Parameters
+        ----------
+        img : np.ndarray
+            A numpy array containing a log-mel power spectrum.
+        time : int
+            Number of seconds along the time axis where for computing the hash.
+        size : int
+            Size of each side of the dhash image patch. The total number of
+            bits in the hash will be n^2.
+        '''
+        return cls(nibbles=_dhash(img[time:time+img.shape[1]], size),
+                   method=f'dhash-{size}', time=time)
 
     @classmethod
     def compute_video_dhash(cls, path, time, size):
-        pass
+        return cls(nibbles=_dhash(path, size), method=f'dhash-{size}', time=time)
 
     def neighbors(self, sess, max_diff):
         '''Get all neighboring hashes from the database.
