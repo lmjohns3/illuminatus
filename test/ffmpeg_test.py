@@ -20,7 +20,7 @@ def test_video_filters(sess, tmpdir, filters):
 
     root = tmpdir.mkdir('export')
     assert root.listdir() == []
-    video.export(str(root), Format(ext='mp4'))
+    video.export(str(root), ext='mp4')
     assert sorted(root.listdir()) == [str(root.join(f'{video.slug}.mp4'))]
 
 
@@ -44,5 +44,5 @@ def test_photo_filters(sess, tmpdir, filters):
 
     root = tmpdir.mkdir('export')
     assert root.listdir() == []
-    photo.export(str(root), Format(ext='jpg'))
+    photo.export(str(root), ext='jpg')
     assert sorted(root.listdir()) == [str(root.join(f'{photo.slug}.jpg'))]

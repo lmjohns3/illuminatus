@@ -1,5 +1,4 @@
 import click
-import enum
 import numpy as np
 import PIL.Image
 import sqlalchemy
@@ -10,76 +9,77 @@ from . import db
 class Hash(db.Model):
     __tablename__ = 'hashes'
 
-    @enum.unique
-    class Flavor(str, enum.Enum):
-        '''Enumeration of different supported hash types.'''
-        DIFF_4 = 'diff-4'
-        DIFF_6 = 'diff-6'
-        DIFF_8 = 'diff-8'
-        DIFF_10 = 'diff-10'
-
-        HSL_HIST_4 = 'hsl-hist-4'
-        HSL_HIST_8 = 'hsl-hist-8'
-        HSL_HIST_16 = 'hsl-hist-16'
-
-        RGB_HIST_4 = 'rgb-hist-4'
-        RGB_HIST_8 = 'rgb-hist-8'
-        RGB_HIST_16 = 'rgb-hist-16'
-
     id = db.Column(db.Integer, primary_key=True)
     asset_id = db.Column(db.ForeignKey('assets.id', ondelete='CASCADE'), nullable=False)
     nibbles = db.Column(db.String, index=True, nullable=False)
-    flavor = db.Column(db.Enum(Flavor), index=True, nullable=False)
+    method = db.Column(db.String, index=True, nullable=False)
     time = db.Column(db.Float)
 
     asset = sqlalchemy.orm.relationship(
         'Asset', backref=sqlalchemy.orm.backref('hashes', collection_class=set),
         lazy='selectin', collection_class=set)
 
-    def __lt__(self, other):
-        return self.nibbles < other.nibbles
-
     def __repr__(self):
-        return '#'.join((click.style(self.flavor.value, fg='blue'),
+        return '#'.join((click.style(self.method, fg='blue'),
                          click.style(self.nibbles, fg='cyan', bold=True)))
 
     @classmethod
-    def compute_photo_diff(cls, path, size=4):
-        '''Compute a similarity hash for an image.
+    def compute_photo_dhash(cls, img, size):
+        '''Compute a "difference hash" for an image.
 
         Parameters
         ----------
-        path : str
-            Path to an image file on disk.
-        size : int, optional
-            Number of pixels, `s`, per side for the image. The hash will have
-            `s * s` bits. Must correspond to one of the available DIFF_N hash
-            flavors.
+        img : PIL.Image
+            An image.
+        size : int
+            Number of pixels per side of the image; hash will have n^2 bits.
 
         Returns
         -------
         A Hash instance representing the diff hash.
         '''
-        gray = PIL.Image.open(path).convert('L')
-        pixels = np.asarray(gray.resize((size + 1, size), PIL.Image.ANTIALIAS))
+        w, h = img.size
+        crop, x, y = min(w, h) // 2, w // 2, h // 2
+        pixels = np.asarray(img.crop((x - crop, y - crop, x + crop, y + crop))
+                            .resize((size + 1, size), PIL.Image.ANTIALIAS))
+        print('pixels', pixels.shape)
         return cls(nibbles=_bits_to_nibbles(pixels[:, 1:] > pixels[:, :-1]),
-                   flavor=Hash.Flavor[f'DIFF_{size}'])
+                   method=f'dhash-{size}')
 
     @classmethod
-    def compute_photo_histogram(cls, path, planes='RGB', size=4):
-        hist = np.asarray(PIL.Image.open(path).convert(planes).histogram())
+    def compute_photo_histogram(cls, img, planes, size):
+        '''Compute a hash based on a RGB or HSL histogram.
+
+        Bits in the hash are computed based on whether they are above or below
+        the median histogram value.
+
+        Parameters
+        ----------
+        img : PIL.Image
+            An image.
+        planes : str
+            Color planes that are being used for the histogram.
+        size : int
+            Number of bits per plane in the histogram. The total number of bits
+            in the hash is 3x this value.
+
+        Returns
+        -------
+        A Hash instance representing the histogram.
+        '''
+        hist = np.asarray(img.histogram())
         chunks = np.asarray([c.sum() for c in np.split(hist, 3 * size)])
-        # This makes 50% of bits into ones, is that a good idea?
-        return cls(nibbles=_bits_to_nibbles(chunks > np.percentile(chunks, 50)),
-                   flavor=Hash.Flavor[f'{planes}_HIST_{size}'])
+        # Bits indicate whether each chunk is above or below the mean.
+        return cls(nibbles=_bits_to_nibbles(chunks > np.mean(chunks)),
+                   method=f'{planes}-{size}'.lower())
 
     @classmethod
-    def compute_audio_diff(cls, path, size=8):
-        raise NotImplementedError
+    def compute_audio_dhash(cls, path, time, size):
+        pass
 
     @classmethod
-    def compute_video_diff(cls, path, time, size=8):
-        return cls(nibbles='', flavor=Hash.Flavor[f'DIFF_{size}'], time=time)
+    def compute_video_dhash(cls, path, time, size):
+        pass
 
     def neighbors(self, sess, max_diff):
         '''Get all neighboring hashes from the database.
@@ -97,13 +97,13 @@ class Hash(db.Model):
         '''
         return (
             sess.query(Hash)
-            .filter(Hash.flavor == self.flavor)
+            .filter(Hash.method == self.method)
             .filter(Hash.nibbles.in_(_neighbors(self.nibbles, max_diff)))
             .yield_per(1000)
         )
 
     def to_dict(self):
-        return dict(nibbles=self.nibbles, flavor=self.flavor, time=self.time)
+        return dict(nibbles=self.nibbles, method=self.method, time=self.time)
 
 
 def _bits_to_nibbles(bits):

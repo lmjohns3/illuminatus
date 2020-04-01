@@ -101,7 +101,7 @@ html {
   top: calc(50% - 15px);
   left: calc(50% - 15px);
   font-size: 20px;
-  background-color: #f65;
+  background-color: #f30;
   border: solid 1px #111;
   border-radius: 3px;
   padding: 5px 6px 4px 8px;
@@ -113,26 +113,23 @@ html {
 
 /* view */
 
-.asset {
-  display: flex;
-  flex-flow: column nowrap;
-  align-items: center;
-  justify-content: center;
-  background: #111;
+.asset .tags {
+  clear: both;
 }
 
 .asset img, .asset audio, .asset video {
   max-height: calc(100vh - 32px);
   max-width: calc(100vw - 32px);
   border-radius: 13px;
+  float: left;
 }
 
 .asset h2 {
-  color: #999;
+  color: #666;
 }
 
 @keyframes spinner {
-  0% { background-color: #999; }
+  0% { background-color: #333; }
   100% { background-color: transparent; }
 }
 

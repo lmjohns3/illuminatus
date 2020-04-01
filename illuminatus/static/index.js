@@ -52900,25 +52900,28 @@ var Thumb = function Thumb(_ref2) {
       formats = _ref2.formats,
       handleClick = _ref2.handleClick;
 
-  var s = asset.slug,
-      ext = formats[asset.medium]['small'].ext,
+  var ext = formats[asset.medium]['small'].ext,
       isVideo = asset.medium === 'video',
       source = function source(e) {
-    return "/asset/small/".concat(s.slice(0, 1), "/").concat(s, ".").concat(e);
+    return "/asset/small/".concat(asset.slug.slice(0, 1), "/").concat(asset.slug, ".").concat(e);
   },
       initialSrc = source(isVideo ? 'png' : ext);
 
   return _react.default.createElement("span", {
     className: "thumb",
+    title: asset.slug,
     onClick: handleClick
   }, _react.default.createElement("img", {
     className: asset.medium,
     src: initialSrc,
-    onMouseEnter: function onMouseEnter(e) {
-      if (isVideo) e.target.src = source(ext);
+    title: asset.slug,
+    onMouseEnter: function onMouseEnter(_ref3) {
+      var target = _ref3.target;
+      if (isVideo) target.src = source(ext);
     },
-    onMouseLeave: function onMouseLeave(e) {
-      if (isVideo) e.target.src = initialSrc;
+    onMouseLeave: function onMouseLeave(_ref4) {
+      var target = _ref4.target;
+      if (isVideo) target.src = initialSrc;
     }
   }), isVideo ? _react.default.createElement("span", {
     className: "video-icon"
@@ -52927,59 +52930,27 @@ var Thumb = function Thumb(_ref2) {
 // return (<div {...handlers}> You can swipe here </div>)
 
 
-var Asset = function Asset(_ref3) {
-  var asset = _ref3.asset,
-      formats = _ref3.formats,
-      close = _ref3.close;
-  var slug = asset.slug,
-      ext = formats[asset.medium]['medium'].ext,
-      src = "/asset/medium/".concat(slug.slice(0, 1), "/").concat(slug, ".").concat(ext);
+var Asset = function Asset(_ref5) {
+  var asset = _ref5.asset,
+      formats = _ref5.formats,
+      close = _ref5.close;
+  var ext = formats[asset.medium]['medium'].ext,
+      src = "/asset/medium/".concat(asset.slug.slice(0, 1), "/").concat(asset.slug, ".").concat(ext); // Loader for duplicate asset data.
 
   var _useState9 = (0, _react.useState)({
     assets: [],
     loading: false
   }),
       _useState10 = _slicedToArray(_useState9, 2),
-      similar = _useState10[0],
-      setSimilar = _useState10[1];
-
-  (0, _react.useEffect)(function () {
-    setSimilar({
-      assets: [],
-      loading: true
-    });
-    (0, _axios.default)("/rest/asset/".concat(slug, "/similar/")).then(function (res) {
-      setSimilar({
-        assets: res.data,
-        loading: false
-      });
-    });
-  }, [asset]);
-  var similarThumbs = similar.loading ? _react.default.createElement("div", null, _react.default.createElement("h2", null, "Similar"), _react.default.createElement(Spinner, null)) : similar.assets.length > 0 ? _react.default.createElement("div", null, _react.default.createElement("h2", null, "Similar"), _react.default.createElement("div", {
-    className: "thumbs similar"
-  }, similar.assets.map(function (a) {
-    return _react.default.createElement(Thumb, {
-      key: a.id,
-      asset: a,
-      formats: formats,
-      handleClick: null
-    });
-  }))) : null;
-
-  var _useState11 = (0, _react.useState)({
-    assets: [],
-    loading: false
-  }),
-      _useState12 = _slicedToArray(_useState11, 2),
-      dupes = _useState12[0],
-      setDupes = _useState12[1];
+      dupes = _useState10[0],
+      setDupes = _useState10[1];
 
   (0, _react.useEffect)(function () {
     setDupes({
       assets: [],
       loading: true
     });
-    (0, _axios.default)("/rest/asset/".concat(slug, "/dupes/?hash=diff-8&max-diff=0.02")).then(function (res) {
+    (0, _axios.default)("/rest/asset/".concat(asset.slug, "/dupes/?hash=diff-8&max-diff=0.03")).then(function (res) {
       setDupes({
         assets: res.data,
         loading: false
@@ -52995,6 +52966,49 @@ var Asset = function Asset(_ref3) {
       formats: formats,
       handleClick: null
     });
+  }))) : null; // Loader for similar asset data.
+
+  var _useState11 = (0, _react.useState)({
+    assets: [],
+    loading: false
+  }),
+      _useState12 = _slicedToArray(_useState11, 2),
+      similar = _useState12[0],
+      setSimilar = _useState12[1];
+
+  (0, _react.useEffect)(function () {
+    setSimilar({
+      assets: [],
+      loading: true
+    });
+    (0, _axios.default)("/rest/asset/".concat(asset.slug, "/similar/")).then(function (res) {
+      var slugs = {},
+          assets = [];
+
+      if (dupes.assets.forEach) {
+        dupes.assets.forEach(function (a) {
+          slugs[a.slug] = true;
+        });
+      }
+
+      res.data.forEach(function (a) {
+        if (!slugs[a.slug]) assets.push(a);
+      });
+      setSimilar({
+        assets: assets,
+        loading: false
+      });
+    });
+  }, [asset, dupes.loading]);
+  var similarThumbs = similar.loading ? _react.default.createElement("div", null, _react.default.createElement("h2", null, "Similar"), _react.default.createElement(Spinner, null)) : similar.assets.length > 0 ? _react.default.createElement("div", null, _react.default.createElement("h2", null, "Similar"), _react.default.createElement("div", {
+    className: "thumbs similar"
+  }, similar.assets.map(function (a) {
+    return _react.default.createElement(Thumb, {
+      key: a.id,
+      asset: a,
+      formats: formats,
+      handleClick: null
+    });
   }))) : null;
   return _react.default.createElement("div", {
     className: "asset"
@@ -53003,19 +53017,19 @@ var Asset = function Asset(_ref3) {
     startVisible: true,
     href: hrefForTag
   }), asset.medium === 'video' ? _react.default.createElement("video", {
-    title: slug,
+    title: asset.slug,
     autoPlay: true,
     controls: true
   }, _react.default.createElement("source", {
     src: src
   })) : asset.medium === 'audio' ? _react.default.createElement("audio", {
-    title: slug,
+    title: asset.slug,
     autoPlay: true,
     controls: true
   }, _react.default.createElement("source", {
     src: src
   })) : _react.default.createElement("img", {
-    title: slug,
+    title: asset.slug,
     src: src
   }), similarThumbs, dupeThumbs, _react.default.createElement("div", {
     className: "icon-buttons"

@@ -54,7 +54,7 @@ from illuminatus import query
     ('path:video', 'video'),
 ])
 def test_assets(sess, qs, ids):
-    matching = query.assets(sess, qs)
+    matching = query.assets(sess, [qs])
     assert set(a.slug for a in matching) == set(ids.split())
 
 

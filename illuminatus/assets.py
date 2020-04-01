@@ -1,10 +1,10 @@
 import arrow
 import collections
-import enum
 import itertools
 import json
 import logging
 import os
+import PIL.Image
 import re
 import sqlalchemy
 import sqlalchemy.ext.associationproxy
@@ -14,10 +14,6 @@ from . import ffmpeg
 from . import metadata
 from .hashes import Hash
 from .tags import Tag
-
-
-def Format(**kwargs):
-    return collections.namedtuple('Format', sorted(kwargs))(**kwargs)
 
 
 asset_tags = db.Table(
@@ -30,29 +26,23 @@ asset_tags = db.Table(
 class Asset(db.Model):
     __tablename__ = 'assets'
 
-    @enum.unique
-    class Medium(str, enum.Enum):
-        '''Enumeration of different supported media types.'''
-        Audio = 'audio'
-        Photo = 'photo'
-        Video = 'video'
-
     id = db.Column(db.Integer, primary_key=True)
     slug = db.Column(db.String, unique=True, nullable=False)
-    medium = db.Column(db.Enum(Medium), index=True, nullable=False)
-
+    medium = db.Column(db.String, index=True, nullable=False)
     path = db.Column(db.String, nullable=False)
-    description = db.Column(db.String, nullable=False, default='')
 
     width = db.Column(db.Integer)
     height = db.Column(db.Integer)
+    orientation = db.Column(db.Integer)
     duration = db.Column(db.Float)
-    fps = db.Column(db.Float)
+    video_fps = db.Column(db.Float)
+    audio_fps = db.Column(db.Float)
     lat = db.Column(db.Float, index=True)
     lng = db.Column(db.Float, index=True)
     stamp = db.Column(db.DateTime, index=True)
 
-    filters = db.Column(db.String, nullable=False, default='[]')
+    caption = db.Column(db.String)
+    filters = db.Column(db.String)
 
     _tags = sqlalchemy.orm.relationship(
         Tag, secondary=asset_tags, backref='assets', lazy='selectin',
@@ -61,59 +51,82 @@ class Asset(db.Model):
         '_tags', 'name', creator=lambda name: Tag(name=name))
 
     def __repr__(self):
-        return f'<Asset {self.slug}>'
+        return self.slug
 
     @property
     def is_audio(self):
-        return self.medium == Asset.Medium.Audio
+        return self.medium == 'audio'
 
     @property
     def is_photo(self):
-        return self.medium == Asset.Medium.Photo
+        return self.medium == 'photo'
 
     @property
     def is_video(self):
-        return self.medium == Asset.Medium.Video
+        return self.medium == 'video'
 
-    def contemporaneous(self, sess, limit=10):
-        cond = Asset.similar.stamp.startswith(self.stamp.isoformat()[:10])
+    def similar_by_geo(self, sess, limit=20):
+        cond = Asset.stamp.startswith(self.stamp.isoformat()[:7])
         return sorted(set(sess.query(Asset).filter(cond)) - {self},
                       key=lambda a: abs((a.stamp - self.stamp).total_seconds()),
                       reverse=True)[:limit]
 
-    def similar(self, sess, limit=10):
-        if not hasattr(self, 'idf'):
-            self.idf = {tag: 1 / freq for tag, freq in
-                        (sess.query(Tag.name, sqlalchemy.func.count(asset_tags.c.asset_id))
-                         .join(asset_tags).group_by(Tag.id).order_by(Tag.id))}
-        cond = Asset._tags.any(Tag.name.in_(self.tags))
+    def similar_by_stamp(self, sess, limit=20):
+        cond = Asset.stamp.startswith(self.stamp.isoformat()[:7])
         return sorted(set(sess.query(Asset).filter(cond)) - {self},
-                      key=lambda a: (sum(self.idf[t] for t in (a.tags & self.tags)) /
-                                     sum(self.idf[t] for t in (a.tags | self.tags))),
+                      key=lambda a: abs((a.stamp - self.stamp).total_seconds()),
                       reverse=True)[:limit]
 
-    def duplicates(self, sess, hash='diff-8', max_diff=0.01):
+    def similar_by_tag(self, sess, limit=20):
+        if not hasattr(Asset, '_idf'):
+            tag_asset = tuple(sess.query(Tag.name, asset_tags.c.asset_id))
+
+            df = collections.Counter(tag for tag, _ in tag_asset)
+            Asset._idf = {tag: 1 / n for tag, n in df.items()}
+
+            tags_per_asset = collections.defaultdict(set)
+            assets_per_tag = collections.defaultdict(set)
+            for tag, asset in tag_asset:
+                assets_per_tag[tag].add(asset)
+                tags_per_asset[asset].add(tag)
+
+            Asset._overlap = collections.defaultdict(set)
+            for asset, tags in tags_per_asset.items():
+                for tag in tags:
+                    Asset._overlap[asset].update(assets_per_tag[tag])
+            for asset, others in Asset._overlap.items():
+                others.discard(asset)
+
+        return sorted(
+            sess.query(Asset).filter(Asset.id.in_(Asset._overlap[self.id])),
+            key=lambda a: (sum(Asset._idf[t] for t in (a.tags & self.tags)) /
+                           sum(Asset._idf[t] for t in (a.tags | self.tags))),
+            reverse=True)[:limit]
+
+    def similar_by_content(self, sess, method, max_diff):
         dupes = set()
         for h in self.hashes:
-            if h.flavor.value == hash:
+            if h.method == method:
                 dupes.update(n.asset for n in h.neighbors(sess, max_diff))
         return dupes - {self}
 
     def to_dict(self):
         return dict(
             id=self.id,
-            path=self.path,
             slug=self.slug,
-            medium=self.medium.value,
-            filters=json.loads(self.filters),
-            stamp=arrow.get(self.stamp).isoformat(),
-            description=self.description,
+            medium=self.medium,
+            path=self.path,
             width=self.width,
             height=self.height,
+            orientation=self.orientation,
             duration=self.duration,
-            fps=self.fps,
+            video_fps=self.video_fps,
+            audio_fps=self.audio_fps,
             lat=self.lat,
             lng=self.lng,
+            stamp=arrow.get(self.stamp).isoformat(),
+            caption=self.caption,
+            filters=json.loads(self.filters or '[]'),
             hashes=[h.to_dict() for h in self.hashes],
             tags=list(self.tags),
         )
@@ -151,7 +164,7 @@ class Asset(db.Model):
             A dictionary containing filter arguments. The dictionary must have
             a "filter" key that names a valid media filter.
         '''
-        filters = json.loads(self.filters)
+        filters = json.loads(self.filters or '[]')
         filters.append(filter)
         self.filters = json.dumps(filters)
 
@@ -175,7 +188,7 @@ class Asset(db.Model):
             If the filter at the specified `index` does not have the given
             `key`.
         '''
-        filters = json.loads(self.filters)
+        filters = json.loads(self.filters or '[]')
         if not filters:
             return
         while index < 0:
@@ -224,6 +237,9 @@ class Asset(db.Model):
         self.lat, self.lng = meta.latitude, meta.longitude
         self.width, self.height = meta.width, meta.height
         self.duration = meta.duration
+        self.orientation = meta.orientation
+        self.video_fps = meta.video_fps
+        self.audio_fps = meta.audio_fps
         self.tags.update(meta.tags)
         stamp = meta.stamp or arrow.get(os.path.getmtime(self.path))
         if stamp:
@@ -232,20 +248,46 @@ class Asset(db.Model):
 
     def compute_content_hashes(self):
         '''Compute hashes of asset content.'''
-        if self.medium == Asset.Medium.Photo:
-            for size in (4, 6, 8):
-                self.hashes.add(Hash.compute_photo_diff(self.path, size))
+        if self.is_photo:
+            img = _open_and_auto_orient(self.path, self.orientation)
             for size in (4, 8, 16):
-                self.hashes.add(Hash.compute_photo_histogram(self.path, 'RGB', size))
+                self.hashes.add(Hash.compute_photo_histogram(img, 'rgb', size))
+            hsl = img.convert('HSL')
+            for size in (4, 8, 16):
+                self.hashes.add(Hash.compute_photo_histogram(img, 'hsl', size))
+            gray = img.convert('L')
+            for size in (4, 8, 16):
+                self.hashes.add(Hash.compute_photo_dhash(gray, size))
 
-        if self.medium == Asset.Medium.Video and self.duration:
+        if self.is_audio and self.duration:
             for o in range(0, int(self.duration), 10):
-                self.hashes.add(Hash.compute_video_diff(self.path, o + 5))
+                self.hashes.add(Hash.compute_audio_dhash(self.path, o + 5, 8))
+
+        if self.is_video and self.duration:
+            for o in range(0, int(self.duration), 10):
+                self.hashes.add(Hash.compute_video_dhash(self.path, o + 5, 8))
 
     def hide_original(self):
         '''Hide the original asset file by renaming it with a . prefix.'''
         dirname, basename = os.path.dirname(self.path), os.path.basename(self.path)
         os.rename(self.path, os.path.join(dirname, f'.illuminatus-removed-{basename}'))
+
+    def _open_and_auto_orient(self):
+        '''Open an image and apply transpositions to auto-orient the content.'''
+        img = PIL.Image.open(self.path)
+        # http://stackoverflow.com/q/4228530
+        # https://magnushoff.com/articles/jpeg-orientation/
+        for op in {
+                2: [PIL.Image.FLIP_LEFT_RIGHT],
+                3: [PIL.Image.ROTATE_180],
+                4: [PIL.Image.FLIP_TOP_BOTTOM],
+                5: [PIL.Image.ROTATE_90, PIL.Image.FLIP_TOP_BOTTOM],
+                6: [PIL.Image.ROTATE_270],
+                7: [PIL.Image.ROTATE_270, PIL.Image.FLIP_TOP_BOTTOM],
+                8: [PIL.Image.ROTATE_90],
+        }.get(self.orientation, ()):
+            img = img.transpose(op)
+        return img
 
 
 @sqlalchemy.event.listens_for(db.Session, 'before_flush')

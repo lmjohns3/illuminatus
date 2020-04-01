@@ -19,15 +19,15 @@ VIDEO_ID = 3
 
 RECORDS = [
     {'path': PHOTO_PATH,
-     'medium': illuminatus.Asset.Medium.Photo,
+     'medium': 'photo',
      'stamp': '2015-06-02T09:07',
      'tags': set('ab')},
     {'path': AUDIO_PATH,
-     'medium': illuminatus.Asset.Medium.Audio,
+     'medium': 'audio',
      'stamp': '2016-01-02T03:04',
      'tags': set('ac')},
     {'path': VIDEO_PATH,
-     'medium': illuminatus.Asset.Medium.Video,
+     'medium': 'video',
      'stamp': '2010-03-09T05:03',
      'tags': set('bc')},
 ]
@@ -35,7 +35,6 @@ RECORDS = [
 MEDIA = pytest.mark.datafiles(PHOTO_PATH, AUDIO_PATH, VIDEO_PATH)
 
 Asset = illuminatus.Asset
-Format = illuminatus.Format
 Hash = illuminatus.Hash
 Tag = illuminatus.Tag
 
@@ -60,7 +59,7 @@ def tables(engine):
                           slug=slug,
                           stamp=arrow.get(rec['stamp']).datetime,
                           tags=rec['tags'])
-            asset.hashes.add(Hash(nibbles=slug, flavor='DIFF_4'))
+            asset.hashes.add(Hash(nibbles=slug, method='dhash-4'))
             sess = illuminatus.db.Session()
             sess.add(asset)
             sess.commit()

@@ -79,16 +79,16 @@ export default function View() {
 
 
 const Thumb = ({asset, formats, handleClick}) => {
-  const s = asset.slug
-      , ext = formats[asset.medium]['small'].ext
+  const ext = formats[asset.medium]['small'].ext
       , isVideo = asset.medium === 'video'
-      , source = e => `/asset/small/${s.slice(0, 1)}/${s}.${e}`
+      , source = e => `/asset/small/${asset.slug.slice(0, 1)}/${asset.slug}.${e}`
       , initialSrc = source(isVideo ? 'png' : ext);
-  return <span className='thumb' onClick={handleClick}>
+  return <span className='thumb' title={asset.slug} onClick={handleClick}>
     <img className={asset.medium}
          src={initialSrc}
-         onMouseEnter={e => { if (isVideo) e.target.src = source(ext); }}
-         onMouseLeave={e => { if (isVideo) e.target.src = initialSrc; }}/>
+         title={asset.slug}
+         onMouseEnter={({target}) => { if (isVideo) target.src = source(ext); }}
+         onMouseLeave={({target}) => { if (isVideo) target.src = initialSrc; }}/>
     {isVideo ? <span className='video-icon'>▶</span> : null}
   </span>;
 }
@@ -98,31 +98,17 @@ const Thumb = ({asset, formats, handleClick}) => {
 // return (<div {...handlers}> You can swipe here </div>)
 
 const Asset = ({asset, formats, close}) => {
-  const slug = asset.slug
-      , ext = formats[asset.medium]['medium'].ext
-      , src = `/asset/medium/${slug.slice(0, 1)}/${slug}.${ext}`;
+  const ext = formats[asset.medium]['medium'].ext
+      , src = `/asset/medium/${asset.slug.slice(0, 1)}/${asset.slug}.${ext}`;
 
-  const [similar, setSimilar] = useState({assets: [], loading: false});
-  useEffect(() => {
-    setSimilar({assets: [], loading: true});
-    axios(`/rest/asset/${slug}/similar/`).then(
-      res => { setSimilar({assets: res.data, loading: false}); });
-  }, [asset]);
-  const similarThumbs =
-    similar.loading ? <div><h2>Similar</h2><Spinner /></div> :
-    similar.assets.length > 0 ? <div>
-      <h2>Similar</h2>
-      <div className='thumbs similar'>{
-        similar.assets.map(a => <Thumb key={a.id} asset={a} formats={formats} handleClick={null} />)
-      }</div>
-  </div> : null;
-
+  // Loader for duplicate asset data.
   const [dupes, setDupes] = useState({assets: [], loading: false});
   useEffect(() => {
     setDupes({assets: [], loading: true});
-    axios(`/rest/asset/${slug}/dupes/?hash=diff-8&max-diff=0.02`).then(
+    axios(`/rest/asset/${asset.slug}/dupes/?hash=diff-8&max-diff=0.03`).then(
       res => { setDupes({assets: res.data, loading: false}); });
   }, [asset]);
+
   const dupeThumbs =
     dupes.loading ? <div><h2>Duplicates</h2><Spinner /></div> :
     dupes.assets.length > 0 ? <div>
@@ -132,11 +118,33 @@ const Asset = ({asset, formats, close}) => {
       }</div>
     </div> : null;
 
+  // Loader for similar asset data.
+  const [similar, setSimilar] = useState({assets: [], loading: false});
+  useEffect(() => {
+    setSimilar({assets: [], loading: true});
+    axios(`/rest/asset/${asset.slug}/similar/`).then(res => {
+      const slugs = {}, assets = []
+      if (dupes.assets.forEach) {
+        dupes.assets.forEach(a => { slugs[a.slug] = true; });
+      }
+      res.data.forEach(a => { if (!slugs[a.slug]) assets.push(a); });
+      setSimilar({assets: assets, loading: false}); });
+  }, [asset, dupes.loading]);
+
+  const similarThumbs =
+    similar.loading ? <div><h2>Similar</h2><Spinner /></div> :
+    similar.assets.length > 0 ? <div>
+      <h2>Similar</h2>
+      <div className='thumbs similar'>{
+        similar.assets.map(a => <Thumb key={a.id} asset={a} formats={formats} handleClick={null} />)
+      }</div>
+  </div> : null;
+
   return <div className='asset'>
     <Tags assets={[asset]} startVisible={true} href={hrefForTag} />
-    {asset.medium === 'video' ? <video title={slug} autoPlay controls><source src={src} /></video> :
-     asset.medium === 'audio' ? <audio title={slug} autoPlay controls><source src={src} /></audio> :
-                                <img title={slug} src={src} />}
+    {asset.medium === 'video' ? <video title={asset.slug} autoPlay controls><source src={src} /></video> :
+     asset.medium === 'audio' ? <audio title={asset.slug} autoPlay controls><source src={src} /></audio> :
+                                <img title={asset.slug} src={src} />}
     {similarThumbs}
     {dupeThumbs}
     <div className='icon-buttons'>

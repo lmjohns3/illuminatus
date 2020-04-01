@@ -176,20 +176,20 @@ def ls(ctx, query, order, limit):
 
 
 @cli.command()
-@click.option('--hash', default='diff-6', metavar='[diff-8|rgb-hist-16|...]',
-              help='Check for asset neighbors using this hash.')
+@click.option('--method', default='dhash-8', metavar='[dhash-8|rgb-16|...]',
+              help='Check for asset neighbors using this hashing method.')
 @click.option('--max-diff', default=0.01, metavar='R',
               help='Look within fraction R of changed bits for neighbors.')
 @click.argument('query', nargs=-1)
 @click.pass_context
-def dupe(ctx, query, hash, max_diff):
+def dupe(ctx, query, method, max_diff):
     '''List duplicate assets matching a QUERY.
 
     See "illuminatus help" for help on QUERY syntax.
     '''
     with transaction() as sess:
         for asset in query_assets(sess, query):
-            neighbors = asset.dupes(sess, hash=hash, max_diff=max_diff)
+            neighbors = asset.dupes(sess, method, max_diff)
             if neighbors:
                 click.echo(' '.join(display(asset)))
                 for neighbor in neighbors:
@@ -259,7 +259,8 @@ def import_(ctx, source, tag, path_tags):
     '''
     def items():
         for path in importexport.walk(source):
-            res = importexport.maybe_import_asset(path, tag, path_tags)
+            res = importexport.maybe_import_asset(
+                db.Session(), path, tag, path_tags)
             if res is not None:
                 yield res
     progressbar(items(), 'Metadata')

@@ -134,13 +134,12 @@ def add_filter(slug, filter):
         kwargs[arg] = float(flask.request.form[arg])
     asset = _get_asset(slug)
     asset.add_filter(kwargs)
-    medium = asset.medium.value
-    for path, kwargs in app.config['formats'][medium].items():
+    for path, kwargs in app.config['formats'][asset.medium].items():
         kw = dict(slug=asset.slug,
                   dirname=app.config['thumbnails'],
                   overwrite=True)
         kw.update(kwargs)
-        queue = 'video' if medium == 'video' and path == 'medium' else 'celery'
+        queue = 'video' if asset.is_video and path == 'medium' else 'celery'
         tasks.export.apply_async(kwargs=kw, queue=queue)
     return flask.jsonify(asset.to_dict())
 
@@ -150,13 +149,12 @@ def add_filter(slug, filter):
 def delete_filter(slug, filter, index):
     asset = _get_asset(slug)
     asset.remove_filter(filter, index)
-    medium = asset.medium.value
-    for path, kwargs in app.config['formats'][medium].items():
+    for path, kwargs in app.config['formats'][asset.medium].items():
         kw = dict(slug=asset.slug,
                   dirname=app.config['thumbnails'],
                   overwrite=True)
         kw.update(kwargs)
-        queue = 'video' if medium == 'video' and path == 'medium' else 'celery'
+        queue = 'video' if asset.is_video and path == 'medium' else 'celery'
         tasks.export.apply_async(kwargs=kw, queue=queue)
     return flask.jsonify(asset.to_dict())
 

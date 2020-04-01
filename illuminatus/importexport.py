@@ -13,7 +13,7 @@ import zipfile
 
 from . import db
 from . import tasks
-from .assets import Asset, Format
+from .assets import Asset
 from .tags import Tag
 
 
@@ -43,11 +43,13 @@ def walk(roots):
                 yield match
 
 
-def maybe_import_asset(path, tags=(), path_tags=0):
+def maybe_import_asset(sess, path, tags=(), path_tags=0):
     '''Import a single asset into the database.
 
     Parameters
     ----------
+    sess : db.Session
+        Database session for the import.
     path : str
         A filesystem path to examine and possibly import.
     tags : set of str
@@ -55,17 +57,19 @@ def maybe_import_asset(path, tags=(), path_tags=0):
     path_tags : int
         Number of path (directory) name components to add as tags.
     '''
-    color = lambda s, fg: click.style(s, fg=fg)
     bold = click.style(path, bold=True)
+
+    def color(s, fg):
+        return click.style(s, fg=fg)
 
     digest = hashlib.blake2s(path.encode('utf-8')).digest()
     slug = base64.b64encode(digest, b'-_').strip(b'=').decode('utf-8')
 
     medium = None
     mime, _ = mimetypes.guess_type(path)
-    for pattern, med in (('audio/.*', Asset.Medium.Audio),
-                         ('video/.*', Asset.Medium.Video),
-                         ('image/.*', Asset.Medium.Photo)):
+    for pattern, med in (('audio/.*', 'audio'),
+                         ('video/.*', 'video'),
+                         ('image/.*', 'photo')):
         if mime and re.match(pattern, mime):
             medium = med
             break
@@ -73,7 +77,6 @@ def maybe_import_asset(path, tags=(), path_tags=0):
         click.echo(f'{color("?", "yellow")} {slug} {bold}')
         return
 
-    sess = db.Session()
     if sess.query(Asset).filter(Asset.slug == slug).count():
         click.echo(f'{color("=", "blue")} {slug} {bold}')
         sess.close()
@@ -117,13 +120,12 @@ def export_for_web(assets, root, formats, overwrite):
     with open(formats) as handle:
         formats = json.load(handle)
     for asset in assets:
-        medium = asset.medium.value
-        for path, kwargs in formats[medium].items():
+        for path, kwargs in formats[asset.medium].items():
             kw = dict(slug=asset.slug,
                       overwrite=overwrite,
                       dirname=os.path.join(root, path, asset.slug[:1]))
             kw.update(kwargs)
-            queue = 'video' if medium == 'video' and path == 'medium' else 'celery'
+            queue = 'video' if asset.is_video and path == 'medium' else 'celery'
             yield tasks.export.apply_async(kwargs=kw, queue=queue)
 
 
@@ -146,20 +148,20 @@ def export_for_zip(assets, root, formats):
     with open(formats) as handle:
         formats = json.load(handle)
     for asset in assets:
-        medium = asset.medium.value
         medium_ext = dict(audio='mp3', photo='jpg', video='mp4')[medium]
         stems = [asset.stamp.isoformat()[:10], asset.slug[:4]]
         for tag in sorted(asset._tags, key=lambda t: t.name):
-            if tag.pattern == tag.USER_PATTERN:
+            if tag.is_user:
                 stems.append(tag.name)
         stem = '-'.join(stems)
-        for path, kwargs in formats[medium].items():
+        for path, kwargs in formats[asset.medium].items():
             kw = dict(slug=asset.slug,
                       dirname=os.path.join(root, path),
                       basename=f'{stem}.{kwargs.get("ext", medium_ext)}')
             kw.update(kwargs)
-            queue = 'video' if medium == 'video' and path == 'medium' else 'celery'
+            queue = 'video' if asset.is_video and path == 'medium' else 'celery'
             yield tasks.export.apply_async(kwargs=kw, queue=queue)
+
 
 def export_zip(assets, root, output, hide_tags=(), hide_omnipresent_tags=False):
     '''Create a zip archive.

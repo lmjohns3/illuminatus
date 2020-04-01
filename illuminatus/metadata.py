@@ -14,30 +14,7 @@ _CAMERA_WORD_BLACKLIST = (
 _TIMESTAMP_KEYS = 'DateTimeOriginal CreateDate ModifyDate FileModifyDate'.split()
 _TIMESTAMP_FORMATS = ['YYYY-MM-DD HH:mm:ss', 'YYYY:MM:DD HH:mm:ss']
 
-# Pattern for matching a geotagging coordinate.
-_GEO_PATTERN = r'(?P<deg>\d+) deg (?P<min>\d+)\' (?P<sec>\d+(\.\d*)?)" (?P<sgn>[{}])'
-
-
-def _geo_to_degrees(raw, axis):
-    '''Convert a geo metadata field to float degrees.
-
-    Parameters
-    ----------
-    raw : str
-        Raw metadata string possibly containing a geo coordinate.
-    axis : {'NS', 'EW'}
-        Axis for values along one geo coordinate.
-
-    Returns
-    -------
-    A floating point number of degrees, or None if nothing could be found.
-    '''
-    match = re.search(_GEO_PATTERN.format(axis), raw)
-    if match is None:
-        return None
-    m = match.groupdict()
-    deg = int(m['deg']) + int(m['min']) / 60 + float(m['sec']) / 3600
-    return [-1, 1][m['sgn'] == axis[0]] * deg
+_EXIFTOOL = ('exiftool', '-n', '-json', '-d', '%Y-%m-%d %H:%M:%S')
 
 
 class Metadata:
@@ -45,80 +22,79 @@ class Metadata:
 
     def __init__(self, path):
         proc = subprocess.run(
-            ('exiftool', '-json', '-d', '%Y-%m-%d %H:%M:%S', path),
-            encoding='utf-8', text=True, capture_output=True)
+            _EXIFTOOL + (path, ), encoding='utf-8', text=True, capture_output=True)
         self._data = json.loads(proc.stdout)[0]
 
     @property
     def stamp(self):
-        '''Get the timestamp for an asset based on metadata or file mtime.
-
-        Parameters
-        ----------
-        path : str
-          File path for the asset.
-
-        Returns
-        -------
-        An `arrow` datetime object.
-        '''
+        '''Creation timestamp for an asset, based on metadata or file mtime.'''
         for key in _TIMESTAMP_KEYS:
-            stamp = self._data.get(key)
-            if stamp is not None:
-                try:
-                    return arrow.get(stamp, _TIMESTAMP_FORMATS)
-                except ValueError:
-                    pass
+            try:
+                return arrow.get(self._data[key], _TIMESTAMP_FORMATS)
+            except (KeyError, ValueError) as _:
+                pass
 
     @property
     def width(self):
-        '''The width of a media asset, in pixels.'''
-        for key in ('ImageWidth', 'SourceImageWidth'):
-            if key in self._data:
-                return int(self._data[key])
-        if 'ImageSize' in self._data:
-            return int(self._data['ImageSize'].split('x')[0])
-        return -1
+        '''The width of an asset, in pixels.'''
+        rot90 = int(self.orientation in (5, 6, 7, 8))
+        return self._image_height_width[1 - rot90]
 
     @property
     def height(self):
-        '''The height of a media asset, in pixels.'''
+        '''The height of an asset, in pixels.'''
+        rot90 = int(self.orientation in (5, 6, 7, 8))
+        return self._image_height_width[rot90]
+
+    @property
+    def _image_height_width(self):
+        h = w = None
         for key in ('ImageHeight', 'SourceImageHeight'):
-            if key in self._data:
-                return int(self._data[key])
-        if 'ImageSize' in self._data:
-            return int(self._data['ImageSize'].split('x')[1])
-        return -1
+            h = self._data.get(key)
+            if h:
+                break
+        for key in ('ImageWidth', 'SourceImageWidth'):
+            w = self._data.get(key)
+            if w:
+                break
+        if not h or not w and 'ImageSize' in self._data:
+            h, w = tuple(int(z) for z in self._data['ImageSize'].split())
+        return h, w
 
     @property
     def duration(self):
-        '''The duration of a media asset, in seconds.'''
-        value = self._data.get('Duration', '')
-        if re.match(r'^[:\d]+$', value):
-            sec, mul = 0, 1
-            for n in reversed(value.split(':')):
-                sec += mul * int(n)
-                mul *= 60
-            return sec
-        if re.match(r'^[.\d]+ s$', value):
-            return int(round(float(value.split()[0])))
-        return -1
+        '''Asset duration in seconds.'''
+        return self._data.get('Duration')
+
+    @property
+    def orientation(self):
+        return int(self._data.get('Orientation', 0))
+
+    @property
+    def audio_fps(self):
+        return self._data.get('AudioSampleRate')
+
+    @property
+    def video_fps(self):
+        return self._data.get('VideoFrameRate')
 
     @property
     def latitude(self):
-        '''The latitude of an asset from exif metadata.'''
-        lat = _geo_to_degrees(self._data.get('GPSLatitude', ''), 'NS')
-        if lat is None:
-            lat = _geo_to_degrees(self._data.get('GPSPosition', ''), 'NS')
-        return lat
+        lat = self._data.get('GPSLatitude')
+        if lat is not None:
+            return lat
+        latlng = self._data.get('GPSPosition')
+        if latlng is not None:
+            return float(latlng.split()[0])
 
     @property
     def longitude(self):
-        '''The longitude of an asset from exif metadata.'''
-        lng = _geo_to_degrees(self._data.get('GPSLongitude', ''), 'EW')
-        if lng is None:
-            lng = _geo_to_degrees(self._data.get('GPSPosition', ''), 'EW')
-        return lng
+        lng = self._data.get('GPSLongitude')
+        if lng is not None:
+            return lng
+        latlng = self._data.get('GPSPosition')
+        if latlng is not None:
+            return float(latlng.split()[1])
 
     @property
     def tags(self):
@@ -130,18 +106,16 @@ class Metadata:
         if model:
             yield f'kit:{model}'
 
-        fstop = self._data.get('FNumber', '')
-        if isinstance(fstop, (int, float)) or re.match(r'(\d+)(\.\d+)?', fstop):
+        fstop = self._data.get('FNumber')
+        if fstop:
             yield f'ƒ-{int(float(fstop))}'
 
-        mm = self._data.get('FocalLengthIn35mmFormat',
-                            self._data.get('FocalLength', ''))
-        if isinstance(mm, str):
-            match = re.match(r'(\d+)(\.\d+)?\s*mm', mm)
-            mm = match.group(1) if match else None
-        if mm:
-            # Round to 2 significant digits.
-            yield f'{int(float("%.2g" % float(mm)))}mm'
+        for field in ('FocalLengthIn35mmFormat', 'FocalLength'):
+            mm = self._data.get(field)
+            if mm:
+                # Round to 2 significant digits.
+                yield f'{int(float("%.2g" % mm))}mm'
+                break
 
 
 def tags_from_stamp(stamp):
@@ -171,6 +145,6 @@ def tags_from_stamp(stamp):
     # monday
     yield stamp.format('dddd').lower()
 
-    # for computing the hour tag, we set the hour boundary at 48-past, so
-    # that any time from, e.g., 10:48 to 11:47 gets tagged as "11am"
+    # for computing the hour tag, we set the hour boundary (arbitrarily) at
+    # 48-past, so that any time from, e.g., 10:48 to 11:47 gets tagged as "11am"
     yield stamp.shift(minutes=12).format('ha').lower()

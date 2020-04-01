@@ -122,11 +122,24 @@ def _apply_filters(asset):
         rotate=lambda degrees: filters.append(_rotate(math.radians(degrees))),
         saturation=lambda percent: filters.append(f'hue=s={percent / 100}'),
         scale=lambda w, h: filters.append(_scale(w, h)),
+        transpose=lambda: filters.append('transpose'),
         vflip=lambda: filters.append('vflip'),
     )
 
+    # http://stackoverflow.com/q/4228530
+    # https://magnushoff.com/articles/jpeg-orientation/
+    autoorient = {
+        2: [dict(filter='hflip')],
+        3: [dict(filter='hflip'), dict(filter='vflip')],
+        4: [dict(filter='vflip')],
+        5: [dict(filter='transpose')],
+        6: [dict(filter='transpose'), dict(filter='hflip')],
+        6: [dict(filter='transpose'), dict(filter='hflip'), dict(filter='vflip')],
+        8: [dict(filter='transpose'), dict(filter='vflip')],
+    }.get(asset.orientation if asset.is_photo else None, [])
+
     w, h, t = asset.width, asset.height, asset.duration
-    for kwargs in json.loads(asset.filters):
+    for kwargs in autoorient + json.loads(asset.filters or '[]'):
         flt = kwargs.pop('filter')
         if flt == 'rotate':
             angle = kwargs['degrees']

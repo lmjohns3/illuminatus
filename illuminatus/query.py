@@ -87,15 +87,14 @@ class QueryParser(parsimonious.NodeVisitor):
         return Asset.hashes.any(Hash.nibbles.contains((node.text[5:])))
 
     def visit_medium(self, node, children):
-        return Asset.medium == Asset.Medium[node.text.capitalize()]
+        return Asset.medium == node.text.lower()
 
     def visit_text(self, node, children):
         s = node.text.strip('"')
-        return Asset.description.contains(s) | Asset.tags.any(Tag.name == s)
+        return Asset.caption.contains(s) | Asset.tags.any(Tag.name == s)
 
     def visit_tag(self, node, children):
-        s = node.text
-        return Asset.description.contains(s) | Asset.tags.any(Tag.name == s)
+        return Asset.tags.any(Tag.name == node.text)
 
     def generic_visit(self, node, children):
         return children or node.text

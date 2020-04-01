@@ -19,25 +19,20 @@ def test_real_metadata_and_datetime_tags(sess):
 @pytest.mark.parametrize('meta, expected', [
     (dict(), ''),
 
-    (dict(FocalLength='1mm'), '1mm'),
-    (dict(FocalLength='11mm'), '11mm'),
-    (dict(FocalLength='1 mm'), '1mm'),
-    (dict(FocalLength='11    mm'), '11mm'),
-    (dict(FocalLength='1.1234 mm'), '1mm'),
+    (dict(FocalLength=1), '1mm'),
+    (dict(FocalLength=11), '11mm'),
     (dict(FocalLength=1.1234), '1mm'),
-    (dict(FocalLength='abc'), ''),
 
     (dict(Model='CANON ULTRA'), 'kit:ultra'),
     (dict(Model='ultra'), 'kit:ultra'),
 
-    (dict(FNumber='1.0'), 'ƒ-1'),
-    (dict(FNumber='1.19'), 'ƒ-1'),
-    (dict(FNumber='1.77'), 'ƒ-1'),
-    (dict(FNumber='3.3'), 'ƒ-3'),
-    (dict(FNumber='abc'), ''),
+    (dict(FNumber=1.0), 'ƒ-1'),
+    (dict(FNumber=1.19), 'ƒ-1'),
+    (dict(FNumber=1.77), 'ƒ-1'),
+    (dict(FNumber=3.3), 'ƒ-3'),
 ])
 def test_synthetic_metadata_tags(fake_process, meta, expected):
-    cmd = ('exiftool', '-json', '-d', '%Y-%m-%d %H:%M:%S', 'foo')
+    cmd = illuminatus.metadata._EXIFTOOL + ('foo', )
     fake_process.register_subprocess(cmd, stdout=json.dumps([meta]))
     actual = illuminatus.metadata.Metadata(cmd[-1]).tags
     assert set(actual) == set(expected.split())
@@ -54,41 +49,16 @@ def test_synthetic_datetime_tags(date, expected):
     assert set(actual) == set(expected.split())
 
 
-@pytest.mark.parametrize('meta, expected', [
-    (dict(), None),
-    (dict(GPSPosition='abc'), None),
-    (dict(GPSPosition='1 deg 1\' 1" N'), 1.01694),
-    (dict(GPSPosition='1 deg 1\' 1" E'), None),
-    (dict(GPSLatitude='1 deg 1\' 1" N'), 1.01694),
-    (dict(GPSLatitude='5 deg 6\' 7.8" E'), None),
-    (dict(GPSPosition='1 deg 2\' 3.4" N, 5 deg 6\' 7.8" E'), 1.03428),
-    (dict(GPSPosition='1 deg 2\' 3.4" S, 5 deg 6\' 7.8" E'), -1.03428),
+@pytest.mark.parametrize('meta, expected_lat, expected_lng', [
+    (dict(), None, None),
+    (dict(GPSLatitude=1.1, GPSLongitude=2.2), 1.1, 2.2),
+    (dict(GPSLatitude=1.1, GPSPosition='4.4 3.3'), 1.1, 3.3),
+    (dict(GPSPosition='4.4 3.3', GPSLongitude=2.2), 4.4, 2.2),
+    (dict(GPSPosition='4.4 3.3'), 4.4, 3.3),
 ])
-def test_synthetic_latitude(fake_process, meta, expected):
-    cmd = ('exiftool', '-json', '-d', '%Y-%m-%d %H:%M:%S', 'foo')
+def test_synthetic_latlng(fake_process, meta, expected_lat, expected_lng):
+    cmd = illuminatus.metadata._EXIFTOOL + ('foo', )
     fake_process.register_subprocess(cmd, stdout=json.dumps([meta]))
-    lat = illuminatus.metadata.Metadata(cmd[-1]).latitude
-    if lat is None:
-        assert lat == expected
-    else:
-        assert round(lat, 5) == expected
-
-
-@pytest.mark.parametrize('meta, expected', [
-    (dict(), None),
-    (dict(GPSPosition='abc'), None),
-    (dict(GPSPosition='1 deg 1\' 1" N'), None),
-    (dict(GPSLongitude='1 deg 1\' 1" N'), None),
-    (dict(GPSLongitude='5 deg 6\' 7.8" E'), 5.10217),
-    (dict(GPSPosition='5 deg 6\' 7.8" E'), 5.10217),
-    (dict(GPSPosition='1 deg 2\' 3.4" N, 5 deg 6\' 7.8" E'), 5.10217),
-    (dict(GPSPosition='1 deg 2\' 3.4" N, 5 deg 6\' 7.8" W'), -5.10217),
-])
-def test_synthetic_longitude(fake_process, meta, expected):
-    cmd = ('exiftool', '-json', '-d', '%Y-%m-%d %H:%M:%S', 'foo')
-    fake_process.register_subprocess(cmd, stdout=json.dumps([meta]))
-    lng = illuminatus.metadata.Metadata(cmd[-1]).longitude
-    if lng is None:
-        assert lng == expected
-    else:
-        assert round(lng, 5) == expected
+    meta = illuminatus.metadata.Metadata(cmd[-1])
+    assert meta.latitude == expected_lat
+    assert meta.longitude == expected_lng

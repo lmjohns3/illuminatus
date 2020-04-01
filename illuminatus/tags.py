@@ -13,7 +13,7 @@ class Tag(db.Model):
 
     # Regular expression matchers for different "groups" of tags. The order here
     # is used to sort the tags on an asset. Tags not matching any of these
-    # groups are "user-defined" and will sort before or after these.
+    # groups are "user-defined" and will sort at the end.
     PATTERNS = (
         # Year.
         r'(19|20)\d\d',
@@ -47,8 +47,6 @@ class Tag(db.Model):
         r'.*',
     )
 
-    USER_PATTERN = len(PATTERNS) - 1
-
     def __repr__(self):
         colors = (['red'] * 1 + ['yellow'] * 12 + ['green'] * 2 + ['cyan'] * 7 +
                   ['blue'] * 6 + ['magenta'] * 8 + ['white'] * 4 + ['red'] * 1)
@@ -60,6 +58,26 @@ class Tag(db.Model):
             if pattern == self.name or re.match(pattern, self.name):
                 return i
         return None
+
+    @property
+    def is_date(self):
+        return self.pattern in set(range(22))
+
+    @property
+    def is_time(self):
+        return self.pattern in set(range(22, 28))
+
+    @property
+    def is_metadata(self):
+        return self.pattern in set(range(28, 37))
+
+    @property
+    def is_geo(self):
+        return self.pattern in set(range(37, 41))
+
+    @property
+    def is_user(self):
+        return self.pattern == len(Tag.PATTERNS) - 1
 
     def to_dict(self):
         return dict(id=self.id, name=self.name)
