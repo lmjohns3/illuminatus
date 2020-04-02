@@ -78,19 +78,20 @@ def get_asset(slug):
     return flask.jsonify(_get_asset(slug).to_dict())
 
 
-@app.route('/rest/asset/<string:slug>/similar/', methods=['GET'])
-def get_similar_assets(slug):
-    return _json(_get_asset(slug).similar(
+@app.route('/rest/asset/<string:slug>/similar/tag/', methods=['GET'])
+def get_similar_assets_by_tag(slug):
+    return _json(_get_asset(slug).similar_by_tag(
         sql.session,
-        limit=int(flask.request.args.get('limit', 10))))
+        min_sim=float(flask.request.args.get('min', 10)),
+        limit=int(flask.request.args.get('lim', 10))))
 
 
-@app.route('/rest/asset/<string:slug>/dupes/', methods=['GET'])
-def get_duplicate_assets(slug):
-    return _json(_get_asset(slug).duplicates(
+@app.route('/rest/asset/<string:slug>/similar/content/', methods=['GET'])
+def get_similar_assets_by_content(slug):
+    return _json(_get_asset(slug).similar_by_content(
         sql.session,
-        hash=flask.request.args.get('hash', 'diff-8'),
-        max_diff=float(flask.request.args.get('max-diff', 0.01))))
+        method=flask.request.args.get('alg', 'diff-8'),
+        max_diff=float(flask.request.args.get('max', 0.01))))
 
 
 @app.route('/rest/asset/<string:slug>/', methods=['PUT'])

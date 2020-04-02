@@ -80,31 +80,28 @@ class Asset(db.Model):
                       key=lambda a: abs((a.stamp - self.stamp).total_seconds()),
                       reverse=True)[:limit]
 
-    def similar_by_tag(self, sess, limit=20):
+    def similar_by_tag(self, sess, min_sim=0.5, limit=20):
         if not hasattr(Asset, '_idf'):
-            tag_asset = tuple(sess.query(Tag.name, asset_tags.c.asset_id))
+            Asset._tags_per_asset = collections.defaultdict(set)
+            Asset._assets_per_tag = collections.defaultdict(set)
+            for tag, asset in sess.query(asset_tags.c.tag_id, asset_tags.c.asset_id):
+                Asset._assets_per_tag[tag].add(asset)
+                Asset._tags_per_asset[asset].add(tag)
+            Asset._idf = {t: 1 / len(a) for t, a in Asset._assets_per_tag.items()}
 
-            df = collections.Counter(tag for tag, _ in tag_asset)
-            Asset._idf = {tag: 1 / n for tag, n in df.items()}
-
-            tags_per_asset = collections.defaultdict(set)
-            assets_per_tag = collections.defaultdict(set)
-            for tag, asset in tag_asset:
-                assets_per_tag[tag].add(asset)
-                tags_per_asset[asset].add(tag)
-
-            Asset._overlap = collections.defaultdict(set)
-            for asset, tags in tags_per_asset.items():
-                for tag in tags:
-                    Asset._overlap[asset].update(assets_per_tag[tag])
-            for asset, others in Asset._overlap.items():
-                others.discard(asset)
-
-        return sorted(
-            sess.query(Asset).filter(Asset.id.in_(Asset._overlap[self.id])),
-            key=lambda a: (sum(Asset._idf[t] for t in (a.tags & self.tags)) /
-                           sum(Asset._idf[t] for t in (a.tags | self.tags))),
-            reverse=True)[:limit]
+        my_tags = Asset._tags_per_asset[self.id]
+        candidates = set()
+        for tag in my_tags:
+            candidates.update(Asset._assets_per_tag[tag])
+        scores = {}
+        for candidate in candidates - {self.id}:
+            cand_tags = Asset._tags_per_asset[candidate]
+            sim = (sum(Asset._idf[t] for t in (my_tags & cand_tags)) /
+                   sum(Asset._idf[t] for t in (my_tags | cand_tags)))
+            if sim >= min_sim:
+                scores[candidate] = sim
+        return sorted(sess.query(Asset).filter(Asset.id.in_(scores)),
+                      key=lambda a: scores[a.id], reverse=True)[:limit]
 
     def similar_by_content(self, sess, method, max_diff):
         dupes = set()

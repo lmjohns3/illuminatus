@@ -98,14 +98,16 @@ const Thumb = ({asset, formats, handleClick}) => {
 // return (<div {...handlers}> You can swipe here </div>)
 
 const Asset = ({asset, formats, close}) => {
-  const ext = formats[asset.medium]['medium'].ext
-      , src = `/asset/medium/${asset.slug.slice(0, 1)}/${asset.slug}.${ext}`;
+  // Asset being viewed at the moment.
+  const [viewAsset, setViewAsset] = useState(asset)
+      , ext = formats[viewAsset.medium]['medium'].ext
+      , src = `/asset/medium/${viewAsset.slug.slice(0, 1)}/${viewAsset.slug}.${ext}`;
 
   // Loader for duplicate asset data.
   const [dupes, setDupes] = useState({assets: [], loading: false});
   useEffect(() => {
     setDupes({assets: [], loading: true});
-    axios(`/rest/asset/${asset.slug}/dupes/?hash=diff-8&max-diff=0.03`).then(
+    axios(`/rest/asset/${asset.slug}/similar/content/?alg=dhash-8&max=0.03`).then(
       res => { setDupes({assets: res.data, loading: false}); });
   }, [asset]);
 
@@ -114,7 +116,10 @@ const Asset = ({asset, formats, close}) => {
     dupes.assets.length > 0 ? <div>
       <h2>Duplicates</h2>
       <div className='thumbs dupes'>{
-        dupes.assets.map(a => <Thumb key={a.id} asset={a} formats={formats} handleClick={null} />)
+        dupes.assets.map(a => <Thumb key={a.id}
+                                     asset={a}
+                                     formats={formats}
+                                     handleClick={() => setViewAsset(a)} />)
       }</div>
     </div> : null;
 
@@ -122,7 +127,7 @@ const Asset = ({asset, formats, close}) => {
   const [similar, setSimilar] = useState({assets: [], loading: false});
   useEffect(() => {
     setSimilar({assets: [], loading: true});
-    axios(`/rest/asset/${asset.slug}/similar/`).then(res => {
+    axios(`/rest/asset/${asset.slug}/similar/tag/?lim=20&min=0.5`).then(res => {
       const slugs = {}, assets = []
       if (dupes.assets.forEach) {
         dupes.assets.forEach(a => { slugs[a.slug] = true; });
@@ -136,15 +141,30 @@ const Asset = ({asset, formats, close}) => {
     similar.assets.length > 0 ? <div>
       <h2>Similar</h2>
       <div className='thumbs similar'>{
-        similar.assets.map(a => <Thumb key={a.id} asset={a} formats={formats} handleClick={null} />)
+        similar.assets.map(a => <Thumb key={a.id}
+                                       asset={a}
+                                       formats={formats}
+                                       handleClick={() => setViewAsset(a)} />)
       }</div>
   </div> : null;
 
   return <div className='asset'>
     <Tags assets={[asset]} startVisible={true} href={hrefForTag} />
-    {asset.medium === 'video' ? <video title={asset.slug} autoPlay controls><source src={src} /></video> :
-     asset.medium === 'audio' ? <audio title={asset.slug} autoPlay controls><source src={src} /></audio> :
-                                <img title={asset.slug} src={src} />}
+    <div className='view'>{
+      viewAsset.medium === 'video' ?
+      <video title={viewAsset.slug} autoPlay controls><source src={src} /></video> :
+      viewAsset.medium === 'audio' ?
+      <audio title={viewAsset.slug} autoPlay controls><source src={src} /></audio> :
+      <img title={viewAsset.slug} src={src} />}
+    </div>
+    <div className='thumbs self'>
+      <Thumb asset={asset} formats={formats} handleClick={() => setViewAsset(asset)} />
+      <p>{asset.path}</p>
+      <p>{asset.slug}</p>
+      <p>{asset.stamp}</p>
+      <p>{asset.width}x{asset.height}</p>
+      {asset.duration ? <p>{`${asset.duration} sec`}</p> : null}
+    </div>
     {similarThumbs}
     {dupeThumbs}
     <div className='icon-buttons'>
