@@ -37,7 +37,7 @@ const TAG_PATTERNS = [
   {re: /^\dpm$/, hue: 210, block: 1},
   {re: /^\d\dpm$/, hue: 210, block: 1},
   // Camera.
-  {re: /^kit:\S+$/, hue: 240, block: 2},
+  {re: /^kit-\S+$/, hue: 240, block: 2},
   // Aperture.
   {re: /^ƒ-\d$/, hue: 240, block: 2},
   {re: /^ƒ-\d\d$/, hue: 240, block: 2},
@@ -48,10 +48,10 @@ const TAG_PATTERNS = [
   {re: /^\d\d\dmm$/, hue: 240, block: 2},
   {re: /^\d\d\d\dmm$/, hue: 240, block: 2},
   // Geolocation.
-  {re: /^country:\S+$/, hue: 270, block: 3},
-  {re: /^state:\S+$/, hue: 270, block: 3},
-  {re: /^city:\S+$/, hue: 270, block: 3},
-  {re: /^place:\S+$/, hue: 270, block: 3},
+  {re: /^country-\S+$/, hue: 270, block: 3},
+  {re: /^state-\S+$/, hue: 270, block: 3},
+  {re: /^city-\S+$/, hue: 270, block: 3},
+  {re: /^place-\S+$/, hue: 270, block: 3},
   // User-defined.
   {re: /^.*$/, hue: 0, block: 4},
 ]
@@ -61,11 +61,11 @@ export default function Tags({assets, startVisible, href}) {
     return null;
 
   const pathname = useLocation().pathname, tags = {}, blocks = [
-    {icon: "🗓", active: [], other: []},
-    {icon: "⌚", active: [], other: []},
-    {icon: "📷", active: [], other: []},
-    {icon: "🌍", active: [], other: []},
-    {icon: "🙋", active: [], other: []},
+    {left: [], right: [], icon: "🗓"},
+    {left: [], right: [], icon: "⌚"},
+    {left: [], right: [], icon: "📷"},
+    {left: [], right: [], icon: "🌍"},
+    {left: [], right: [], icon: "🙋"},
   ];
 
   // Count up the tags in our assets.
@@ -75,7 +75,7 @@ export default function Tags({assets, startVisible, href}) {
         const tag = {name: t, count: 0, active: pathname.indexOf(`/${t}/`) >= 0};
         TAG_PATTERNS.some((pattern, p) => {
           if (pattern.re.test(t)) {
-            blocks[pattern.block][tag.active ? "active" : "other"].push(t);
+            blocks[pattern.block][(tag.active && !startVisible) ? "left" : "right"].push(t);
             tag.hue = pattern.hue;
             tag.order = p;
             return true;
@@ -100,7 +100,7 @@ export default function Tags({assets, startVisible, href}) {
 
 
 const Block = ({block, tags, startVisible, assetCount, href}) => {
-  if ((block.active.length <= 0) && (block.other.length <= 0))
+  if ((block.left.length <= 0) && (block.right.length <= 0))
     return null;
 
   const [visible, setVisible] = useState(startVisible);
@@ -111,17 +111,17 @@ const Block = ({block, tags, startVisible, assetCount, href}) => {
     return s.order < t.order ? -1 : s.order > t.order ? 1 :
            s.name < t.name ? -1 : s.name > t.name ? 1 : 0;
   };
-  block.active.sort(cmp);
-  block.other.sort(cmp);
+  block.left.sort(cmp);
+  block.right.sort(cmp);
 
   const render = names => names.map(
     name => <Tag key={name} tag={tags[name]} assetCount={assetCount} href={href} />
   );
 
   return <Fragment>
-    {render(block.active)}
+    {render(block.left)}
     <span className="icon" onClick={() => setVisible(!visible)}>{block.icon}</span>
-    {visible ? render(block.other) : null}
+    {visible ? render(block.right) : null}
   </Fragment>;
 }
 

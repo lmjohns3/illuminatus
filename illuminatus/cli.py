@@ -294,12 +294,10 @@ def modify(ctx, query, stamp, add_tag, remove_tag, add_path_tags):
     '''
     with transaction() as sess:
         for asset in query_assets(sess, query):
+            asset.tags -= set(remove_tag)
             for tag in add_tag:
-                asset.tags.add(tag)
-            for tag in remove_tag:
-                asset.tags.discard(tag)
-            for tag in os.path.dirname(asset.path).split(os.sep)[::-1][:add_path_tags]:
-                asset.tags.add(tag)
+                asset.maybe_add_tag(tag)
+            asset.add_path_tags(add_path_tags)
             if stamp:
                 asset.update_stamp(stamp)
             sess.add(asset)

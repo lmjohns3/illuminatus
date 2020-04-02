@@ -153,7 +153,32 @@ class Asset(db.Model):
             self.stamp = arrow.get(self.stamp).shift(**kwargs).datetime
 
         for t in metadata.tags_from_stamp(arrow.get(self.stamp)):
+            self.maybe_add_tag(t)
+
+    def maybe_add_tag(self, tag):
+        '''Potentially add a tag to this asset, after canonicalizing its form.
+
+        Parameters
+        ----------
+        tag : str
+            Tag candidate to add. If this does not contain any word characters,
+            it will not be added. Otherwise it will be added after converting
+            to canonical form.
+        '''
+        t = Tag.canonical_form(tag)
+        if t:
             self.tags.add(t)
+
+    def add_path_tags(self, limit):
+        '''Add tags to this asset from successive path dirnames.
+
+        Parameters
+        ----------
+        limit : int
+            Maximum number of ancestor directory names to add.
+        '''
+        for tag in os.path.dirname(self.path).split(os.sep)[::-1][:limit]:
+            self.maybe_add_tag(tag)
 
     def add_filter(self, filter):
         '''Add a filter to this asset.
@@ -240,11 +265,13 @@ class Asset(db.Model):
         self.orientation = meta.orientation
         self.video_fps = meta.video_fps
         self.audio_fps = meta.audio_fps
-        self.tags.update(meta.tags)
+        candidate_tags = set(meta.tags)
         stamp = meta.stamp or arrow.get(os.path.getmtime(self.path))
         if stamp:
             self.stamp = stamp.datetime
-            self.tags.update(metadata.tags_from_stamp(stamp))
+            candidate_tags.update(metadata.tags_from_stamp(stamp))
+        for tag in candidate_tags:
+            self.maybe_add_tag(tag)
 
     def compute_content_hashes(self):
         '''Compute hashes of asset content.'''

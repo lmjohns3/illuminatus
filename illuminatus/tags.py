@@ -32,7 +32,7 @@ class Tag(db.Model):
         r'12am', r'\dam', r'\d\dam', r'12pm', r'\dpm', r'\d\dpm',
 
         # Camera.
-        r'kit:\S+',
+        r'kit-\S+',
 
         # Aperture.
         r'ƒ-\d', r'ƒ-\d\d', r'ƒ-\d\d\d',
@@ -41,7 +41,7 @@ class Tag(db.Model):
         r'\dmm', r'\d\dmm', r'\d\d\dmm', r'\d\d\d\dmm',
 
         # Geolocation.
-        r'country:\S+', r'state:\S+', r'city:\S+', r'place:\S+',
+        r'country-\S+', r'state-\S+', r'city-\S+', r'place-\S+',
 
         # User-defined: everything else.
         r'.*',
@@ -78,6 +78,10 @@ class Tag(db.Model):
     @property
     def is_user(self):
         return self.pattern == len(Tag.PATTERNS) - 1
+
+    @staticmethod
+    def canonical_form(tag):
+        return re.sub(r'\W+', '-', tag.lower()).strip('-')
 
     def to_dict(self):
         return dict(id=self.id, name=self.name)

@@ -84,7 +84,7 @@ def maybe_import_asset(sess, path, tags=(), path_tags=0):
 
     asset = Asset(path=path, medium=medium, slug=slug)
     asset.tags.update(tags)
-    asset.tags.update(os.path.dirname(path).split(os.sep)[::-1][:path_tags])
+    asset.add_path_tags(path_tags)
 
     try:
         sess.add(asset)
