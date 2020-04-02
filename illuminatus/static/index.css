@@ -117,11 +117,30 @@ html {
   clear: both;
 }
 
-.asset img, .asset audio, .asset video {
+.asset .view img, .asset .view audio, .asset .view video {
   max-height: calc(100vh - 32px);
   max-width: calc(100vw - 32px);
   border-radius: 13px;
   float: left;
+}
+
+.self {
+  display: block;
+  text-align: left;
+}
+
+.self .thumb {
+  float: left;
+  margin: 0 13px;
+}
+
+.self p {
+  color: #ccc;
+  text-align: left;
+  margin: 0;
+  padding: 5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .asset h2 {
