@@ -39450,7 +39450,486 @@ exports.osName = osName;
 exports.osVersion = osVersion;
 exports.withOrientationChange = withOrientationChange;
 
-},{"react":"../node_modules/react/index.js","ua-parser-js/dist/ua-parser.min":"../node_modules/ua-parser-js/dist/ua-parser.min.js"}],"../node_modules/@babel/runtime/helpers/esm/objectWithoutProperties.js":[function(require,module,exports) {
+},{"react":"../node_modules/react/index.js","ua-parser-js/dist/ua-parser.min":"../node_modules/ua-parser-js/dist/ua-parser.min.js"}],"../node_modules/react-infinite-scroll-component/dist/index.es.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _react = _interopRequireWildcard(require("react"));
+
+function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function () { return cache; }; return cache; }
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+
+/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+/* global Reflect, Promise */
+var extendStatics = function (d, b) {
+  extendStatics = Object.setPrototypeOf || {
+    __proto__: []
+  } instanceof Array && function (d, b) {
+    d.__proto__ = b;
+  } || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+  };
+
+  return extendStatics(d, b);
+};
+
+function __extends(d, b) {
+  extendStatics(d, b);
+
+  function __() {
+    this.constructor = d;
+  }
+
+  d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+}
+
+var __assign = function () {
+  __assign = Object.assign || function __assign(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+      s = arguments[i];
+
+      for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+    }
+
+    return t;
+  };
+
+  return __assign.apply(this, arguments);
+};
+/* eslint-disable no-undefined,no-param-reassign,no-shadow */
+
+/**
+ * Throttle execution of a function. Especially useful for rate limiting
+ * execution of handlers on events like resize and scroll.
+ *
+ * @param  {Number}    delay          A zero-or-greater delay in milliseconds. For event callbacks, values around 100 or 250 (or even higher) are most useful.
+ * @param  {Boolean}   [noTrailing]   Optional, defaults to false. If noTrailing is true, callback will only execute every `delay` milliseconds while the
+ *                                    throttled-function is being called. If noTrailing is false or unspecified, callback will be executed one final time
+ *                                    after the last throttled-function call. (After the throttled-function has not been called for `delay` milliseconds,
+ *                                    the internal counter is reset)
+ * @param  {Function}  callback       A function to be executed after delay milliseconds. The `this` context and all arguments are passed through, as-is,
+ *                                    to `callback` when the throttled-function is executed.
+ * @param  {Boolean}   [debounceMode] If `debounceMode` is true (at begin), schedule `clear` to execute after `delay` ms. If `debounceMode` is false (at end),
+ *                                    schedule `callback` to execute after `delay` ms.
+ *
+ * @return {Function}  A new, throttled, function.
+ */
+
+
+function throttle(delay, noTrailing, callback, debounceMode) {
+  /*
+   * After wrapper has stopped being called, this timeout ensures that
+   * `callback` is executed at the proper times in `throttle` and `end`
+   * debounce modes.
+   */
+  var timeoutID;
+  var cancelled = false; // Keep track of the last time `callback` was executed.
+
+  var lastExec = 0; // Function to clear existing timeout
+
+  function clearExistingTimeout() {
+    if (timeoutID) {
+      clearTimeout(timeoutID);
+    }
+  } // Function to cancel next exec
+
+
+  function cancel() {
+    clearExistingTimeout();
+    cancelled = true;
+  } // `noTrailing` defaults to falsy.
+
+
+  if (typeof noTrailing !== 'boolean') {
+    debounceMode = callback;
+    callback = noTrailing;
+    noTrailing = undefined;
+  }
+  /*
+   * The `wrapper` function encapsulates all of the throttling / debouncing
+   * functionality and when executed will limit the rate at which `callback`
+   * is executed.
+   */
+
+
+  function wrapper() {
+    var self = this;
+    var elapsed = Date.now() - lastExec;
+    var args = arguments;
+
+    if (cancelled) {
+      return;
+    } // Execute `callback` and update the `lastExec` timestamp.
+
+
+    function exec() {
+      lastExec = Date.now();
+      callback.apply(self, args);
+    }
+    /*
+     * If `debounceMode` is true (at begin) this is used to clear the flag
+     * to allow future `callback` executions.
+     */
+
+
+    function clear() {
+      timeoutID = undefined;
+    }
+
+    if (debounceMode && !timeoutID) {
+      /*
+       * Since `wrapper` is being called for the first time and
+       * `debounceMode` is true (at begin), execute `callback`.
+       */
+      exec();
+    }
+
+    clearExistingTimeout();
+
+    if (debounceMode === undefined && elapsed > delay) {
+      /*
+       * In throttle mode, if `delay` time has been exceeded, execute
+       * `callback`.
+       */
+      exec();
+    } else if (noTrailing !== true) {
+      /*
+       * In trailing throttle mode, since `delay` time has not been
+       * exceeded, schedule `callback` to execute `delay` ms after most
+       * recent execution.
+       *
+       * If `debounceMode` is true (at begin), schedule `clear` to execute
+       * after `delay` ms.
+       *
+       * If `debounceMode` is false (at end), schedule `callback` to
+       * execute after `delay` ms.
+       */
+      timeoutID = setTimeout(debounceMode ? clear : exec, debounceMode === undefined ? delay - elapsed : delay);
+    }
+  }
+
+  wrapper.cancel = cancel; // Return the wrapper function.
+
+  return wrapper;
+}
+
+var ThresholdUnits = {
+  Pixel: 'Pixel',
+  Percent: 'Percent'
+};
+var defaultThreshold = {
+  unit: ThresholdUnits.Percent,
+  value: 0.8
+};
+
+function parseThreshold(scrollThreshold) {
+  if (typeof scrollThreshold === 'number') {
+    return {
+      unit: ThresholdUnits.Percent,
+      value: scrollThreshold * 100
+    };
+  }
+
+  if (typeof scrollThreshold === 'string') {
+    if (scrollThreshold.match(/^(\d*(\.\d+)?)px$/)) {
+      return {
+        unit: ThresholdUnits.Pixel,
+        value: parseFloat(scrollThreshold)
+      };
+    }
+
+    if (scrollThreshold.match(/^(\d*(\.\d+)?)%$/)) {
+      return {
+        unit: ThresholdUnits.Percent,
+        value: parseFloat(scrollThreshold)
+      };
+    }
+
+    console.warn('scrollThreshold format is invalid. Valid formats: "120px", "50%"...');
+    return defaultThreshold;
+  }
+
+  console.warn('scrollThreshold should be string or number');
+  return defaultThreshold;
+}
+
+var InfiniteScroll =
+/** @class */
+function (_super) {
+  __extends(InfiniteScroll, _super);
+
+  function InfiniteScroll(props) {
+    var _this = _super.call(this, props) || this;
+
+    _this.lastScrollTop = 0;
+    _this.actionTriggered = false; // variables to keep track of pull down behaviour
+
+    _this.startY = 0;
+    _this.currentY = 0;
+    _this.dragging = false; // will be populated in componentDidMount
+    // based on the height of the pull down element
+
+    _this.maxPullDownDistance = 0;
+
+    _this.getScrollableTarget = function () {
+      if (_this.props.scrollableTarget instanceof HTMLElement) return _this.props.scrollableTarget;
+
+      if (typeof _this.props.scrollableTarget === 'string') {
+        return document.getElementById(_this.props.scrollableTarget);
+      }
+
+      if (_this.props.scrollableTarget === null) {
+        console.warn("You are trying to pass scrollableTarget but it is null. This might\n        happen because the element may not have been added to DOM yet.\n        See https://github.com/ankeetmaini/react-infinite-scroll-component/issues/59 for more info.\n      ");
+      }
+
+      return null;
+    };
+
+    _this.onStart = function (evt) {
+      if (_this.lastScrollTop) return;
+      _this.dragging = true;
+
+      if (evt instanceof MouseEvent) {
+        _this.startY = evt.pageY;
+      } else if (evt instanceof TouchEvent) {
+        _this.startY = evt.touches[0].pageY;
+      }
+
+      _this.currentY = _this.startY;
+
+      if (_this._infScroll) {
+        _this._infScroll.style.willChange = 'transform';
+        _this._infScroll.style.transition = "transform 0.2s cubic-bezier(0,0,0.31,1)";
+      }
+    };
+
+    _this.onMove = function (evt) {
+      if (!_this.dragging) return;
+
+      if (evt instanceof MouseEvent) {
+        _this.currentY = evt.pageY;
+      } else if (evt instanceof TouchEvent) {
+        _this.currentY = evt.touches[0].pageY;
+      } // user is scrolling down to up
+
+
+      if (_this.currentY < _this.startY) return;
+
+      if (_this.currentY - _this.startY >= Number(_this.props.pullDownToRefreshThreshold)) {
+        _this.setState({
+          pullToRefreshThresholdBreached: true
+        });
+      } // so you can drag upto 1.5 times of the maxPullDownDistance
+
+
+      if (_this.currentY - _this.startY > _this.maxPullDownDistance * 1.5) return;
+
+      if (_this._infScroll) {
+        _this._infScroll.style.overflow = 'visible';
+        _this._infScroll.style.transform = "translate3d(0px, " + (_this.currentY - _this.startY) + "px, 0px)";
+      }
+    };
+
+    _this.onEnd = function () {
+      _this.startY = 0;
+      _this.currentY = 0;
+      _this.dragging = false;
+
+      if (_this.state.pullToRefreshThresholdBreached) {
+        _this.props.refreshFunction && _this.props.refreshFunction();
+      }
+
+      requestAnimationFrame(function () {
+        // this._infScroll
+        if (_this._infScroll) {
+          _this._infScroll.style.overflow = 'auto';
+          _this._infScroll.style.transform = 'none';
+          _this._infScroll.style.willChange = 'none';
+        }
+      });
+    };
+
+    _this.onScrollListener = function (event) {
+      if (typeof _this.props.onScroll === 'function') {
+        // Execute this callback in next tick so that it does not affect the
+        // functionality of the library.
+        setTimeout(function () {
+          return _this.props.onScroll && _this.props.onScroll(event);
+        }, 0);
+      }
+
+      var target = _this.props.height || _this._scrollableNode ? event.target : document.documentElement.scrollTop ? document.documentElement : document.body; // return immediately if the action has already been triggered,
+      // prevents multiple triggers.
+
+      if (_this.actionTriggered) return;
+
+      var atBottom = _this.isElementAtBottom(target, _this.props.scrollThreshold); // call the `next` function in the props to trigger the next data fetch
+
+
+      if (atBottom && _this.props.hasMore) {
+        _this.actionTriggered = true;
+
+        _this.setState({
+          showLoader: true
+        });
+
+        _this.props.next && _this.props.next();
+      }
+
+      _this.lastScrollTop = target.scrollTop;
+    };
+
+    _this.state = {
+      showLoader: false,
+      pullToRefreshThresholdBreached: false
+    };
+    _this.throttledOnScrollListener = throttle(150, _this.onScrollListener).bind(_this);
+    _this.onStart = _this.onStart.bind(_this);
+    _this.onMove = _this.onMove.bind(_this);
+    _this.onEnd = _this.onEnd.bind(_this);
+    return _this;
+  }
+
+  InfiniteScroll.prototype.componentDidMount = function () {
+    if (typeof this.props.dataLength === 'undefined') {
+      throw new Error("mandatory prop \"dataLength\" is missing. The prop is needed" + " when loading more content. Check README.md for usage");
+    }
+
+    this._scrollableNode = this.getScrollableTarget();
+    this.el = this.props.height ? this._infScroll : this._scrollableNode || window;
+
+    if (this.el) {
+      this.el.addEventListener('scroll', this.throttledOnScrollListener);
+    }
+
+    if (typeof this.props.initialScrollY === 'number' && this.el && this.el instanceof HTMLElement && this.el.scrollHeight > this.props.initialScrollY) {
+      this.el.scrollTo(0, this.props.initialScrollY);
+    }
+
+    if (this.props.pullDownToRefresh && this.el) {
+      this.el.addEventListener('touchstart', this.onStart);
+      this.el.addEventListener('touchmove', this.onMove);
+      this.el.addEventListener('touchend', this.onEnd);
+      this.el.addEventListener('mousedown', this.onStart);
+      this.el.addEventListener('mousemove', this.onMove);
+      this.el.addEventListener('mouseup', this.onEnd); // get BCR of pullDown element to position it above
+
+      this.maxPullDownDistance = this._pullDown && this._pullDown.firstChild && this._pullDown.firstChild.getBoundingClientRect().height || 0;
+      this.forceUpdate();
+
+      if (typeof this.props.refreshFunction !== 'function') {
+        throw new Error("Mandatory prop \"refreshFunction\" missing.\n          Pull Down To Refresh functionality will not work\n          as expected. Check README.md for usage'");
+      }
+    }
+  };
+
+  InfiniteScroll.prototype.componentWillUnmount = function () {
+    if (this.el) {
+      this.el.removeEventListener('scroll', this.throttledOnScrollListener);
+
+      if (this.props.pullDownToRefresh) {
+        this.el.removeEventListener('touchstart', this.onStart);
+        this.el.removeEventListener('touchmove', this.onMove);
+        this.el.removeEventListener('touchend', this.onEnd);
+        this.el.removeEventListener('mousedown', this.onStart);
+        this.el.removeEventListener('mousemove', this.onMove);
+        this.el.removeEventListener('mouseup', this.onEnd);
+      }
+    }
+  };
+
+  InfiniteScroll.prototype.UNSAFE_componentWillReceiveProps = function (props) {
+    // do nothing when dataLength and key are unchanged
+    if (this.props.key === props.key && this.props.dataLength === props.dataLength) return;
+    this.actionTriggered = false; // update state when new data was sent in
+
+    this.setState({
+      showLoader: false,
+      pullToRefreshThresholdBreached: false
+    });
+  };
+
+  InfiniteScroll.prototype.isElementAtBottom = function (target, scrollThreshold) {
+    if (scrollThreshold === void 0) {
+      scrollThreshold = 0.8;
+    }
+
+    var clientHeight = target === document.body || target === document.documentElement ? window.screen.availHeight : target.clientHeight;
+    var threshold = parseThreshold(scrollThreshold);
+
+    if (threshold.unit === ThresholdUnits.Pixel) {
+      return target.scrollTop + clientHeight >= target.scrollHeight - threshold.value;
+    }
+
+    return target.scrollTop + clientHeight >= threshold.value / 100 * target.scrollHeight;
+  };
+
+  InfiniteScroll.prototype.render = function () {
+    var _this = this;
+
+    var style = __assign({
+      height: this.props.height || 'auto',
+      overflow: 'auto',
+      WebkitOverflowScrolling: 'touch'
+    }, this.props.style);
+
+    var hasChildren = this.props.hasChildren || !!(this.props.children && this.props.children instanceof Array && this.props.children.length); // because heighted infiniteScroll visualy breaks
+    // on drag down as overflow becomes visible
+
+    var outerDivStyle = this.props.pullDownToRefresh && this.props.height ? {
+      overflow: 'auto'
+    } : {};
+    return _react.default.createElement("div", {
+      style: outerDivStyle,
+      className: "infinite-scroll-component__outerdiv"
+    }, _react.default.createElement("div", {
+      className: "infinite-scroll-component " + (this.props.className || ''),
+      ref: function (infScroll) {
+        return _this._infScroll = infScroll;
+      },
+      style: style
+    }, this.props.pullDownToRefresh && _react.default.createElement("div", {
+      style: {
+        position: 'relative'
+      },
+      ref: function (pullDown) {
+        return _this._pullDown = pullDown;
+      }
+    }, _react.default.createElement("div", {
+      style: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: -1 * this.maxPullDownDistance
+      }
+    }, this.state.pullToRefreshThresholdBreached ? this.props.releaseToRefreshContent : this.props.pullDownToRefreshContent)), this.props.children, !this.state.showLoader && !hasChildren && this.props.hasMore && this.props.loader, this.state.showLoader && this.props.hasMore && this.props.loader, !this.props.hasMore && this.props.endMessage));
+  };
+
+  return InfiniteScroll;
+}(_react.Component);
+
+var _default = InfiniteScroll;
+exports.default = _default;
+},{"react":"../node_modules/react/index.js"}],"../node_modules/@babel/runtime/helpers/esm/objectWithoutProperties.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -52560,7 +53039,7 @@ var TAG_PATTERNS = [// Year.
   block: 1
 }, // Camera.
 {
-  re: /^kit:\S+$/,
+  re: /^kit-\S+$/,
   hue: 240,
   block: 2
 }, // Aperture.
@@ -52595,19 +53074,19 @@ var TAG_PATTERNS = [// Year.
   block: 2
 }, // Geolocation.
 {
-  re: /^country:\S+$/,
+  re: /^country-\S+$/,
   hue: 270,
   block: 3
 }, {
-  re: /^state:\S+$/,
+  re: /^state-\S+$/,
   hue: 270,
   block: 3
 }, {
-  re: /^city:\S+$/,
+  re: /^city-\S+$/,
   hue: 270,
   block: 3
 }, {
-  re: /^place:\S+$/,
+  re: /^place-\S+$/,
   hue: 270,
   block: 3
 }, // User-defined.
@@ -52625,25 +53104,25 @@ function Tags(_ref) {
   var pathname = (0, _reactRouterDom.useLocation)().pathname,
       tags = {},
       blocks = [{
-    icon: "🗓",
-    active: [],
-    other: []
+    left: [],
+    right: [],
+    icon: "🗓"
   }, {
-    icon: "⌚",
-    active: [],
-    other: []
+    left: [],
+    right: [],
+    icon: "⌚"
   }, {
-    icon: "📷",
-    active: [],
-    other: []
+    left: [],
+    right: [],
+    icon: "📷"
   }, {
-    icon: "🌍",
-    active: [],
-    other: []
+    left: [],
+    right: [],
+    icon: "🌍"
   }, {
-    icon: "🙋",
-    active: [],
-    other: []
+    left: [],
+    right: [],
+    icon: "🙋"
   }]; // Count up the tags in our assets.
 
   assets.forEach(function (asset) {
@@ -52656,7 +53135,7 @@ function Tags(_ref) {
         };
         TAG_PATTERNS.some(function (pattern, p) {
           if (pattern.re.test(t)) {
-            blocks[pattern.block][tag.active ? "active" : "other"].push(t);
+            blocks[pattern.block][tag.active && !startVisible ? "left" : "right"].push(t);
             tag.hue = pattern.hue;
             tag.order = p;
             return true;
@@ -52690,7 +53169,7 @@ var Block = function Block(_ref2) {
       startVisible = _ref2.startVisible,
       assetCount = _ref2.assetCount,
       href = _ref2.href;
-  if (block.active.length <= 0 && block.other.length <= 0) return null;
+  if (block.left.length <= 0 && block.right.length <= 0) return null;
 
   var _useState = (0, _react.useState)(startVisible),
       _useState2 = _slicedToArray(_useState, 2),
@@ -52704,8 +53183,8 @@ var Block = function Block(_ref2) {
     return s.order < t.order ? -1 : s.order > t.order ? 1 : s.name < t.name ? -1 : s.name > t.name ? 1 : 0;
   };
 
-  block.active.sort(cmp);
-  block.other.sort(cmp);
+  block.left.sort(cmp);
+  block.right.sort(cmp);
 
   var render = function render(names) {
     return names.map(function (name) {
@@ -52718,12 +53197,12 @@ var Block = function Block(_ref2) {
     });
   };
 
-  return _react.default.createElement(_react.Fragment, null, render(block.active), _react.default.createElement("span", {
+  return _react.default.createElement(_react.default.Fragment, null, render(block.left), _react.default.createElement("span", {
     className: "icon",
     onClick: function onClick() {
       return setVisible(!visible);
     }
-  }, block.icon), visible ? render(block.other) : null);
+  }, block.icon), visible ? render(block.right) : null);
 };
 
 var Tag = function Tag(_ref3) {
@@ -52760,6 +53239,8 @@ var _react = _interopRequireWildcard(require("react"));
 
 var _reactDeviceDetect = require("react-device-detect");
 
+var _reactInfiniteScrollComponent = _interopRequireDefault(require("react-infinite-scroll-component"));
+
 var _reactRouterDom = require("react-router-dom");
 
 var _reactSelect = _interopRequireDefault(require("react-select"));
@@ -52782,6 +53263,14 @@ function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { va
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
+
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance"); }
+
+function _iterableToArray(iter) { if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter); }
+
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } }
+
 function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
 
 function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
@@ -52795,40 +53284,48 @@ var hrefForTag = function hrefForTag(tag, path) {
   return path.indexOf(part) < 0 ? tag : path.replace(part, '/');
 };
 
-function View() {
-  // Get format info for the app.
-  var _useState = (0, _react.useState)([]),
+var useAssets = function useAssets(query) {
+  var limit = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 20;
+
+  var makeUrl = function makeUrl(off) {
+    var lim = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : limit;
+    return "/rest/query/".concat(query, "?lim=").concat(lim, "&off=").concat(off);
+  },
+      _useState = (0, _react.useState)(makeUrl(0, 100)),
       _useState2 = _slicedToArray(_useState, 2),
-      formats = _useState2[0],
-      setFormats = _useState2[1];
-
-  (0, _react.useEffect)(function () {
-    (0, _axios.default)('/rest/formats/').then(function (res) {
-      return setFormats(res.data);
-    });
-  }, []); // Get assets matching our view query.
-
-  var query = (0, _reactRouterDom.useParams)().query,
+      url = _useState2[0],
+      setUrl = _useState2[1],
       _useState3 = (0, _react.useState)([]),
       _useState4 = _slicedToArray(_useState3, 2),
       assets = _useState4[0],
-      setAssets = _useState4[1];
-
-  (0, _react.useEffect)(function () {
-    (0, _axios.default)("/rest/query/".concat(query)).then(function (res) {
-      return setAssets(res.data);
+      setAssets = _useState4[1],
+      _useState5 = (0, _react.useState)(true),
+      _useState6 = _slicedToArray(_useState5, 2),
+      hasMoreAssets = _useState6[0],
+      setHasMoreAssets = _useState6[1],
+      loadMoreAssets = function loadMoreAssets() {
+    (0, _axios.default)(url).then(function (res) {
+      setUrl(makeUrl(assets.length + res.data.length));
+      setHasMoreAssets(res.data.length >= limit);
+      setAssets(function (prevAssets) {
+        return [].concat(_toConsumableArray(prevAssets), _toConsumableArray(res.data));
+      });
     });
-  }, [query]); // Keep track if there is a single asset being viewed.
+  };
 
+  (0, _react.useEffect)(loadMoreAssets, [query]);
+  return [assets, hasMoreAssets, loadMoreAssets];
+};
+
+var useCurrent = function useCurrent(history, assets) {
   var h = window.location.hash,
       hashCurrent = /#\d+/.test(h) ? parseInt(h.replace('#', '')) : null,
-      history = (0, _reactRouterDom.useHistory)(),
-      _useState5 = (0, _react.useState)(hashCurrent),
-      _useState6 = _slicedToArray(_useState5, 2),
-      current = _useState6[0],
-      setCurrent = _useState6[1];
+      _useState7 = (0, _react.useState)(hashCurrent),
+      _useState8 = _slicedToArray(_useState7, 2),
+      current = _useState8[0],
+      setCurrent = _useState8[1];
 
-  var view = function view(idx) {
+  var update = function update(idx) {
     setCurrent(idx);
     history.replace(idx ? "#".concat(idx) : '#');
   };
@@ -52838,11 +53335,11 @@ function View() {
       var key = _ref.key;
 
       if (key === 'Escape') {
-        view(null);
+        setCurrent(null);
       } else if (current > 0 && (key === 'ArrowLeft' || key === 'ArrowUp')) {
-        view(current - 1);
+        setCurrent(current - 1);
       } else if (current < assets.length - 1 && (key === 'ArrowRight' || key === 'ArrowDown')) {
-        view(current + 1);
+        setCurrent(current + 1);
       }
     };
 
@@ -52852,35 +53349,60 @@ function View() {
         return window.removeEventListener('keydown', onKeyDown);
       };
     }
-  }, [assets, current]); // Track the scroll state on the thumbs view. Gets set when a thumb gets a click.
+  }, [assets, current]);
+  return [current, update];
+};
 
-  var _useState7 = (0, _react.useState)(0),
-      _useState8 = _slicedToArray(_useState7, 2),
-      thumbsScroll = _useState8[0],
-      setThumbsScroll = _useState8[1];
+function View() {
+  var _useState9 = (0, _react.useState)([]),
+      _useState10 = _slicedToArray(_useState9, 2),
+      formats = _useState10[0],
+      setFormats = _useState10[1];
+
+  (0, _react.useEffect)(function () {
+    (0, _axios.default)('/rest/formats/').then(function (res) {
+      return setFormats(res.data);
+    });
+  }, []);
+
+  var _useAssets = useAssets((0, _reactRouterDom.useParams)().query),
+      _useAssets2 = _slicedToArray(_useAssets, 3),
+      assets = _useAssets2[0],
+      hasMoreAssets = _useAssets2[1],
+      loadMoreAssets = _useAssets2[2];
+
+  var _useCurrent = useCurrent((0, _reactRouterDom.useHistory)(), assets),
+      _useCurrent2 = _slicedToArray(_useCurrent, 2),
+      current = _useCurrent2[0],
+      setCurrent = _useCurrent2[1];
+
+  var _useState11 = (0, _react.useState)(0),
+      _useState12 = _slicedToArray(_useState11, 2),
+      thumbsScroll = _useState12[0],
+      setThumbsScroll = _useState12[1];
 
   (0, _react.useEffect)(function () {
     if (!current) window.scrollTo(0, thumbsScroll);
   }, [current]); // Show either the asset being viewed or thumbnails of all the assets.
 
   if (current && 0 <= current && current < assets.length) {
-    return _react.default.createElement("div", {
-      className: "view"
-    }, _react.default.createElement(Asset, {
+    return _react.default.createElement(Asset, {
       asset: assets[current],
       formats: formats,
       close: function close() {
-        return view(null);
+        return setCurrent(null);
       }
-    }));
+    });
   } else {
-    return _react.default.createElement("div", {
-      className: "browse"
-    }, _react.default.createElement(_tags.default, {
+    return _react.default.createElement(_react.default.Fragment, null, _react.default.createElement(_tags.default, {
       assets: assets,
       href: hrefForTag
-    }), _react.default.createElement("div", {
-      className: "thumbs"
+    }), _react.default.createElement(_reactInfiniteScrollComponent.default, {
+      className: "thumbs",
+      dataLength: assets.length,
+      next: loadMoreAssets,
+      hasMore: hasMoreAssets,
+      loader: _react.default.createElement(Spinner, null)
     }, assets.map(function (asset, idx) {
       return _react.default.createElement(Thumb, {
         key: asset.id,
@@ -52888,7 +53410,7 @@ function View() {
         formats: formats,
         handleClick: function handleClick() {
           setThumbsScroll(window.scrollY);
-          view(idx);
+          setCurrent(idx);
         }
       });
     })));
@@ -52907,14 +53429,16 @@ var Thumb = function Thumb(_ref2) {
   },
       initialSrc = source(isVideo ? 'png' : ext);
 
-  return _react.default.createElement("span", {
+  return _react.default.createElement("div", {
     className: "thumb",
-    title: asset.slug,
-    onClick: handleClick
+    style: {
+      gridRow: 'span 3',
+      gridColumn: "span ".concat(asset.width > asset.height ? 4 : 3)
+    }
   }, _react.default.createElement("img", {
     className: asset.medium,
     src: initialSrc,
-    title: asset.slug,
+    onClick: handleClick,
     onMouseEnter: function onMouseEnter(_ref3) {
       var target = _ref3.target;
       if (isVideo) target.src = source(ext);
@@ -52930,108 +53454,55 @@ var Thumb = function Thumb(_ref2) {
 // return (<div {...handlers}> You can swipe here </div>)
 
 
-var Asset = function Asset(_ref5) {
-  var asset = _ref5.asset,
-      formats = _ref5.formats,
-      close = _ref5.close;
-  var ext = formats[asset.medium]['medium'].ext,
-      src = "/asset/medium/".concat(asset.slug.slice(0, 1), "/").concat(asset.slug, ".").concat(ext); // Loader for duplicate asset data.
-
-  var _useState9 = (0, _react.useState)({
+var useThumbs = function useThumbs(url, title, formats, handleClick) {
+  var _useState13 = (0, _react.useState)({
     assets: [],
     loading: false
   }),
-      _useState10 = _slicedToArray(_useState9, 2),
-      dupes = _useState10[0],
-      setDupes = _useState10[1];
+      _useState14 = _slicedToArray(_useState13, 2),
+      thumbs = _useState14[0],
+      setThumbs = _useState14[1];
 
   (0, _react.useEffect)(function () {
-    setDupes({
+    setThumbs({
       assets: [],
       loading: true
     });
-    (0, _axios.default)("/rest/asset/".concat(asset.slug, "/dupes/?hash=diff-8&max-diff=0.03")).then(function (res) {
-      setDupes({
+    (0, _axios.default)(url).then(function (res) {
+      setThumbs({
         assets: res.data,
         loading: false
       });
     });
-  }, [asset]);
-  var dupeThumbs = dupes.loading ? _react.default.createElement("div", null, _react.default.createElement("h2", null, "Duplicates"), _react.default.createElement(Spinner, null)) : dupes.assets.length > 0 ? _react.default.createElement("div", null, _react.default.createElement("h2", null, "Duplicates"), _react.default.createElement("div", {
-    className: "thumbs dupes"
-  }, dupes.assets.map(function (a) {
+  }, [url]);
+  return thumbs.loading ? _react.default.createElement("div", null, _react.default.createElement("h2", null, title), _react.default.createElement(Spinner, null)) : thumbs.assets.length > 0 ? _react.default.createElement("div", null, _react.default.createElement("h2", null, title), _react.default.createElement("div", {
+    className: "thumbs ".concat(title.toLowerCase())
+  }, thumbs.assets.map(function (a) {
     return _react.default.createElement(Thumb, {
       key: a.id,
       asset: a,
       formats: formats,
-      handleClick: null
-    });
-  }))) : null; // Loader for similar asset data.
-
-  var _useState11 = (0, _react.useState)({
-    assets: [],
-    loading: false
-  }),
-      _useState12 = _slicedToArray(_useState11, 2),
-      similar = _useState12[0],
-      setSimilar = _useState12[1];
-
-  (0, _react.useEffect)(function () {
-    setSimilar({
-      assets: [],
-      loading: true
-    });
-    (0, _axios.default)("/rest/asset/".concat(asset.slug, "/similar/")).then(function (res) {
-      var slugs = {},
-          assets = [];
-
-      if (dupes.assets.forEach) {
-        dupes.assets.forEach(function (a) {
-          slugs[a.slug] = true;
-        });
-      }
-
-      res.data.forEach(function (a) {
-        if (!slugs[a.slug]) assets.push(a);
-      });
-      setSimilar({
-        assets: assets,
-        loading: false
-      });
-    });
-  }, [asset, dupes.loading]);
-  var similarThumbs = similar.loading ? _react.default.createElement("div", null, _react.default.createElement("h2", null, "Similar"), _react.default.createElement(Spinner, null)) : similar.assets.length > 0 ? _react.default.createElement("div", null, _react.default.createElement("h2", null, "Similar"), _react.default.createElement("div", {
-    className: "thumbs similar"
-  }, similar.assets.map(function (a) {
-    return _react.default.createElement(Thumb, {
-      key: a.id,
-      asset: a,
-      formats: formats,
-      handleClick: null
+      handleClick: handleClick(a)
     });
   }))) : null;
-  return _react.default.createElement("div", {
-    className: "asset"
-  }, _react.default.createElement(_tags.default, {
-    assets: [asset],
-    startVisible: true,
-    href: hrefForTag
-  }), asset.medium === 'video' ? _react.default.createElement("video", {
-    title: asset.slug,
-    autoPlay: true,
-    controls: true
-  }, _react.default.createElement("source", {
-    src: src
-  })) : asset.medium === 'audio' ? _react.default.createElement("audio", {
-    title: asset.slug,
-    autoPlay: true,
-    controls: true
-  }, _react.default.createElement("source", {
-    src: src
-  })) : _react.default.createElement("img", {
-    title: asset.slug,
-    src: src
-  }), similarThumbs, dupeThumbs, _react.default.createElement("div", {
+};
+
+var Asset = function Asset(_ref5) {
+  var asset = _ref5.asset,
+      formats = _ref5.formats,
+      close = _ref5.close;
+
+  var _useState15 = (0, _react.useState)(asset),
+      _useState16 = _slicedToArray(_useState15, 2),
+      viewAsset = _useState16[0],
+      setViewAsset = _useState16[1],
+      ext = formats[viewAsset.medium]['medium'].ext,
+      src = "/asset/medium/".concat(viewAsset.slug.slice(0, 1), "/").concat(viewAsset.slug, ".").concat(ext);
+
+  (0, _react.useEffect)(function () {
+    return setViewAsset(asset);
+  }, [asset]);
+  return _react.default.createElement(_react.default.Fragment, null, _react.default.createElement("div", {
     className: "icon-buttons"
   }, _react.default.createElement("span", {
     className: "icon-button",
@@ -53041,10 +53512,54 @@ var Asset = function Asset(_ref5) {
     style: {
       fontSize: '200%'
     }
-  }, "\xD7"))));
+  }, "\xD7")), _react.default.createElement("span", {
+    className: "icon-button"
+  }, _react.default.createElement("span", {
+    className: "icon"
+  }, "\uD83D\uDD89"))), _react.default.createElement(_tags.default, {
+    assets: [asset],
+    startVisible: true,
+    href: hrefForTag
+  }), _react.default.createElement("div", {
+    className: "asset"
+  }, _react.default.createElement("div", {
+    className: "view"
+  }, viewAsset.medium === 'video' ? _react.default.createElement("video", {
+    title: viewAsset.slug,
+    autoPlay: true,
+    controls: true
+  }, _react.default.createElement("source", {
+    src: src
+  })) : viewAsset.medium === 'audio' ? _react.default.createElement("audio", {
+    title: viewAsset.slug,
+    autoPlay: true,
+    controls: true
+  }, _react.default.createElement("source", {
+    src: src
+  })) : _react.default.createElement("img", {
+    title: viewAsset.slug,
+    src: src
+  })), _react.default.createElement("div", {
+    className: "self"
+  }, _react.default.createElement(Thumb, {
+    asset: asset,
+    formats: formats,
+    handleClick: function handleClick() {
+      return setViewAsset(asset);
+    }
+  }), _react.default.createElement("dl", null, _react.default.createElement("dt", null, "ID"), _react.default.createElement("dd", null, asset.slug.slice(0, 8)), _react.default.createElement("dt", null, "Path"), _react.default.createElement("dd", null, asset.path), _react.default.createElement("dt", null, "Date"), _react.default.createElement("dd", null, (0, _moment.default)(asset.stamp).format('MMMM Do YYYY')), _react.default.createElement("dt", null, "Time"), _react.default.createElement("dd", null, (0, _moment.default)(asset.stamp).format('h:mm:ss a')), asset.width ? _react.default.createElement(_react.default.Fragment, null, _react.default.createElement("dt", null, "Size"), _react.default.createElement("dd", null, asset.width, " x ", asset.height)) : null, asset.duration ? _react.default.createElement(_react.default.Fragment, null, _react.default.createElement("dt", null, "Duration"), _react.default.createElement("dd", null, asset.duration)) : null)), _react.default.createElement("div", {
+    className: "others"
+  }, useThumbs("/rest/asset/".concat(asset.slug, "/similar/tag/?lim=20&min=0.5"), 'Similar', formats, function (a) {
+    return function () {
+      return setViewAsset(a);
+    };
+  }), useThumbs("/rest/asset/".concat(asset.slug, "/similar/content/?alg=dhash-8&max=0.03"), 'Duplicates', formats, function (a) {
+    return function () {
+      return setViewAsset(a);
+    };
+  }))));
 };
 /*
-      <span className='icon-button'><span className='icon'>🖉</span></span>
       <span className='icon-button'><span className='icon'>⚠</span></span>
       <span className='icon-button'><span className='icon'>⮢</span></span>
       <span className='icon-button'><span className='icon'>⮣</span></span>
@@ -53144,7 +53659,7 @@ var Spinner = function Spinner() {
     })
   }));
 };
-},{"axios":"../node_modules/axios/index.js","moment":"../node_modules/moment/moment.js","react":"../node_modules/react/index.js","react-device-detect":"../node_modules/react-device-detect/main.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","react-select":"../node_modules/react-select/dist/react-select.browser.esm.js","react-swipeable":"../node_modules/react-swipeable/es/index.js","./db":"db.jsx","./tags":"tags.jsx"}],"../node_modules/react-image-crop/dist/ReactCrop.min.js":[function(require,module,exports) {
+},{"axios":"../node_modules/axios/index.js","moment":"../node_modules/moment/moment.js","react":"../node_modules/react/index.js","react-device-detect":"../node_modules/react-device-detect/main.js","react-infinite-scroll-component":"../node_modules/react-infinite-scroll-component/dist/index.es.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","react-select":"../node_modules/react-select/dist/react-select.browser.esm.js","react-swipeable":"../node_modules/react-swipeable/es/index.js","./db":"db.jsx","./tags":"tags.jsx"}],"../node_modules/react-image-crop/dist/ReactCrop.min.js":[function(require,module,exports) {
 var define;
 !function (e, t) {
   "object" == typeof exports && "object" == typeof module ? module.exports = t(require("react")) : "function" == typeof define && define.amd ? define(["react"], t) : "object" == typeof exports ? exports.ReactCrop = t(require("react")) : e.ReactCrop = t(e.React);

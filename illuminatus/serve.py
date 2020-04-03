@@ -43,9 +43,9 @@ def assets(query):
     get = flask.request.args.get
     return _json(matching_assets(sql.session,
                                  query.split('/'),
-                                 order=get('order', 'stamp'),
-                                 limit=int(get('limit', 99999)),
-                                 offset=int(get('offset', 0))).all())
+                                 order=get('ord', 'stamp'),
+                                 limit=int(get('lim', 99999)),
+                                 offset=int(get('off', 0))).all())
 
 
 @app.route('/rest/export/<path:query>', methods=['POST'])

@@ -2,6 +2,7 @@ import axios from 'axios'
 import moment from 'moment'
 import React, {useEffect, useReducer, useState} from 'react'
 import {BrowserView, MobileView, isBrowser, isMobile} from 'react-device-detect';
+import InfiniteScroll from 'react-infinite-scroll-component'
 import {useHistory, useParams} from 'react-router-dom'
 import Select from 'react-select'
 import { useSwipeable } from 'react-swipeable'
@@ -16,34 +17,34 @@ const hrefForTag = (tag, path) => {
 }
 
 
-export default function View() {
-  // Get format info for the app.
-  const [formats, setFormats] = useState([]);
-  useEffect(() => {
-    axios('/rest/formats/').then(res => setFormats(res.data));
-  }, []);
+const useAssets = (query, limit = 20) => {
+  const makeUrl = (off, lim = limit) => `/rest/query/${query}?lim=${lim}&off=${off}`
+      , [url, setUrl] = useState(makeUrl(0, 100))
+      , [assets, setAssets] = useState([])
+      , [hasMoreAssets, setHasMoreAssets] = useState(true)
+      , loadMoreAssets = () => {axios(url).then(res => {
+        setUrl(makeUrl(assets.length + res.data.length));
+        setHasMoreAssets(res.data.length >= limit);
+        setAssets(prevAssets => [...prevAssets, ...res.data]);
+      })};
+  useEffect(loadMoreAssets, [query]);
+  return [assets, hasMoreAssets, loadMoreAssets];
+}
 
-  // Get assets matching our view query.
-  const query = useParams().query
-      , [assets, setAssets] = useState([]);
-  useEffect(() => {
-    axios(`/rest/query/${query}`).then(res => setAssets(res.data));
-  }, [query]);
 
-  // Keep track if there is a single asset being viewed.
+const useCurrent = (history, assets) => {
   const h = window.location.hash
       , hashCurrent = /#\d+/.test(h) ? parseInt(h.replace('#', '')) : null
-      , history = useHistory()
       , [current, setCurrent] = useState(hashCurrent);
-  const view = idx => { setCurrent(idx); history.replace(idx ? `#${idx}` : '#'); };
+  const update = idx => { setCurrent(idx); history.replace(idx ? `#${idx}` : '#'); };
   useEffect(() => {
     const onKeyDown = ({key}) => {
       if (key === 'Escape') {
-        view(null);
+        setCurrent(null);
       } else if (current > 0 && (key === 'ArrowLeft' || key === 'ArrowUp')) {
-        view(current - 1);
+        setCurrent(current - 1);
       } else if (current < assets.length - 1 && (key === 'ArrowRight' || key === 'ArrowDown')) {
-        view(current + 1);
+        setCurrent(current + 1);
       }
     };
     if (current) {
@@ -51,29 +52,43 @@ export default function View() {
       return () => window.removeEventListener('keydown', onKeyDown);
     }
   }, [assets, current]);
+  return [current, update];
+}
 
-  // Track the scroll state on the thumbs view. Gets set when a thumb gets a click.
+
+export default function View() {
+  const [formats, setFormats] = useState([]);
+  useEffect(() => {
+    axios('/rest/formats/').then(res => setFormats(res.data));
+  }, []);
+
+  const [assets, hasMoreAssets, loadMoreAssets] = useAssets(useParams().query);
+  const [current, setCurrent] = useCurrent(useHistory(), assets);
   const [thumbsScroll, setThumbsScroll] = useState(0);
   useEffect(() => { if (!current) window.scrollTo(0, thumbsScroll); }, [current]);
 
   // Show either the asset being viewed or thumbnails of all the assets.
   if (current && 0 <= current && current < assets.length) {
-    return <div className='view'>
-      <Asset asset={assets[current]} formats={formats} close={() => view(null)} />
-    </div>;
+    return <Asset asset={assets[current]}
+                  formats={formats}
+                  close={() => setCurrent(null)} />;
   } else {
-    return <div className='browse'>
+    return <>
       <Tags assets={assets} href={hrefForTag} />
-      <div className='thumbs'>{assets.map(
-          (asset, idx) => <Thumb key={asset.id}
-                                 asset={asset}
-                                 formats={formats}
-                                 handleClick={() => {
-                                   setThumbsScroll(window.scrollY);
-                                   view(idx);
-                                 }} />
-      )}</div>
-    </div>;
+      <InfiniteScroll className='thumbs'
+                      dataLength={assets.length}
+                      next={loadMoreAssets}
+                      hasMore={hasMoreAssets}
+                      loader={<Spinner/>}>
+        {assets.map((asset, idx) => <Thumb key={asset.id}
+                                           asset={asset}
+                                           formats={formats}
+                                           handleClick={() => {
+                                             setThumbsScroll(window.scrollY);
+                                             setCurrent(idx);
+                                           }} />)}
+      </InfiniteScroll>
+    </>;
   }
 }
 
@@ -83,98 +98,83 @@ const Thumb = ({asset, formats, handleClick}) => {
       , isVideo = asset.medium === 'video'
       , source = e => `/asset/small/${asset.slug.slice(0, 1)}/${asset.slug}.${e}`
       , initialSrc = source(isVideo ? 'png' : ext);
-  return <span className='thumb' title={asset.slug} onClick={handleClick}>
+  return <div className='thumb' style={{
+    gridRow: 'span 3',
+    gridColumn: `span ${asset.width > asset.height ? 4 : 3}`,
+  }}>
     <img className={asset.medium}
          src={initialSrc}
-         title={asset.slug}
+         onClick={handleClick}
          onMouseEnter={({target}) => { if (isVideo) target.src = source(ext); }}
          onMouseLeave={({target}) => { if (isVideo) target.src = initialSrc; }}/>
     {isVideo ? <span className='video-icon'>▶</span> : null}
-  </span>;
+  </div>;
 }
 
 
 // const handlers = useSwipeable({ onSwiped: (eventData) => eventHandler, ...config })
 // return (<div {...handlers}> You can swipe here </div>)
 
+const useThumbs = (url, title, formats, handleClick) => {
+  const [thumbs, setThumbs] = useState({assets: [], loading: false});
+
+  useEffect(() => {
+    setThumbs({assets: [], loading: true});
+    axios(url).then(res => { setThumbs({assets: res.data, loading: false}); });
+  }, [url]);
+
+  return thumbs.loading ? <div><h2>{title}</h2><Spinner /></div> :
+         thumbs.assets.length > 0 ? <div>
+           <h2>{title}</h2>
+           <div className={`thumbs ${title.toLowerCase()}`}>{
+             thumbs.assets.map(a => <Thumb key={a.id} asset={a} formats={formats}
+                                           handleClick={handleClick(a)} />)
+           }</div>
+         </div> : null;
+}
+
+
 const Asset = ({asset, formats, close}) => {
-  // Asset being viewed at the moment.
   const [viewAsset, setViewAsset] = useState(asset)
       , ext = formats[viewAsset.medium]['medium'].ext
       , src = `/asset/medium/${viewAsset.slug.slice(0, 1)}/${viewAsset.slug}.${ext}`;
-
-  // Loader for duplicate asset data.
-  const [dupes, setDupes] = useState({assets: [], loading: false});
-  useEffect(() => {
-    setDupes({assets: [], loading: true});
-    axios(`/rest/asset/${asset.slug}/similar/content/?alg=dhash-8&max=0.03`).then(
-      res => { setDupes({assets: res.data, loading: false}); });
-  }, [asset]);
-
-  const dupeThumbs =
-    dupes.loading ? <div><h2>Duplicates</h2><Spinner /></div> :
-    dupes.assets.length > 0 ? <div>
-      <h2>Duplicates</h2>
-      <div className='thumbs dupes'>{
-        dupes.assets.map(a => <Thumb key={a.id}
-                                     asset={a}
-                                     formats={formats}
-                                     handleClick={() => setViewAsset(a)} />)
-      }</div>
-    </div> : null;
-
-  // Loader for similar asset data.
-  const [similar, setSimilar] = useState({assets: [], loading: false});
-  useEffect(() => {
-    setSimilar({assets: [], loading: true});
-    axios(`/rest/asset/${asset.slug}/similar/tag/?lim=20&min=0.5`).then(res => {
-      const slugs = {}, assets = []
-      if (dupes.assets.forEach) {
-        dupes.assets.forEach(a => { slugs[a.slug] = true; });
-      }
-      res.data.forEach(a => { if (!slugs[a.slug]) assets.push(a); });
-      setSimilar({assets: assets, loading: false}); });
-  }, [asset, dupes.loading]);
-
-  const similarThumbs =
-    similar.loading ? <div><h2>Similar</h2><Spinner /></div> :
-    similar.assets.length > 0 ? <div>
-      <h2>Similar</h2>
-      <div className='thumbs similar'>{
-        similar.assets.map(a => <Thumb key={a.id}
-                                       asset={a}
-                                       formats={formats}
-                                       handleClick={() => setViewAsset(a)} />)
-      }</div>
-  </div> : null;
-
-  return <div className='asset'>
-    <Tags assets={[asset]} startVisible={true} href={hrefForTag} />
-    <div className='view'>{
-      viewAsset.medium === 'video' ?
-      <video title={viewAsset.slug} autoPlay controls><source src={src} /></video> :
-      viewAsset.medium === 'audio' ?
-      <audio title={viewAsset.slug} autoPlay controls><source src={src} /></audio> :
-      <img title={viewAsset.slug} src={src} />}
-    </div>
-    <div className='thumbs self'>
-      <Thumb asset={asset} formats={formats} handleClick={() => setViewAsset(asset)} />
-      <p>{asset.path}</p>
-      <p>{asset.slug}</p>
-      <p>{asset.stamp}</p>
-      <p>{asset.width}x{asset.height}</p>
-      {asset.duration ? <p>{`${asset.duration} sec`}</p> : null}
-    </div>
-    {similarThumbs}
-    {dupeThumbs}
+  useEffect(() => setViewAsset(asset), [asset]);
+  return <>
     <div className='icon-buttons'>
       <span className='icon-button' onClick={close}><span className='icon' style={{fontSize:'200%'}}>×</span></span>
+      <span className='icon-button'><span className='icon'>🖉</span></span>
     </div>
-  </div>;
+    <Tags assets={[asset]} startVisible={true} href={hrefForTag} />
+    <div className='asset'>
+      <div className='view'>{
+        viewAsset.medium === 'video' ?
+        <video title={viewAsset.slug} autoPlay controls><source src={src} /></video> :
+        viewAsset.medium === 'audio' ?
+        <audio title={viewAsset.slug} autoPlay controls><source src={src} /></audio> :
+        <img title={viewAsset.slug} src={src} />}
+      </div>
+      <div className='self'>
+        <Thumb asset={asset} formats={formats} handleClick={() => setViewAsset(asset)} />
+        <dl>
+          <dt>ID</dt><dd>{asset.slug.slice(0, 8)}</dd>
+          <dt>Path</dt><dd>{asset.path}</dd>
+          <dt>Date</dt><dd>{moment(asset.stamp).format('MMMM Do YYYY')}</dd>
+          <dt>Time</dt><dd>{moment(asset.stamp).format('h:mm:ss a')}</dd>
+          {asset.width ? <><dt>Size</dt><dd>{asset.width} x {asset.height}</dd></> : null}
+          {asset.duration ? <><dt>Duration</dt><dd>{asset.duration}</dd></> : null}
+        </dl>
+      </div>
+      <div className='others'>
+        {useThumbs(`/rest/asset/${asset.slug}/similar/tag/?lim=20&min=0.5`,
+                   'Similar', formats, a => () => setViewAsset(a))}
+        {useThumbs(`/rest/asset/${asset.slug}/similar/content/?alg=dhash-8&max=0.03`,
+                   'Duplicates', formats, a => () => setViewAsset(a))}
+      </div>
+    </div>
+  </>;
 }
 
 /*
-      <span className='icon-button'><span className='icon'>🖉</span></span>
       <span className='icon-button'><span className='icon'>⚠</span></span>
       <span className='icon-button'><span className='icon'>⮢</span></span>
       <span className='icon-button'><span className='icon'>⮣</span></span>

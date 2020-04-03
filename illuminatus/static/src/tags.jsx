@@ -118,11 +118,11 @@ const Block = ({block, tags, startVisible, assetCount, href}) => {
     name => <Tag key={name} tag={tags[name]} assetCount={assetCount} href={href} />
   );
 
-  return <Fragment>
+  return <>
     {render(block.left)}
     <span className="icon" onClick={() => setVisible(!visible)}>{block.icon}</span>
     {visible ? render(block.right) : null}
-  </Fragment>;
+  </>;
 }
 
 

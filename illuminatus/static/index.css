@@ -1,61 +1,66 @@
 :root {
-  --thumbnail-size: 120px;
+  --thumbnail-size: 123px;
 }
 
 @media (max-width: 1000px) {
   :root {
-    --thumbnail-size: 90px;
+    --thumbnail-size: 76px;
   }
+}
+
+@keyframes spinner {
+  0% { background-color: #333; }
+  100% { background-color: transparent; }
 }
 
 html {
   background: #111;
-  color: #111;
+  color: #eee;
   font-family: sans-serif;
-  text-align: center;
 }
 
 .icon-buttons {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 34px;
+  position: fixed;
+  right: 11px;
+  top: 11px;
+  width: 47px;
 }
 
 .icon-button {
-  width: 34px;
-  height: 34px;
-  border-radius: 17px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #ccc;
+  background: #eee;
+  border-radius: 23px;
   color: #111;
   cursor: pointer;
-  margin: 0 13px 13px 0;
+  display: grid;
+  height: 47px;
+  margin-bottom: 18px;
+  place-items: center center;
+  width: 47px;
 }
+
 .icon-button .icon {
-  flex: 1;
   font-size: 120%;
 }
+
 .icon-button:hover {
-  background: #fff;
+  background: #9cf;
 }
 
 /* tags */
 
 .tags {
-  padding: 8px;
-  display: flex;
-  flex-flow: row wrap;
-  align-items: center;
-  justify-content: center;
+  margin: 7px;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .tags .icon, .tags .tag {
-  flex: 0 0 auto;
-  margin: 2px;
-  padding: 1px 5px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-right: 7px;
+  padding: 0 4px;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .tags .icon {
@@ -63,48 +68,41 @@ html {
   font-size: larger;
 }
 
-.tags .tag {
-  border-radius: 3px;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.tags *:hover {
-  opacity: 1.0 !important;
-}
-
 /* thumbs */
 
 .thumbs {
-  display: flex;
-  flex-flow: row wrap;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  gap: 7px;
+  grid-template-columns: repeat(auto-fit, minmax(47px, 1fr));
+  grid-auto-rows: 47px;
+  grid-auto-flow: dense;
+  margin: 7px;
 }
 
 .thumbs .thumb {
-  flex: 0 0 var(--thumbnail-size);
-  position: relative;
-  margin: 5px;
-  text-align: center;
+  border-radius: 7px;
   cursor: pointer;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
 }
 
 .thumbs .thumb img {
-  max-height: var(--thumbnail-size);
-  max-width: var(--thumbnail-size);
-  border-radius: 5px;
+  object-fit: cover;
+  object-position: 50% 50%;
 }
 
 .thumbs .thumb .video-icon {
+  background-color: #f30;
+  border-radius: 4px;
+  color: #111;
+  font-size: 20px;
+  left: calc(50% - 15px);
+  padding: 5px 6px 4px 8px;
   position: absolute;
   top: calc(50% - 15px);
-  left: calc(50% - 15px);
-  font-size: 20px;
-  background-color: #f30;
-  border: solid 1px #111;
-  border-radius: 3px;
-  padding: 5px 6px 4px 8px;
+  z-index: 1;
 }
 
 .thumbs .thumb:hover .video-icon {
@@ -113,43 +111,47 @@ html {
 
 /* view */
 
-.asset .tags {
-  clear: both;
+.asset {
+  display: grid;
+  gap: 11px;
+  grid: "view self self" 10vh
+        "view others others" 90vh
+      / 1fr var(--thumbnail-size) calc(4 * var(--thumbnail-size));
+  place-content: stretch top;
+  place-items: stretch top;
 }
+
+.asset .view {
+  grid-area: view;
+  place-self: center;
+}
+.asset .self { grid-area: self }
+.asset .others { grid-area: others }
 
 .asset .view img, .asset .view audio, .asset .view video {
-  max-height: calc(100vh - 32px);
-  max-width: calc(100vw - 32px);
-  border-radius: 13px;
+  max-height: calc(100vh - 123px);
+  max-width: 100%;
+  border-radius: 11px;
+}
+
+.asset .self .thumbs {
   float: left;
+  margin-right: 4px;
 }
 
-.self {
-  display: block;
-  text-align: left;
+.asset .self dt {
+  display: inline-block;
+  font-weight: bold;
 }
 
-.self .thumb {
-  float: left;
-  margin: 0 13px;
-}
-
-.self p {
-  color: #ccc;
-  text-align: left;
-  margin: 0;
-  padding: 5px;
+.asset .self dd {
+  display: inline-block;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .asset h2 {
   color: #666;
-}
-
-@keyframes spinner {
-  0% { background-color: #333; }
-  100% { background-color: transparent; }
 }
 
 /* edit */
