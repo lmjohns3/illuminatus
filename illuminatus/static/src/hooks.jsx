@@ -1,20 +1,7 @@
+import axios from 'axios'
 import React, {useEffect, useState} from 'react'
 
-// https://usehooks.com/useKeyPress/
-function useKeyPress(targetKey) {
-  const [keyPressed, setKeyPressed] = useState(false)
-      , downHandler = ({key}) => { if (key === targetKey) setKeyPressed(true); }
-      , upHandler = ({key}) => { if (key === targetKey) setKeyPressed(false); };
-  useEffect(() => {
-    window.addEventListener('keydown', downHandler);
-    window.addEventListener('keyup', upHandler);
-    return () => {
-      window.removeEventListener('keydown', downHandler);
-      window.removeEventListener('keyup', upHandler);
-    };
-  }, []); // Only run on mount and unmount.
-  return keyPressed;
-}
+import {Spinner} from './utils'
 
 
 const useAssets = (query, makeUrl) => {
@@ -67,4 +54,4 @@ const useCurrent = (history, assets, hasMoreAssets, loadMoreAssets) => {
 }
 
 
-export {useAssets, useCurrent, useKeyPress}
+export {useAssets, useCurrent}
