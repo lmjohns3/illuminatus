@@ -1,12 +1,7 @@
-:root {
-  --thumbnail-size: 123px;
-}
-
-@media (max-width: 1000px) {
-  :root {
-    --thumbnail-size: 76px;
-  }
-}
+@media (max-width: 9999px) { :root { --thumbnail-size: 199px; } }
+@media (max-width: 1364px) { :root { --thumbnail-size: 123px; } }
+@media (max-width: 843px)  { :root { --thumbnail-size: 76px; } }
+@media (max-width: 521px)  { :root { --thumbnail-size: 47px; } }
 
 @keyframes spinner {
   0% { background-color: #333; }
@@ -17,16 +12,17 @@ html {
   background: #111;
   color: #eee;
   font-family: sans-serif;
+  text-align: center;
 }
 
-.icon-buttons {
+.controls {
   position: fixed;
   right: 11px;
   top: 11px;
   width: 47px;
 }
 
-.icon-button {
+.button {
   background: #eee;
   border-radius: 23px;
   color: #111;
@@ -38,11 +34,11 @@ html {
   width: 47px;
 }
 
-.icon-button .icon {
+.button .icon {
   font-size: 120%;
 }
 
-.icon-button:hover {
+.button:hover {
   background: #9cf;
 }
 
@@ -51,11 +47,10 @@ html {
 .tags {
   margin: 7px;
   line-height: 1.5;
-  text-align: center;
 }
 
 .tags .icon, .tags .tag {
-  border-radius: 4px;
+  /*border-radius: 4px;*/
   display: inline-block;
   margin-right: 7px;
   padding: 0 4px;
@@ -71,209 +66,56 @@ html {
 /* thumbs */
 
 .thumbs {
-  display: grid;
-  gap: 7px;
-  grid-template-columns: repeat(auto-fit, minmax(47px, 1fr));
-  grid-auto-rows: 47px;
-  grid-auto-flow: dense;
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: center;
   margin: 7px;
 }
 
-.thumbs .thumb {
-  border-radius: 7px;
+.thumb {
+  /*border-radius: 7px;*/
   cursor: pointer;
-  height: 100%;
-  overflow: hidden;
+  height: var(--thumbnail-size);
+  margin: 0 7px 7px 0;
+  min-width: 18px;
   position: relative;
-  width: 100%;
 }
 
-.thumbs .thumb img {
-  object-fit: cover;
-  object-position: 50% 50%;
+.thumb img {
+  height: var(--thumbnail-size);
 }
 
-.thumbs .thumb .video-icon {
-  background-color: #f30;
-  border-radius: 4px;
+.thumb .video-icon {
+  background-color: #fc0;
+  border: solid 3px #111;
   color: #111;
-  font-size: 20px;
+  font-size: calc(var(--thumbnail-size) / 10);
   left: calc(50% - 15px);
+  opacity: 0.7;
   padding: 5px 6px 4px 8px;
   position: absolute;
   top: calc(50% - 15px);
   z-index: 1;
 }
 
-.thumbs .thumb:hover .video-icon {
+.thumb:hover .video-icon {
   display: none;
 }
 
 /* view */
 
-.asset {
-  display: grid;
-  gap: 11px;
-  grid: "view self self" 10vh
-        "view others others" 90vh
-      / 1fr var(--thumbnail-size) calc(4 * var(--thumbnail-size));
-  place-content: stretch top;
-  place-items: stretch top;
+.info {
+  margin: 0 auto;
+  text-align: left;
 }
 
-.asset .view {
-  grid-area: view;
-  place-self: center;
-}
-.asset .self { grid-area: self }
-.asset .others { grid-area: others }
-
-.asset .view img, .asset .view audio, .asset .view video {
-  max-height: calc(100vh - 123px);
-  max-width: 100%;
-  border-radius: 11px;
+.asset > img, .asset > audio, .asset > video {
+  margin: 11px;
+  max-height: 80vh;
+  max-width: 95vw;
+  /*border-radius: 11px;*/
 }
 
-.asset .self .thumbs {
-  float: left;
-  margin-right: 4px;
+.asset th {
+  text-align: left;
 }
-
-.asset .self dt {
-  display: inline-block;
-  font-weight: bold;
-}
-
-.asset .self dd {
-  display: inline-block;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.asset h2 {
-  color: #666;
-}
-
-/* edit */
-
-#tools * { z-index: 3; }
-
-#workspace {
-    height: calc(100% - 21px);
-    width: auto;
-    overflow: hidden;
-    position: relative;
-    z-index: 1;
-}
-
-#workspace img, #workspace video {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    filter: none;
-    z-index: 1;
-}
-
-#workspace #grid {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background-color: transparent;
-    background-size: 40px 40px;
-    background-image:
-        linear-gradient(to right, #000 1px, transparent 1px),
-        linear-gradient(to bottom, #000 1px, transparent 1px);
-    z-index: 2;
-    display: none;
-}
-
-.toolbar {
-    width: 100%;
-    height: 1.5rem;
-    background: #ccc;
-    cursor: default;
-    padding-left: 0.5rem;
-}
-
-.dingbat {
-    font-weight: bold;
-    font-variant: normal;
-    width: 1.5rem;
-    padding-right: 0.3rem;
-}
-
-.toolbar li > a {
-    color: #111;
-    background: #ddd;
-    text-decoration: none;
-    white-space: nowrap;
-    padding: 0.5rem;
-    display: block;
-}
-
-.toolbar a:hover { background: #fff; }
-
-.toolbar > li {
-    background: #ccc;
-    float: left;
-    display: block;
-    position: relative;
-    padding: 0.25rem 0.5rem;
-}
-
-.toolbar > li > ul,
-.toolbar > li > div {
-    display: none;
-    position: absolute;
-    left: -1px;
-    top: 1.5rem;
-    border: solid 1px #999;
-}
-
-.toolbar > li ul li {
-    background: #999;
-    min-height: 1px;
-}
-
-#editor.tagging #tags-tab,
-.toolbar > li:hover { background: #ddd; }
-
-#editor.tagging #tags-tab > div,
-.toolbar > li:hover > ul,
-.toolbar > li:hover > div { display: block; }
-
-#ephemeral-tools { display: none; }
-
-#range {
-    width: 40rem;
-    display: none;
-    padding: 0.25rem 0.5rem 0;
-}
-
-#range input {
-    width: calc(100% - 5rem);
-    margin-right: 1rem;
-    height: 100%;
-}
-
-#editor.cropping #basic-tools,
-#editor.ranging #basic-tools { display: none; }
-
-#editor.cropping #ephemeral-tools,
-#editor.ranging #ephemeral-tools,
-#editor.ranging #range,
-#editor.ranging #grid { display: block; }
-
-#editor-tags {
-    width: 20rem;
-    background: #ddd;
-    padding: 0.3rem;
-}
-
-#tag-input { width: 7rem; }
-
-/* EXPORT */
-
-#export button { padding: 0.25rem 0.5rem; }

@@ -1,80 +1,47 @@
 import axios from 'axios'
 import moment from 'moment'
-import React, {useEffect, useReducer, useState} from 'react'
+import React, {useEffect, useState} from 'react'
 import {BrowserView, MobileView, isBrowser, isMobile} from 'react-device-detect';
 import InfiniteScroll from 'react-infinite-scroll-component'
 import {useHistory, useParams} from 'react-router-dom'
 import Select from 'react-select'
-import { useSwipeable } from 'react-swipeable'
+import {useSwipeable} from 'react-swipeable'
 
 import DB from './db'
 import Tags from './tags'
-
-
-const hrefForTag = (tag, path) => {
-  const part = `/${tag}/`;
-  return path.indexOf(part) < 0 ? tag : path.replace(part, '/');
-}
-
-
-const useAssets = (query, limit = 20) => {
-  const makeUrl = (off, lim = limit) => `/rest/query/${query}?lim=${lim}&off=${off}`
-      , [url, setUrl] = useState(makeUrl(0, 100))
-      , [assets, setAssets] = useState([])
-      , [hasMoreAssets, setHasMoreAssets] = useState(true)
-      , loadMoreAssets = () => {axios(url).then(res => {
-        setUrl(makeUrl(assets.length + res.data.length));
-        setHasMoreAssets(res.data.length >= limit);
-        setAssets(prevAssets => [...prevAssets, ...res.data]);
-      })};
-  useEffect(loadMoreAssets, [query]);
-  return [assets, hasMoreAssets, loadMoreAssets];
-}
-
-
-const useCurrent = (history, assets) => {
-  const h = window.location.hash
-      , hashCurrent = /#\d+/.test(h) ? parseInt(h.replace('#', '')) : null
-      , [current, setCurrent] = useState(hashCurrent);
-  const update = idx => { setCurrent(idx); history.replace(idx ? `#${idx}` : '#'); };
-  useEffect(() => {
-    const onKeyDown = ({key}) => {
-      if (key === 'Escape') {
-        setCurrent(null);
-      } else if (current > 0 && (key === 'ArrowLeft' || key === 'ArrowUp')) {
-        setCurrent(current - 1);
-      } else if (current < assets.length - 1 && (key === 'ArrowRight' || key === 'ArrowDown')) {
-        setCurrent(current + 1);
-      }
-    };
-    if (current) {
-      window.addEventListener('keydown', onKeyDown);
-      return () => window.removeEventListener('keydown', onKeyDown);
-    }
-  }, [assets, current]);
-  return [current, update];
-}
+import Controls from './edit'
+import {useAssets, useCurrent} from './hooks'
 
 
 export default function View() {
   const [formats, setFormats] = useState([]);
-  useEffect(() => {
-    axios('/rest/formats/').then(res => setFormats(res.data));
-  }, []);
+  useEffect(() => { axios('/rest/formats/').then(res => setFormats(res.data)); }, []);
 
-  const [assets, hasMoreAssets, loadMoreAssets] = useAssets(useParams().query);
-  const [current, setCurrent] = useCurrent(useHistory(), assets);
+  const query = useParams().query
+      , hist = useHistory()
+      , assetsUrl = (q, o, l) => `/rest/query/${q}?lim=${o === 0 ? 128 : l}&off=${o}`
+      , [assets, hasMoreAssets, loadMoreAssets] = useAssets(query, assetsUrl)
+      , [current, setCurrent] = useCurrent(hist, assets, hasMoreAssets, loadMoreAssets);
+
   const [thumbsScroll, setThumbsScroll] = useState(0);
-  useEffect(() => { if (!current) window.scrollTo(0, thumbsScroll); }, [current]);
+  useEffect(() => { window.scrollTo(0, current ? 0 : thumbsScroll); }, [current]);
+
+  const [isEditing, setIsEditing] = useState(false);
 
   // Show either the asset being viewed or thumbnails of all the assets.
   if (current && 0 <= current && current < assets.length) {
-    return <Asset asset={assets[current]}
-                  formats={formats}
-                  close={() => setCurrent(null)} />;
+    return <>
+      <Controls asset={assets[current]}
+                close={() => setCurrent(null)}
+                isEditing={isEditing}
+                setIsEditing={setIsEditing} />
+      <Tags assets={[assets[current]]} startVisible={true} href={tag => `/${tag}/`} />
+      <Asset asset={assets[current]} formats={formats} />
+    </>;
   } else {
     return <>
-      <Tags assets={assets} href={hrefForTag} />
+      <Tags assets={assets} startVisible={false} href={(tag, path) =>
+        path.indexOf(`/${tag}/`) < 0 ? `${tag}/` : path.replace(`/${tag}/`, '/')} />
       <InfiniteScroll className='thumbs'
                       dataLength={assets.length}
                       next={loadMoreAssets}
@@ -98,10 +65,7 @@ const Thumb = ({asset, formats, handleClick}) => {
       , isVideo = asset.medium === 'video'
       , source = e => `/asset/small/${asset.slug.slice(0, 1)}/${asset.slug}.${e}`
       , initialSrc = source(isVideo ? 'png' : ext);
-  return <div className='thumb' style={{
-    gridRow: 'span 3',
-    gridColumn: `span ${asset.width > asset.height ? 4 : 3}`,
-  }}>
+  return <div className='thumb'>
     <img className={asset.medium}
          src={initialSrc}
          onClick={handleClick}
@@ -112,9 +76,6 @@ const Thumb = ({asset, formats, handleClick}) => {
 }
 
 
-// const handlers = useSwipeable({ onSwiped: (eventData) => eventHandler, ...config })
-// return (<div {...handlers}> You can swipe here </div>)
-
 const useThumbs = (url, title, formats, handleClick) => {
   const [thumbs, setThumbs] = useState({assets: [], loading: false});
 
@@ -123,73 +84,48 @@ const useThumbs = (url, title, formats, handleClick) => {
     axios(url).then(res => { setThumbs({assets: res.data, loading: false}); });
   }, [url]);
 
-  return thumbs.loading ? <div><h2>{title}</h2><Spinner /></div> :
-         thumbs.assets.length > 0 ? <div>
-           <h2>{title}</h2>
+  return thumbs.loading ? <Spinner /> :
+         thumbs.assets.length > 0 ?
            <div className={`thumbs ${title.toLowerCase()}`}>{
              thumbs.assets.map(a => <Thumb key={a.id} asset={a} formats={formats}
                                            handleClick={handleClick(a)} />)
-           }</div>
-         </div> : null;
+           }</div> : null;
 }
 
 
-const Asset = ({asset, formats, close}) => {
+const Asset = ({asset, formats, close, canEdit}) => {
   const [viewAsset, setViewAsset] = useState(asset)
+      , [isEditing, setEditing] = useState(false)
       , ext = formats[viewAsset.medium]['medium'].ext
+      , stamp = moment(asset.stamp.slice(0, 19))
       , src = `/asset/medium/${viewAsset.slug.slice(0, 1)}/${viewAsset.slug}.${ext}`;
+
   useEffect(() => setViewAsset(asset), [asset]);
+
   return <>
-    <div className='icon-buttons'>
-      <span className='icon-button' onClick={close}><span className='icon' style={{fontSize:'200%'}}>×</span></span>
-      <span className='icon-button'><span className='icon'>🖉</span></span>
+    <div className='asset'>{
+      viewAsset.medium === 'video' ?
+          <video key={viewAsset.id} autoPlay controls><source src={src} /></video> :
+      viewAsset.medium === 'audio' ?
+          <audio key={viewAsset.id} autoPlay controls><source src={src} /></audio> :
+      viewAsset.medium === 'photo' ?
+          <img key={viewAsset.id} src={src} /> : null}
+      <table className='info'><tbody>
+        <tr><td rowSpan='999'>
+          <Thumb asset={asset} formats={formats} handleClick={() => setViewAsset(asset)} />
+        </td><th>ID</th><td>{asset.slug.slice(0, 8)}</td></tr>
+        <tr><th>Date</th><td>{stamp.format('MMMM Do YYYY')}</td></tr>
+        <tr><th>Time</th><td>{stamp.format('h:mm a')}</td></tr>
+        <tr>{asset.width ? <><th>Size</th><td>{asset.width} x {asset.height}</td></> : null}</tr>
+        <tr>{asset.duration ? <><th>Length</th><td>{Math.round(asset.duration)}</td></> : null}</tr>
+      </tbody></table>
     </div>
-    <Tags assets={[asset]} startVisible={true} href={hrefForTag} />
-    <div className='asset'>
-      <div className='view'>{
-        viewAsset.medium === 'video' ?
-        <video title={viewAsset.slug} autoPlay controls><source src={src} /></video> :
-        viewAsset.medium === 'audio' ?
-        <audio title={viewAsset.slug} autoPlay controls><source src={src} /></audio> :
-        <img title={viewAsset.slug} src={src} />}
-      </div>
-      <div className='self'>
-        <Thumb asset={asset} formats={formats} handleClick={() => setViewAsset(asset)} />
-        <dl>
-          <dt>ID</dt><dd>{asset.slug.slice(0, 8)}</dd>
-          <dt>Path</dt><dd>{asset.path}</dd>
-          <dt>Date</dt><dd>{moment(asset.stamp).format('MMMM Do YYYY')}</dd>
-          <dt>Time</dt><dd>{moment(asset.stamp).format('h:mm:ss a')}</dd>
-          {asset.width ? <><dt>Size</dt><dd>{asset.width} x {asset.height}</dd></> : null}
-          {asset.duration ? <><dt>Duration</dt><dd>{asset.duration}</dd></> : null}
-        </dl>
-      </div>
-      <div className='others'>
-        {useThumbs(`/rest/asset/${asset.slug}/similar/tag/?lim=20&min=0.5`,
-                   'Similar', formats, a => () => setViewAsset(a))}
-        {useThumbs(`/rest/asset/${asset.slug}/similar/content/?alg=dhash-8&max=0.03`,
-                   'Duplicates', formats, a => () => setViewAsset(a))}
-      </div>
-    </div>
+    {useThumbs(`/rest/asset/${asset.slug}/similar/tag/?lim=20&min=0.5`,
+               'Similar', formats, a => () => setViewAsset(a))}
+    {useThumbs(`/rest/asset/${asset.slug}/similar/content/?alg=dhash-8&max=0.06`,
+               'Duplicates', formats, a => () => setViewAsset(a))}
   </>;
 }
-
-/*
-      <span className='icon-button'><span className='icon'>⚠</span></span>
-      <span className='icon-button'><span className='icon'>⮢</span></span>
-      <span className='icon-button'><span className='icon'>⮣</span></span>
-      <span className='icon-button'><span className='icon'>⤿</span></span>
-      <span className='icon-button'><span className='icon'>⤾</span></span>
-      <span className='icon-button'><span className='icon'>⬌</span></span>
-      <span className='icon-button'><span className='icon'>⬍</span></span>
-      <span className='icon-button'><span className='icon'>⮮</span></span>
-      <span className='icon-button'><span className='icon'>⮯</span></span>
-      <span className='icon-button'><span className='icon'>🗑</span></span>
-      <span className='icon-button'><span className='icon'>⛔</span></span>
-      <span className='icon-button'><span className='icon'>🚫</span></span>
-      <span className='icon-button'><span className='icon'>✏</span></span>
-      <span className='icon-button'><span className='icon'>☠</span></span>
-*/
 
 
 const Spinner = () => {

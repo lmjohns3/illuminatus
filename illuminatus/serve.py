@@ -178,9 +178,6 @@ def manifest():
 
 
 @app.route('/')
-@app.route('/edit/<string:slug>/')
-@app.route('/label/<string:slug>/')
-@app.route('/cluster/<string:slug>/')
-@app.route('/view/<path:query>')
+@app.route('/<path:query>')
 def index(*args, **kwargs):
     return flask.render_template('index.html')

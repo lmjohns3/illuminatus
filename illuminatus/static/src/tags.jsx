@@ -1,4 +1,4 @@
-import React, {Fragment, useState} from "react"
+import React, {useEffect, useState} from "react"
 import {Link, useLocation} from "react-router-dom"
 import {hsluvToHex} from "hsluv"
 
@@ -104,6 +104,7 @@ const Block = ({block, tags, startVisible, assetCount, href}) => {
     return null;
 
   const [visible, setVisible] = useState(startVisible);
+  useEffect(() => setVisible(startVisible), [startVisible]);
 
   // Sort tags within each block by the index of their pattern, then by name.
   const cmp = (m, n) => {

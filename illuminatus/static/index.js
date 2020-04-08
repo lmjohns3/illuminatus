@@ -53174,8 +53174,11 @@ var Block = function Block(_ref2) {
   var _useState = (0, _react.useState)(startVisible),
       _useState2 = _slicedToArray(_useState, 2),
       visible = _useState2[0],
-      setVisible = _useState2[1]; // Sort tags within each block by the index of their pattern, then by name.
+      setVisible = _useState2[1];
 
+  (0, _react.useEffect)(function () {
+    return setVisible(startVisible);
+  }, [startVisible]); // Sort tags within each block by the index of their pattern, then by name.
 
   var cmp = function cmp(m, n) {
     var s = tags[m],
@@ -53223,443 +53226,7 @@ var Tag = function Tag(_ref3) {
     to: href(tag.name, path)
   }, span) : span;
 };
-},{"react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","hsluv":"../node_modules/hsluv/hsluv.js"}],"view.jsx":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = View;
-
-var _axios = _interopRequireDefault(require("axios"));
-
-var _moment = _interopRequireDefault(require("moment"));
-
-var _react = _interopRequireWildcard(require("react"));
-
-var _reactDeviceDetect = require("react-device-detect");
-
-var _reactInfiniteScrollComponent = _interopRequireDefault(require("react-infinite-scroll-component"));
-
-var _reactRouterDom = require("react-router-dom");
-
-var _reactSelect = _interopRequireDefault(require("react-select"));
-
-var _reactSwipeable = require("react-swipeable");
-
-var _db = _interopRequireDefault(require("./db"));
-
-var _tags = _interopRequireDefault(require("./tags"));
-
-function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function () { return cache; }; return cache; }
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
-
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
-
-function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance"); }
-
-function _iterableToArray(iter) { if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter); }
-
-function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } }
-
-function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
-
-function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
-
-function _iterableToArrayLimit(arr, i) { if (!(Symbol.iterator in Object(arr) || Object.prototype.toString.call(arr) === "[object Arguments]")) { return; } var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
-
-function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
-
-var hrefForTag = function hrefForTag(tag, path) {
-  var part = "/".concat(tag, "/");
-  return path.indexOf(part) < 0 ? tag : path.replace(part, '/');
-};
-
-var useAssets = function useAssets(query) {
-  var limit = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 20;
-
-  var makeUrl = function makeUrl(off) {
-    var lim = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : limit;
-    return "/rest/query/".concat(query, "?lim=").concat(lim, "&off=").concat(off);
-  },
-      _useState = (0, _react.useState)(makeUrl(0, 100)),
-      _useState2 = _slicedToArray(_useState, 2),
-      url = _useState2[0],
-      setUrl = _useState2[1],
-      _useState3 = (0, _react.useState)([]),
-      _useState4 = _slicedToArray(_useState3, 2),
-      assets = _useState4[0],
-      setAssets = _useState4[1],
-      _useState5 = (0, _react.useState)(true),
-      _useState6 = _slicedToArray(_useState5, 2),
-      hasMoreAssets = _useState6[0],
-      setHasMoreAssets = _useState6[1],
-      loadMoreAssets = function loadMoreAssets() {
-    (0, _axios.default)(url).then(function (res) {
-      setUrl(makeUrl(assets.length + res.data.length));
-      setHasMoreAssets(res.data.length >= limit);
-      setAssets(function (prevAssets) {
-        return [].concat(_toConsumableArray(prevAssets), _toConsumableArray(res.data));
-      });
-    });
-  };
-
-  (0, _react.useEffect)(loadMoreAssets, [query]);
-  return [assets, hasMoreAssets, loadMoreAssets];
-};
-
-var useCurrent = function useCurrent(history, assets) {
-  var h = window.location.hash,
-      hashCurrent = /#\d+/.test(h) ? parseInt(h.replace('#', '')) : null,
-      _useState7 = (0, _react.useState)(hashCurrent),
-      _useState8 = _slicedToArray(_useState7, 2),
-      current = _useState8[0],
-      setCurrent = _useState8[1];
-
-  var update = function update(idx) {
-    setCurrent(idx);
-    history.replace(idx ? "#".concat(idx) : '#');
-  };
-
-  (0, _react.useEffect)(function () {
-    var onKeyDown = function onKeyDown(_ref) {
-      var key = _ref.key;
-
-      if (key === 'Escape') {
-        setCurrent(null);
-      } else if (current > 0 && (key === 'ArrowLeft' || key === 'ArrowUp')) {
-        setCurrent(current - 1);
-      } else if (current < assets.length - 1 && (key === 'ArrowRight' || key === 'ArrowDown')) {
-        setCurrent(current + 1);
-      }
-    };
-
-    if (current) {
-      window.addEventListener('keydown', onKeyDown);
-      return function () {
-        return window.removeEventListener('keydown', onKeyDown);
-      };
-    }
-  }, [assets, current]);
-  return [current, update];
-};
-
-function View() {
-  var _useState9 = (0, _react.useState)([]),
-      _useState10 = _slicedToArray(_useState9, 2),
-      formats = _useState10[0],
-      setFormats = _useState10[1];
-
-  (0, _react.useEffect)(function () {
-    (0, _axios.default)('/rest/formats/').then(function (res) {
-      return setFormats(res.data);
-    });
-  }, []);
-
-  var _useAssets = useAssets((0, _reactRouterDom.useParams)().query),
-      _useAssets2 = _slicedToArray(_useAssets, 3),
-      assets = _useAssets2[0],
-      hasMoreAssets = _useAssets2[1],
-      loadMoreAssets = _useAssets2[2];
-
-  var _useCurrent = useCurrent((0, _reactRouterDom.useHistory)(), assets),
-      _useCurrent2 = _slicedToArray(_useCurrent, 2),
-      current = _useCurrent2[0],
-      setCurrent = _useCurrent2[1];
-
-  var _useState11 = (0, _react.useState)(0),
-      _useState12 = _slicedToArray(_useState11, 2),
-      thumbsScroll = _useState12[0],
-      setThumbsScroll = _useState12[1];
-
-  (0, _react.useEffect)(function () {
-    if (!current) window.scrollTo(0, thumbsScroll);
-  }, [current]); // Show either the asset being viewed or thumbnails of all the assets.
-
-  if (current && 0 <= current && current < assets.length) {
-    return _react.default.createElement(Asset, {
-      asset: assets[current],
-      formats: formats,
-      close: function close() {
-        return setCurrent(null);
-      }
-    });
-  } else {
-    return _react.default.createElement(_react.default.Fragment, null, _react.default.createElement(_tags.default, {
-      assets: assets,
-      href: hrefForTag
-    }), _react.default.createElement(_reactInfiniteScrollComponent.default, {
-      className: "thumbs",
-      dataLength: assets.length,
-      next: loadMoreAssets,
-      hasMore: hasMoreAssets,
-      loader: _react.default.createElement(Spinner, null)
-    }, assets.map(function (asset, idx) {
-      return _react.default.createElement(Thumb, {
-        key: asset.id,
-        asset: asset,
-        formats: formats,
-        handleClick: function handleClick() {
-          setThumbsScroll(window.scrollY);
-          setCurrent(idx);
-        }
-      });
-    })));
-  }
-}
-
-var Thumb = function Thumb(_ref2) {
-  var asset = _ref2.asset,
-      formats = _ref2.formats,
-      handleClick = _ref2.handleClick;
-
-  var ext = formats[asset.medium]['small'].ext,
-      isVideo = asset.medium === 'video',
-      source = function source(e) {
-    return "/asset/small/".concat(asset.slug.slice(0, 1), "/").concat(asset.slug, ".").concat(e);
-  },
-      initialSrc = source(isVideo ? 'png' : ext);
-
-  return _react.default.createElement("div", {
-    className: "thumb",
-    style: {
-      gridRow: 'span 3',
-      gridColumn: "span ".concat(asset.width > asset.height ? 4 : 3)
-    }
-  }, _react.default.createElement("img", {
-    className: asset.medium,
-    src: initialSrc,
-    onClick: handleClick,
-    onMouseEnter: function onMouseEnter(_ref3) {
-      var target = _ref3.target;
-      if (isVideo) target.src = source(ext);
-    },
-    onMouseLeave: function onMouseLeave(_ref4) {
-      var target = _ref4.target;
-      if (isVideo) target.src = initialSrc;
-    }
-  }), isVideo ? _react.default.createElement("span", {
-    className: "video-icon"
-  }, "\u25B6") : null);
-}; // const handlers = useSwipeable({ onSwiped: (eventData) => eventHandler, ...config })
-// return (<div {...handlers}> You can swipe here </div>)
-
-
-var useThumbs = function useThumbs(url, title, formats, handleClick) {
-  var _useState13 = (0, _react.useState)({
-    assets: [],
-    loading: false
-  }),
-      _useState14 = _slicedToArray(_useState13, 2),
-      thumbs = _useState14[0],
-      setThumbs = _useState14[1];
-
-  (0, _react.useEffect)(function () {
-    setThumbs({
-      assets: [],
-      loading: true
-    });
-    (0, _axios.default)(url).then(function (res) {
-      setThumbs({
-        assets: res.data,
-        loading: false
-      });
-    });
-  }, [url]);
-  return thumbs.loading ? _react.default.createElement("div", null, _react.default.createElement("h2", null, title), _react.default.createElement(Spinner, null)) : thumbs.assets.length > 0 ? _react.default.createElement("div", null, _react.default.createElement("h2", null, title), _react.default.createElement("div", {
-    className: "thumbs ".concat(title.toLowerCase())
-  }, thumbs.assets.map(function (a) {
-    return _react.default.createElement(Thumb, {
-      key: a.id,
-      asset: a,
-      formats: formats,
-      handleClick: handleClick(a)
-    });
-  }))) : null;
-};
-
-var Asset = function Asset(_ref5) {
-  var asset = _ref5.asset,
-      formats = _ref5.formats,
-      close = _ref5.close;
-
-  var _useState15 = (0, _react.useState)(asset),
-      _useState16 = _slicedToArray(_useState15, 2),
-      viewAsset = _useState16[0],
-      setViewAsset = _useState16[1],
-      ext = formats[viewAsset.medium]['medium'].ext,
-      src = "/asset/medium/".concat(viewAsset.slug.slice(0, 1), "/").concat(viewAsset.slug, ".").concat(ext);
-
-  (0, _react.useEffect)(function () {
-    return setViewAsset(asset);
-  }, [asset]);
-  return _react.default.createElement(_react.default.Fragment, null, _react.default.createElement("div", {
-    className: "icon-buttons"
-  }, _react.default.createElement("span", {
-    className: "icon-button",
-    onClick: close
-  }, _react.default.createElement("span", {
-    className: "icon",
-    style: {
-      fontSize: '200%'
-    }
-  }, "\xD7")), _react.default.createElement("span", {
-    className: "icon-button"
-  }, _react.default.createElement("span", {
-    className: "icon"
-  }, "\uD83D\uDD89"))), _react.default.createElement(_tags.default, {
-    assets: [asset],
-    startVisible: true,
-    href: hrefForTag
-  }), _react.default.createElement("div", {
-    className: "asset"
-  }, _react.default.createElement("div", {
-    className: "view"
-  }, viewAsset.medium === 'video' ? _react.default.createElement("video", {
-    title: viewAsset.slug,
-    autoPlay: true,
-    controls: true
-  }, _react.default.createElement("source", {
-    src: src
-  })) : viewAsset.medium === 'audio' ? _react.default.createElement("audio", {
-    title: viewAsset.slug,
-    autoPlay: true,
-    controls: true
-  }, _react.default.createElement("source", {
-    src: src
-  })) : _react.default.createElement("img", {
-    title: viewAsset.slug,
-    src: src
-  })), _react.default.createElement("div", {
-    className: "self"
-  }, _react.default.createElement(Thumb, {
-    asset: asset,
-    formats: formats,
-    handleClick: function handleClick() {
-      return setViewAsset(asset);
-    }
-  }), _react.default.createElement("dl", null, _react.default.createElement("dt", null, "ID"), _react.default.createElement("dd", null, asset.slug.slice(0, 8)), _react.default.createElement("dt", null, "Path"), _react.default.createElement("dd", null, asset.path), _react.default.createElement("dt", null, "Date"), _react.default.createElement("dd", null, (0, _moment.default)(asset.stamp).format('MMMM Do YYYY')), _react.default.createElement("dt", null, "Time"), _react.default.createElement("dd", null, (0, _moment.default)(asset.stamp).format('h:mm:ss a')), asset.width ? _react.default.createElement(_react.default.Fragment, null, _react.default.createElement("dt", null, "Size"), _react.default.createElement("dd", null, asset.width, " x ", asset.height)) : null, asset.duration ? _react.default.createElement(_react.default.Fragment, null, _react.default.createElement("dt", null, "Duration"), _react.default.createElement("dd", null, asset.duration)) : null)), _react.default.createElement("div", {
-    className: "others"
-  }, useThumbs("/rest/asset/".concat(asset.slug, "/similar/tag/?lim=20&min=0.5"), 'Similar', formats, function (a) {
-    return function () {
-      return setViewAsset(a);
-    };
-  }), useThumbs("/rest/asset/".concat(asset.slug, "/similar/content/?alg=dhash-8&max=0.03"), 'Duplicates', formats, function (a) {
-    return function () {
-      return setViewAsset(a);
-    };
-  }))));
-};
-/*
-      <span className='icon-button'><span className='icon'>⚠</span></span>
-      <span className='icon-button'><span className='icon'>⮢</span></span>
-      <span className='icon-button'><span className='icon'>⮣</span></span>
-      <span className='icon-button'><span className='icon'>⤿</span></span>
-      <span className='icon-button'><span className='icon'>⤾</span></span>
-      <span className='icon-button'><span className='icon'>⬌</span></span>
-      <span className='icon-button'><span className='icon'>⬍</span></span>
-      <span className='icon-button'><span className='icon'>⮮</span></span>
-      <span className='icon-button'><span className='icon'>⮯</span></span>
-      <span className='icon-button'><span className='icon'>🗑</span></span>
-      <span className='icon-button'><span className='icon'>⛔</span></span>
-      <span className='icon-button'><span className='icon'>🚫</span></span>
-      <span className='icon-button'><span className='icon'>✏</span></span>
-      <span className='icon-button'><span className='icon'>☠</span></span>
-*/
-
-
-var Spinner = function Spinner() {
-  var bladeStyle = {
-    position: 'absolute',
-    left: '0.4629em',
-    bottom: '0',
-    width: '0.074em',
-    height: '0.2777em',
-    borderRadius: '0.0555em',
-    backgroundColor: 'transparent',
-    transformOrigin: 'center -0.2222em',
-    animation: 'spinner 1s infinite linear'
-  };
-  return _react.default.createElement("div", {
-    style: {
-      fontSize: '34px',
-      position: 'relative',
-      display: 'inline-block',
-      width: '1em',
-      height: '1em'
-    }
-  }, _react.default.createElement("div", {
-    style: _objectSpread({}, bladeStyle, {
-      animationDelay: '0.00000s',
-      transform: 'rotate(  0deg)'
-    })
-  }), _react.default.createElement("div", {
-    style: _objectSpread({}, bladeStyle, {
-      animationDelay: '0.08333s',
-      transform: 'rotate( 30deg)'
-    })
-  }), _react.default.createElement("div", {
-    style: _objectSpread({}, bladeStyle, {
-      animationDelay: '0.16666s',
-      transform: 'rotate( 60deg)'
-    })
-  }), _react.default.createElement("div", {
-    style: _objectSpread({}, bladeStyle, {
-      animationDelay: '0.25000s',
-      transform: 'rotate( 90deg)'
-    })
-  }), _react.default.createElement("div", {
-    style: _objectSpread({}, bladeStyle, {
-      animationDelay: '0.33333s',
-      transform: 'rotate(120deg)'
-    })
-  }), _react.default.createElement("div", {
-    style: _objectSpread({}, bladeStyle, {
-      animationDelay: '0.41666s',
-      transform: 'rotate(150deg)'
-    })
-  }), _react.default.createElement("div", {
-    style: _objectSpread({}, bladeStyle, {
-      animationDelay: '0.50000s',
-      transform: 'rotate(180deg)'
-    })
-  }), _react.default.createElement("div", {
-    style: _objectSpread({}, bladeStyle, {
-      animationDelay: '0.58333s',
-      transform: 'rotate(210deg)'
-    })
-  }), _react.default.createElement("div", {
-    style: _objectSpread({}, bladeStyle, {
-      animationDelay: '0.66666s',
-      transform: 'rotate(240deg)'
-    })
-  }), _react.default.createElement("div", {
-    style: _objectSpread({}, bladeStyle, {
-      animationDelay: '0.75000s',
-      transform: 'rotate(270deg)'
-    })
-  }), _react.default.createElement("div", {
-    style: _objectSpread({}, bladeStyle, {
-      animationDelay: '0.83333s',
-      transform: 'rotate(300deg)'
-    })
-  }), _react.default.createElement("div", {
-    style: _objectSpread({}, bladeStyle, {
-      animationDelay: '0.91666s',
-      transform: 'rotate(330deg)'
-    })
-  }));
-};
-},{"axios":"../node_modules/axios/index.js","moment":"../node_modules/moment/moment.js","react":"../node_modules/react/index.js","react-device-detect":"../node_modules/react-device-detect/main.js","react-infinite-scroll-component":"../node_modules/react-infinite-scroll-component/dist/index.es.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","react-select":"../node_modules/react-select/dist/react-select.browser.esm.js","react-swipeable":"../node_modules/react-swipeable/es/index.js","./db":"db.jsx","./tags":"tags.jsx"}],"../node_modules/react-image-crop/dist/ReactCrop.min.js":[function(require,module,exports) {
+},{"react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","hsluv":"../node_modules/hsluv/hsluv.js"}],"../node_modules/react-image-crop/dist/ReactCrop.min.js":[function(require,module,exports) {
 var define;
 !function (e, t) {
   "object" == typeof exports && "object" == typeof module ? module.exports = t(require("react")) : "function" == typeof define && define.amd ? define(["react"], t) : "object" == typeof exports ? exports.ReactCrop = t(require("react")) : e.ReactCrop = t(e.React);
@@ -54587,54 +54154,111 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 
-var _react = _interopRequireWildcard(require("react"));
+var _moment = _interopRequireDefault(require("moment"));
 
-var _reactRouterDom = require("react-router-dom");
+var _react = _interopRequireWildcard(require("react"));
 
 var _reactImageCrop = _interopRequireDefault(require("react-image-crop"));
 
 var _reactSelect = _interopRequireDefault(require("react-select"));
 
-var _axios = _interopRequireDefault(require("axios"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
 function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function () { return cache; }; return cache; }
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
 
-var Edit = function Edit() {
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var Controls = function Controls(_ref) {
+  var asset = _ref.asset,
+      close = _ref.close,
+      isEditing = _ref.isEditing,
+      setIsEditing = _ref.setIsEditing;
   return _react.default.createElement("div", {
-    className: "edit"
-  }, "EDIT ", (0, _reactRouterDom.useParams)().id);
+    className: "controls"
+  }, _react.default.createElement(Button, {
+    name: "close",
+    onClick: close,
+    style: {
+      fontSize: '200%'
+    },
+    icon: "\xD7"
+  }), _react.default.createElement(Button, {
+    name: "edit",
+    onClick: function onClick() {
+      return setIsEditing(!isEditing);
+    },
+    icon: "\uD83D\uDD89"
+  }), isEditing ? _react.default.createElement(EditingButtons, null) : null);
 };
 
-var _default = Edit;
+var EditingButtons = function EditingButtons() {
+  return _react.default.createElement(_react.default.Fragment, null, _react.default.createElement(Button, {
+    name: "magic",
+    icon: "\u2618"
+  }), _react.default.createElement(Button, {
+    name: "brightness",
+    icon: "\u2600"
+  }), _react.default.createElement(Button, {
+    name: "contrast",
+    icon: "\u25D1"
+  }), _react.default.createElement(Button, {
+    name: "saturation",
+    icon: "\u25A7"
+  }), _react.default.createElement(Button, {
+    name: "hue",
+    icon: "\uD83D\uDD8C"
+  }), _react.default.createElement(Button, {
+    name: "rotate",
+    icon: "\u21BB"
+  }), _react.default.createElement(Button, {
+    name: "cw",
+    icon: "\u2935"
+  }), _react.default.createElement(Button, {
+    name: "ccw",
+    icon: "\u2934"
+  }), _react.default.createElement(Button, {
+    name: "hflip",
+    icon: "\u2194"
+  }), _react.default.createElement(Button, {
+    name: "vflip",
+    icon: "\u2195"
+  }), _react.default.createElement(Button, {
+    name: "delete",
+    icon: "\uD83D\uDDD1"
+  }), _react.default.createElement(Button, {
+    name: "crop",
+    icon: "\u2702"
+  }));
+}; // <Button icon='⚠' />
+// <Button icon='⮢' />
+// <Button icon='⮣' />
+// <Button icon='⤿' />
+// <Button icon='⤾' />
+// <Button icon='⛔' />
+// <Button icon='🚫' />
+// <Button icon='✏' />
+// <Button icon='☠' />
+
+
+var Button = function Button(_ref2) {
+  var name = _ref2.name,
+      icon = _ref2.icon,
+      onClick = _ref2.onClick,
+      style = _ref2.style;
+  return _react.default.createElement("span", {
+    className: "button",
+    title: name,
+    style: style,
+    onClick: onClick
+  }, _react.default.createElement("span", {
+    className: "icon"
+  }, icon));
+};
+
+var _default = Controls;
 /*
+<ReactCrop src={this.state.asset.src} crop={this.state.crop} onChange={newCrop => this.setCrop(newCrop)} />
 
-const EditTools = () => (
-  <ul>
-    <li><a id="magic"><span className="dingbat">☘</span> Magic</a></li>
-    <li className="sep"></li>
-    <li><a id="brightness"><span className="dingbat">☀</span> Brightness</a></li>
-    <li><a id="contrast"><span className="dingbat">◑</span> Contrast</a></li>
-    <li><a id="saturation"><span className="dingbat">▧</span> Saturation</a></li>
-    <li><a id="hue"><span className="dingbat">🖌</span> Hue</a></li>
-    <li className="sep"></li>
-    <li><a id="rotate"><span className="dingbat">↻</span> Rotate</a></li>
-    <li><a id="cw-90"><span className="dingbat">⤵</span> Clockwise 90&deg;</a></li>
-    <li><a id="ccw-90"><span className="dingbat">⤴</span> Counter-clockwise 90&deg;</a></li>
-    <li><a id="hflip"><span className="dingbat">↔</span> Flip Horizontal</a></li>
-    <li><a id="vflip"><span className="dingbat">↕</span> Flip Vertical</a></li>
-    <li className="sep"></li>
-    <li><a id="crop"><span className="dingbat">✂</span> Crop</a></li>
-  </ul>)
-
-const TagTools = ({tags}) => (
-  <ul>
-    {tags.map(tag => <li className="tag group-{tag.group}">{tag.name}</li>)}
-    <li><input id="tag-input" type="text"/></li>
-  </ul>)
 
 const FilterTools = ({filters}) => (
     <ul>{filters.map(filter => (
@@ -54651,37 +54275,6 @@ const StampTools = ({stamp}) => (
   </ul>)
 
 
-class Editing extends Component {
-    constructor(props) {
-        super(props);
-
-        this.state = {
-            asset: {
-                tags: [],
-                filters: [],
-                stamp: {},
-            },
-            format: {},
-            uniq: 1,
-            isRanging: false,
-            isCropping: false,
-            crop: {unit: "%"},
-        };
-
-        this.setCurrent = this.setCurrent.bind(this);
-    }
-
-    setCurrent() {
-    }
-
-    setCrop() {
-    }
-
-    render() {
-        const {asset, format, uniq} = this.state;
-        return (
-<div id="editing">
-  <div id="tools">
     <ul className="toolbar" id="basic-tools">
       <li><span className="dingbat">⚒</span> Edit <EditTools /></li>
       <li><span className="dingbat">🏷</span> Tags <TagTools tags={asset.tags} /></li>
@@ -54693,174 +54286,12 @@ class Editing extends Component {
       <li id="cancel"><span className="dingbat">✘</span> Cancel</li>
       <li id="commit"><span className="dingbat">✔</span> Save</li>
       <li id="range"><input type="range" min="0" max="200" defaultValue="100" step="1"/><span id="range-value"></span></li>
-    </ul>
-  </div>
-  <div id="workspace">
-    <div id="grid"></div>
-    { (asset.is_video) ? <video controls src="/thumb/{format.path}/{asset.thumb}.{format.ext}?{uniq}"/>
-    : (asset.is_audio) ? <audio controls src="/thumb/{format.path}/{asset.thumb}.{format.ext}?{uniq}"/>
-    : (asset.is_photo) ? <img src="/thumb/{format.path}/{asset.thumb}.{format.ext}?{this.state.uniq}"/>
-    : ""}
-    <ReactCrop src={this.state.asset.src} crop={this.state.crop} onChange={newCrop => this.setCrop(newCrop)} />
   </div>
 </div>);
     }
 }
 
 
-
-(function() {
-  'use strict';
-
-  var KEYS = {
-    tab: 9, enter: 13, escape: 27, space: 32,
-    insert: 45, delete: 46, backspace: 8,
-    pageup: 33, pagedown: 34, end: 35, home: 36,
-    left: 37, up: 38, right: 39, down: 40,
-    '0': 48, '1': 49, '2': 50, '3': 51, '4': 52,
-    '5': 53, '6': 54, '7': 55, '8': 56, '9': 57,
-    a: 65, b: 66, c: 67, d: 68, e: 69, f: 70, g: 71, h: 72, i: 73,
-    j: 74, k: 75, l: 76, m: 77, n: 78, o: 79, p: 80, q: 81, r: 82,
-    s: 83, t: 84, u: 85, v: 86, w: 87, x: 88, y: 89, z: 90,
-    '=': 187, '-': 189, '`': 192, '[': 219, ']': 221
-  };
-
-  var tags = null;
-  var config = null;
-  var thumbs = null;
-  var editor = null;
-
-  var showExportDialog = function() {
-    $.featherlight('text', {
-      afterOpen: function(e) {
-        var query = thumbs.query;
-        var name = query.replace(/\W+/g, '-');
-        var selected = thumbs.selected();
-        if (selected.length > 0) {
-          var ids = [];
-          selected.forEach(function(ids) { asset.push('id:' + asset.rec.id); });
-          query = ids.join('|');
-          name = name + '-' + ids.length;
-        }
-        var render = Handlebars.compile($('#export-template').html());
-        $('div.featherlight-inner').html(
-          render({query: query, name: 'export-' + name}));
-      }});
-  };
-
-  var ensureEditor = function() {
-    if (!editor)
-      editor = new Illuminatus.Editor(
-        config, '#editor-template', $('#editor'), $('#editor-column'));
-    editor.edit(thumbs.asset);
-    tags.setClosed(true);
-  };
-
-  Illuminatus.Editor = function(config, template, $target, $column) {
-    this.config = config;
-    this.template = Handlebars.compile($(template).html());
-    this.$target = $target;
-    this.$column = $column;
-
-    var self = this;
-    this.$column.on('input', 'input[type=range]', function(e) {
-      var mod = 'filter';
-      var value = this.value + '%';
-      var filter = self.isRanging;
-      if (self.isRanging === 'saturation') {
-        filter = 'saturate';
-      } else if (self.isRanging === 'hue') {
-        value = this.value + 'deg';
-        filter = 'hue-rotate';
-      } else if (self.isRanging === 'rotate') {
-        mod = 'transform';
-        value = this.value + 'deg';
-      }
-      $('#workspace img').css(mod, filter + '(' + value + ')');
-      $('#range-value').html(value);
-    });
-
-    this.isTagging = null;
-    this.isRanging = null;
-    this.isCropping = null;
-    this.$crop = null;
-
-    this.asset = null;
-  };
-
-  Illuminatus.Editor.prototype = {
-    edit: function(asset) {
-      location.hash = '#edit:' + thumbs.query + '=' + thumbs.assets.indexOf(asset);
-      this.asset = asset;
-      this.render();
-      this.$column.removeClass('closed');
-      thumbs.setNarrow(true);
-    },
-
-    hide: function() {
-      location.hash = '#thumbs:' + thumbs.query;
-      this.$column.addClass('closed');
-      thumbs.setNarrow(false);
-      this.asset = null;
-    },
-
-    render: function() {
-      var when = moment(this.asset.rec.stamp);
-      var format = this.config.formats.large_photo_format;
-      if (this.asset.rec.medium === 'audio')
-        format = this.config.formats.large_audio_format;
-      if (this.asset.rec.medium === 'video')
-        format = this.config.formats.large_video_format;
-      this.$target.html(this.template({
-        format: format,
-        asset: this.asset.rec,
-        is_audio: this.asset.rec.medium === 'audio',
-        is_photo: this.asset.rec.medium === 'photo',
-        is_video: this.asset.rec.medium === 'video',
-        thumb: this.asset.rec.path_hash.slice(0, 2) + '/' + this.asset.rec.path_hash,
-        uniq: moment().format(),
-        stamp: {
-          title: when.format('DD MMM'),
-          year: when.format('YYYY'),
-          month: when.format('MM'),
-          day: when.format('DD'),
-          hour: when.format('ha')
-        }
-      }));
-      if (this.isTagging)
-        this.startTagging();
-    },
-
-    renderCallback: function() {
-      var self = this;
-      return function() { self.render(); };
-    },
-
-    remove: function() {
-      if (!this.asset) return;
-      thumbs.remove(this.asset);
-      if (thumbs.asset)
-        this.edit(thumbs.asset);
-    },
-
-    cancel: function() {
-      if (this.isTagging) {
-        this.isTagging = null;
-        this.$target.toggleClass('tagging', false);
-      }
-      if (this.isCropping) {
-        this.isCropping = null;
-        this.$target.toggleClass('cropping', false);
-        if (this.$crop) this.$crop.destroy();
-        this.$crop = null;
-        $('#workspace img').attr('style', '');
-      }
-      if (this.isRanging) {
-        this.isRanging = null;
-        this.$target.toggleClass('ranging', false);
-        $('#workspace img').css({filter: 'none', transform: 'none'});
-      }
-    },
 
     commit: function() {
       if (this.isTagging) {
@@ -55068,128 +54499,492 @@ class Editing extends Component {
         editor.startCrop();
     }
   };
-
-  $(document).keydown(handleKeydown);
-
-  $('#editor').on('click', '#magic', function(e) {
-    editor.asset.autocontrast(1, editor.renderCallback()); });
-
-  $('#editor').on('click', '#brightness', function(e) { editor.startRange('brightness'); });
-  $('#editor').on('click', '#contrast', function(e) { editor.startRange('contrast'); });
-  $('#editor').on('click', '#saturation', function(e) { editor.startRange('saturation'); });
-  $('#editor').on('click', '#hue', function(e) { editor.startRange('hue'); });
-
-  $('#editor').on('click', '#rotate', function(e) { editor.startRange('rotate'); });
-  $('#editor').on('click', '#rotate-ccw-90', function(e) {
-    editor.asset.rotate(-90, editor.renderCallback()); });
-  $('#editor').on('click', '#rotate-cw-90', function(e) {
-    editor.asset.rotate(90, editor.renderCallback()); });
-  $('#editor').on('click', '#hflip', function(e) {
-    editor.asset.hflip(editor.renderCallback()); });
-  $('#editor').on('click', '#vflip', function(e) {
-    editor.asset.vflip(editor.renderCallback()); });
-
-  $('#editor').on('click', '#crop', function(e) { editor.startCrop(); });
-
-  $('#editor').on('click', '#cancel', function(e) { editor.cancel(); });
-  $('#editor').on('click', '#commit', function(e) { editor.commit(); });
-
-  $('#editor').on('click', '#filters a', function(e) {
-    editor.asset.removeFilter($(this).data('filter'),
-                             $(this).data('index'),
-                             editor.renderCallback());
-  })
-
-  $('#editor').on('mouseenter', '#tags-tab', function(e) { editor.startTagging(); });
-  $('#editor').on('mouseleave', '#tags-tab', function(e) { editor.cancel(); });
-
-  $('#thumbs').on('click', '.thumb', function(e) {
-    var asset = $(e.target).closest('li')[0].asset;
-    if (e.ctrlKey || e.metaKey || e.altKey) {
-      asset.toggleSelect();
-    } else {
-      thumbs.clearSelection();
-      thumbs.setCursor(asset);
-      if (editor)
-        editor.edit(thumbs.asset);
-    };
-  });
-
-  $(document).on('submit', '#export', function(e) { $.featherlight.close(); });
 */
 
 exports.default = _default;
-},{"react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","react-image-crop":"../node_modules/react-image-crop/dist/ReactCrop.min.js","react-select":"../node_modules/react-select/dist/react-select.browser.esm.js","axios":"../node_modules/axios/index.js"}],"label.jsx":[function(require,module,exports) {
+},{"moment":"../node_modules/moment/moment.js","react":"../node_modules/react/index.js","react-image-crop":"../node_modules/react-image-crop/dist/ReactCrop.min.js","react-select":"../node_modules/react-select/dist/react-select.browser.esm.js"}],"hooks.jsx":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = void 0;
+exports.useKeyPress = useKeyPress;
+exports.useCurrent = exports.useAssets = void 0;
 
 var _react = _interopRequireWildcard(require("react"));
+
+function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function () { return cache; }; return cache; }
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
+
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance"); }
+
+function _iterableToArray(iter) { if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter); }
+
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } }
+
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
+
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
+
+function _iterableToArrayLimit(arr, i) { if (!(Symbol.iterator in Object(arr) || Object.prototype.toString.call(arr) === "[object Arguments]")) { return; } var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
+// https://usehooks.com/useKeyPress/
+function useKeyPress(targetKey) {
+  var _useState = (0, _react.useState)(false),
+      _useState2 = _slicedToArray(_useState, 2),
+      keyPressed = _useState2[0],
+      setKeyPressed = _useState2[1],
+      downHandler = function downHandler(_ref) {
+    var key = _ref.key;
+    if (key === targetKey) setKeyPressed(true);
+  },
+      upHandler = function upHandler(_ref2) {
+    var key = _ref2.key;
+    if (key === targetKey) setKeyPressed(false);
+  };
+
+  (0, _react.useEffect)(function () {
+    window.addEventListener('keydown', downHandler);
+    window.addEventListener('keyup', upHandler);
+    return function () {
+      window.removeEventListener('keydown', downHandler);
+      window.removeEventListener('keyup', upHandler);
+    };
+  }, []); // Only run on mount and unmount.
+
+  return keyPressed;
+}
+
+var useAssets = function useAssets(query, makeUrl) {
+  var limit = 64,
+      _useState3 = (0, _react.useState)(function () {
+    return function () {};
+  }),
+      _useState4 = _slicedToArray(_useState3, 2),
+      load = _useState4[0],
+      setLoad = _useState4[1],
+      _useState5 = (0, _react.useState)([]),
+      _useState6 = _slicedToArray(_useState5, 2),
+      assets = _useState6[0],
+      setAssets = _useState6[1],
+      _useState7 = (0, _react.useState)(true),
+      _useState8 = _slicedToArray(_useState7, 2),
+      hasMore = _useState8[0],
+      setHasMore = _useState8[1]; // Redefine the load function whenever the number of loaded assets changes.
+
+
+  (0, _react.useEffect)(function () {
+    var offset = assets.length,
+        url = makeUrl(query, offset, limit),
+        func = function func() {
+      return axios(url).then(function (res) {
+        setHasMore(res.data.length >= limit);
+        setAssets(function (prevAssets) {
+          return [].concat(_toConsumableArray(prevAssets), _toConsumableArray(res.data));
+        });
+      });
+    };
+
+    setLoad(function () {
+      return func;
+    });
+    if (offset === 0) func();
+  }, [assets.length]); // Clear assets whenever the query changes.
+
+  (0, _react.useEffect)(function () {
+    setAssets([]);
+  }, [query]);
+  return [assets, hasMore, load];
+};
+
+exports.useAssets = useAssets;
+
+var useCurrent = function useCurrent(history, assets, hasMoreAssets, loadMoreAssets) {
+  var _useState9 = (0, _react.useState)(null),
+      _useState10 = _slicedToArray(_useState9, 2),
+      current = _useState10[0],
+      setCurrent = _useState10[1],
+      update = function update(idx) {
+    setCurrent(idx);
+    history.replace(idx ? "#".concat(idx) : '#');
+
+    if (hasMoreAssets && idx && idx > assets.length - 32) {
+      loadMoreAssets();
+    }
+  };
+
+  (0, _react.useEffect)(function () {
+    if (assets.length === 0) update(null);
+  }, [assets.length]);
+  (0, _react.useEffect)(function () {
+    var onKeyDown = function onKeyDown(_ref3) {
+      var key = _ref3.key;
+      if (key === 'Escape') update(null);
+      if (key === 'ArrowLeft' && current > 0) update(current - 1);
+      if (key === 'ArrowRight' && current < assets.length - 1) update(current + 1);
+    };
+
+    if (current) {
+      window.addEventListener('keydown', onKeyDown);
+      return function () {
+        return window.removeEventListener('keydown', onKeyDown);
+      };
+    }
+  }, [assets.length, current]);
+  return [current, update];
+};
+
+exports.useCurrent = useCurrent;
+},{"react":"../node_modules/react/index.js"}],"view.jsx":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = View;
+
+var _axios = _interopRequireDefault(require("axios"));
+
+var _moment = _interopRequireDefault(require("moment"));
+
+var _react = _interopRequireWildcard(require("react"));
+
+var _reactDeviceDetect = require("react-device-detect");
+
+var _reactInfiniteScrollComponent = _interopRequireDefault(require("react-infinite-scroll-component"));
 
 var _reactRouterDom = require("react-router-dom");
 
 var _reactSelect = _interopRequireDefault(require("react-select"));
 
-var _axios = _interopRequireDefault(require("axios"));
+var _reactSwipeable = require("react-swipeable");
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+var _db = _interopRequireDefault(require("./db"));
 
-function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function () { return cache; }; return cache; }
+var _tags = _interopRequireDefault(require("./tags"));
 
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+var _edit = _interopRequireDefault(require("./edit"));
 
-var Label = function Label() {
-  return _react.default.createElement("div", {
-    className: "label"
-  }, "LABEL ", (0, _reactRouterDom.useParams)().id);
-};
-
-var _default = Label;
-/*
-const TagSelections = (props) => (
-    <Select
-    clearButton
-    defaultSelected={options.slice(0, 5)}
-    labelKey="name"
-    multiple
-    options={options}
-    placeholder="Tags..." />)
-
-*/
-
-exports.default = _default;
-},{"react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","react-select":"../node_modules/react-select/dist/react-select.browser.esm.js","axios":"../node_modules/axios/index.js"}],"cluster.jsx":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-
-var _react = _interopRequireWildcard(require("react"));
-
-var _reactRouterDom = require("react-router-dom");
-
-var _axios = _interopRequireDefault(require("axios"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+var _hooks = require("./hooks");
 
 function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function () { return cache; }; return cache; }
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
 
-var Cluster = function Cluster() {
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
+
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
+
+function _iterableToArrayLimit(arr, i) { if (!(Symbol.iterator in Object(arr) || Object.prototype.toString.call(arr) === "[object Arguments]")) { return; } var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
+function View() {
+  var _useState = (0, _react.useState)([]),
+      _useState2 = _slicedToArray(_useState, 2),
+      formats = _useState2[0],
+      setFormats = _useState2[1];
+
+  (0, _react.useEffect)(function () {
+    (0, _axios.default)('/rest/formats/').then(function (res) {
+      return setFormats(res.data);
+    });
+  }, []);
+
+  var query = (0, _reactRouterDom.useParams)().query,
+      hist = (0, _reactRouterDom.useHistory)(),
+      assetsUrl = function assetsUrl(q, o, l) {
+    return "/rest/query/".concat(q, "?lim=").concat(o === 0 ? 128 : l, "&off=").concat(o);
+  },
+      _useAssets = (0, _hooks.useAssets)(query, assetsUrl),
+      _useAssets2 = _slicedToArray(_useAssets, 3),
+      assets = _useAssets2[0],
+      hasMoreAssets = _useAssets2[1],
+      loadMoreAssets = _useAssets2[2],
+      _useCurrent = (0, _hooks.useCurrent)(hist, assets, hasMoreAssets, loadMoreAssets),
+      _useCurrent2 = _slicedToArray(_useCurrent, 2),
+      current = _useCurrent2[0],
+      setCurrent = _useCurrent2[1];
+
+  var _useState3 = (0, _react.useState)(0),
+      _useState4 = _slicedToArray(_useState3, 2),
+      thumbsScroll = _useState4[0],
+      setThumbsScroll = _useState4[1];
+
+  (0, _react.useEffect)(function () {
+    window.scrollTo(0, current ? 0 : thumbsScroll);
+  }, [current]);
+
+  var _useState5 = (0, _react.useState)(false),
+      _useState6 = _slicedToArray(_useState5, 2),
+      isEditing = _useState6[0],
+      setIsEditing = _useState6[1]; // Show either the asset being viewed or thumbnails of all the assets.
+
+
+  if (current && 0 <= current && current < assets.length) {
+    return _react.default.createElement(_react.default.Fragment, null, _react.default.createElement(_edit.default, {
+      asset: assets[current],
+      close: function close() {
+        return setCurrent(null);
+      },
+      isEditing: isEditing,
+      setIsEditing: setIsEditing
+    }), _react.default.createElement(_tags.default, {
+      assets: [assets[current]],
+      startVisible: true,
+      href: function href(tag) {
+        return "/".concat(tag, "/");
+      }
+    }), _react.default.createElement(Asset, {
+      asset: assets[current],
+      formats: formats
+    }));
+  } else {
+    return _react.default.createElement(_react.default.Fragment, null, _react.default.createElement(_tags.default, {
+      assets: assets,
+      startVisible: false,
+      href: function href(tag, path) {
+        return path.indexOf("/".concat(tag, "/")) < 0 ? "".concat(tag, "/") : path.replace("/".concat(tag, "/"), '/');
+      }
+    }), _react.default.createElement(_reactInfiniteScrollComponent.default, {
+      className: "thumbs",
+      dataLength: assets.length,
+      next: loadMoreAssets,
+      hasMore: hasMoreAssets,
+      loader: _react.default.createElement(Spinner, null)
+    }, assets.map(function (asset, idx) {
+      return _react.default.createElement(Thumb, {
+        key: asset.id,
+        asset: asset,
+        formats: formats,
+        handleClick: function handleClick() {
+          setThumbsScroll(window.scrollY);
+          setCurrent(idx);
+        }
+      });
+    })));
+  }
+}
+
+var Thumb = function Thumb(_ref) {
+  var asset = _ref.asset,
+      formats = _ref.formats,
+      handleClick = _ref.handleClick;
+
+  var ext = formats[asset.medium]['small'].ext,
+      isVideo = asset.medium === 'video',
+      source = function source(e) {
+    return "/asset/small/".concat(asset.slug.slice(0, 1), "/").concat(asset.slug, ".").concat(e);
+  },
+      initialSrc = source(isVideo ? 'png' : ext);
+
   return _react.default.createElement("div", {
-    className: "cluster"
-  }, "CLUSTER ", (0, _reactRouterDom.useParams)().query);
+    className: "thumb"
+  }, _react.default.createElement("img", {
+    className: asset.medium,
+    src: initialSrc,
+    onClick: handleClick,
+    onMouseEnter: function onMouseEnter(_ref2) {
+      var target = _ref2.target;
+      if (isVideo) target.src = source(ext);
+    },
+    onMouseLeave: function onMouseLeave(_ref3) {
+      var target = _ref3.target;
+      if (isVideo) target.src = initialSrc;
+    }
+  }), isVideo ? _react.default.createElement("span", {
+    className: "video-icon"
+  }, "\u25B6") : null);
 };
 
-var _default = Cluster;
-exports.default = _default;
-},{"react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","axios":"../node_modules/axios/index.js"}],"index.jsx":[function(require,module,exports) {
+var useThumbs = function useThumbs(url, title, formats, handleClick) {
+  var _useState7 = (0, _react.useState)({
+    assets: [],
+    loading: false
+  }),
+      _useState8 = _slicedToArray(_useState7, 2),
+      thumbs = _useState8[0],
+      setThumbs = _useState8[1];
+
+  (0, _react.useEffect)(function () {
+    setThumbs({
+      assets: [],
+      loading: true
+    });
+    (0, _axios.default)(url).then(function (res) {
+      setThumbs({
+        assets: res.data,
+        loading: false
+      });
+    });
+  }, [url]);
+  return thumbs.loading ? _react.default.createElement(Spinner, null) : thumbs.assets.length > 0 ? _react.default.createElement("div", {
+    className: "thumbs ".concat(title.toLowerCase())
+  }, thumbs.assets.map(function (a) {
+    return _react.default.createElement(Thumb, {
+      key: a.id,
+      asset: a,
+      formats: formats,
+      handleClick: handleClick(a)
+    });
+  })) : null;
+};
+
+var Asset = function Asset(_ref4) {
+  var asset = _ref4.asset,
+      formats = _ref4.formats,
+      close = _ref4.close,
+      canEdit = _ref4.canEdit;
+
+  var _useState9 = (0, _react.useState)(asset),
+      _useState10 = _slicedToArray(_useState9, 2),
+      viewAsset = _useState10[0],
+      setViewAsset = _useState10[1],
+      _useState11 = (0, _react.useState)(false),
+      _useState12 = _slicedToArray(_useState11, 2),
+      isEditing = _useState12[0],
+      setEditing = _useState12[1],
+      ext = formats[viewAsset.medium]['medium'].ext,
+      stamp = (0, _moment.default)(asset.stamp.slice(0, 19)),
+      src = "/asset/medium/".concat(viewAsset.slug.slice(0, 1), "/").concat(viewAsset.slug, ".").concat(ext);
+
+  (0, _react.useEffect)(function () {
+    return setViewAsset(asset);
+  }, [asset]);
+  return _react.default.createElement(_react.default.Fragment, null, _react.default.createElement("div", {
+    className: "asset"
+  }, viewAsset.medium === 'video' ? _react.default.createElement("video", {
+    key: viewAsset.id,
+    autoPlay: true,
+    controls: true
+  }, _react.default.createElement("source", {
+    src: src
+  })) : viewAsset.medium === 'audio' ? _react.default.createElement("audio", {
+    key: viewAsset.id,
+    autoPlay: true,
+    controls: true
+  }, _react.default.createElement("source", {
+    src: src
+  })) : viewAsset.medium === 'photo' ? _react.default.createElement("img", {
+    key: viewAsset.id,
+    src: src
+  }) : null, _react.default.createElement("table", {
+    className: "info"
+  }, _react.default.createElement("tbody", null, _react.default.createElement("tr", null, _react.default.createElement("td", {
+    rowSpan: "999"
+  }, _react.default.createElement(Thumb, {
+    asset: asset,
+    formats: formats,
+    handleClick: function handleClick() {
+      return setViewAsset(asset);
+    }
+  })), _react.default.createElement("th", null, "ID"), _react.default.createElement("td", null, asset.slug.slice(0, 8))), _react.default.createElement("tr", null, _react.default.createElement("th", null, "Date"), _react.default.createElement("td", null, stamp.format('MMMM Do YYYY'))), _react.default.createElement("tr", null, _react.default.createElement("th", null, "Time"), _react.default.createElement("td", null, stamp.format('h:mm a'))), _react.default.createElement("tr", null, asset.width ? _react.default.createElement(_react.default.Fragment, null, _react.default.createElement("th", null, "Size"), _react.default.createElement("td", null, asset.width, " x ", asset.height)) : null), _react.default.createElement("tr", null, asset.duration ? _react.default.createElement(_react.default.Fragment, null, _react.default.createElement("th", null, "Length"), _react.default.createElement("td", null, Math.round(asset.duration))) : null)))), useThumbs("/rest/asset/".concat(asset.slug, "/similar/tag/?lim=20&min=0.5"), 'Similar', formats, function (a) {
+    return function () {
+      return setViewAsset(a);
+    };
+  }), useThumbs("/rest/asset/".concat(asset.slug, "/similar/content/?alg=dhash-8&max=0.06"), 'Duplicates', formats, function (a) {
+    return function () {
+      return setViewAsset(a);
+    };
+  }));
+};
+
+var Spinner = function Spinner() {
+  var bladeStyle = {
+    position: 'absolute',
+    left: '0.4629em',
+    bottom: '0',
+    width: '0.074em',
+    height: '0.2777em',
+    borderRadius: '0.0555em',
+    backgroundColor: 'transparent',
+    transformOrigin: 'center -0.2222em',
+    animation: 'spinner 1s infinite linear'
+  };
+  return _react.default.createElement("div", {
+    style: {
+      fontSize: '34px',
+      position: 'relative',
+      display: 'inline-block',
+      width: '1em',
+      height: '1em'
+    }
+  }, _react.default.createElement("div", {
+    style: _objectSpread({}, bladeStyle, {
+      animationDelay: '0.00000s',
+      transform: 'rotate(  0deg)'
+    })
+  }), _react.default.createElement("div", {
+    style: _objectSpread({}, bladeStyle, {
+      animationDelay: '0.08333s',
+      transform: 'rotate( 30deg)'
+    })
+  }), _react.default.createElement("div", {
+    style: _objectSpread({}, bladeStyle, {
+      animationDelay: '0.16666s',
+      transform: 'rotate( 60deg)'
+    })
+  }), _react.default.createElement("div", {
+    style: _objectSpread({}, bladeStyle, {
+      animationDelay: '0.25000s',
+      transform: 'rotate( 90deg)'
+    })
+  }), _react.default.createElement("div", {
+    style: _objectSpread({}, bladeStyle, {
+      animationDelay: '0.33333s',
+      transform: 'rotate(120deg)'
+    })
+  }), _react.default.createElement("div", {
+    style: _objectSpread({}, bladeStyle, {
+      animationDelay: '0.41666s',
+      transform: 'rotate(150deg)'
+    })
+  }), _react.default.createElement("div", {
+    style: _objectSpread({}, bladeStyle, {
+      animationDelay: '0.50000s',
+      transform: 'rotate(180deg)'
+    })
+  }), _react.default.createElement("div", {
+    style: _objectSpread({}, bladeStyle, {
+      animationDelay: '0.58333s',
+      transform: 'rotate(210deg)'
+    })
+  }), _react.default.createElement("div", {
+    style: _objectSpread({}, bladeStyle, {
+      animationDelay: '0.66666s',
+      transform: 'rotate(240deg)'
+    })
+  }), _react.default.createElement("div", {
+    style: _objectSpread({}, bladeStyle, {
+      animationDelay: '0.75000s',
+      transform: 'rotate(270deg)'
+    })
+  }), _react.default.createElement("div", {
+    style: _objectSpread({}, bladeStyle, {
+      animationDelay: '0.83333s',
+      transform: 'rotate(300deg)'
+    })
+  }), _react.default.createElement("div", {
+    style: _objectSpread({}, bladeStyle, {
+      animationDelay: '0.91666s',
+      transform: 'rotate(330deg)'
+    })
+  }));
+};
+},{"axios":"../node_modules/axios/index.js","moment":"../node_modules/moment/moment.js","react":"../node_modules/react/index.js","react-device-detect":"../node_modules/react-device-detect/main.js","react-infinite-scroll-component":"../node_modules/react-infinite-scroll-component/dist/index.es.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","react-select":"../node_modules/react-select/dist/react-select.browser.esm.js","react-swipeable":"../node_modules/react-swipeable/es/index.js","./db":"db.jsx","./tags":"tags.jsx","./edit":"edit.jsx","./hooks":"hooks.jsx"}],"index.jsx":[function(require,module,exports) {
 "use strict";
 
 var _react = _interopRequireWildcard(require("react"));
@@ -55200,42 +54995,14 @@ var _reactDom = _interopRequireDefault(require("react-dom"));
 
 var _view = _interopRequireDefault(require("./view"));
 
-var _edit = _interopRequireDefault(require("./edit"));
-
-var _label = _interopRequireDefault(require("./label"));
-
-var _cluster = _interopRequireDefault(require("./cluster"));
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function () { return cache; }; return cache; }
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
 
-var Index = function Index() {
-  return _react.default.createElement("div", {
-    className: "index"
-  }, "INDEX");
-};
-
-var ScrollToTop = function ScrollToTop() {
-  (0, _react.useEffect)(function () {
-    return window.scrollTo(0, 0);
-  }, [(0, _reactRouterDom.useLocation)().pathname]);
-  return null;
-};
-
 _reactDom.default.render(_react.default.createElement(_reactRouterDom.BrowserRouter, null, _react.default.createElement(_reactRouterDom.Route, {
-  path: "/view/:query([^?]*)"
-}, _react.default.createElement(_view.default, null)), _react.default.createElement(_reactRouterDom.Route, {
-  path: "/cluster/:slug"
-}, _react.default.createElement(_cluster.default, null)), _react.default.createElement(_reactRouterDom.Route, {
-  path: "/label/:slug"
-}, _react.default.createElement(_label.default, null)), _react.default.createElement(_reactRouterDom.Route, {
-  path: "/edit/:slug"
-}, _react.default.createElement(_edit.default, null)), _react.default.createElement(_reactRouterDom.Route, {
-  exact: true,
-  path: "/"
-}, _react.default.createElement(Index, null))), document.getElementById('root'));
-},{"react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","react-dom":"../node_modules/react-dom/index.js","./view":"view.jsx","./edit":"edit.jsx","./label":"label.jsx","./cluster":"cluster.jsx"}]},{},["index.jsx"], null)
+  path: "/:query([^?#]*)"
+}, _react.default.createElement(_view.default, null))), document.getElementById('root'));
+},{"react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","react-dom":"../node_modules/react-dom/index.js","./view":"view.jsx"}]},{},["index.jsx"], null)
 //# sourceMappingURL=/static/index.js.map

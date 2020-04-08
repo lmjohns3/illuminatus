@@ -1,40 +1,58 @@
-import React, {Component} from "react"
-import {Link, useParams} from "react-router-dom"
+import moment from 'moment'
+import React, {useEffect, useState} from "react"
 import ReactCrop from "react-image-crop"
 import Select from "react-select"
-import axios from "axios"
 
-const Edit = () => (
-  <div className="edit">EDIT {useParams().id}</div>
-)
 
-export default Edit
+const Controls = ({asset, close, isEditing, setIsEditing}) => {
+  return <div className='controls'>
+    <Button name='close' onClick={close} style={{fontSize:'200%'}} icon='×' />
+    <Button name='edit' onClick={() => setIsEditing(!isEditing)} icon='🖉' /> 
+    {isEditing ? <EditingButtons /> : null}
+  </div>;
+}
+
+
+const EditingButtons = () => {
+  return <>
+    <Button name='magic' icon='☘' />
+    <Button name='brightness' icon='☀' />
+    <Button name='contrast' icon='◑' />
+    <Button name='saturation' icon='▧' />
+    <Button name='hue' icon='🖌' />
+    <Button name='rotate' icon='↻' />
+    <Button name='cw' icon='⤵' />
+    <Button name='ccw' icon='⤴' />
+    <Button name='hflip' icon='↔' />
+    <Button name='vflip' icon='↕' />
+    <Button name='delete' icon='🗑' />
+    <Button name='crop' icon='✂' />
+  </>;
+}
+
+// <Button icon='⚠' />
+// <Button icon='⮢' />
+// <Button icon='⮣' />
+// <Button icon='⤿' />
+// <Button icon='⤾' />
+// <Button icon='⛔' />
+// <Button icon='🚫' />
+// <Button icon='✏' />
+// <Button icon='☠' />
+
+
+const Button = ({name, icon, onClick, style}) => {
+  return <span className='button' title={name} style={style} onClick={onClick}>
+    <span className='icon'>{icon}</span>
+  </span>;
+}
+
+
+export default Controls
 
 /*
+<ReactCrop src={this.state.asset.src} crop={this.state.crop} onChange={newCrop => this.setCrop(newCrop)} />
 
-const EditTools = () => (
-  <ul>
-    <li><a id="magic"><span className="dingbat">☘</span> Magic</a></li>
-    <li className="sep"></li>
-    <li><a id="brightness"><span className="dingbat">☀</span> Brightness</a></li>
-    <li><a id="contrast"><span className="dingbat">◑</span> Contrast</a></li>
-    <li><a id="saturation"><span className="dingbat">▧</span> Saturation</a></li>
-    <li><a id="hue"><span className="dingbat">🖌</span> Hue</a></li>
-    <li className="sep"></li>
-    <li><a id="rotate"><span className="dingbat">↻</span> Rotate</a></li>
-    <li><a id="cw-90"><span className="dingbat">⤵</span> Clockwise 90&deg;</a></li>
-    <li><a id="ccw-90"><span className="dingbat">⤴</span> Counter-clockwise 90&deg;</a></li>
-    <li><a id="hflip"><span className="dingbat">↔</span> Flip Horizontal</a></li>
-    <li><a id="vflip"><span className="dingbat">↕</span> Flip Vertical</a></li>
-    <li className="sep"></li>
-    <li><a id="crop"><span className="dingbat">✂</span> Crop</a></li>
-  </ul>)
-
-const TagTools = ({tags}) => (
-  <ul>
-    {tags.map(tag => <li className="tag group-{tag.group}">{tag.name}</li>)}
-    <li><input id="tag-input" type="text"/></li>
-  </ul>)
 
 const FilterTools = ({filters}) => (
     <ul>{filters.map(filter => (
@@ -51,37 +69,6 @@ const StampTools = ({stamp}) => (
   </ul>)
 
 
-class Editing extends Component {
-    constructor(props) {
-        super(props);
-
-        this.state = {
-            asset: {
-                tags: [],
-                filters: [],
-                stamp: {},
-            },
-            format: {},
-            uniq: 1,
-            isRanging: false,
-            isCropping: false,
-            crop: {unit: "%"},
-        };
-
-        this.setCurrent = this.setCurrent.bind(this);
-    }
-
-    setCurrent() {
-    }
-
-    setCrop() {
-    }
-
-    render() {
-        const {asset, format, uniq} = this.state;
-        return (
-<div id="editing">
-  <div id="tools">
     <ul className="toolbar" id="basic-tools">
       <li><span className="dingbat">⚒</span> Edit <EditTools /></li>
       <li><span className="dingbat">🏷</span> Tags <TagTools tags={asset.tags} /></li>
@@ -93,174 +80,12 @@ class Editing extends Component {
       <li id="cancel"><span className="dingbat">✘</span> Cancel</li>
       <li id="commit"><span className="dingbat">✔</span> Save</li>
       <li id="range"><input type="range" min="0" max="200" defaultValue="100" step="1"/><span id="range-value"></span></li>
-    </ul>
-  </div>
-  <div id="workspace">
-    <div id="grid"></div>
-    { (asset.is_video) ? <video controls src="/thumb/{format.path}/{asset.thumb}.{format.ext}?{uniq}"/>
-    : (asset.is_audio) ? <audio controls src="/thumb/{format.path}/{asset.thumb}.{format.ext}?{uniq}"/>
-    : (asset.is_photo) ? <img src="/thumb/{format.path}/{asset.thumb}.{format.ext}?{this.state.uniq}"/>
-    : ""}
-    <ReactCrop src={this.state.asset.src} crop={this.state.crop} onChange={newCrop => this.setCrop(newCrop)} />
   </div>
 </div>);
     }
 }
 
 
-
-(function() {
-  'use strict';
-
-  var KEYS = {
-    tab: 9, enter: 13, escape: 27, space: 32,
-    insert: 45, delete: 46, backspace: 8,
-    pageup: 33, pagedown: 34, end: 35, home: 36,
-    left: 37, up: 38, right: 39, down: 40,
-    '0': 48, '1': 49, '2': 50, '3': 51, '4': 52,
-    '5': 53, '6': 54, '7': 55, '8': 56, '9': 57,
-    a: 65, b: 66, c: 67, d: 68, e: 69, f: 70, g: 71, h: 72, i: 73,
-    j: 74, k: 75, l: 76, m: 77, n: 78, o: 79, p: 80, q: 81, r: 82,
-    s: 83, t: 84, u: 85, v: 86, w: 87, x: 88, y: 89, z: 90,
-    '=': 187, '-': 189, '`': 192, '[': 219, ']': 221
-  };
-
-  var tags = null;
-  var config = null;
-  var thumbs = null;
-  var editor = null;
-
-  var showExportDialog = function() {
-    $.featherlight('text', {
-      afterOpen: function(e) {
-        var query = thumbs.query;
-        var name = query.replace(/\W+/g, '-');
-        var selected = thumbs.selected();
-        if (selected.length > 0) {
-          var ids = [];
-          selected.forEach(function(ids) { asset.push('id:' + asset.rec.id); });
-          query = ids.join('|');
-          name = name + '-' + ids.length;
-        }
-        var render = Handlebars.compile($('#export-template').html());
-        $('div.featherlight-inner').html(
-          render({query: query, name: 'export-' + name}));
-      }});
-  };
-
-  var ensureEditor = function() {
-    if (!editor)
-      editor = new Illuminatus.Editor(
-        config, '#editor-template', $('#editor'), $('#editor-column'));
-    editor.edit(thumbs.asset);
-    tags.setClosed(true);
-  };
-
-  Illuminatus.Editor = function(config, template, $target, $column) {
-    this.config = config;
-    this.template = Handlebars.compile($(template).html());
-    this.$target = $target;
-    this.$column = $column;
-
-    var self = this;
-    this.$column.on('input', 'input[type=range]', function(e) {
-      var mod = 'filter';
-      var value = this.value + '%';
-      var filter = self.isRanging;
-      if (self.isRanging === 'saturation') {
-        filter = 'saturate';
-      } else if (self.isRanging === 'hue') {
-        value = this.value + 'deg';
-        filter = 'hue-rotate';
-      } else if (self.isRanging === 'rotate') {
-        mod = 'transform';
-        value = this.value + 'deg';
-      }
-      $('#workspace img').css(mod, filter + '(' + value + ')');
-      $('#range-value').html(value);
-    });
-
-    this.isTagging = null;
-    this.isRanging = null;
-    this.isCropping = null;
-    this.$crop = null;
-
-    this.asset = null;
-  };
-
-  Illuminatus.Editor.prototype = {
-    edit: function(asset) {
-      location.hash = '#edit:' + thumbs.query + '=' + thumbs.assets.indexOf(asset);
-      this.asset = asset;
-      this.render();
-      this.$column.removeClass('closed');
-      thumbs.setNarrow(true);
-    },
-
-    hide: function() {
-      location.hash = '#thumbs:' + thumbs.query;
-      this.$column.addClass('closed');
-      thumbs.setNarrow(false);
-      this.asset = null;
-    },
-
-    render: function() {
-      var when = moment(this.asset.rec.stamp);
-      var format = this.config.formats.large_photo_format;
-      if (this.asset.rec.medium === 'audio')
-        format = this.config.formats.large_audio_format;
-      if (this.asset.rec.medium === 'video')
-        format = this.config.formats.large_video_format;
-      this.$target.html(this.template({
-        format: format,
-        asset: this.asset.rec,
-        is_audio: this.asset.rec.medium === 'audio',
-        is_photo: this.asset.rec.medium === 'photo',
-        is_video: this.asset.rec.medium === 'video',
-        thumb: this.asset.rec.path_hash.slice(0, 2) + '/' + this.asset.rec.path_hash,
-        uniq: moment().format(),
-        stamp: {
-          title: when.format('DD MMM'),
-          year: when.format('YYYY'),
-          month: when.format('MM'),
-          day: when.format('DD'),
-          hour: when.format('ha')
-        }
-      }));
-      if (this.isTagging)
-        this.startTagging();
-    },
-
-    renderCallback: function() {
-      var self = this;
-      return function() { self.render(); };
-    },
-
-    remove: function() {
-      if (!this.asset) return;
-      thumbs.remove(this.asset);
-      if (thumbs.asset)
-        this.edit(thumbs.asset);
-    },
-
-    cancel: function() {
-      if (this.isTagging) {
-        this.isTagging = null;
-        this.$target.toggleClass('tagging', false);
-      }
-      if (this.isCropping) {
-        this.isCropping = null;
-        this.$target.toggleClass('cropping', false);
-        if (this.$crop) this.$crop.destroy();
-        this.$crop = null;
-        $('#workspace img').attr('style', '');
-      }
-      if (this.isRanging) {
-        this.isRanging = null;
-        this.$target.toggleClass('ranging', false);
-        $('#workspace img').css({filter: 'none', transform: 'none'});
-      }
-    },
 
     commit: function() {
       if (this.isTagging) {
@@ -468,52 +293,4 @@ class Editing extends Component {
         editor.startCrop();
     }
   };
-
-  $(document).keydown(handleKeydown);
-
-  $('#editor').on('click', '#magic', function(e) {
-    editor.asset.autocontrast(1, editor.renderCallback()); });
-
-  $('#editor').on('click', '#brightness', function(e) { editor.startRange('brightness'); });
-  $('#editor').on('click', '#contrast', function(e) { editor.startRange('contrast'); });
-  $('#editor').on('click', '#saturation', function(e) { editor.startRange('saturation'); });
-  $('#editor').on('click', '#hue', function(e) { editor.startRange('hue'); });
-
-  $('#editor').on('click', '#rotate', function(e) { editor.startRange('rotate'); });
-  $('#editor').on('click', '#rotate-ccw-90', function(e) {
-    editor.asset.rotate(-90, editor.renderCallback()); });
-  $('#editor').on('click', '#rotate-cw-90', function(e) {
-    editor.asset.rotate(90, editor.renderCallback()); });
-  $('#editor').on('click', '#hflip', function(e) {
-    editor.asset.hflip(editor.renderCallback()); });
-  $('#editor').on('click', '#vflip', function(e) {
-    editor.asset.vflip(editor.renderCallback()); });
-
-  $('#editor').on('click', '#crop', function(e) { editor.startCrop(); });
-
-  $('#editor').on('click', '#cancel', function(e) { editor.cancel(); });
-  $('#editor').on('click', '#commit', function(e) { editor.commit(); });
-
-  $('#editor').on('click', '#filters a', function(e) {
-    editor.asset.removeFilter($(this).data('filter'),
-                             $(this).data('index'),
-                             editor.renderCallback());
-  })
-
-  $('#editor').on('mouseenter', '#tags-tab', function(e) { editor.startTagging(); });
-  $('#editor').on('mouseleave', '#tags-tab', function(e) { editor.cancel(); });
-
-  $('#thumbs').on('click', '.thumb', function(e) {
-    var asset = $(e.target).closest('li')[0].asset;
-    if (e.ctrlKey || e.metaKey || e.altKey) {
-      asset.toggleSelect();
-    } else {
-      thumbs.clearSelection();
-      thumbs.setCursor(asset);
-      if (editor)
-        editor.edit(thumbs.asset);
-    };
-  });
-
-  $(document).on('submit', '#export', function(e) { $.featherlight.close(); });
 */
