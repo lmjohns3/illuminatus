@@ -9,9 +9,9 @@ import {BrowserRouter, Route, useHistory, useParams} from 'react-router-dom'
 import Select from 'react-select'
 import {useSwipeable} from 'react-swipeable'
 
-import Tags from './tags'
-import Controls from './controls'
+import Controls from './edit'
 import {useAssets, useCurrent} from './hooks'
+import Tags from './tags'
 import {Spinner} from './utils'
 
 
