@@ -1,0 +1,27 @@
+.label
+  &.tags
+  &.breadcrumbs
+    grid-column: 1 / -1
+
+  &.thumbs
+    grid-column: 1 / -1
+    grid-row: 6
+
+    &.selective
+      .thumb
+        opacity: 0.5
+
+        &.cursored
+        &.selected
+          opacity: 1
+
+    .thumb.selected
+      border-color: #6cf
+
+    .thumb.cursored
+      border-color: #ff0
+
+  &.tag-select
+    grid-column: 1 / -1
+    grid-row: 5
+    margin-left: 3em

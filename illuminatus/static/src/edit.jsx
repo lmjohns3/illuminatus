@@ -1,166 +1,132 @@
+import axios from 'axios'
 import moment from 'moment'
-import React, {useEffect, useState} from "react"
-import ReactCrop from "react-image-crop"
-import Select from "react-select"
+import React, {useEffect, useState} from 'react'
+import {Link, useHistory, useParams} from 'react-router-dom'
+import CreatableSelect from 'react-select/creatable'
+import ReactCrop from 'react-image-crop'
+
+import {countAssetTags, Tags} from './tags'
+import {Breadcrumbs, Button, ConfigContext} from './utils'
+
+import './edit.styl'
+import 'react-image-crop/dist/ReactCrop.css'
 
 
-const Controls = ({asset, close, isEditing, setIsEditing}) => {
-  return <div className='controls'>
-    <Button name='close' onClick={close} style={{fontSize:'200%'}} icon='×' />
-    <Button name='edit' onClick={() => setIsEditing(!isEditing)} icon='🖉' /> 
-    {isEditing ? <EditingButtons /> : null}
-  </div>;
+const FilterTools = ({filters}) => (<ul className='filters'>
+  {filters.map((f, i) => <li key={i}><span>{f}</span><span className='remove'>🗑</span></li>)}
+</ul>)
+
+
+const StampTools = ({stamp}) => (<ul className='stamp'>
+  <li>Y: {stamp.year()}</li>
+  <li>M: {stamp.month()}</li>
+  <li>D: {stamp.day()}</li>
+  <li>H: {stamp.hour()}</li>
+</ul>)
+
+
+const Tool = ({name, icon, iconWhenActive, activeTool, onClick}) => {
+  const isActive = activeTool === null || activeTool === name;
+  return <Button name={name}
+                 icon={isActive ? (iconWhenActive || icon) : icon}
+                 disabled={!isActive}
+                 onClick={onClick} />;
 }
 
 
-const EditingButtons = () => {
-  return <>
-    <Button name='magic' icon='☘' />
-    <Button name='brightness' icon='☀' />
-    <Button name='contrast' icon='◑' />
-    <Button name='saturation' icon='▧' />
-    <Button name='hue' icon='🖌' />
-    <Button name='rotate' icon='↻' />
-    <Button name='cw' icon='⤵' />
-    <Button name='ccw' icon='⤴' />
-    <Button name='hflip' icon='↔' />
-    <Button name='vflip' icon='↕' />
-    <Button name='delete' icon='🗑' />
-    <Button name='crop' icon='✂' />
-  </>;
-}
+const Edit = () => {
+  const slug = useParams().slug
+      , hist = useHistory()
+      , stopEditing = () => hist.replace(`/view/${asset.slug}/`)
+      , url = `/rest/asset/${slug}/`
+      , [asset, setAsset] = useState({medium: 'photo', tags: [], slug})
+      , [activeTool, setActiveTool] = useState(null)
+      , [crop, setCrop] = useState({unit: '%', width: 80, height: 80, x: 10, y: 10});
 
-// <Button icon='⚠' />
-// <Button icon='⮢' />
-// <Button icon='⮣' />
-// <Button icon='⤿' />
-// <Button icon='⤾' />
-// <Button icon='⛔' />
-// <Button icon='🚫' />
-// <Button icon='✏' />
-// <Button icon='☠' />
+  useEffect(() => { axios(url).then(res => setAsset(res.data)); }, [slug]);
 
-
-const Button = ({name, icon, onClick, style}) => {
-  return <span className='button' title={name} style={style} onClick={onClick}>
-    <span className='icon'>{icon}</span>
-  </span>;
-}
-
-
-export default Controls
-
-/*
-<ReactCrop src={this.state.asset.src} crop={this.state.crop} onChange={newCrop => this.setCrop(newCrop)} />
-
-
-const FilterTools = ({filters}) => (
-    <ul>{filters.map(filter => (
-      <li><a data-filter="{filter}" data-index="{index}">
-        <span className="dingbat">✘</span> {filter}</a></li>
-    ))}</ul>)
-
-const StampTools = ({stamp}) => (
-  <ul>
-    <li><a id="">Y: {stamp.year}</a></li>
-    <li><a id="">M: {stamp.month}</a></li>
-    <li><a id="">D: {stamp.day}</a></li>
-    <li><a id="">H: {stamp.hour}</a></li>
-  </ul>)
-
-
-    <ul className="toolbar" id="basic-tools">
-      <li><span className="dingbat">⚒</span> Edit <EditTools /></li>
-      <li><span className="dingbat">🏷</span> Tags <TagTools tags={asset.tags} /></li>
-      <li><span className="dingbat">☞</span> Filters <FilterTools filters={asset.filters} /></li>
-      <li><span className="dingbat">⏰</span> {asset.stamp.title} <StampTools stamp={asset.stamp} /></li>
-      <li><span id="path">{asset.path}</span></li>
-    </ul>
-    <ul className="toolbar" id="ephemeral-tools">
-      <li id="cancel"><span className="dingbat">✘</span> Cancel</li>
-      <li id="commit"><span className="dingbat">✔</span> Save</li>
-      <li id="range"><input type="range" min="0" max="200" defaultValue="100" step="1"/><span id="range-value"></span></li>
-  </div>
-</div>);
-    }
-}
-
-
-
-    commit: function() {
-      if (this.isTagging) {
-        this.asset.incTag($('#tag-input')[0].value, this.renderCallback());
-      }
-      if (this.isCropping) {
-        var $img = $('#workspace img');
-        var width = $img.width();
-        var height = $img.height();
-        var box = this.$crop.ui.selection.last;
-        this.asset.addFilter(
-          'crop',
-          {x1: box.x / width,
-           y1: box.y / height,
-           x2: box.x2 / width,
-           y2: box.y2 / height},
-          this.renderCallback());
-        this.cancel();
-      }
-      if (this.isRanging) {
-        var value = $('#range').find('input[type=range]')[0].value;
-        var filter = this.isRanging;
-        var data = {};
-        if (filter === 'rotate' || filter === 'hue')
-          data.degrees = value;
-        else
-          data.percent = value;
-        this.asset.addFilter(filter, data, this.renderCallback());
-        this.cancel();
-      }
-    },
-
-    startCrop: function() {
-      if (this.$crop)
-        this.$crop.destroy();
-
-      var $img = $('#workspace img');
-      var width = $img.width();
-      var height = $img.height();
-      var self = this;
-
-      $img.Jcrop({
-        boxHeight: height,
-        boxWidth: width,
-        keySupport: false,
-        setSelect: [20, 20, width - 20, height - 20],
-        bgOpacity: 0.8,
-        allowSelect: true
-      }, function() {
-        self.isCropping = true;
-        self.$target.toggleClass('cropping', true);
-        self.$crop = this;
-      });
-    },
-
-    startRange: function(attribute) {
-      this.isRanging = attribute;
-      this.$target.toggleClass('ranging', true);
-      var attrs = {min: 0, max: 200, value: 100};
-      if (attribute === 'hue')
-        attrs = {min: 0, max: 360, value: 0};
-      if (attribute === 'rotate')
-        attrs = {min: -180, max: 180, value: 0};
-      $('#range').find('input[type=range]').attr(attrs).trigger('input');
-    },
-
-    startTagging: function() {
-      this.isTagging = true;
-      this.$target.toggleClass('tagging', true);
-      $('#tag-input')[0].value = '';
-      $('#tag-input').focus();
+  const addTag = ({value}, {action}) => {
+    if (action === 'create-option' || action === 'select-option') {
+      axios.put(url, {add_tags: value}).then(res => setAsset(res.data));
     }
   };
 
-  var handleKeydown = function(e) {
+  const removeTag = name => {
+    axios.put(url, {remove_tags: name}).then(res => setAsset(res.data));
+  };
+
+  useEffect(() => {
+    const handler = ev => {
+      if (ev.code === 'Escape') {
+        stopEditing();
+      }
+    };
+
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  return <>
+    <Breadcrumbs className='edit'>
+      <Link to={`/view/${slug}/`}>{slug.slice(0, 12)}</Link>
+      <span className='divider'>»</span>
+      Edit
+    </Breadcrumbs>
+    <div className='edit asset'><ConfigContext.Consumer>{
+     ({formats}) => {
+       const ext = formats[asset.medium]['full'].ext
+           , src = `/asset/full/${asset.slug.slice(0, 1)}/${asset.slug}.${ext}`;
+       if (asset.medium === 'video')
+         return <video key={asset.id} autoPlay controls><source src={src} /></video>;
+       if (asset.medium === 'audio')
+         return <audio key={asset.id} autoPlay controls><source src={src} /></audio>;
+       if (crop)
+         return <ReactCrop src={src} crop={crop} onChange={(_, crop) => setCrop(crop)} />;
+       return <img src={src} />;
+    }}</ConfigContext.Consumer></div>
+    {countAssetTags([asset]).map(
+      group => <Tags key={group.icon} icon={group.icon} tags={group.tags}
+                     className='edit'
+                     clickHandler={tag => () => removeTag(tag.name)} />
+    )}
+    <div className='edit tags'>
+      <span className='icon'></span>
+      <ul><li><ConfigContext.Consumer>{
+        ({tags}) => <CreatableSelect className='tag-select'
+                                     options={tags.map(t => ({label: t.name, value: t.name}))}
+                                     onChange={addTag}
+                                     autoFocus={true}
+                                     placeholder='Add tag...' />
+      }</ConfigContext.Consumer></li></ul>
+    </div>
+    <div className='tools'>
+      <Button name='exit' icon='⨉' onClick={stopEditing}/>
+      <span className='spacer' />
+      <Button name='delete' icon='🗑' />
+      <span className='spacer' />
+      <Tool name='crop' icon='✂' iconWhenActive={'⨉'} activeTool={activeTool} />
+      <span className='spacer' />
+      <Tool name='vflip' icon='↕' activeTool={activeTool} />
+      <Tool name='hflip' icon='↔' activeTool={activeTool} />
+      <Tool name='ccw' icon='⤷' activeTool={activeTool} />
+      <Tool name='cw' icon='⤶' activeTool={activeTool} />
+      <Tool name='rotate' icon='⟳' activeTool={activeTool} />
+      <span className='spacer' />
+      <Tool name='contrast' icon='◑' activeTool={activeTool} />
+      <Tool name='brightness' icon='☀' activeTool={activeTool} />
+      <Tool name='saturation' icon='▧' activeTool={activeTool} />
+      <Tool name='hue' icon='🎨' activeTool={activeTool} />
+      <span className='spacer' />
+      <Tool name='magic' icon='🪄'  activeTool={activeTool} />
+    </div>
+    <FilterTools filters={asset.filters || []} />
+    <StampTools stamp={moment(asset.stamp || null)} />
+  </>;
+}
+
+
+export default Edit
+
     // enter   - show editor
     // bksp    - delete current image
     // down, j - move to next image
@@ -185,112 +151,43 @@ const StampTools = ({stamp}) => (
     // i/I    - increment/decrement day
     // u/U    - increment/decrement hour
 
-    //console.log(e);
+/*
 
-    if (e.ctrlKey || e.altKey || e.metaKey) return;
+    <ul className='toolbar' id='ephemeral-tools'>
+      <li id='cancel'><span className='dingbat'>✘</span> Cancel</li>
+      <li id='commit'><span className='dingbat'>✔</span> Save</li>
+      <li id='range'><input type='range' min='0' max='200' defaultValue='100' step='1'/><span id='range-value'></span></li>
+  </div>
 
-    var key = e.keyCode;
-
-    if ($(e.target).is('input, textarea') &&
-        (key !== KEYS.enter) && (key !== KEYS.escape))
-      return;
-
-    e.preventDefault();
-
-    if (key === KEYS.escape) {
-      if (editor) {
-        if (editor.isCropping || editor.isRanging || editor.isTagging) {
-          editor.cancel();
-        } else {
-          editor.hide();
-          editor = null;
-        }
+var box = this.$crop.ui.selection.last;
+        this.asset.addFilter(
+          'crop',
+          {x1: box.x / width,
+           y1: box.y / height,
+           x2: box.x2 / width,
+           y2: box.y2 / height},
+          this.renderCallback());
+        this.cancel();
       }
-    }
+      if (this.isRanging) {
+        var value = $('#range').find('input[type=range]')[0].value;
+        var filter = this.isRanging;
+        var data = {};
+        if (filter === 'rotate' || filter === 'hue')
+          data.degrees = value;
+        else
+          data.percent = value;
+        this.asset.addFilter(filter, data, this.renderCallback());
+        this.cancel();
 
-    if (key === KEYS.enter) {
-      if (editor) {
-        if (editor.isCropping || editor.isRanging || editor.isTagging) {
-          editor.commit();
-        } else {
-          editor.edit(thumbs.asset);
-        }
-      } else {
-        ensureEditor();
-      }
-    }
-
-    if (key === KEYS.e && e.shiftKey)
-      showExportDialog();
-
-    if (key === KEYS.j || key === KEYS.right || key === KEYS.down) {
-      thumbs.incCursor();
-      if (editor)
-        editor.edit(thumbs.asset);
-    }
-
-
-    if (key === KEYS.k || key === KEYS.left || key === KEYS.up) {
-      thumbs.decCursor();
-      if (editor)
-        editor.edit(thumbs.asset);
-    }
-
-    if (key === KEYS.pagedown) {
-      thumbs.incCursor(10);
-      if (editor)
-        editor.edit(thumbs.asset);
-    }
-
-    if (key === KEYS.pageup) {
-      thumbs.decCursor(10);
-      if (editor)
-        editor.edit(thumbs.asset);
-    }
-
-    if (key === KEYS.a && e.shiftKey)
-      thumbs.selectAll();
-
-    if (key === KEYS.x)
-      if (thumbs.asset)
-        thumbs.asset.toggleSelect();
-
-    if (key === KEYS.backspace || key === KEYS.delete) {
-      if (confirm('Really delete "' + thumbs.asset.rec.path + '"?')) {
-        thumbs.remove();
-        if (editor)
-          editor.edit(thumbs.asset);
-      }
-    }
-
-    if (key === KEYS.t) {
-      ensureEditor();
-      editor.startTagging();
-    }
-
-    if (editor) {
-      if (key === KEYS['['])
-        editor.asset.rotate(e.shiftKey ? -1 : -90, editor.renderCallback());
-      if (key === KEYS[']'])
-        editor.asset.rotate(e.shiftKey ? 1 : 90, editor.renderCallback());
-
-      if (key === KEYS.p)
-        editor.asset.incrementDate((e.shiftKey ? '+' : '-') + '1y', editor.renderCallback());
-      if (key === KEYS.o)
-        editor.asset.incrementDate((e.shiftKey ? '+' : '-') + '1m', editor.renderCallback());
-      if (key === KEYS.i)
-        editor.asset.incrementDate((e.shiftKey ? '+' : '-') + '1d', editor.renderCallback());
-      if (key === KEYS.u)
-        editor.asset.incrementDate((e.shiftKey ? '+' : '-') + '1h', editor.renderCallback());
-
-      if (key === KEYS['1'] && e.shiftKey)  // !
-        editor.asset.autocontrast(1, editor.renderCallback());
-
-      if (key === KEYS.z)
-        editor.asset.undoLastFilter(editor.renderCallback());
-
-      if (key === KEYS.c)
-        editor.startCrop();
-    }
-  };
+    startRange: function(attribute) {
+      this.isRanging = attribute;
+      this.$target.toggleClass('ranging', true);
+      var attrs = {min: 0, max: 200, value: 100};
+      if (attribute === 'hue')
+        attrs = {min: 0, max: 360, value: 0};
+      if (attribute === 'rotate')
+        attrs = {min: -180, max: 180, value: 0};
+      $('#range').find('input[type=range]').attr(attrs).trigger('input');
+    },
 */

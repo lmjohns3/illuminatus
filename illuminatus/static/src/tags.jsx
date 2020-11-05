@@ -1,137 +1,111 @@
-import React, {useEffect, useState} from "react"
-import {Link, useLocation} from "react-router-dom"
-import {hsluvToHex} from "hsluv"
+import {hsluvToHex} from 'hsluv'
+import React from 'react'
+import {useLocation} from 'react-router-dom'
 
-const TAG_PATTERNS = [
+const ICONS = ['🗓', '⌚', '📷', '🌍', '🙋']
+
+const CLASSES = {'🗓': 'date', '⌚': 'time', '📷': 'kit', '🌍': 'geo', '🙋': 'user'}
+
+const PATTERNS = [
   // Year.
-  {re: /^(19|20)\d\d$/, hue: 90, block: 0},
+  {re: /^(19|20)\d\d$/, hue: 36, icon: 0},
   // Month.
-  {re: /^january$/, hue: 120, block: 0},
-  {re: /^february$/, hue: 120, block: 0},
-  {re: /^march$/, hue: 120, block: 0},
-  {re: /^april$/, hue: 120, block: 0},
-  {re: /^may$/, hue: 120, block: 0},
-  {re: /^june$/, hue: 120, block: 0},
-  {re: /^july$/, hue: 120, block: 0},
-  {re: /^august$/, hue: 120, block: 0},
-  {re: /^september$/, hue: 120, block: 0},
-  {re: /^october$/, hue: 120, block: 0},
-  {re: /^november$/, hue: 120, block: 0},
-  {re: /^december$/, hue: 120, block: 0},
+  {re: /^january$/, hue: 72, icon: 0},
+  {re: /^february$/, hue: 72, icon: 0},
+  {re: /^march$/, hue: 72, icon: 0},
+  {re: /^april$/, hue: 72, icon: 0},
+  {re: /^may$/, hue: 72, icon: 0},
+  {re: /^june$/, hue: 72, icon: 0},
+  {re: /^july$/, hue: 72, icon: 0},
+  {re: /^august$/, hue: 72, icon: 0},
+  {re: /^september$/, hue: 72, icon: 0},
+  {re: /^october$/, hue: 72, icon: 0},
+  {re: /^november$/, hue: 72, icon: 0},
+  {re: /^december$/, hue: 72, icon: 0},
   // Day of month.
-  {re: /^\d(st|nd|rd|th)$/, hue: 150, block: 0},
-  {re: /^\d\d(st|nd|rd|th)$/, hue: 150, block: 0},
+  {re: /^\d(st|nd|rd|th)$/, hue: 108, icon: 0},
+  {re: /^\d\d(st|nd|rd|th)$/, hue: 108, icon: 0},
   // Day of week.
-  {re: /^sunday$/, hue: 180, block: 0},
-  {re: /^monday$/, hue: 180, block: 0},
-  {re: /^tuesday$/, hue: 180, block: 0},
-  {re: /^wednesday$/, hue: 180, block: 0},
-  {re: /^thursday$/, hue: 180, block: 0},
-  {re: /^friday$/, hue: 180, block: 0},
-  {re: /^saturday$/, hue: 180, block: 0},
+  {re: /^sunday$/, hue: 144, icon: 0},
+  {re: /^monday$/, hue: 144, icon: 0},
+  {re: /^tuesday$/, hue: 144, icon: 0},
+  {re: /^wednesday$/, hue: 144, icon: 0},
+  {re: /^thursday$/, hue: 144, icon: 0},
+  {re: /^friday$/, hue: 144, icon: 0},
+  {re: /^saturday$/, hue: 144, icon: 0},
   // Time of day.
-  {re: /^12am$/, hue: 210, block: 1},
-  {re: /^\dam$/, hue: 210, block: 1},
-  {re: /^\d\dam$/, hue: 210, block: 1},
-  {re: /^12pm$/, hue: 210, block: 1},
-  {re: /^\dpm$/, hue: 210, block: 1},
-  {re: /^\d\dpm$/, hue: 210, block: 1},
+  {re: /^12am$/, hue: 180, icon: 1},
+  {re: /^\dam$/, hue: 180, icon: 1},
+  {re: /^\d\dam$/, hue: 180, icon: 1},
+  {re: /^12pm$/, hue: 180, icon: 1},
+  {re: /^\dpm$/, hue: 180, icon: 1},
+  {re: /^\d\dpm$/, hue: 180, icon: 1},
   // Camera.
-  {re: /^kit-\S+$/, hue: 240, block: 2},
+  {re: /^kit-\S+$/, hue: 216, icon: 2},
   // Aperture.
-  {re: /^ƒ-\d$/, hue: 240, block: 2},
-  {re: /^ƒ-\d\d$/, hue: 240, block: 2},
-  {re: /^ƒ-\d\d\d$/, hue: 240, block: 2},
+  {re: /^ƒ-\d$/, hue: 252, icon: 2},
+  {re: /^ƒ-\d\d$/, hue: 252, icon: 2},
+  {re: /^ƒ-\d\d\d$/, hue: 252, icon: 2},
   // Focal length.
-  {re: /^\dmm$/, hue: 240, block: 2},
-  {re: /^\d\dmm$/, hue: 240, block: 2},
-  {re: /^\d\d\dmm$/, hue: 240, block: 2},
-  {re: /^\d\d\d\dmm$/, hue: 240, block: 2},
+  {re: /^\dmm$/, hue: 288, icon: 2},
+  {re: /^\d\dmm$/, hue: 288, icon: 2},
+  {re: /^\d\d\dmm$/, hue: 288, icon: 2},
+  {re: /^\d\d\d\dmm$/, hue: 288, icon: 2},
   // Geolocation.
-  {re: /^country-\S+$/, hue: 270, block: 3},
-  {re: /^state-\S+$/, hue: 270, block: 3},
-  {re: /^city-\S+$/, hue: 270, block: 3},
-  {re: /^place-\S+$/, hue: 270, block: 3},
+  {re: /^lat-\S+$/, hue: 324, icon: 3},
+  {re: /^lng-\S+$/, hue: 324, icon: 3},
+  {re: /^in-\S+$/, hue: 324, icon: 3},
   // User-defined.
-  {re: /^.*$/, hue: 0, block: 4},
+  {re: /^.*$/, hue: 0, icon: 4},
 ]
 
-export default function Tags({assets, startVisible, href}) {
-  if (assets.length === 0)
-    return null;
 
-  const pathname = useLocation().pathname, tags = {}, blocks = [
-    {left: [], right: [], icon: "🗓"},
-    {left: [], right: [], icon: "⌚"},
-    {left: [], right: [], icon: "📷"},
-    {left: [], right: [], icon: "🌍"},
-    {left: [], right: [], icon: "🙋"},
-  ];
+const patternForTag = name => {
+  const found = {label: name, value: name};
+  PATTERNS.some((patt, p) => {
+    if (patt.re.test(name)) {
+      found.colors = {backgroundColor: hsluvToHex([patt.hue, 100, 80]),
+                      color: hsluvToHex([patt.hue, 100, 20])};
+      found.icon = patt.icon;
+      found.order = p;
+      return true;
+    }
+    return false;
+  });
+  return found;
+}
 
-  // Count up the tags in our assets.
+
+const countAssetTags = assets => {
+  const tags = {}, groups = ICONS.map(() => []);
   assets.forEach(asset => {
-    asset.tags.forEach(t => {
-      if (!tags[t]) {
-        const tag = {name: t, count: 0, active: pathname.indexOf(`/${t}/`) >= 0};
-        TAG_PATTERNS.some((pattern, p) => {
-          if (pattern.re.test(t)) {
-            blocks[pattern.block][(tag.active && !startVisible) ? "left" : "right"].push(t);
-            tag.hue = pattern.hue;
-            tag.order = p;
-            return true;
-          }
-          return false;
-        });
-        tags[t] = tag;
+    asset.tags.forEach(name => {
+      if (!tags[name]) {
+        const tag = {name, label: name, value: name, count: 0, ...patternForTag(name)};
+        groups[tag.icon].push(tag);
+        tags[name] = tag;
       }
-      tags[t].count++;
+      tags[name].count++;
     });
   });
-
-  return <div className="tags">{
-    blocks.map(block => <Block key={block.icon}
-                               block={block}
-                               tags={tags}
-                               startVisible={startVisible}
-                               assetCount={assets.length}
-                               href={href} />)
-  }</div>;
+  // Sort tags within each group by the index of their pattern, then by name.
+  const cmp = (s, t) => s.order < t.order ? -1 : s.order > t.order ? 1 :
+                        s.name < t.name ? -1 : s.name > t.name ? 1 : 0;
+  return groups.map((group, i) => ({icon: ICONS[i], tags: group.sort(cmp), index: i}));
 }
 
 
-const Block = ({block, tags, startVisible, assetCount, href}) => {
-  if ((block.left.length <= 0) && (block.right.length <= 0))
-    return null;
-
-  const [visible, setVisible] = useState(startVisible);
-  useEffect(() => setVisible(startVisible), [startVisible]);
-
-  // Sort tags within each block by the index of their pattern, then by name.
-  const cmp = (m, n) => {
-    const s = tags[m], t = tags[n];
-    return s.order < t.order ? -1 : s.order > t.order ? 1 :
-           s.name < t.name ? -1 : s.name > t.name ? 1 : 0;
-  };
-  block.left.sort(cmp);
-  block.right.sort(cmp);
-
-  const render = names => names.map(
-    name => <Tag key={name} tag={tags[name]} assetCount={assetCount} href={href} />
-  );
-
-  return <>
-    {render(block.left)}
-    <span className="icon" onClick={() => setVisible(!visible)}>{block.icon}</span>
-    {visible ? render(block.right) : null}
-  </>;
-}
+const Tags = ({icon, tags, clickHandler, className}) => (
+  <div key={icon} className={`tags ${className || ''} ${CLASSES[icon]}`}>
+    <span className='icon'>{icon}</span>
+    <ul>{tags.map(tag => (
+      <li key={tag.name}
+          className={`tag ${useLocation().pathname.indexOf('/'+tag.name+'/') >= 0 ? 'active' : ''}`}
+          style={{...tag.colors, cursor: clickHandler ? 'pointer' : 'default'}}>
+        <span onClick={clickHandler ? clickHandler(tag) : null}>{tag.name}</span>
+      </li>
+    ))}</ul>
+  </div>)
 
 
-const Tag = ({tag, assetCount, href}) => {
-  const path = useLocation().pathname
-      , span = <span className="tag" style={{
-    backgroundColor: hsluvToHex([tag.hue, 100, 90]),
-    opacity: Math.log(3 + tag.count) / Math.log(1 + assetCount),
-  }}>{tag.name}</span>;
-  return href ? <Link to={href(tag.name, path)}>{span}</Link> : span;
-}
+export {countAssetTags, patternForTag, Tags}

@@ -1,0 +1,35 @@
+.view
+  &.asset
+    grid-column: 5 / -1
+    grid-row: 2 / 12
+    place-self: center
+
+    audio, img, video
+      max-width: 100%
+      max-height: calc(100vh - 6em)
+
+  &.info
+    grid-column: 1 / 5
+    grid-row: 2
+
+    dt
+      clear: left
+      display: inline-block
+      float: left
+      font-weight: bold
+      margin-right: 1em
+      text-align: right
+      width: 2em
+    dd
+      color: #fff
+
+  &.tags
+    grid-column: 1 / 5
+
+  &.related.content
+    grid-column: 1 / 5
+    grid-row: 8
+
+  &.related.tag
+    grid-column: 1 / -1
+    grid-row: 12
