@@ -3,7 +3,7 @@ import itertools
 import parsimonious.grammar
 import sqlalchemy
 
-from .assets import Asset
+from .assets import Asset, asset_tags
 from .hashes import Hash
 from .tags import Tag
 
@@ -27,17 +27,15 @@ class QueryParser(parsimonious.NodeVisitor):
     '''
 
     grammar = parsimonious.Grammar(r'''
-    query    = union ( __ union )*
-    union    = negation ( __ or __ negation )*
-    negation = ( not __ )? set
-    set      = !not !or ( group / stamp / path / slug / hash / medium / text / tag )
+    query    = union ( __ ( not __ )? union )*
+    union    = set ( __ or __ set )*
+    set      = !not !or ( group / stamp / path / slug / hash / medium / tag )
     group    = '(' _ query _ ')'
     stamp    = ~r'(before|during|after):[-\d]+'
     path     = ~r'path:\S+'
     slug     = ~r'slug:[-\w]+'
-    hash     = ~r'hash:[-\w]+'
+    hash     = ~r'hash:[-=\w]+'
     medium   = ~'(photo|video|audio)'
-    text     = ~'"[^"]+"'
     tag      = ~r'[-\w]+'
     not      = 'not'
     or       = 'or'
@@ -45,21 +43,24 @@ class QueryParser(parsimonious.NodeVisitor):
     __       = ~r'\s+'
     ''')
 
+    def __init__(self, sess):
+        super().__init__()
+        self.sess = sess
+
     def visit_query(self, node, children):
-        intersection, rest = children
-        for elem in rest:
-            intersection &= elem[-1]
-        return intersection
+        select, rest = children
+        for _, neg, other in rest:
+            if neg:
+                select = sqlalchemy.sql.except_(select, other)
+            else:
+                select = sqlalchemy.sql.intersect(select, other)
+        return select
 
     def visit_union(self, node, children):
-        union, rest = children
-        for elem in rest:
-            union |= elem[-1]
-        return union
-
-    def visit_negation(self, node, children):
-        neg, which = children
-        return ~which if neg else which
+        select, rest = children
+        for _, _, _, other in rest:
+            select = sqlalchemy.sql.union(select, other)
+        return select
 
     def visit_set(self, node, children):
         _, _, [child] = children
@@ -72,29 +73,32 @@ class QueryParser(parsimonious.NodeVisitor):
     def visit_stamp(self, node, children):
         comp, value = node.text.split(':', 1)
         value = arrow.get(value, ['YYYY', 'YYYY-MM', 'YYYY-MM-DD']).datetime
-        column = Asset.stamp
-        return (column < value if comp == 'before' else
-                column > value if comp == 'after' else
-                column.startswith(value))
+        return self.sess.query(Asset.id).filter(
+            Asset.stamp < value if comp == 'before' else
+            Asset.stamp > value if comp == 'after' else
+            Asset.stamp.startswith(value))
 
     def visit_path(self, node, children):
-        return Asset.path.contains(node.text[5:])
+        return self.sess.query(Asset.id).filter(Asset.path.contains(node.text[5:]))
 
     def visit_slug(self, node, children):
-        return Asset.slug.startswith(node.text[5:])
-
-    def visit_hash(self, node, children):
-        return Asset.hashes.any(Hash.nibbles.contains((node.text[5:])))
+        return self.sess.query(Asset.id).filter(Asset.slug.startswith(node.text[5:]))
 
     def visit_medium(self, node, children):
-        return Asset.medium == node.text.lower()
-
-    def visit_text(self, node, children):
-        s = node.text.strip('"')
-        return Asset.caption.contains(s) | Asset.tags.any(Tag.name == s)
+        return self.sess.query(Asset.id).filter(Asset.medium == node.text.lower())
 
     def visit_tag(self, node, children):
-        return Asset.tags.any(Tag.name == node.text)
+        return sqlalchemy.sql.select([asset_tags.c.asset_id]).select_from(
+            asset_tags.join(Tag, asset_tags.c.tag_id == Tag.id)
+        ).where(Tag.name == node.text)
+
+    def visit_hash(self, node, children):
+        nibbles = node.text[5:]
+        condition = Hash.nibbles.startswith(nibbles)
+        if '=' in nibbles:
+            method, nibbles = nibbles.split('=', 1)
+            condition = Hash.nibbles.startswith(nibbles) & (Hash.method == method)
+        return self.sess.query(Hash.asset_id).filter(condition)
 
     def generic_visit(self, node, children):
         return children or node.text
@@ -123,7 +127,7 @@ def assets(sess, *query, order=None, limit=None, offset=None):
     query = ' '.join(itertools.chain.from_iterable(query)).strip()
     q = sess.query(Asset)
     if query:
-        q = q.filter(QueryParser().parse(query))
+        q = q.filter(Asset.id.in_(QueryParser(sess).parse(query)))
     if order:
         q = q.order_by(parse_order(order))
     if limit:
