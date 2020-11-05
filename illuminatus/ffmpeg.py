@@ -134,7 +134,7 @@ def _apply_filters(asset):
         4: [dict(filter='vflip')],
         5: [dict(filter='transpose')],
         6: [dict(filter='transpose'), dict(filter='hflip')],
-        6: [dict(filter='transpose'), dict(filter='hflip'), dict(filter='vflip')],
+        7: [dict(filter='transpose'), dict(filter='hflip'), dict(filter='vflip')],
         8: [dict(filter='transpose'), dict(filter='vflip')],
     }.get(asset.orientation if asset.is_photo else None, [])
 
@@ -238,12 +238,13 @@ def run(asset, output, **kwargs):
 
     stem, ext = os.path.splitext(output)
     ext = ext.strip('.').lower()
+    dur = asset.duration or 0
+    mid = dur / 2
 
     # Audio --> png: make a spectrogram image of the middle 60 seconds.
     if asset.is_audio and ext == 'png':
-        t = asset.duration / 2
         w, h = kwargs['bbox']
-        trim = f'atrim={max(0, t - 30)}:{min(asset.duration, t + 30)}'
+        trim = f'atrim={max(0, mid - 30)}:{min(dur, mid + 30)}'
         spec = f'showspectrumpic=s={w}x{h}:color=viridis:scale=log:fscale=log'
         run('-af', f'{trim},{spec}', output)
         return
@@ -251,7 +252,7 @@ def run(asset, output, **kwargs):
     # Video --> gif: make an animated gif from the middle 10 seconds of a video,
     # and a poster image from the start of that clip.
     if asset.is_video and ext == 'gif':
-        args = f'-ss {max(0, asset.duration / 2 - 5)} -t 10 -an -vf'.split()
+        args = f'-ss {max(0, mid - 5)} -t 10 -an -vf'.split()
         palette = 'split[u][q];[u]fifo[v];[q]palettegen[p];[v][p]paletteuse'
         run(*args + [','.join(filters), '-frames:v', '1', f'{stem}.png'])
         run(*args + [','.join(filters + [palette]), '-loop', '-1', output])
@@ -260,7 +261,7 @@ def run(asset, output, **kwargs):
     # Video --> webp: make an animation from the middle 10 seconds of a video,
     # and a poster image from the start of that clip.
     if asset.is_video and ext == 'webp':
-        args = f'-ss {max(0, asset.duration / 2 - 5)} -t 10 -an -vf'.split()
+        args = f'-ss {max(0, mid - 5)} -t 10 -an -vf'.split()
         run(*args + [','.join(filters), '-frames:v', '1', f'{stem}.png'])
         run(*args + [','.join(filters), '-codec:v', 'libwebp', output])
         return
