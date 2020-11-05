@@ -57,8 +57,9 @@ class Metadata:
             w = self._data.get(key)
             if w:
                 break
-        if not h or not w and 'ImageSize' in self._data:
-            h, w = tuple(int(z) for z in self._data['ImageSize'].split())
+        hw = self._data.get('ImageSize')
+        if hw and not h and not w:
+            h, w = tuple(int(z) for z in hw.split())
         return h, w
 
     @property
