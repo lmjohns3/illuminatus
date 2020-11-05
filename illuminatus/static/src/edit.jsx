@@ -2,10 +2,9 @@ import axios from 'axios'
 import moment from 'moment'
 import React, {useEffect, useState} from 'react'
 import {Link, useHistory, useParams} from 'react-router-dom'
-import CreatableSelect from 'react-select/creatable'
 import ReactCrop from 'react-image-crop'
 
-import {countAssetTags, Tags} from './tags'
+import {countAssetTags, Tags, TagSelect} from './tags'
 import {Breadcrumbs, Button, ConfigContext} from './utils'
 
 import './edit.styl'
@@ -45,23 +44,8 @@ const Edit = () => {
 
   useEffect(() => { axios(url).then(res => setAsset(res.data)); }, [slug]);
 
-  const addTag = ({value}, {action}) => {
-    if (action === 'create-option' || action === 'select-option') {
-      axios.put(url, {add_tags: value}).then(res => setAsset(res.data));
-    }
-  };
-
-  const removeTag = name => {
-    axios.put(url, {remove_tags: name}).then(res => setAsset(res.data));
-  };
-
   useEffect(() => {
-    const handler = ev => {
-      if (ev.code === 'Escape') {
-        stopEditing();
-      }
-    };
-
+    const handler = ev => { if (ev.code === 'Escape') stopEditing(); };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, []);
@@ -85,20 +69,11 @@ const Edit = () => {
        return <img src={src} />;
     }}</ConfigContext.Consumer></div>
     {countAssetTags([asset]).map(
-      group => <Tags key={group.icon} icon={group.icon} tags={group.tags}
-                     className='edit'
-                     clickHandler={tag => () => removeTag(tag.name)} />
+      group => (group.tags.length === 0 || group.index > 2) ? null :
+        <Tags key={group.icon} icon={group.icon} tags={group.tags} className='edit'
+              clickHandler={tag => () => removeTag(tag.name)} />
     )}
-    <div className='edit tags'>
-      <span className='icon'></span>
-      <ul><li><ConfigContext.Consumer>{
-        ({tags}) => <CreatableSelect className='tag-select'
-                                     options={tags.map(t => ({label: t.name, value: t.name}))}
-                                     onChange={addTag}
-                                     autoFocus={true}
-                                     placeholder='Add tag...' />
-      }</ConfigContext.Consumer></li></ul>
-    </div>
+    <TagSelect className='edit' assets={asset.id ? [asset] : []} />
     <div className='tools'>
       <Button name='exit' icon='⨉' onClick={stopEditing}/>
       <span className='spacer' />

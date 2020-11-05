@@ -11,6 +11,10 @@
 .edit.tags {
   grid-column: 1/4;
 }
+.edit.tag-select {
+  grid-column: 1/4;
+  margin-left: 3em;
+}
 .edit .filters,
 .edit .stamp {
   grid-column: 1;
@@ -221,6 +225,7 @@
   float: left;
   font-weight: bold;
   margin-right: 1em;
+  opacity: 0;
   text-align: right;
   width: 2em;
 }
@@ -294,7 +299,7 @@ body {
 .thumbs {
   display: grid;
   grid-auto-flow: dense;
-  grid-template-columns: repeat(auto-fit, minmax(var(--thumbnail-size), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(var(--thumbnail-size), calc(2 * var(--thumbnail-size))));
   grid-auto-rows: var(--thumbnail-size);
 }
 .thumbs h2 {

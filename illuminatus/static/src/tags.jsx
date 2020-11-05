@@ -1,6 +1,10 @@
+import axios from 'axios'
 import {hsluvToHex} from 'hsluv'
 import React from 'react'
 import {useLocation} from 'react-router-dom'
+import CreatableSelect from 'react-select/creatable'
+
+import {ConfigContext} from './utils'
 
 const ICONS = ['🗓', '⌚', '📷', '🌍', '🙋']
 
@@ -108,4 +112,49 @@ const Tags = ({icon, tags, clickHandler, className}) => (
   </div>)
 
 
-export {countAssetTags, patternForTag, Tags}
+const TagSelect = ({assets, activeAssets, className}) => {
+  const changeTags = active => (options, about) => {
+    if (about.action === 'create-option' || about.action === 'select-option') {
+      active.forEach(({slug}) => axios.post(
+        `/rest/asset/${slug}/${options[options.length - 1].value}/`));
+    } else if (about.action === 'pop-value' || about.action === 'remove-value') {
+      active.forEach(({slug}) => axios.delete(
+        `/rest/asset/${slug}/${about.removedValue.value}/`));
+    }
+  };
+
+  return <ConfigContext.Consumer>{({tags}) => <CreatableSelect
+      className={`${className || ''} tag-select`}
+      key={assets.length}
+      isClearable={false}
+      isMulti={true}
+      defaultValue={
+        assets.length === 0 ? [] : [...new Set(
+          assets.reduce((acc, a) => [...acc, ...a.tags], [])
+        )].map(patternForTag).filter(({icon}) => icon > 2)
+      }
+      options={tags.map(({name}) => patternForTag(name)).filter(({icon}) => icon > 2)}
+      onChange={changeTags(activeAssets && activeAssets.length ? activeAssets : assets)}
+      placeholder='Add tag...'
+      styles={{
+        control: base => ({...base, background: '#666', borderColor: '#666'}),
+        placeholder: base => ({...base, color: '#111'}),
+        option: (base, {data}) => ({
+          ...base,
+          ...data.colors,
+          display: 'inline-block',
+          float: 'left',
+          width: 'auto',
+          margin: '0.2em',
+          padding: '0.2em 0.4em',
+          borderRadius: '3px',
+          cursor: 'pointer',
+        }),
+        menu: base => ({...base, background: '#666'}),
+        multiValue: (base, {data}) => ({...base, ...data.colors}),
+        multiValueLabel: base => ({...base, fontSize: '100%'}),
+        multiValueRemove: base => ({...base, fontSize: '100%'}),
+  }} />}</ConfigContext.Consumer>;
+}
+
+export {countAssetTags, patternForTag, Tags, TagSelect}

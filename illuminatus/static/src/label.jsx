@@ -2,10 +2,9 @@ import axios from 'axios'
 import {hsluvToHex} from 'hsluv'
 import React, {useEffect, useState} from 'react'
 import {useHistory, useLocation, useParams} from 'react-router-dom'
-import CreatableSelect from 'react-select/creatable'
 import {useSwipeable} from 'react-swipeable'
 
-import {countAssetTags, patternForTag, Tags} from './tags'
+import {countAssetTags, patternForTag, Tags, TagSelect} from './tags'
 import {Breadcrumbs, Button, ConfigContext, Spinner, Thumb, useAssets} from './utils'
 
 import './label.styl'
@@ -67,19 +66,11 @@ const Label = () => {
     }
   };
 
-  const changeTags = active => (options, about) => {
-    if (about.action === 'create-option' || about.action === 'select-option') {
-      active.forEach(({slug}) => axios.post(
-        `/rest/asset/${slug}/${options[options.length - 1].value}/`));
-    } else if (about.action === 'pop-value' || about.action === 'remove-value') {
-      active.forEach(({slug}) => axios.delete(
-        `/rest/asset/${slug}/${about.removedValue.value}/`));
-    }
-  };
-
   return <>
     <Breadcrumbs className='label'>
       {query.replace(/\/$/, '').replace(/\//g, ' & ')}
+      <span className='divider'>»</span>
+      Edit
     </Breadcrumbs>
     <div className='tools'>
       <Button name='exit' icon='⨉' onClick={() => hist.replace(`/browse/${query}`)} />
@@ -89,40 +80,7 @@ const Label = () => {
               disabled={activeAssets.length === 0}
               onClick={() => deleteAssets(activeAssets)} />
     </div>
-    <ConfigContext.Consumer>{
-      ({tags}) => <CreatableSelect
-      className='label tag-select'
-                    key={assets.length}
-      isClearable={false}
-      isMulti={true}
-      defaultValue={
-        loading ? [] : [...new Set(
-          assets.reduce((acc, a) => [...acc, ...a.tags], [])
-        )].map(patternForTag).filter(({icon}) => icon > 2)
-      }
-      options={tags.map(({name}) => patternForTag(name)).filter(({icon}) => icon > 2)}
-      onChange={changeTags(activeAssets.length ? activeAssets : assets)}
-      placeholder='Add tag...'
-      styles={{
-        control: base => ({...base, background: '#666', borderColor: '#666'}),
-        placeholder: base => ({...base, color: '#111'}),
-        option: (base, {data}) => ({
-          ...base,
-          ...data.colors,
-          display: 'inline-block',
-          float: 'left',
-          width: 'auto',
-          margin: '0.2em',
-          padding: '0.2em 0.4em',
-          borderRadius: '3px',
-          cursor: 'pointer',
-        }),
-        menu: base => ({...base, background: '#666'}),
-        multiValue: (base, {data}) => ({...base, ...data.colors}),
-        multiValueLabel: base => ({...base, fontSize: '100%'}),
-        multiValueRemove: base => ({...base, fontSize: '100%'}),
-      }} />
-    }</ConfigContext.Consumer>
+    <TagSelect className='label' assets={assets} activeAssets={activeAssets} />
     {loading ? <Spinner /> : <>
       {countAssetTags(assets).map(
         group => (group.tags.length === 0 || group.index > 2) ? null :

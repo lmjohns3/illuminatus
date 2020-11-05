@@ -87,7 +87,8 @@ def get_asset(slug):
 def get_similar_assets_by_tag(slug):
     return _json(_get_asset(slug).similar_by_tag(
         sql.session,
-        min_sim=float(flask.request.args.get('min', 0.5))))
+        min_sim=float(flask.request.args.get('min', 0.5)),
+        limit=int(flask.request.args.get('lim', 99999))))
 
 
 @app.route('/rest/asset/<string:slug>/similar/content/', methods=['GET'])
