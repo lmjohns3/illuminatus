@@ -41,7 +41,7 @@ class Tag(db.Model):
         r'\dmm', r'\d\dmm', r'\d\d\dmm', r'\d\d\d\dmm',
 
         # Geolocation.
-        r'country-\S+', r'state-\S+', r'city-\S+', r'place-\S+',
+        r'lat-\S+', r'lng-\S+', r'in-\S+',
 
         # User-defined: everything else.
         r'.*',
