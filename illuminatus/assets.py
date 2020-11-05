@@ -50,6 +50,7 @@ class Asset(db.Model):
     _tags = sqlalchemy.orm.relationship(
         Tag, secondary=asset_tags, backref='assets', lazy='selectin',
         collection_class=set)
+
     tags = sqlalchemy.ext.associationproxy.association_proxy(
         '_tags', 'name', creator=lambda name: Tag(name=name))
 
@@ -103,11 +104,11 @@ class Asset(db.Model):
         return sorted(sess.query(Asset).filter(Asset.id.in_(scores)),
                       key=lambda a: scores[a.id], reverse=True)[:limit]
 
-    def similar_by_content(self, sess, method, max_diff):
+    def similar_by_content(self, sess, method, max_distance=1):
         dupes = set()
         for h in self.hashes:
             if h.method == method:
-                dupes.update(n.asset for n in h.neighbors(sess, max_diff))
+                dupes.update(n.asset for n in h.neighbors(sess, max_distance))
         return dupes - {self}
 
     def to_dict(self):
@@ -166,8 +167,21 @@ class Asset(db.Model):
             to canonical form.
         '''
         t = Tag.canonical_form(tag)
-        if t:
+        if t and t not in self.tags:
             self.tags.add(t)
+
+    def maybe_remove_tag(self, tag):
+        '''Potentially remove a tag from this asset.
+
+        Parameters
+        ----------
+        tag : str
+            Tag candidate to remove. If this tag does not apply to this asset,
+            nothing will be removed.
+        '''
+        t = Tag.canonical_form(tag)
+        if t in self.tags:
+            self.tags.remove(t)
 
     def add_path_tags(self, limit):
         '''Add tags to this asset from successive path dirnames.

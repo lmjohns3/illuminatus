@@ -6,6 +6,19 @@ import sqlalchemy
 from . import db
 
 
+def _bits_to_nibbles(bits):
+    '''Convert a boolean ndarray of bits to a hex string.'''
+    flat = bits.ravel()
+    if flat.size % 4:
+        raise ValueError(f'Cannot convert {flat.size} bits to hex nibbles')
+    num = sum(1 << i for i, c in enumerate(reversed(flat)) if c)
+    return hex(num)[2:].zfill(flat.size // 4)
+
+
+def _bit_diff_rate(a, b):
+    return bin(int(a, 16) ^ int(b, 16)).count('1') / len(a) / 4
+
+
 # http://www.hackerfactor.com/blog/index.php?/archives/529-Kind-of-Like-That.html
 def _dhash(img, size):
     if isinstance(img, np.ndarray):
@@ -24,7 +37,7 @@ class Hash(db.Model):
     time = db.Column(db.Float)
 
     asset = sqlalchemy.orm.relationship(
-        'Asset', backref=sqlalchemy.orm.backref('hashes', collection_class=set),
+        'Asset', backref=sqlalchemy.orm.backref('hashes', lazy=False, collection_class=set),
         lazy='selectin', collection_class=set)
 
     def __repr__(self):
@@ -72,7 +85,7 @@ class Hash(db.Model):
         -------
         A Hash instance representing the histogram.
         '''
-        hist = np.asarray(img.histogram())
+        hist = np.asarray(img.convert('RGB').histogram())
         chunks = np.asarray([c.sum() for c in np.split(hist, 3 * size)])
         # Bits indicate whether each chunk is above or below the mean.
         return cls(nibbles=_bits_to_nibbles(chunks > np.mean(chunks)),
@@ -99,15 +112,15 @@ class Hash(db.Model):
     def compute_video_dhash(cls, path, time, size):
         return cls(nibbles=_dhash(path, size), method=f'dhash-{size}', time=time)
 
-    def neighbors(self, sess, max_diff):
+    def neighbors(self, sess, max_distance=1):
         '''Get all neighboring hashes from the database.
 
         Parameters
         ----------
         sess : SQLAlchemy
             Database session.
-        max_diff : float, optional
-            Select all existing hashes within this fraction of changed bits.
+        max_distance : int, optional
+            Select all existing hashes within this many changed bits.
 
         Returns
         -------
@@ -116,25 +129,12 @@ class Hash(db.Model):
         return (
             sess.query(Hash)
             .filter(Hash.method == self.method)
-            .filter(Hash.nibbles.in_(_neighbors(self.nibbles, max_diff)))
+            .filter(Hash.nibbles.in_(_neighbors(self.nibbles, max_distance)))
             .yield_per(1000)
         )
 
     def to_dict(self):
         return dict(nibbles=self.nibbles, method=self.method, time=self.time)
-
-
-def _bits_to_nibbles(bits):
-    '''Convert a boolean ndarray of bits to a hex string.'''
-    flat = bits.ravel()
-    if flat.size % 4:
-        raise ValueError(f'Cannot convert {flat.size} bits to hex nibbles')
-    return ('{:0%dx}' % (flat.size // 4, )).format(
-        int(''.join(flat.astype(int).astype(str)), 2))
-
-
-def _bit_diff_rate(a, b):
-    return bin(int(a, 16) ^ int(b, 16)).count('1') / len(a) / 4
 
 
 # a map from each hex digit to the hex digits that differ in 1 bit.
@@ -144,32 +144,31 @@ _HEX_NEIGHBORS = {'0': '1248', '1': '0359', '2': '306a', '3': '217b',
                   'c': 'de84', 'd': 'cf95', 'e': 'fca6', 'f': 'edb7'}
 
 
-def _neighbors(start, max_diff=0.01):
+def _neighbors(start, max_distance=1):
     '''Pull all neighboring hashes within a similarity ball from the start.
 
     Parameters
     ----------
     start : str
         Hexadecimal string representing a starting hash value.
-    max_diff : float, optional
-        Identify all hashes within this fraction of changed bits from the start.
+    max_distance : int, optional
+        Identify all hashes within this many changed bits from the start.
 
     Yields
     -------
-    The unique hashes that are within the given fraction of changed bits from
-    the start.
+    The unique hashes that are within the given distance from the start.
     '''
     if not start:
         return
     visited, frontier = {start}, {start}
-    while frontier:
+    for _ in range(max_distance):
         yield from frontier
         next_frontier = set()
         for nibbles in frontier:
             for i, c in enumerate(nibbles):
                 for d in _HEX_NEIGHBORS[c]:
                     n = f'{nibbles[:i]}{d}{nibbles[i+1:]}'
-                    if n not in visited and _bit_diff_rate(start, n) <= max_diff:
+                    if n not in visited:
                         next_frontier.add(n)
                         visited.add(n)
         frontier = next_frontier
