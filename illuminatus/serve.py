@@ -9,10 +9,12 @@ import os
 import shutil
 import tempfile
 
+from . import celery
 from . import db
 from . import importexport
 
 from .assets import Asset
+from .tags import Tag
 from .query import assets as matching_assets
 
 app = flask.Flask('illuminatus')
@@ -33,9 +35,12 @@ def _json(items):
 #     return 'a'
 
 
-@app.route('/rest/formats/')
-def formats():
-    return flask.jsonify(app.config['formats'])
+@app.route('/rest/config/')
+def config():
+    return flask.jsonify(dict(
+        formats=app.config['formats'],
+        tags=[t.to_dict() for t in sql.session.query(Tag).order_by('name').all()],
+    ))
 
 
 @app.route('/rest/query/<path:query>')
@@ -82,8 +87,7 @@ def get_asset(slug):
 def get_similar_assets_by_tag(slug):
     return _json(_get_asset(slug).similar_by_tag(
         sql.session,
-        min_sim=float(flask.request.args.get('min', 10)),
-        limit=int(flask.request.args.get('lim', 10))))
+        min_sim=float(flask.request.args.get('min', 0.5))))
 
 
 @app.route('/rest/asset/<string:slug>/similar/content/', methods=['GET'])
@@ -91,20 +95,46 @@ def get_similar_assets_by_content(slug):
     return _json(_get_asset(slug).similar_by_content(
         sql.session,
         method=flask.request.args.get('alg', 'diff-8'),
-        max_diff=float(flask.request.args.get('max', 0.01))))
+        max_distance=int(flask.request.args.get('max', 1))))
+
+
+@app.route('/rest/asset/<string:slug>/<string:tag>/', methods=['POST'])
+def add_tag(slug, tag):
+    asset = _get_asset(slug)
+    name = Tag.canonical_form(tag)
+    if name:
+        tag = sql.session.query(Tag).filter(Tag.name == name).scalar()
+        if not tag:
+            tag = Tag(name=name)
+            sql.session.add(tag)
+        asset._tags.add(tag)
+        asset.tags.discard('untouched')
+        sql.session.add(asset)
+        sql.session.commit()
+    return flask.jsonify(asset.to_dict())
+
+
+@app.route('/rest/asset/<string:slug>/<string:tag>/', methods=['DELETE'])
+def remove_tag(slug, tag):
+    asset = _get_asset(slug)
+    tag = sql.session.query(Tag).filter(
+        Tag.name == Tag.canonical_form(tag)).scalar()
+    if tag:
+        asset._tags.remove(tag)
+        asset.tags.discard('untouched')
+        sql.session.add(asset)
+        sql.session.commit()
+    return flask.jsonify(asset.to_dict())
 
 
 @app.route('/rest/asset/<string:slug>/', methods=['PUT'])
 def update_asset(slug):
-    get = flask.request.form.get
     asset = _get_asset(slug)
-    for tag in get('add_tags', '').split():
-        asset.add_tag(tag)
-    for tag in get('remove_tags', '').split():
-        asset.remove_tag(tag)
-    stamp = get('stamp', '')
+    stamp = flask.request.json.get('stamp', '')
     if stamp:
         asset.update_stamp(stamp)
+        asset.tags.discard('untouched')
+        sql.session.commit()
     return flask.jsonify(asset.to_dict())
 
 
@@ -141,7 +171,7 @@ def add_filter(slug, filter):
                   overwrite=True)
         kw.update(kwargs)
         queue = 'video' if asset.is_video and path == 'medium' else 'celery'
-        tasks.export.apply_async(kwargs=kw, queue=queue)
+        celery.export.apply_async(kwargs=kw, queue=queue)
     return flask.jsonify(asset.to_dict())
 
 
@@ -156,7 +186,7 @@ def delete_filter(slug, filter, index):
                   overwrite=True)
         kw.update(kwargs)
         queue = 'video' if asset.is_video and path == 'medium' else 'celery'
-        tasks.export.apply_async(kwargs=kw, queue=queue)
+        celery.export.apply_async(kwargs=kw, queue=queue)
     return flask.jsonify(asset.to_dict())
 
 

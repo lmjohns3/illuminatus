@@ -11,8 +11,8 @@ import re
 import tempfile
 import zipfile
 
+from . import celery
 from . import db
-from . import tasks
 from .assets import Asset
 from .tags import Tag
 
@@ -63,7 +63,7 @@ def maybe_import_asset(sess, path, tags=(), path_tags=0):
         return click.style(s, fg=fg)
 
     digest = hashlib.blake2s(path.encode('utf-8')).digest()
-    slug = base64.b64encode(digest, b'-_').strip(b'=').decode('utf-8')
+    slug = base64.urlsafe_b64encode(digest).strip(b'=').decode('utf-8')
 
     medium = None
     mime, _ = mimetypes.guess_type(path)
@@ -90,7 +90,7 @@ def maybe_import_asset(sess, path, tags=(), path_tags=0):
         sess.add(asset)
         sess.commit()
         click.echo(f'{color("+", "cyan")} {slug} {bold}')
-        return tasks.update_from_content.delay(slug)
+        return celery.update_from_content.delay(slug)
     except:
         sess.rollback()
         logging.error(f'{color("!", "red")} {slug} {bold}')
@@ -126,7 +126,7 @@ def export_for_web(assets, root, formats, overwrite):
                       dirname=os.path.join(root, path, asset.slug[:1]))
             kw.update(kwargs)
             queue = 'video' if asset.is_video and path == 'medium' else 'celery'
-            yield tasks.export.apply_async(kwargs=kw, queue=queue)
+            yield celery.export.apply_async(kwargs=kw, queue=queue)
 
 
 def export_for_zip(assets, root, formats):
@@ -160,7 +160,7 @@ def export_for_zip(assets, root, formats):
                       basename=f'{stem}.{kwargs.get("ext", medium_ext)}')
             kw.update(kwargs)
             queue = 'video' if asset.is_video and path == 'medium' else 'celery'
-            yield tasks.export.apply_async(kwargs=kw, queue=queue)
+            yield celery.export.apply_async(kwargs=kw, queue=queue)
 
 
 def export_zip(assets, root, output, hide_tags=(), hide_omnipresent_tags=False):

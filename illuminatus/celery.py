@@ -13,8 +13,8 @@ app.conf.update(
     result_serializer='json',
     task_serializer='json',
     task_create_missing_queues=True,
-    broker_url='redis://',
-    result_backend='redis://',
+    broker_url='redis://localhost',
+    result_backend='redis://localhost',
     timezone='UTC',
     enable_utc=True,
 )

@@ -7,17 +7,17 @@ import re
 import sys
 import time
 
+from . import celery
 from . import db
 from . import importexport
 from . import query
-from . import tasks
 
 from .assets import Asset
 
 
 @contextlib.contextmanager
 def transaction():
-    '''Run a databse session with proper setup and cleanup.'''
+    '''Run a database session with proper setup and cleanup.'''
     sess = db.Session()
     try:
         yield sess
@@ -55,16 +55,13 @@ def progressbar(items, label):
     kwargs = dict(length=len(items), label=label, width=0, fill_char='█')
     with click.progressbar(**kwargs) as bar:
         while items:
-            done = None
+            done = []
             try:
-                for i, item in enumerate(items):
-                    if item.ready():
-                        done = i
-                        break
+                done.extend(i for i, item in enumerate(items) if item.ready())
             except:
                 pass
-            if done is not None:
-                items.pop(done)
+            for i in reversed(done):
+                items.pop(i)
                 bar.update(1)
             time.sleep(1)
 
@@ -95,7 +92,7 @@ def cli(ctx, db_path, log_sql, log_tools):
 
     # Configure sqlalchemy sessions to connect to our database.
     db.Session.configure(bind=db.engine(path=db_path, echo=log_sql))
-    tasks.app.conf.update(illuminatus_db=db_path)
+    celery.app.conf.update(illuminatus_db=db_path)
 
     if log_tools:
         from . import ffmpeg
@@ -178,18 +175,18 @@ def ls(ctx, query, order, limit):
 @cli.command()
 @click.option('--method', default='dhash-8', metavar='[dhash-8|rgb-16|...]',
               help='Check for asset neighbors using this hashing method.')
-@click.option('--max-diff', default=0.01, metavar='R',
-              help='Look within fraction R of changed bits for neighbors.')
+@click.option('--max-distance', default=1, metavar='R',
+              help='Look for neighbors with at most R changed bits.')
 @click.argument('query', nargs=-1)
 @click.pass_context
-def dupe(ctx, query, method, max_diff):
+def dupe(ctx, query, method, max_distance):
     '''List duplicate assets matching a QUERY.
 
     See "illuminatus help" for help on QUERY syntax.
     '''
     with transaction() as sess:
         for asset in query_assets(sess, query):
-            neighbors = asset.dupes(sess, method, max_diff)
+            neighbors = asset.dupes(sess, method, max_distance)
             if neighbors:
                 click.echo(' '.join(display(asset)))
                 for neighbor in neighbors:
