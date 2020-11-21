@@ -19,10 +19,13 @@ from .hashes import Hash
 from .tags import Tag
 
 
+_DEFAULT_EXTENSIONS = dict(audio='mp3', photo='jpg', video='mp4')
+
+
 asset_tags = db.Table(
     'asset_tags', db.Model.metadata,
-    db.Column('asset_id', db.ForeignKey('assets.id'), nullable=False),
-    db.Column('tag_id', db.ForeignKey('tags.id'), nullable=False),
+    db.Column('asset_id', db.ForeignKey('assets.id', ondelete='CASCADE'), nullable=False),
+    db.Column('tag_id', db.ForeignKey('tags.id', ondelete='CASCADE'), nullable=False),
     db.PrimaryKeyConstraint('asset_id', 'tag_id'))
 
 
@@ -69,19 +72,9 @@ class Asset(db.Model):
     def is_video(self):
         return self.medium == 'video'
 
-    def similar_by_geo(self, sess, limit=20):
-        cond = Asset.stamp.startswith(self.stamp.isoformat()[:7])
-        return sorted(set(sess.query(Asset).filter(cond)) - {self},
-                      key=lambda a: abs((a.stamp - self.stamp).total_seconds()),
-                      reverse=True)[:limit]
-
-    def similar_by_stamp(self, sess, limit=20):
-        cond = Asset.stamp.startswith(self.stamp.isoformat()[:7])
-        return sorted(set(sess.query(Asset).filter(cond)) - {self},
-                      key=lambda a: abs((a.stamp - self.stamp).total_seconds()),
-                      reverse=True)[:limit]
-
     def similar_by_tag(self, sess, min_sim=0.5, limit=20):
+        '''
+        '''
         if not hasattr(Asset, '_idf'):
             Asset._tags_per_asset = collections.defaultdict(set)
             Asset._assets_per_tag = collections.defaultdict(set)
@@ -105,6 +98,8 @@ class Asset(db.Model):
                       key=lambda a: scores[a.id], reverse=True)[:limit]
 
     def similar_by_content(self, sess, method, max_distance=1):
+        '''
+        '''
         dupes = set()
         for h in self.hashes:
             if h.method == method:
@@ -141,7 +136,7 @@ class Asset(db.Model):
             A modifier for the stamp for this asset.
         '''
         for t in metadata.tags_from_stamp(arrow.get(self.stamp)):
-            self.tags.remove(t)
+            self.tags.discard(t)
 
         try:
             self.stamp = arrow.get(when).datetime
@@ -167,7 +162,7 @@ class Asset(db.Model):
             to canonical form.
         '''
         t = Tag.canonical_form(tag)
-        if t and t not in self.tags:
+        if t:
             self.tags.add(t)
 
     def maybe_remove_tag(self, tag):
@@ -179,9 +174,7 @@ class Asset(db.Model):
             Tag candidate to remove. If this tag does not apply to this asset,
             nothing will be removed.
         '''
-        t = Tag.canonical_form(tag)
-        if t in self.tags:
-            self.tags.remove(t)
+        self.tags.discard(Tag.canonical_form(tag))
 
     def add_path_tags(self, limit):
         '''Add tags to this asset from successive path dirnames.
@@ -241,33 +234,90 @@ class Asset(db.Model):
         filters.pop(index)
         self.filters = json.dumps(filters)
 
-    def export(self, dirname, basename=None, overwrite=False, **kwargs):
+    def path_for_export(self, root, name, ext):
+        '''Get the default path to use for exporting this asset.
+
+        Parameters
+        ----------
+        root : str
+            Root directory for the export.
+        name : str
+            Subdirectory name.
+        ext : str
+            Extension for the exported file.
+
+        Returns
+        -------
+        The full export file path for default exports.
+        '''
+        return os.path.join(root, name, self.slug[0], f'{self.slug}.{ext}')
+
+    def export_for_web(self, root, formats, overwrite):
+        '''Export asset thumbnails asynchronously to a root dir.
+
+        Parameters
+        ----------
+        root : str
+            A directory for holding thumbnails.
+        formats : dict
+            Thumbnail format configuration.
+        overwrite : bool
+            If True, overwrite existing thumbnails.
+
+        Yields
+        ------
+        Asynchronous results from the export tasks.
+        '''
+        for name, kwargs in formats[self.medium].items():
+            ext = kwargs.get('ext', _DEFAULT_EXTENSIONS[self.medium])
+            output = self.path_for_export(root, name, ext)
+            kw = dict(slug=self.slug, output=output, overwrite=overwrite, **kwargs)
+            # Use celery to call self.export(...) asynchronously.
+            yield celery.export.apply_async(kwargs=kw, queue=self.medium)
+
+    def export_for_zip(self, root, formats):
+        '''Export assets asynchronously to a root directory for zipping.
+
+        Parameters
+        ----------
+        root : str
+            A directory containing thumbnails to include in the zip.
+        formats : str
+            The name of a thumbnail format configuration file to load.
+
+        Yields
+        ------
+        Asynchronous results from the export tasks.
+        '''
+        stems = [self.stamp.isoformat()[:10], self.slug[:4]]
+        stems.extend(tag.name for tag in
+                     sorted(self._tags, key=lambda t: t.name)
+                     if tag.is_user)
+        stem = '-'.join(stems)
+        for name, kwargs in formats[self.medium].items():
+            ext = kwargs.get('ext', _DEFAULT_EXTENSIONS[self.medium])
+            output = os.path.join(root, name, f'{stem}.{ext}')
+            kw = dict(slug=self.slug, output=output, **kwargs)
+            # Use celery to call self.export(...) asynchronously.
+            yield celery.export.apply_async(kwargs=kw, queue=self.medium)
+
+    def export(self, output, overwrite=False, **kwargs):
         '''Export a version of an asset to another file.
 
         Parameters
         ----------
-        dirname : str
-            Save exported asset in this directory.
-        basename : str, optional
-            Basename for the exported file; defaults to using the asset's slug.
+        output : str
+            Save exported asset to this file.
         overwrite : bool, optional
             If an exported file already exists, this flag determines what to
             do. If `True` overwrite it; otherwise (the default), return.
         **kwargs :
-            Additional keyword arguments containing formatting settings: frame
-            rate, bounding box, etc.
+            Additional keyword arguments to pass to ffmpeg: frame rate,
+            bounding box, etc.
         '''
-        kwargs_ext = kwargs.get('ext')
-        basename_ext = os.path.splitext(basename)[1].strip('.') if basename else None
-        if kwargs_ext and basename_ext and kwargs_ext != basename_ext:
-            logging.warn('Export basename %s != extension %s',
-                         basename_ext, kwargs_ext)
-        if kwargs_ext is None:
-            kwargs_ext = basename_ext
-        output = os.path.join(dirname, basename or f'{self.slug}.{kwargs_ext}')
         if overwrite or not os.path.exists(output):
-            if not os.path.exists(dirname):
-                os.makedirs(dirname)
+            if not os.path.exists(os.path.dirname(output)):
+                os.makedirs(os.path.dirname(output))
             ffmpeg.run(self, output, **kwargs)
 
     def update_from_metadata(self):
@@ -291,6 +341,7 @@ class Asset(db.Model):
         '''Compute hashes of asset content.'''
         if self.is_photo:
             rgb = self._open_and_auto_orient()
+            self.hashes.add(Hash.compute_resnet_hash(rgb))
             for size in (4, 8, 16):
                 self.hashes.add(Hash.compute_photo_histogram(rgb, 'rgb', size))
             gray = rgb.convert('L')
@@ -315,10 +366,12 @@ class Asset(db.Model):
                     img = PIL.Image.open(ntf.name).convert('L')
                 self.hashes.add(Hash.compute_video_dhash(img, t, 8))
 
-    def hide_original(self):
-        '''Hide the original asset file by renaming it with a . prefix.'''
-        dirname, basename = os.path.dirname(self.path), os.path.basename(self.path)
-        os.rename(self.path, os.path.join(dirname, f'.illuminatus-removed-{basename}'))
+    def move_to_trash(self, trash):
+        '''Move the original asset to a trash folder.'''
+        if not os.path.exists(trash):
+            os.makedirs(trash)
+        basename = os.path.basename(self.path)
+        os.rename(self.path, os.path.join(trash, f'{self.slug}-{basename}'))
 
     def _open_and_auto_orient(self):
         '''Open an image and apply transpositions to auto-orient the content.'''

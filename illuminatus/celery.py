@@ -32,10 +32,10 @@ class Task(celery.Task):
 
 
 @app.task(base=Task, bind=True)
-def export(self, slug, dirname, basename=None, overwrite=False, **kwargs):
+def export(self, slug, output, overwrite=False, **kwargs):
     '''Export an asset (usually resized/edited/etc.) to a file on disk.'''
     self.asset(self.session(), slug).export(
-        dirname, basename=basename, overwrite=overwrite, **kwargs)
+        output, overwrite=overwrite, **kwargs)
 
 
 @app.task(base=Task, bind=True)

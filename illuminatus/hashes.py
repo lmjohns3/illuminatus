@@ -23,7 +23,7 @@ def _bit_diff_rate(a, b):
 def _dhash(img, size):
     if isinstance(img, np.ndarray):
         img = PIL.Image.fromarray(img)
-    arr = np.array(img.resize((size + 1, size)))
+    arr = np.array(img.resize((size + 1, size), PIL.Image.BICUBIC))
     return _bits_to_nibbles(arr[:, 1:] > arr[:, :-1])
 
 
@@ -37,7 +37,9 @@ class Hash(db.Model):
     time = db.Column(db.Float)
 
     asset = sqlalchemy.orm.relationship(
-        'Asset', backref=sqlalchemy.orm.backref('hashes', lazy=False, collection_class=set),
+        'Asset',
+        backref=sqlalchemy.orm.backref(
+            'hashes', lazy=False, cascade='delete', collection_class=set),
         lazy='selectin', collection_class=set)
 
     def __repr__(self):

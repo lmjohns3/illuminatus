@@ -49,18 +49,20 @@ class QueryParser(parsimonious.NodeVisitor):
 
     def visit_query(self, node, children):
         select, rest = children
+        others = []
         for _, neg, other in rest:
             if neg:
                 select = sqlalchemy.sql.except_(select, other)
             else:
-                select = sqlalchemy.sql.intersect(select, other)
-        return select
+                others.append(other)
+        return sqlalchemy.sql.intersect(select, *others) if others else select
 
     def visit_union(self, node, children):
         select, rest = children
+        others = []
         for _, _, _, other in rest:
-            select = sqlalchemy.sql.union(select, other)
-        return select
+            others.append(other)
+        return sqlalchemy.sql.union(select, *others) if others else select
 
     def visit_set(self, node, children):
         _, _, [child] = children
@@ -72,7 +74,9 @@ class QueryParser(parsimonious.NodeVisitor):
 
     def visit_stamp(self, node, children):
         comp, value = node.text.split(':', 1)
-        value = arrow.get(value, ['YYYY', 'YYYY-MM', 'YYYY-MM-DD']).datetime
+        value = arrow.get(
+            value, ['YYYY', 'YYYYMM', 'YYYY-MM', 'YYYYMMDD', 'YYYY-MM-DD']
+        ).datetime
         return self.sess.query(Asset.id).filter(
             Asset.stamp < value if comp == 'before' else
             Asset.stamp > value if comp == 'after' else

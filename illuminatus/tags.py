@@ -40,9 +40,6 @@ class Tag(db.Model):
         # Focal length.
         r'\dmm', r'\d\dmm', r'\d\d\dmm', r'\d\d\d\dmm',
 
-        # Geolocation.
-        r'lat-\S+', r'lng-\S+', r'in-\S+',
-
         # User-defined: everything else.
         r'.*',
     )
@@ -69,11 +66,7 @@ class Tag(db.Model):
 
     @property
     def is_metadata(self):
-        return self.pattern in set(range(28, 37))
-
-    @property
-    def is_geo(self):
-        return self.pattern in set(range(37, 41))
+        return self.pattern in set(range(28, 36))
 
     @property
     def is_user(self):
@@ -81,7 +74,7 @@ class Tag(db.Model):
 
     @staticmethod
     def canonical_form(tag):
-        return re.sub(r'\W+', '-', tag.lower()).strip('-')
+        return re.sub(r'[,;:."\'\s]+', '-', tag.lower()).strip('-')
 
     def to_dict(self):
         return dict(id=self.id, name=self.name)
@@ -99,8 +92,12 @@ class Label(db.Model):
 
     asset_id = db.Column(db.Integer, db.ForeignKey('assets.id', ondelete='CASCADE'),
                          nullable=False)
-    asset = sqlalchemy.orm.relationship('Asset', backref='labels', lazy='select')
+    asset = sqlalchemy.orm.relationship(
+        'Asset', lazy='select',
+        backref=sqlalchemy.orm.backref('labels', cascade='delete'))
 
     tag_id = db.Column(db.Integer, db.ForeignKey('tags.id', ondelete='CASCADE'),
                        nullable=False)
-    tag = sqlalchemy.orm.relationship('Tag', backref='labels', lazy='select')
+    tag = sqlalchemy.orm.relationship(
+        'Tag', lazy='select',
+        backref=sqlalchemy.orm.backref('labels', cascade='delete'))
