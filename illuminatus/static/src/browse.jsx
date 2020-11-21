@@ -3,8 +3,8 @@ import React, {useEffect, useState} from 'react'
 import {useHistory, useLocation, useParams} from 'react-router-dom'
 import CreatableSelect from 'react-select/creatable'
 
-import {countAssetTags, Tags} from './tags'
-import {Breadcrumbs, Button, ConfigContext, Spinner, Thumb, useAssets} from './utils'
+import {TagGroups} from './tags'
+import {Breadcrumbs, Button, Spinner, Thumb, useAssets} from './utils'
 
 import './browse.styl'
 
@@ -13,14 +13,15 @@ const Browse = () => {
   const hist = useHistory()
       , path = useLocation().pathname
       , query = useParams().query
-      , {assets, loading} = useAssets(`/rest/query/${query}`);
+      , [thumbSize, setThumbSize] = useState(160)
+      , {assets, loading} = useAssets(`/query/${query}`);
 
   useEffect(() => {
     const handler = ev => {
-      if (ev.code === 'KeyE') {
-        ev.preventDefault();
-        hist.replace(`/label/${query}`);
-      }
+      console.log(ev.code);
+      if (ev.code === 'KeyE') hist.replace(`/label/${query}`);
+      if (ev.code === 'Equal') setThumbSize(s => Math.max(80, Math.min(s + 20, 320)));
+      if (ev.code === 'Minus') setThumbSize(s => Math.max(80, Math.min(s - 20, 320)));
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -30,21 +31,22 @@ const Browse = () => {
     <Breadcrumbs className='browse'>
       {query.replace(/\/$/, '').replace(/\//g, ' and ')}
     </Breadcrumbs>
+
     <div className='tools'>
       <Button name='select' icon='✏' onClick={() => hist.replace(`/label/${query}`)} />
     </div>
+
     {loading ? <Spinner /> : <>
-      {countAssetTags(assets).map(
-        group => group.tags.length === 0 ? null :
-          <Tags key={group.icon}
-                className='browse'
-                icon={group.icon}
-                tags={group.tags.filter(t => path.indexOf(`/${t.name}/`) < 0)}
-                clickHandler={tag => {
-                  const key = `/${tag.name}/`, active = path.indexOf(key) >= 0;
-                  return () => hist.push(active ? path.replace(key, '/') : `${tag.name}/`);
-                }} />)}
-      <div className='browse thumbs'>{assets.map(
+      <TagGroups assets={assets}
+                 className='browse'
+                 clickHandler={tag => {
+                   const key = `/${tag.name}/`, active = path.indexOf(key) >= 0;
+                   return () => hist.push(active ? path.replace(key, '/') : `${tag.name}/`);
+                 }} />
+      <div className='browse thumbs' style={{
+        gridTemplateColumns: `repeat(auto-fit, minmax(${thumbSize}px, 1fr))`,
+        gridAutoRows: `${thumbSize}px`
+      }}>{assets.map(
         (asset, idx) => <Thumb key={asset.id}
                                asset={asset}
                                handleClick={() => hist.push(`/view/${asset.slug}/`)} />

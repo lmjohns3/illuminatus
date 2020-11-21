@@ -8,44 +8,41 @@ import View from './view'
 import Browse from './browse'
 import Label from './label'
 
-import {countAssetTags, Tags} from './tags'
-import {Spinner, ConfigContext} from './utils'
+import {TagsContext, TagGroups} from './tags'
+import {Spinner} from './utils'
 
 import './base.styl'
 import './index.styl'
 
 const Index = () => {
-  const hist = useHistory();
-  return <>
-    <ConfigContext.Consumer>{config => (
-      countAssetTags(config.tags.map(t => ({tags: [t.name]}))).map(
-        group => <Tags key={group.icon}
-                       icon={group.icon}
-                       tags={group.tags}
-                       className='index'
-                       clickHandler={tag => () => hist.push(`/browse/${tag.name}/`)} />
-    ))}</ConfigContext.Consumer>
-  </>;
+  const hist = useHistory()
+      , clickHandler = t => () => hist.push(`/browse/${t.name}/`);
+  return <TagGroups className='index' clickHandler={clickHandler} />;
 }
 
 
 const App = () => {
-  const [config, setConfig] = useState({});
+  const [version, setVersion] = useState(0)
+      , [tags, setTags] = useState(null);
 
-  useEffect(() => { axios('/rest/config/').then(res => setConfig(res.data)); }, []);
+  useEffect(() => {
+    axios('/tags/').then(res => setTags(res.data.tags));
+  }, [version]);
 
-  return !config.formats ? <Spinner /> :
-  <ConfigContext.Provider value={config}>
-    <BrowserRouter>
+  const refresh = () => setVersion(n => n + 1);
+
+  return !tags ? <Spinner /> :
+  <BrowserRouter>
+    <TagsContext.Provider value={tags || []}>
       <Switch>
-        <Route path='/label/:query([^?#]+)'><Label /></Route>
+        <Route path='/label/:query([^?#]+)'><Label refresh={refresh} /></Route>
         <Route path='/browse/:query([^?#]+)'><Browse /></Route>
+        <Route path='/edit/:slug'><Edit refresh={refresh} /></Route>
         <Route path='/view/:slug'><View /></Route>
-        <Route path='/edit/:slug'><Edit /></Route>
         <Route path='/'><Index /></Route>
       </Switch>
-    </BrowserRouter>
-  </ConfigContext.Provider>;
+    </TagsContext.Provider>
+  </BrowserRouter>
 }
 
 ReactDOM.render(<App />, document.getElementById('root'))

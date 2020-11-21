@@ -4,157 +4,130 @@ import React from 'react'
 import {useLocation} from 'react-router-dom'
 import CreatableSelect from 'react-select/creatable'
 
-import {ConfigContext} from './utils'
 
-const ICONS = ['🗓', '⌚', '📷', '🌍', '🙋']
-
-const CLASSES = {'🗓': 'date', '⌚': 'time', '📷': 'kit', '🌍': 'geo', '🙋': 'user'}
-
-const PATTERNS = [
-  // Year.
-  {re: /^(19|20)\d\d$/, hue: 36, icon: 0},
-  // Month.
-  {re: /^january$/, hue: 72, icon: 0},
-  {re: /^february$/, hue: 72, icon: 0},
-  {re: /^march$/, hue: 72, icon: 0},
-  {re: /^april$/, hue: 72, icon: 0},
-  {re: /^may$/, hue: 72, icon: 0},
-  {re: /^june$/, hue: 72, icon: 0},
-  {re: /^july$/, hue: 72, icon: 0},
-  {re: /^august$/, hue: 72, icon: 0},
-  {re: /^september$/, hue: 72, icon: 0},
-  {re: /^october$/, hue: 72, icon: 0},
-  {re: /^november$/, hue: 72, icon: 0},
-  {re: /^december$/, hue: 72, icon: 0},
-  // Day of month.
-  {re: /^\d(st|nd|rd|th)$/, hue: 108, icon: 0},
-  {re: /^\d\d(st|nd|rd|th)$/, hue: 108, icon: 0},
-  // Day of week.
-  {re: /^sunday$/, hue: 144, icon: 0},
-  {re: /^monday$/, hue: 144, icon: 0},
-  {re: /^tuesday$/, hue: 144, icon: 0},
-  {re: /^wednesday$/, hue: 144, icon: 0},
-  {re: /^thursday$/, hue: 144, icon: 0},
-  {re: /^friday$/, hue: 144, icon: 0},
-  {re: /^saturday$/, hue: 144, icon: 0},
-  // Time of day.
-  {re: /^12am$/, hue: 180, icon: 1},
-  {re: /^\dam$/, hue: 180, icon: 1},
-  {re: /^\d\dam$/, hue: 180, icon: 1},
-  {re: /^12pm$/, hue: 180, icon: 1},
-  {re: /^\dpm$/, hue: 180, icon: 1},
-  {re: /^\d\dpm$/, hue: 180, icon: 1},
-  // Camera.
-  {re: /^kit-\S+$/, hue: 216, icon: 2},
-  // Aperture.
-  {re: /^ƒ-\d$/, hue: 252, icon: 2},
-  {re: /^ƒ-\d\d$/, hue: 252, icon: 2},
-  {re: /^ƒ-\d\d\d$/, hue: 252, icon: 2},
-  // Focal length.
-  {re: /^\dmm$/, hue: 288, icon: 2},
-  {re: /^\d\dmm$/, hue: 288, icon: 2},
-  {re: /^\d\d\dmm$/, hue: 288, icon: 2},
-  {re: /^\d\d\d\dmm$/, hue: 288, icon: 2},
-  // Geolocation.
-  {re: /^lat-\S+$/, hue: 324, icon: 3},
-  {re: /^lng-\S+$/, hue: 324, icon: 3},
-  {re: /^in-\S+$/, hue: 324, icon: 3},
-  // User-defined.
-  {re: /^.*$/, hue: 0, icon: 4},
-]
+// Context for tags data.
+const TagsContext = React.createContext('tags')
 
 
-const patternForTag = name => {
-  const found = {label: name, value: name};
-  PATTERNS.some((patt, p) => {
-    if (patt.re.test(name)) {
-      found.colors = {backgroundColor: hsluvToHex([patt.hue, 100, 80]),
-                      color: hsluvToHex([patt.hue, 100, 20])};
-      found.icon = patt.icon;
-      found.order = p;
-      return true;
-    }
-    return false;
-  });
-  return found;
+// Sort an array of objects first by "order" and then by "name" attribute.
+const cmp = (s, t) => s.order < t.order ? -1 : s.order > t.order ? 1 :
+                      s.name < t.name ? -1 : s.name > t.name ? 1 : 0;
+
+
+// Flatten the tags from an array of assets into a single Set.
+const countTags = assets => {
+  const counts = {};
+  (assets || []).forEach(({tags}) => tags.forEach(t => {
+    counts[t] = (counts[t] || 0) + 1;
+  }));
+  return counts;
 }
 
 
-const countAssetTags = assets => {
-  const tags = {}, groups = ICONS.map(() => []);
-  assets.forEach(asset => {
-    asset.tags.forEach(name => {
-      if (!tags[name]) {
-        const tag = {name, label: name, value: name, count: 0, ...patternForTag(name)};
-        groups[tag.icon].push(tag);
-        tags[name] = tag;
-      }
-      tags[name].count++;
-    });
-  });
-  // Sort tags within each group by the index of their pattern, then by name.
-  const cmp = (s, t) => s.order < t.order ? -1 : s.order > t.order ? 1 :
-                        s.name < t.name ? -1 : s.name > t.name ? 1 : 0;
-  return groups.map((group, i) => ({icon: ICONS[i], tags: group.sort(cmp), index: i}));
-}
-
-
-const Tags = ({icon, tags, clickHandler, className}) => (
-  <div key={icon} className={`tags ${className || ''} ${CLASSES[icon]}`}>
+const Group = ({icon, tags, clickHandler, className}) => {
+  const path = useLocation().pathname;
+  return <div key={icon} className={`tags ${className || ''}`}>
     <span className='icon'>{icon}</span>
-    <ul>{tags.map(tag => (
-      <li key={tag.name}
-          className={`tag ${useLocation().pathname.indexOf('/'+tag.name+'/') >= 0 ? 'active' : ''}`}
-          style={{...tag.colors, cursor: clickHandler ? 'pointer' : 'default'}}>
-        <span onClick={clickHandler ? clickHandler(tag) : null}>{tag.name}</span>
-      </li>
-    ))}</ul>
-  </div>)
+    <ul>{tags.sort(cmp).map(t => {
+      const active = path.indexOf(`/${t.name}/`) >= 0;
+      return <li key={t.name}
+                 className={`${t.group} ${active ? 'active' : ''}`}
+                 style={{
+                   background: hsluvToHex([t.hue, 100, 80]),
+                   color: '#111',
+                   cursor: clickHandler ? 'pointer' : 'default',
+                 }}
+                 onClick={clickHandler ? clickHandler(t) : null}>
+        <span className='name'>{t.name}</span>
+        <span className='count'>{t.count}</span>
+      </li>;
+    })}</ul>
+  </div>;
+}
 
 
-const TagSelect = ({assets, activeAssets, className}) => {
-  const changeTags = active => (options, about) => {
-    if (about.action === 'create-option' || about.action === 'select-option') {
-      active.forEach(({slug}) => axios.post(
-        `/rest/asset/${slug}/${options[options.length - 1].value}/`));
+const TagGroups = ({assets, className, hideEditable, clickHandler}) => {
+  return <TagsContext.Consumer>{tags => {
+    const groups = {}, icons = {}, counts = countTags(assets);
+    tags.forEach(t => {
+      if (t.count === 0) return;
+      if (hideEditable && t.editable) return;
+      if (assets && !counts[t.name]) return;
+      if (!groups[t.group]) {
+        icons[t.group] = t.icon;
+        groups[t.group] = {name: t.group, order: t.order, tags: {}};
+      }
+      groups[t.group].tags[t.name] = t;
+      if (assets) t.count = counts[t.name];
+    });
+    return Object.values(groups).sort(cmp).map(
+      g => <Group key={g.name}
+                  icon={icons[g.name]}
+                  tags={Object.values(g.tags)}
+                  className={`${className || ''} ${g.name}`}
+                  clickHandler={clickHandler} />
+    );
+  }}</TagsContext.Consumer>;
+}
+
+
+const TagSelect = ({assets, className, refresh}) => {
+  const update = asset => res => { asset.tags = res.data.tags; return res; }
+      , url = (asset, tag) => `/asset/${asset.slug}/tags/${tag}/`
+      , tagToOption = t => ({label: t.name,
+                             value: t.name,
+                             color: hsluvToHex([t.hue, 100, 80])});
+
+  const changeTags = (options, about) => {
+    if (about.action === 'create-option') {
+      const tag = options.slice(-1)[0].value
+          , calls = assets.map(a => axios.post(url(a, tag)).then(update(a)));
+      Promise.all(calls).then(refresh);
+
+    } else if (about.action === 'select-option') {
+      const tag = options.slice(-1)[0].value;
+      assets.map(a => axios.post(url(a, tag)).then(update(a)));
+
     } else if (about.action === 'pop-value' || about.action === 'remove-value') {
-      active.forEach(({slug}) => axios.delete(
-        `/rest/asset/${slug}/${about.removedValue.value}/`));
+      const tag = about.removedValue.value;
+      assets.map(a => axios.delete(url(a, tag)).then(update(a)));
     }
   };
 
-  return <ConfigContext.Consumer>{({tags}) => <CreatableSelect
-      className={`${className || ''} tag-select`}
-      key={assets.length}
-      isClearable={false}
-      isMulti={true}
-      defaultValue={
-        assets.length === 0 ? [] : [...new Set(
-          assets.reduce((acc, a) => [...acc, ...a.tags], [])
-        )].map(patternForTag).filter(({icon}) => icon > 2)
-      }
-      options={tags.map(({name}) => patternForTag(name)).filter(({icon}) => icon > 2)}
-      onChange={changeTags(activeAssets && activeAssets.length ? activeAssets : assets)}
-      placeholder='Add tag...'
-      styles={{
-        control: base => ({...base, background: '#666', borderColor: '#666'}),
-        placeholder: base => ({...base, color: '#111'}),
-        option: (base, {data}) => ({
-          ...base,
-          ...data.colors,
-          display: 'inline-block',
-          float: 'left',
-          width: 'auto',
-          margin: '0.2em',
-          padding: '0.2em 0.4em',
-          borderRadius: '3px',
-          cursor: 'pointer',
-        }),
-        menu: base => ({...base, background: '#666'}),
-        multiValue: (base, {data}) => ({...base, ...data.colors}),
-        multiValueLabel: base => ({...base, fontSize: '100%'}),
-        multiValueRemove: base => ({...base, fontSize: '100%'}),
-  }} />}</ConfigContext.Consumer>;
+  return <TagsContext.Consumer>{
+    tags => {
+      const active = countTags(assets);
+      return <CreatableSelect
+               className={`${className || ''} tag-select`}
+               key={assets.map(a => a.id).join('-') + Object.keys(active).join('-')}
+               placeholder='Add tag...'
+               isMulti
+               isClearable={false}
+               backspaceRemovesValue={false}
+               onChange={changeTags}
+               defaultValue={tags.filter(t => t.editable && active[t.name]).map(tagToOption)}
+               options={tags.filter(t => t.editable).map(tagToOption)}
+               styles={{
+                 option: (base, {data, isFocused}) => ({
+                   ...base,
+                   background: isFocused ? '#eee' : data.color,
+                   display: 'inline-block',
+                   float: 'left',
+                   width: 'auto',
+                   margin: '0.2em',
+                   padding: '0.2em 0.4em',
+                   borderRadius: '3px',
+                   cursor: 'pointer',
+                 }),
+                 control: base => ({...base, background: '#666', borderColor: '#666'}),
+                 menu: base => ({...base, background: '#666'}),
+                 multiValue: (base, {data}) => ({...base, background: data.color}),
+                 multiValueLabel: base => ({...base, fontSize: '100%'}),
+                 multiValueRemove: base => ({...base, fontSize: '100%'}),
+                 placeholder: base => ({...base, color: '#111'}),
+               }} />;
+    }
+  }</TagsContext.Consumer>;
 }
 
-export {countAssetTags, patternForTag, Tags, TagSelect}
+export {TagsContext, TagGroups, TagSelect}

@@ -1976,8 +1976,118 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 
   return to;
 };
-},{}],"../node_modules/react/cjs/react.development.js":[function(require,module,exports) {
-/** @license React v17.0.1
+},{}],"../node_modules/prop-types/lib/ReactPropTypesSecret.js":[function(require,module,exports) {
+/**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+'use strict';
+
+var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
+
+module.exports = ReactPropTypesSecret;
+
+},{}],"../node_modules/prop-types/checkPropTypes.js":[function(require,module,exports) {
+/**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+'use strict';
+
+var printWarning = function () {};
+
+if ("development" !== 'production') {
+  var ReactPropTypesSecret = require('./lib/ReactPropTypesSecret');
+
+  var loggedTypeFailures = {};
+  var has = Function.call.bind(Object.prototype.hasOwnProperty);
+
+  printWarning = function (text) {
+    var message = 'Warning: ' + text;
+
+    if (typeof console !== 'undefined') {
+      console.error(message);
+    }
+
+    try {
+      // --- Welcome to debugging React ---
+      // This error was thrown as a convenience so that you can use this stack
+      // to find the callsite that caused this warning to fire.
+      throw new Error(message);
+    } catch (x) {}
+  };
+}
+/**
+ * Assert that the values match with the type specs.
+ * Error messages are memorized and will only be shown once.
+ *
+ * @param {object} typeSpecs Map of name to a ReactPropType
+ * @param {object} values Runtime values that need to be type-checked
+ * @param {string} location e.g. "prop", "context", "child context"
+ * @param {string} componentName Name of the component for error messages.
+ * @param {?Function} getStack Returns the component stack.
+ * @private
+ */
+
+
+function checkPropTypes(typeSpecs, values, location, componentName, getStack) {
+  if ("development" !== 'production') {
+    for (var typeSpecName in typeSpecs) {
+      if (has(typeSpecs, typeSpecName)) {
+        var error; // Prop type validation may throw. In case they do, we don't want to
+        // fail the render phase where it didn't fail before. So we log it.
+        // After these have been cleaned up, we'll let them throw.
+
+        try {
+          // This is intentionally an invariant that gets caught. It's the same
+          // behavior as without this statement except with a better message.
+          if (typeof typeSpecs[typeSpecName] !== 'function') {
+            var err = Error((componentName || 'React class') + ': ' + location + ' type `' + typeSpecName + '` is invalid; ' + 'it must be a function, usually from the `prop-types` package, but received `' + typeof typeSpecs[typeSpecName] + '`.');
+            err.name = 'Invariant Violation';
+            throw err;
+          }
+
+          error = typeSpecs[typeSpecName](values, typeSpecName, componentName, location, null, ReactPropTypesSecret);
+        } catch (ex) {
+          error = ex;
+        }
+
+        if (error && !(error instanceof Error)) {
+          printWarning((componentName || 'React class') + ': type specification of ' + location + ' `' + typeSpecName + '` is invalid; the type checker ' + 'function must return `null` or an `Error` but returned a ' + typeof error + '. ' + 'You may have forgotten to pass an argument to the type checker ' + 'creator (arrayOf, instanceOf, objectOf, oneOf, oneOfType, and ' + 'shape all require an argument).');
+        }
+
+        if (error instanceof Error && !(error.message in loggedTypeFailures)) {
+          // Only monitor this failure once because there tends to be a lot of the
+          // same error.
+          loggedTypeFailures[error.message] = true;
+          var stack = getStack ? getStack() : '';
+          printWarning('Failed ' + location + ' type: ' + error.message + (stack != null ? stack : ''));
+        }
+      }
+    }
+  }
+}
+/**
+ * Resets warning cache when testing.
+ *
+ * @private
+ */
+
+
+checkPropTypes.resetWarningCache = function () {
+  if ("development" !== 'production') {
+    loggedTypeFailures = {};
+  }
+};
+
+module.exports = checkPropTypes;
+},{"./lib/ReactPropTypesSecret":"../node_modules/prop-types/lib/ReactPropTypesSecret.js"}],"../node_modules/react/cjs/react.development.js":[function(require,module,exports) {
+/** @license React v16.14.0
  * react.development.js
  *
  * Copyright (c) Facebook, Inc. and its affiliates.
@@ -1991,60 +2101,32 @@ if ("development" !== "production") {
   (function () {
     'use strict';
 
-    var _assign = require('object-assign'); // TODO: this is special because it gets imported during build.
+    var _assign = require('object-assign');
 
+    var checkPropTypes = require('prop-types/checkPropTypes');
 
-    var ReactVersion = '17.0.1'; // ATTENTION
-    // When adding new symbols to this file,
-    // Please consider also adding to 'react-devtools-shared/src/backend/ReactSymbols'
-    // The Symbol used to tag the ReactElement-like types. If there is no native Symbol
+    var ReactVersion = '16.14.0'; // The Symbol used to tag the ReactElement-like types. If there is no native Symbol
     // nor polyfill, then a plain number is used for performance.
 
-    var REACT_ELEMENT_TYPE = 0xeac7;
-    var REACT_PORTAL_TYPE = 0xeaca;
-    exports.Fragment = 0xeacb;
-    exports.StrictMode = 0xeacc;
-    exports.Profiler = 0xead2;
-    var REACT_PROVIDER_TYPE = 0xeacd;
-    var REACT_CONTEXT_TYPE = 0xeace;
-    var REACT_FORWARD_REF_TYPE = 0xead0;
-    exports.Suspense = 0xead1;
-    var REACT_SUSPENSE_LIST_TYPE = 0xead8;
-    var REACT_MEMO_TYPE = 0xead3;
-    var REACT_LAZY_TYPE = 0xead4;
-    var REACT_BLOCK_TYPE = 0xead9;
-    var REACT_SERVER_BLOCK_TYPE = 0xeada;
-    var REACT_FUNDAMENTAL_TYPE = 0xead5;
-    var REACT_SCOPE_TYPE = 0xead7;
-    var REACT_OPAQUE_ID_TYPE = 0xeae0;
-    var REACT_DEBUG_TRACING_MODE_TYPE = 0xeae1;
-    var REACT_OFFSCREEN_TYPE = 0xeae2;
-    var REACT_LEGACY_HIDDEN_TYPE = 0xeae3;
+    var hasSymbol = typeof Symbol === 'function' && Symbol.for;
+    var REACT_ELEMENT_TYPE = hasSymbol ? Symbol.for('react.element') : 0xeac7;
+    var REACT_PORTAL_TYPE = hasSymbol ? Symbol.for('react.portal') : 0xeaca;
+    var REACT_FRAGMENT_TYPE = hasSymbol ? Symbol.for('react.fragment') : 0xeacb;
+    var REACT_STRICT_MODE_TYPE = hasSymbol ? Symbol.for('react.strict_mode') : 0xeacc;
+    var REACT_PROFILER_TYPE = hasSymbol ? Symbol.for('react.profiler') : 0xead2;
+    var REACT_PROVIDER_TYPE = hasSymbol ? Symbol.for('react.provider') : 0xeacd;
+    var REACT_CONTEXT_TYPE = hasSymbol ? Symbol.for('react.context') : 0xeace; // TODO: We don't use AsyncMode or ConcurrentMode anymore. They were temporary
 
-    if (typeof Symbol === 'function' && Symbol.for) {
-      var symbolFor = Symbol.for;
-      REACT_ELEMENT_TYPE = symbolFor('react.element');
-      REACT_PORTAL_TYPE = symbolFor('react.portal');
-      exports.Fragment = symbolFor('react.fragment');
-      exports.StrictMode = symbolFor('react.strict_mode');
-      exports.Profiler = symbolFor('react.profiler');
-      REACT_PROVIDER_TYPE = symbolFor('react.provider');
-      REACT_CONTEXT_TYPE = symbolFor('react.context');
-      REACT_FORWARD_REF_TYPE = symbolFor('react.forward_ref');
-      exports.Suspense = symbolFor('react.suspense');
-      REACT_SUSPENSE_LIST_TYPE = symbolFor('react.suspense_list');
-      REACT_MEMO_TYPE = symbolFor('react.memo');
-      REACT_LAZY_TYPE = symbolFor('react.lazy');
-      REACT_BLOCK_TYPE = symbolFor('react.block');
-      REACT_SERVER_BLOCK_TYPE = symbolFor('react.server.block');
-      REACT_FUNDAMENTAL_TYPE = symbolFor('react.fundamental');
-      REACT_SCOPE_TYPE = symbolFor('react.scope');
-      REACT_OPAQUE_ID_TYPE = symbolFor('react.opaque.id');
-      REACT_DEBUG_TRACING_MODE_TYPE = symbolFor('react.debug_trace_mode');
-      REACT_OFFSCREEN_TYPE = symbolFor('react.offscreen');
-      REACT_LEGACY_HIDDEN_TYPE = symbolFor('react.legacy_hidden');
-    }
-
+    var REACT_CONCURRENT_MODE_TYPE = hasSymbol ? Symbol.for('react.concurrent_mode') : 0xeacf;
+    var REACT_FORWARD_REF_TYPE = hasSymbol ? Symbol.for('react.forward_ref') : 0xead0;
+    var REACT_SUSPENSE_TYPE = hasSymbol ? Symbol.for('react.suspense') : 0xead1;
+    var REACT_SUSPENSE_LIST_TYPE = hasSymbol ? Symbol.for('react.suspense_list') : 0xead8;
+    var REACT_MEMO_TYPE = hasSymbol ? Symbol.for('react.memo') : 0xead3;
+    var REACT_LAZY_TYPE = hasSymbol ? Symbol.for('react.lazy') : 0xead4;
+    var REACT_BLOCK_TYPE = hasSymbol ? Symbol.for('react.block') : 0xead9;
+    var REACT_FUNDAMENTAL_TYPE = hasSymbol ? Symbol.for('react.fundamental') : 0xead5;
+    var REACT_RESPONDER_TYPE = hasSymbol ? Symbol.for('react.responder') : 0xead6;
+    var REACT_SCOPE_TYPE = hasSymbol ? Symbol.for('react.scope') : 0xead7;
     var MAYBE_ITERATOR_SYMBOL = typeof Symbol === 'function' && Symbol.iterator;
     var FAUX_ITERATOR_SYMBOL = '@@iterator';
 
@@ -2079,7 +2161,7 @@ if ("development" !== "production") {
      */
 
     var ReactCurrentBatchConfig = {
-      transition: 0
+      suspense: null
     };
     /**
      * Keeps track of the current owner.
@@ -2095,30 +2177,143 @@ if ("development" !== "production") {
        */
       current: null
     };
-    var ReactDebugCurrentFrame = {};
-    var currentExtraStackFrame = null;
+    var BEFORE_SLASH_RE = /^(.*)[\\\/]/;
 
-    function setExtraStackFrame(stack) {
+    function describeComponentFrame(name, source, ownerName) {
+      var sourceInfo = '';
+
+      if (source) {
+        var path = source.fileName;
+        var fileName = path.replace(BEFORE_SLASH_RE, '');
+        {
+          // In DEV, include code for a common special case:
+          // prefer "folder/index.js" instead of just "index.js".
+          if (/^index\./.test(fileName)) {
+            var match = path.match(BEFORE_SLASH_RE);
+
+            if (match) {
+              var pathBeforeSlash = match[1];
+
+              if (pathBeforeSlash) {
+                var folderName = pathBeforeSlash.replace(BEFORE_SLASH_RE, '');
+                fileName = folderName + '/' + fileName;
+              }
+            }
+          }
+        }
+        sourceInfo = ' (at ' + fileName + ':' + source.lineNumber + ')';
+      } else if (ownerName) {
+        sourceInfo = ' (created by ' + ownerName + ')';
+      }
+
+      return '\n    in ' + (name || 'Unknown') + sourceInfo;
+    }
+
+    var Resolved = 1;
+
+    function refineResolvedLazyComponent(lazyComponent) {
+      return lazyComponent._status === Resolved ? lazyComponent._result : null;
+    }
+
+    function getWrappedName(outerType, innerType, wrapperName) {
+      var functionName = innerType.displayName || innerType.name || '';
+      return outerType.displayName || (functionName !== '' ? wrapperName + "(" + functionName + ")" : wrapperName);
+    }
+
+    function getComponentName(type) {
+      if (type == null) {
+        // Host root, text node or just invalid type.
+        return null;
+      }
+
       {
-        currentExtraStackFrame = stack;
+        if (typeof type.tag === 'number') {
+          error('Received an unexpected object in getComponentName(). ' + 'This is likely a bug in React. Please file an issue.');
+        }
+      }
+
+      if (typeof type === 'function') {
+        return type.displayName || type.name || null;
+      }
+
+      if (typeof type === 'string') {
+        return type;
+      }
+
+      switch (type) {
+        case REACT_FRAGMENT_TYPE:
+          return 'Fragment';
+
+        case REACT_PORTAL_TYPE:
+          return 'Portal';
+
+        case REACT_PROFILER_TYPE:
+          return "Profiler";
+
+        case REACT_STRICT_MODE_TYPE:
+          return 'StrictMode';
+
+        case REACT_SUSPENSE_TYPE:
+          return 'Suspense';
+
+        case REACT_SUSPENSE_LIST_TYPE:
+          return 'SuspenseList';
+      }
+
+      if (typeof type === 'object') {
+        switch (type.$$typeof) {
+          case REACT_CONTEXT_TYPE:
+            return 'Context.Consumer';
+
+          case REACT_PROVIDER_TYPE:
+            return 'Context.Provider';
+
+          case REACT_FORWARD_REF_TYPE:
+            return getWrappedName(type, type.render, 'ForwardRef');
+
+          case REACT_MEMO_TYPE:
+            return getComponentName(type.type);
+
+          case REACT_BLOCK_TYPE:
+            return getComponentName(type.render);
+
+          case REACT_LAZY_TYPE:
+            {
+              var thenable = type;
+              var resolvedThenable = refineResolvedLazyComponent(thenable);
+
+              if (resolvedThenable) {
+                return getComponentName(resolvedThenable);
+              }
+
+              break;
+            }
+        }
+      }
+
+      return null;
+    }
+
+    var ReactDebugCurrentFrame = {};
+    var currentlyValidatingElement = null;
+
+    function setCurrentlyValidatingElement(element) {
+      {
+        currentlyValidatingElement = element;
       }
     }
 
     {
-      ReactDebugCurrentFrame.setExtraStackFrame = function (stack) {
-        {
-          currentExtraStackFrame = stack;
-        }
-      }; // Stack implementation injected by the current renderer.
-
-
+      // Stack implementation injected by the current renderer.
       ReactDebugCurrentFrame.getCurrentStack = null;
 
       ReactDebugCurrentFrame.getStackAddendum = function () {
         var stack = ''; // Add an extra top frame while an element is being validated
 
-        if (currentExtraStackFrame) {
-          stack += currentExtraStackFrame;
+        if (currentlyValidatingElement) {
+          var name = getComponentName(currentlyValidatingElement.type);
+          var owner = currentlyValidatingElement._owner;
+          stack += describeComponentFrame(name, currentlyValidatingElement._source, owner && getComponentName(owner.type));
         } // Delegate to the injected renderer-specific implementation
 
 
@@ -2147,7 +2342,13 @@ if ("development" !== "production") {
       assign: _assign
     };
     {
-      ReactSharedInternals.ReactDebugCurrentFrame = ReactDebugCurrentFrame;
+      _assign(ReactSharedInternals, {
+        // These should not be included in production.
+        ReactDebugCurrentFrame: ReactDebugCurrentFrame,
+        // Shim for React DOM 16.0.0 which still destructured (but not used) this.
+        // TODO: remove in React 17.0.
+        ReactComponentTreeHook: {}
+      });
     } // by calls to these methods by a Babel plugin.
     //
     // In PROD (or in packages without access to React internals),
@@ -2177,12 +2378,16 @@ if ("development" !== "production") {
       // When changing this logic, you might want to also
       // update consoleWithStackDev.www.js as well.
       {
-        var ReactDebugCurrentFrame = ReactSharedInternals.ReactDebugCurrentFrame;
-        var stack = ReactDebugCurrentFrame.getStackAddendum();
+        var hasExistingStack = args.length > 0 && typeof args[args.length - 1] === 'string' && args[args.length - 1].indexOf('\n    in') === 0;
 
-        if (stack !== '') {
-          format += '%s';
-          args = args.concat([stack]);
+        if (!hasExistingStack) {
+          var ReactDebugCurrentFrame = ReactSharedInternals.ReactDebugCurrentFrame;
+          var stack = ReactDebugCurrentFrame.getStackAddendum();
+
+          if (stack !== '') {
+            format += '%s';
+            args = args.concat([stack]);
+          }
         }
 
         var argsWithFormat = args.map(function (item) {
@@ -2194,6 +2399,17 @@ if ("development" !== "production") {
         // eslint-disable-next-line react-internal/no-production-logging
 
         Function.prototype.apply.call(console[level], console, argsWithFormat);
+
+        try {
+          // --- Welcome to debugging React ---
+          // This error was thrown as a convenience so that you can use this stack
+          // to find the callsite that caused this warning to fire.
+          var argIndex = 0;
+          var message = 'Warning: ' + format.replace(/%s/g, function () {
+            return args[argIndex++];
+          });
+          throw new Error(message);
+        } catch (x) {}
       }
     }
 
@@ -2416,92 +2632,6 @@ if ("development" !== "production") {
       return refObject;
     }
 
-    function getWrappedName(outerType, innerType, wrapperName) {
-      var functionName = innerType.displayName || innerType.name || '';
-      return outerType.displayName || (functionName !== '' ? wrapperName + "(" + functionName + ")" : wrapperName);
-    }
-
-    function getContextName(type) {
-      return type.displayName || 'Context';
-    }
-
-    function getComponentName(type) {
-      if (type == null) {
-        // Host root, text node or just invalid type.
-        return null;
-      }
-
-      {
-        if (typeof type.tag === 'number') {
-          error('Received an unexpected object in getComponentName(). ' + 'This is likely a bug in React. Please file an issue.');
-        }
-      }
-
-      if (typeof type === 'function') {
-        return type.displayName || type.name || null;
-      }
-
-      if (typeof type === 'string') {
-        return type;
-      }
-
-      switch (type) {
-        case exports.Fragment:
-          return 'Fragment';
-
-        case REACT_PORTAL_TYPE:
-          return 'Portal';
-
-        case exports.Profiler:
-          return 'Profiler';
-
-        case exports.StrictMode:
-          return 'StrictMode';
-
-        case exports.Suspense:
-          return 'Suspense';
-
-        case REACT_SUSPENSE_LIST_TYPE:
-          return 'SuspenseList';
-      }
-
-      if (typeof type === 'object') {
-        switch (type.$$typeof) {
-          case REACT_CONTEXT_TYPE:
-            var context = type;
-            return getContextName(context) + '.Consumer';
-
-          case REACT_PROVIDER_TYPE:
-            var provider = type;
-            return getContextName(provider._context) + '.Provider';
-
-          case REACT_FORWARD_REF_TYPE:
-            return getWrappedName(type, type.render, 'ForwardRef');
-
-          case REACT_MEMO_TYPE:
-            return getComponentName(type.type);
-
-          case REACT_BLOCK_TYPE:
-            return getComponentName(type._render);
-
-          case REACT_LAZY_TYPE:
-            {
-              var lazyComponent = type;
-              var payload = lazyComponent._payload;
-              var init = lazyComponent._init;
-
-              try {
-                return getComponentName(init(payload));
-              } catch (x) {
-                return null;
-              }
-            }
-        }
-      }
-
-      return null;
-    }
-
     var hasOwnProperty = Object.prototype.hasOwnProperty;
     var RESERVED_PROPS = {
       key: true,
@@ -2545,7 +2675,7 @@ if ("development" !== "production") {
         {
           if (!specialPropKeyWarningShown) {
             specialPropKeyWarningShown = true;
-            error('%s: `key` is not a prop. Trying to access it will result ' + 'in `undefined` being returned. If you need to access the same ' + 'value within the child component, you should pass it as a different ' + 'prop. (https://reactjs.org/link/special-props)', displayName);
+            error('%s: `key` is not a prop. Trying to access it will result ' + 'in `undefined` being returned. If you need to access the same ' + 'value within the child component, you should pass it as a different ' + 'prop. (https://fb.me/react-special-props)', displayName);
           }
         }
       };
@@ -2562,7 +2692,7 @@ if ("development" !== "production") {
         {
           if (!specialPropRefWarningShown) {
             specialPropRefWarningShown = true;
-            error('%s: `ref` is not a prop. Trying to access it will result ' + 'in `undefined` being returned. If you need to access the same ' + 'value within the child component, you should pass it as a different ' + 'prop. (https://reactjs.org/link/special-props)', displayName);
+            error('%s: `ref` is not a prop. Trying to access it will result ' + 'in `undefined` being returned. If you need to access the same ' + 'value within the child component, you should pass it as a different ' + 'prop. (https://fb.me/react-special-props)', displayName);
           }
         }
       };
@@ -2580,7 +2710,7 @@ if ("development" !== "production") {
           var componentName = getComponentName(ReactCurrentOwner.current.type);
 
           if (!didWarnAboutStringRefs[componentName]) {
-            error('Component "%s" contains the string ref "%s". ' + 'Support for string refs will be removed in a future major release. ' + 'This case cannot be automatically converted to an arrow function. ' + 'We ask you to manually fix this case by using useRef() or createRef() instead. ' + 'Learn more about using refs safely here: ' + 'https://reactjs.org/link/strict-mode-string-ref', componentName, config.ref);
+            error('Component "%s" contains the string ref "%s". ' + 'Support for string refs will be removed in a future major release. ' + 'This case cannot be automatically converted to an arrow function. ' + 'We ask you to manually fix this case by using useRef() or createRef() instead. ' + 'Learn more about using refs safely here: ' + 'https://fb.me/react-strict-mode-string-ref', getComponentName(ReactCurrentOwner.current.type), config.ref);
             didWarnAboutStringRefs[componentName] = true;
           }
         }
@@ -2853,7 +2983,7 @@ if ("development" !== "production") {
         '=': '=0',
         ':': '=2'
       };
-      var escapedString = key.replace(escapeRegex, function (match) {
+      var escapedString = ('' + key).replace(escapeRegex, function (match) {
         return escaperLookup[match];
       });
       return '$' + escapedString;
@@ -2868,30 +2998,54 @@ if ("development" !== "production") {
     var userProvidedKeyEscapeRegex = /\/+/g;
 
     function escapeUserProvidedKey(text) {
-      return text.replace(userProvidedKeyEscapeRegex, '$&/');
+      return ('' + text).replace(userProvidedKeyEscapeRegex, '$&/');
+    }
+
+    var POOL_SIZE = 10;
+    var traverseContextPool = [];
+
+    function getPooledTraverseContext(mapResult, keyPrefix, mapFunction, mapContext) {
+      if (traverseContextPool.length) {
+        var traverseContext = traverseContextPool.pop();
+        traverseContext.result = mapResult;
+        traverseContext.keyPrefix = keyPrefix;
+        traverseContext.func = mapFunction;
+        traverseContext.context = mapContext;
+        traverseContext.count = 0;
+        return traverseContext;
+      } else {
+        return {
+          result: mapResult,
+          keyPrefix: keyPrefix,
+          func: mapFunction,
+          context: mapContext,
+          count: 0
+        };
+      }
+    }
+
+    function releaseTraverseContext(traverseContext) {
+      traverseContext.result = null;
+      traverseContext.keyPrefix = null;
+      traverseContext.func = null;
+      traverseContext.context = null;
+      traverseContext.count = 0;
+
+      if (traverseContextPool.length < POOL_SIZE) {
+        traverseContextPool.push(traverseContext);
+      }
     }
     /**
-     * Generate a key string that identifies a element within a set.
-     *
-     * @param {*} element A element that could contain a manual key.
-     * @param {number} index Index that is used if a manual key is not provided.
-     * @return {string}
+     * @param {?*} children Children tree container.
+     * @param {!string} nameSoFar Name of the key path so far.
+     * @param {!function} callback Callback to invoke with each child found.
+     * @param {?*} traverseContext Used to pass information throughout the traversal
+     * process.
+     * @return {!number} The number of children in this subtree.
      */
 
 
-    function getElementKey(element, index) {
-      // Do some typechecking here since we call this blindly. We want to ensure
-      // that we don't block potential future ES APIs.
-      if (typeof element === 'object' && element !== null && element.key != null) {
-        // Explicit key
-        return escape('' + element.key);
-      } // Implicit key determined by the index in the set
-
-
-      return index.toString(36);
-    }
-
-    function mapIntoArray(children, array, escapedPrefix, nameSoFar, callback) {
+    function traverseAllChildrenImpl(children, nameSoFar, callback, traverseContext) {
       var type = typeof children;
 
       if (type === 'undefined' || type === 'boolean') {
@@ -2921,34 +3075,9 @@ if ("development" !== "production") {
       }
 
       if (invokeCallback) {
-        var _child = children;
-        var mappedChild = callback(_child); // If it's the only child, treat the name as if it was wrapped in an array
-        // so that it's consistent if the number of children grows:
-
-        var childKey = nameSoFar === '' ? SEPARATOR + getElementKey(_child, 0) : nameSoFar;
-
-        if (Array.isArray(mappedChild)) {
-          var escapedChildKey = '';
-
-          if (childKey != null) {
-            escapedChildKey = escapeUserProvidedKey(childKey) + '/';
-          }
-
-          mapIntoArray(mappedChild, array, escapedChildKey, '', function (c) {
-            return c;
-          });
-        } else if (mappedChild != null) {
-          if (isValidElement(mappedChild)) {
-            mappedChild = cloneAndReplaceKey(mappedChild, // Keep both the (mapped) and old keys if they differ, just as
-            // traverseAllChildren used to do for objects as children
-            escapedPrefix + ( // $FlowFixMe Flow incorrectly thinks React.Portal doesn't have a key
-            mappedChild.key && (!_child || _child.key !== mappedChild.key) ? // $FlowFixMe Flow incorrectly thinks existing element's key can be a number
-            escapeUserProvidedKey('' + mappedChild.key) + '/' : '') + childKey);
-          }
-
-          array.push(mappedChild);
-        }
-
+        callback(traverseContext, children, // If it's the only child, treat the name as if it was wrapped in an array
+        // so that it's consistent if the number of children grows.
+        nameSoFar === '' ? SEPARATOR + getComponentKey(children, 0) : nameSoFar);
         return 1;
       }
 
@@ -2961,38 +3090,41 @@ if ("development" !== "production") {
       if (Array.isArray(children)) {
         for (var i = 0; i < children.length; i++) {
           child = children[i];
-          nextName = nextNamePrefix + getElementKey(child, i);
-          subtreeCount += mapIntoArray(child, array, escapedPrefix, nextName, callback);
+          nextName = nextNamePrefix + getComponentKey(child, i);
+          subtreeCount += traverseAllChildrenImpl(child, nextName, callback, traverseContext);
         }
       } else {
         var iteratorFn = getIteratorFn(children);
 
         if (typeof iteratorFn === 'function') {
-          var iterableChildren = children;
           {
             // Warn about using Maps as children
-            if (iteratorFn === iterableChildren.entries) {
+            if (iteratorFn === children.entries) {
               if (!didWarnAboutMaps) {
-                warn('Using Maps as children is not supported. ' + 'Use an array of keyed ReactElements instead.');
+                warn('Using Maps as children is deprecated and will be removed in ' + 'a future major release. Consider converting children to ' + 'an array of keyed ReactElements instead.');
               }
 
               didWarnAboutMaps = true;
             }
           }
-          var iterator = iteratorFn.call(iterableChildren);
+          var iterator = iteratorFn.call(children);
           var step;
           var ii = 0;
 
           while (!(step = iterator.next()).done) {
             child = step.value;
-            nextName = nextNamePrefix + getElementKey(child, ii++);
-            subtreeCount += mapIntoArray(child, array, escapedPrefix, nextName, callback);
+            nextName = nextNamePrefix + getComponentKey(child, ii++);
+            subtreeCount += traverseAllChildrenImpl(child, nextName, callback, traverseContext);
           }
         } else if (type === 'object') {
+          var addendum = '';
+          {
+            addendum = ' If you meant to render a collection of children, use an array ' + 'instead.' + ReactDebugCurrentFrame.getStackAddendum();
+          }
           var childrenString = '' + children;
           {
             {
-              throw Error("Objects are not valid as a React child (found: " + (childrenString === '[object Object]' ? 'object with keys {' + Object.keys(children).join(', ') + '}' : childrenString) + "). If you meant to render a collection of children, use an array instead.");
+              throw Error("Objects are not valid as a React child (found: " + (childrenString === '[object Object]' ? 'object with keys {' + Object.keys(children).join(', ') + '}' : childrenString) + ")." + addendum);
             }
           }
         }
@@ -3001,49 +3133,55 @@ if ("development" !== "production") {
       return subtreeCount;
     }
     /**
-     * Maps children that are typically specified as `props.children`.
+     * Traverses children that are typically specified as `props.children`, but
+     * might also be specified through attributes:
      *
-     * See https://reactjs.org/docs/react-api.html#reactchildrenmap
+     * - `traverseAllChildren(this.props.children, ...)`
+     * - `traverseAllChildren(this.props.leftPanelChildren, ...)`
      *
-     * The provided mapFunction(child, index) will be called for each
-     * leaf child.
+     * The `traverseContext` is an optional argument that is passed through the
+     * entire traversal. It can be used to store accumulations or anything else that
+     * the callback might find relevant.
      *
-     * @param {?*} children Children tree container.
-     * @param {function(*, int)} func The map function.
-     * @param {*} context Context for mapFunction.
-     * @return {object} Object containing the ordered map of results.
+     * @param {?*} children Children tree object.
+     * @param {!function} callback To invoke upon traversing each child.
+     * @param {?*} traverseContext Context for traversal.
+     * @return {!number} The number of children in this subtree.
      */
 
 
-    function mapChildren(children, func, context) {
+    function traverseAllChildren(children, callback, traverseContext) {
       if (children == null) {
-        return children;
+        return 0;
       }
 
-      var result = [];
-      var count = 0;
-      mapIntoArray(children, result, '', '', function (child) {
-        return func.call(context, child, count++);
-      });
-      return result;
+      return traverseAllChildrenImpl(children, '', callback, traverseContext);
     }
     /**
-     * Count the number of children that are typically specified as
-     * `props.children`.
+     * Generate a key string that identifies a component within a set.
      *
-     * See https://reactjs.org/docs/react-api.html#reactchildrencount
-     *
-     * @param {?*} children Children tree container.
-     * @return {number} The number of children.
+     * @param {*} component A component that could contain a manual key.
+     * @param {number} index Index that is used if a manual key is not provided.
+     * @return {string}
      */
 
 
-    function countChildren(children) {
-      var n = 0;
-      mapChildren(children, function () {
-        n++; // Don't return anything
-      });
-      return n;
+    function getComponentKey(component, index) {
+      // Do some typechecking here since we call this blindly. We want to ensure
+      // that we don't block potential future ES APIs.
+      if (typeof component === 'object' && component !== null && component.key != null) {
+        // Explicit key
+        return escape(component.key);
+      } // Implicit key determined by the index in the set
+
+
+      return index.toString(36);
+    }
+
+    function forEachSingleChild(bookKeeping, child, name) {
+      var func = bookKeeping.func,
+          context = bookKeeping.context;
+      func.call(context, child, bookKeeping.count++);
     }
     /**
      * Iterates through children that are typically specified as `props.children`.
@@ -3060,9 +3198,87 @@ if ("development" !== "production") {
 
 
     function forEachChildren(children, forEachFunc, forEachContext) {
-      mapChildren(children, function () {
-        forEachFunc.apply(this, arguments); // Don't return anything.
-      }, forEachContext);
+      if (children == null) {
+        return children;
+      }
+
+      var traverseContext = getPooledTraverseContext(null, null, forEachFunc, forEachContext);
+      traverseAllChildren(children, forEachSingleChild, traverseContext);
+      releaseTraverseContext(traverseContext);
+    }
+
+    function mapSingleChildIntoContext(bookKeeping, child, childKey) {
+      var result = bookKeeping.result,
+          keyPrefix = bookKeeping.keyPrefix,
+          func = bookKeeping.func,
+          context = bookKeeping.context;
+      var mappedChild = func.call(context, child, bookKeeping.count++);
+
+      if (Array.isArray(mappedChild)) {
+        mapIntoWithKeyPrefixInternal(mappedChild, result, childKey, function (c) {
+          return c;
+        });
+      } else if (mappedChild != null) {
+        if (isValidElement(mappedChild)) {
+          mappedChild = cloneAndReplaceKey(mappedChild, // Keep both the (mapped) and old keys if they differ, just as
+          // traverseAllChildren used to do for objects as children
+          keyPrefix + (mappedChild.key && (!child || child.key !== mappedChild.key) ? escapeUserProvidedKey(mappedChild.key) + '/' : '') + childKey);
+        }
+
+        result.push(mappedChild);
+      }
+    }
+
+    function mapIntoWithKeyPrefixInternal(children, array, prefix, func, context) {
+      var escapedPrefix = '';
+
+      if (prefix != null) {
+        escapedPrefix = escapeUserProvidedKey(prefix) + '/';
+      }
+
+      var traverseContext = getPooledTraverseContext(array, escapedPrefix, func, context);
+      traverseAllChildren(children, mapSingleChildIntoContext, traverseContext);
+      releaseTraverseContext(traverseContext);
+    }
+    /**
+     * Maps children that are typically specified as `props.children`.
+     *
+     * See https://reactjs.org/docs/react-api.html#reactchildrenmap
+     *
+     * The provided mapFunction(child, key, index) will be called for each
+     * leaf child.
+     *
+     * @param {?*} children Children tree container.
+     * @param {function(*, int)} func The map function.
+     * @param {*} context Context for mapFunction.
+     * @return {object} Object containing the ordered map of results.
+     */
+
+
+    function mapChildren(children, func, context) {
+      if (children == null) {
+        return children;
+      }
+
+      var result = [];
+      mapIntoWithKeyPrefixInternal(children, result, null, func, context);
+      return result;
+    }
+    /**
+     * Count the number of children that are typically specified as
+     * `props.children`.
+     *
+     * See https://reactjs.org/docs/react-api.html#reactchildrencount
+     *
+     * @param {?*} children Children tree container.
+     * @return {number} The number of children.
+     */
+
+
+    function countChildren(children) {
+      return traverseAllChildren(children, function () {
+        return null;
+      }, null);
     }
     /**
      * Flatten a children object (typically specified as `props.children`) and
@@ -3073,9 +3289,11 @@ if ("development" !== "production") {
 
 
     function toArray(children) {
-      return mapChildren(children, function (child) {
+      var result = [];
+      mapIntoWithKeyPrefixInternal(children, result, null, function (child) {
         return child;
-      }) || [];
+      });
+      return result;
     }
     /**
      * Returns the first child in a collection of children and verifies that there
@@ -3137,7 +3355,6 @@ if ("development" !== "production") {
       };
       var hasWarnedAboutUsingNestedContextConsumers = false;
       var hasWarnedAboutUsingConsumerProvider = false;
-      var hasWarnedAboutDisplayNameOnConsumer = false;
       {
         // A separate object, but proxies back to the original context object for
         // backwards compatibility. It has a different $$typeof, so we can properly
@@ -3195,17 +3412,6 @@ if ("development" !== "production") {
 
               return context.Consumer;
             }
-          },
-          displayName: {
-            get: function () {
-              return context.displayName;
-            },
-            set: function (displayName) {
-              if (!hasWarnedAboutDisplayNameOnConsumer) {
-                warn('Setting `displayName` on Context.Consumer has no effect. ' + "You should set it directly on the context with Context.displayName = '%s'.", displayName);
-                hasWarnedAboutDisplayNameOnConsumer = true;
-              }
-            }
           }
         }); // $FlowFixMe: Flow complains about missing properties because it doesn't understand defineProperty
 
@@ -3218,66 +3424,18 @@ if ("development" !== "production") {
       return context;
     }
 
-    var Uninitialized = -1;
-    var Pending = 0;
-    var Resolved = 1;
-    var Rejected = 2;
-
-    function lazyInitializer(payload) {
-      if (payload._status === Uninitialized) {
-        var ctor = payload._result;
-        var thenable = ctor(); // Transition to the next state.
-
-        var pending = payload;
-        pending._status = Pending;
-        pending._result = thenable;
-        thenable.then(function (moduleObject) {
-          if (payload._status === Pending) {
-            var defaultExport = moduleObject.default;
-            {
-              if (defaultExport === undefined) {
-                error('lazy: Expected the result of a dynamic import() call. ' + 'Instead received: %s\n\nYour code should look like: \n  ' + // Break up imports to avoid accidentally parsing them as dependencies.
-                'const MyComponent = lazy(() => imp' + "ort('./MyComponent'))", moduleObject);
-              }
-            } // Transition to the next state.
-
-            var resolved = payload;
-            resolved._status = Resolved;
-            resolved._result = defaultExport;
-          }
-        }, function (error) {
-          if (payload._status === Pending) {
-            // Transition to the next state.
-            var rejected = payload;
-            rejected._status = Rejected;
-            rejected._result = error;
-          }
-        });
-      }
-
-      if (payload._status === Resolved) {
-        return payload._result;
-      } else {
-        throw payload._result;
-      }
-    }
-
     function lazy(ctor) {
-      var payload = {
-        // We use these fields to store the result.
-        _status: -1,
-        _result: ctor
-      };
       var lazyType = {
         $$typeof: REACT_LAZY_TYPE,
-        _payload: payload,
-        _init: lazyInitializer
+        _ctor: ctor,
+        // React uses these fields to store the result.
+        _status: -1,
+        _result: null
       };
       {
         // In production, this would just set it on the object.
         var defaultProps;
-        var propTypes; // $FlowFixMe
-
+        var propTypes;
         Object.defineProperties(lazyType, {
           defaultProps: {
             configurable: true,
@@ -3287,7 +3445,6 @@ if ("development" !== "production") {
             set: function (newDefaultProps) {
               error('React.lazy(...): It is not supported to assign `defaultProps` to ' + 'a lazy component import. Either specify them where the component ' + 'is defined, or create a wrapping component around it.');
               defaultProps = newDefaultProps; // Match production behavior more closely:
-              // $FlowFixMe
 
               Object.defineProperty(lazyType, 'defaultProps', {
                 enumerable: true
@@ -3302,7 +3459,6 @@ if ("development" !== "production") {
             set: function (newPropTypes) {
               error('React.lazy(...): It is not supported to assign `propTypes` to ' + 'a lazy component import. Either specify them where the component ' + 'is defined, or create a wrapping component around it.');
               propTypes = newPropTypes; // Match production behavior more closely:
-              // $FlowFixMe
 
               Object.defineProperty(lazyType, 'propTypes', {
                 enumerable: true
@@ -3332,50 +3488,15 @@ if ("development" !== "production") {
           }
         }
       }
-      var elementType = {
+      return {
         $$typeof: REACT_FORWARD_REF_TYPE,
         render: render
       };
-      {
-        var ownName;
-        Object.defineProperty(elementType, 'displayName', {
-          enumerable: false,
-          configurable: true,
-          get: function () {
-            return ownName;
-          },
-          set: function (name) {
-            ownName = name;
-
-            if (render.displayName == null) {
-              render.displayName = name;
-            }
-          }
-        });
-      }
-      return elementType;
-    } // Filter certain DOM attributes (e.g. src, href) if their values are empty strings.
-
-
-    var enableScopeAPI = false; // Experimental Create Event Handle API.
+    }
 
     function isValidElementType(type) {
-      if (typeof type === 'string' || typeof type === 'function') {
-        return true;
-      } // Note: typeof might be other than 'symbol' or 'number' (e.g. if it's a polyfill).
-
-
-      if (type === exports.Fragment || type === exports.Profiler || type === REACT_DEBUG_TRACING_MODE_TYPE || type === exports.StrictMode || type === exports.Suspense || type === REACT_SUSPENSE_LIST_TYPE || type === REACT_LEGACY_HIDDEN_TYPE || enableScopeAPI) {
-        return true;
-      }
-
-      if (typeof type === 'object' && type !== null) {
-        if (type.$$typeof === REACT_LAZY_TYPE || type.$$typeof === REACT_MEMO_TYPE || type.$$typeof === REACT_PROVIDER_TYPE || type.$$typeof === REACT_CONTEXT_TYPE || type.$$typeof === REACT_FORWARD_REF_TYPE || type.$$typeof === REACT_FUNDAMENTAL_TYPE || type.$$typeof === REACT_BLOCK_TYPE || type[0] === REACT_SERVER_BLOCK_TYPE) {
-          return true;
-        }
-      }
-
-      return false;
+      return typeof type === 'string' || typeof type === 'function' || // Note: its typeof might be other than 'symbol' or 'number' if it's a polyfill.
+      type === REACT_FRAGMENT_TYPE || type === REACT_CONCURRENT_MODE_TYPE || type === REACT_PROFILER_TYPE || type === REACT_STRICT_MODE_TYPE || type === REACT_SUSPENSE_TYPE || type === REACT_SUSPENSE_LIST_TYPE || typeof type === 'object' && type !== null && (type.$$typeof === REACT_LAZY_TYPE || type.$$typeof === REACT_MEMO_TYPE || type.$$typeof === REACT_PROVIDER_TYPE || type.$$typeof === REACT_CONTEXT_TYPE || type.$$typeof === REACT_FORWARD_REF_TYPE || type.$$typeof === REACT_FUNDAMENTAL_TYPE || type.$$typeof === REACT_RESPONDER_TYPE || type.$$typeof === REACT_SCOPE_TYPE || type.$$typeof === REACT_BLOCK_TYPE);
     }
 
     function memo(type, compare) {
@@ -3384,29 +3505,11 @@ if ("development" !== "production") {
           error('memo: The first argument must be a component. Instead ' + 'received: %s', type === null ? 'null' : typeof type);
         }
       }
-      var elementType = {
+      return {
         $$typeof: REACT_MEMO_TYPE,
         type: type,
         compare: compare === undefined ? null : compare
       };
-      {
-        var ownName;
-        Object.defineProperty(elementType, 'displayName', {
-          enumerable: false,
-          configurable: true,
-          get: function () {
-            return ownName;
-          },
-          set: function (name) {
-            ownName = name;
-
-            if (type.displayName == null) {
-              type.displayName = name;
-            }
-          }
-        });
-      }
-      return elementType;
     }
 
     function resolveDispatcher() {
@@ -3414,7 +3517,7 @@ if ("development" !== "production") {
 
       if (!(dispatcher !== null)) {
         {
-          throw Error("Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:\n1. You might have mismatching versions of React and the renderer (such as React DOM)\n2. You might be breaking the Rules of Hooks\n3. You might have more than one copy of React in the same app\nSee https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem.");
+          throw Error("Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:\n1. You might have mismatching versions of React and the renderer (such as React DOM)\n2. You might be breaking the Rules of Hooks\n3. You might have more than one copy of React in the same app\nSee https://fb.me/react-invalid-hook-call for tips about how to debug and fix this problem.");
         }
       }
 
@@ -3425,7 +3528,7 @@ if ("development" !== "production") {
       var dispatcher = resolveDispatcher();
       {
         if (unstable_observedBits !== undefined) {
-          error('useContext() second argument is reserved for future ' + 'use in React. Passing it is not supported. ' + 'You passed: %s.%s', unstable_observedBits, typeof unstable_observedBits === 'number' && Array.isArray(arguments[2]) ? '\n\nDid you call array.map(useContext)? ' + 'Calling Hooks inside a loop is not supported. ' + 'Learn more at https://reactjs.org/link/rules-of-hooks' : '');
+          error('useContext() second argument is reserved for future ' + 'use in React. Passing it is not supported. ' + 'You passed: %s.%s', unstable_observedBits, typeof unstable_observedBits === 'number' && Array.isArray(arguments[2]) ? '\n\nDid you call array.map(useContext)? ' + 'Calling Hooks inside a loop is not supported. ' + 'Learn more at https://fb.me/rules-of-hooks' : '');
         } // TODO: add a more generic warning for invalid values.
 
 
@@ -3487,409 +3590,6 @@ if ("development" !== "production") {
       {
         var dispatcher = resolveDispatcher();
         return dispatcher.useDebugValue(value, formatterFn);
-      }
-    } // Helpers to patch console.logs to avoid logging during side-effect free
-    // replaying on render function. This currently only patches the object
-    // lazily which won't cover if the log function was extracted eagerly.
-    // We could also eagerly patch the method.
-
-
-    var disabledDepth = 0;
-    var prevLog;
-    var prevInfo;
-    var prevWarn;
-    var prevError;
-    var prevGroup;
-    var prevGroupCollapsed;
-    var prevGroupEnd;
-
-    function disabledLog() {}
-
-    disabledLog.__reactDisabledLog = true;
-
-    function disableLogs() {
-      {
-        if (disabledDepth === 0) {
-          /* eslint-disable react-internal/no-production-logging */
-          prevLog = console.log;
-          prevInfo = console.info;
-          prevWarn = console.warn;
-          prevError = console.error;
-          prevGroup = console.group;
-          prevGroupCollapsed = console.groupCollapsed;
-          prevGroupEnd = console.groupEnd; // https://github.com/facebook/react/issues/19099
-
-          var props = {
-            configurable: true,
-            enumerable: true,
-            value: disabledLog,
-            writable: true
-          }; // $FlowFixMe Flow thinks console is immutable.
-
-          Object.defineProperties(console, {
-            info: props,
-            log: props,
-            warn: props,
-            error: props,
-            group: props,
-            groupCollapsed: props,
-            groupEnd: props
-          });
-          /* eslint-enable react-internal/no-production-logging */
-        }
-
-        disabledDepth++;
-      }
-    }
-
-    function reenableLogs() {
-      {
-        disabledDepth--;
-
-        if (disabledDepth === 0) {
-          /* eslint-disable react-internal/no-production-logging */
-          var props = {
-            configurable: true,
-            enumerable: true,
-            writable: true
-          }; // $FlowFixMe Flow thinks console is immutable.
-
-          Object.defineProperties(console, {
-            log: _assign({}, props, {
-              value: prevLog
-            }),
-            info: _assign({}, props, {
-              value: prevInfo
-            }),
-            warn: _assign({}, props, {
-              value: prevWarn
-            }),
-            error: _assign({}, props, {
-              value: prevError
-            }),
-            group: _assign({}, props, {
-              value: prevGroup
-            }),
-            groupCollapsed: _assign({}, props, {
-              value: prevGroupCollapsed
-            }),
-            groupEnd: _assign({}, props, {
-              value: prevGroupEnd
-            })
-          });
-          /* eslint-enable react-internal/no-production-logging */
-        }
-
-        if (disabledDepth < 0) {
-          error('disabledDepth fell below zero. ' + 'This is a bug in React. Please file an issue.');
-        }
-      }
-    }
-
-    var ReactCurrentDispatcher$1 = ReactSharedInternals.ReactCurrentDispatcher;
-    var prefix;
-
-    function describeBuiltInComponentFrame(name, source, ownerFn) {
-      {
-        if (prefix === undefined) {
-          // Extract the VM specific prefix used by each line.
-          try {
-            throw Error();
-          } catch (x) {
-            var match = x.stack.trim().match(/\n( *(at )?)/);
-            prefix = match && match[1] || '';
-          }
-        } // We use the prefix to ensure our stacks line up with native stack frames.
-
-
-        return '\n' + prefix + name;
-      }
-    }
-
-    var reentry = false;
-    var componentFrameCache;
-    {
-      var PossiblyWeakMap = typeof WeakMap === 'function' ? WeakMap : Map;
-      componentFrameCache = new PossiblyWeakMap();
-    }
-
-    function describeNativeComponentFrame(fn, construct) {
-      // If something asked for a stack inside a fake render, it should get ignored.
-      if (!fn || reentry) {
-        return '';
-      }
-
-      {
-        var frame = componentFrameCache.get(fn);
-
-        if (frame !== undefined) {
-          return frame;
-        }
-      }
-      var control;
-      reentry = true;
-      var previousPrepareStackTrace = Error.prepareStackTrace; // $FlowFixMe It does accept undefined.
-
-      Error.prepareStackTrace = undefined;
-      var previousDispatcher;
-      {
-        previousDispatcher = ReactCurrentDispatcher$1.current; // Set the dispatcher in DEV because this might be call in the render function
-        // for warnings.
-
-        ReactCurrentDispatcher$1.current = null;
-        disableLogs();
-      }
-
-      try {
-        // This should throw.
-        if (construct) {
-          // Something should be setting the props in the constructor.
-          var Fake = function () {
-            throw Error();
-          }; // $FlowFixMe
-
-
-          Object.defineProperty(Fake.prototype, 'props', {
-            set: function () {
-              // We use a throwing setter instead of frozen or non-writable props
-              // because that won't throw in a non-strict mode function.
-              throw Error();
-            }
-          });
-
-          if (typeof Reflect === 'object' && Reflect.construct) {
-            // We construct a different control for this case to include any extra
-            // frames added by the construct call.
-            try {
-              Reflect.construct(Fake, []);
-            } catch (x) {
-              control = x;
-            }
-
-            Reflect.construct(fn, [], Fake);
-          } else {
-            try {
-              Fake.call();
-            } catch (x) {
-              control = x;
-            }
-
-            fn.call(Fake.prototype);
-          }
-        } else {
-          try {
-            throw Error();
-          } catch (x) {
-            control = x;
-          }
-
-          fn();
-        }
-      } catch (sample) {
-        // This is inlined manually because closure doesn't do it for us.
-        if (sample && control && typeof sample.stack === 'string') {
-          // This extracts the first frame from the sample that isn't also in the control.
-          // Skipping one frame that we assume is the frame that calls the two.
-          var sampleLines = sample.stack.split('\n');
-          var controlLines = control.stack.split('\n');
-          var s = sampleLines.length - 1;
-          var c = controlLines.length - 1;
-
-          while (s >= 1 && c >= 0 && sampleLines[s] !== controlLines[c]) {
-            // We expect at least one stack frame to be shared.
-            // Typically this will be the root most one. However, stack frames may be
-            // cut off due to maximum stack limits. In this case, one maybe cut off
-            // earlier than the other. We assume that the sample is longer or the same
-            // and there for cut off earlier. So we should find the root most frame in
-            // the sample somewhere in the control.
-            c--;
-          }
-
-          for (; s >= 1 && c >= 0; s--, c--) {
-            // Next we find the first one that isn't the same which should be the
-            // frame that called our sample function and the control.
-            if (sampleLines[s] !== controlLines[c]) {
-              // In V8, the first line is describing the message but other VMs don't.
-              // If we're about to return the first line, and the control is also on the same
-              // line, that's a pretty good indicator that our sample threw at same line as
-              // the control. I.e. before we entered the sample frame. So we ignore this result.
-              // This can happen if you passed a class to function component, or non-function.
-              if (s !== 1 || c !== 1) {
-                do {
-                  s--;
-                  c--; // We may still have similar intermediate frames from the construct call.
-                  // The next one that isn't the same should be our match though.
-
-                  if (c < 0 || sampleLines[s] !== controlLines[c]) {
-                    // V8 adds a "new" prefix for native classes. Let's remove it to make it prettier.
-                    var _frame = '\n' + sampleLines[s].replace(' at new ', ' at ');
-
-                    {
-                      if (typeof fn === 'function') {
-                        componentFrameCache.set(fn, _frame);
-                      }
-                    } // Return the line we found.
-
-                    return _frame;
-                  }
-                } while (s >= 1 && c >= 0);
-              }
-
-              break;
-            }
-          }
-        }
-      } finally {
-        reentry = false;
-        {
-          ReactCurrentDispatcher$1.current = previousDispatcher;
-          reenableLogs();
-        }
-        Error.prepareStackTrace = previousPrepareStackTrace;
-      } // Fallback to just using the name if we couldn't make it throw.
-
-
-      var name = fn ? fn.displayName || fn.name : '';
-      var syntheticFrame = name ? describeBuiltInComponentFrame(name) : '';
-      {
-        if (typeof fn === 'function') {
-          componentFrameCache.set(fn, syntheticFrame);
-        }
-      }
-      return syntheticFrame;
-    }
-
-    function describeFunctionComponentFrame(fn, source, ownerFn) {
-      {
-        return describeNativeComponentFrame(fn, false);
-      }
-    }
-
-    function shouldConstruct(Component) {
-      var prototype = Component.prototype;
-      return !!(prototype && prototype.isReactComponent);
-    }
-
-    function describeUnknownElementTypeFrameInDEV(type, source, ownerFn) {
-      if (type == null) {
-        return '';
-      }
-
-      if (typeof type === 'function') {
-        {
-          return describeNativeComponentFrame(type, shouldConstruct(type));
-        }
-      }
-
-      if (typeof type === 'string') {
-        return describeBuiltInComponentFrame(type);
-      }
-
-      switch (type) {
-        case exports.Suspense:
-          return describeBuiltInComponentFrame('Suspense');
-
-        case REACT_SUSPENSE_LIST_TYPE:
-          return describeBuiltInComponentFrame('SuspenseList');
-      }
-
-      if (typeof type === 'object') {
-        switch (type.$$typeof) {
-          case REACT_FORWARD_REF_TYPE:
-            return describeFunctionComponentFrame(type.render);
-
-          case REACT_MEMO_TYPE:
-            // Memo may contain any component type so we recursively resolve it.
-            return describeUnknownElementTypeFrameInDEV(type.type, source, ownerFn);
-
-          case REACT_BLOCK_TYPE:
-            return describeFunctionComponentFrame(type._render);
-
-          case REACT_LAZY_TYPE:
-            {
-              var lazyComponent = type;
-              var payload = lazyComponent._payload;
-              var init = lazyComponent._init;
-
-              try {
-                // Lazy may contain any component type so we recursively resolve it.
-                return describeUnknownElementTypeFrameInDEV(init(payload), source, ownerFn);
-              } catch (x) {}
-            }
-        }
-      }
-
-      return '';
-    }
-
-    var loggedTypeFailures = {};
-    var ReactDebugCurrentFrame$1 = ReactSharedInternals.ReactDebugCurrentFrame;
-
-    function setCurrentlyValidatingElement(element) {
-      {
-        if (element) {
-          var owner = element._owner;
-          var stack = describeUnknownElementTypeFrameInDEV(element.type, element._source, owner ? owner.type : null);
-          ReactDebugCurrentFrame$1.setExtraStackFrame(stack);
-        } else {
-          ReactDebugCurrentFrame$1.setExtraStackFrame(null);
-        }
-      }
-    }
-
-    function checkPropTypes(typeSpecs, values, location, componentName, element) {
-      {
-        // $FlowFixMe This is okay but Flow doesn't know it.
-        var has = Function.call.bind(Object.prototype.hasOwnProperty);
-
-        for (var typeSpecName in typeSpecs) {
-          if (has(typeSpecs, typeSpecName)) {
-            var error$1 = void 0; // Prop type validation may throw. In case they do, we don't want to
-            // fail the render phase where it didn't fail before. So we log it.
-            // After these have been cleaned up, we'll let them throw.
-
-            try {
-              // This is intentionally an invariant that gets caught. It's the same
-              // behavior as without this statement except with a better message.
-              if (typeof typeSpecs[typeSpecName] !== 'function') {
-                var err = Error((componentName || 'React class') + ': ' + location + ' type `' + typeSpecName + '` is invalid; ' + 'it must be a function, usually from the `prop-types` package, but received `' + typeof typeSpecs[typeSpecName] + '`.' + 'This often happens because of typos such as `PropTypes.function` instead of `PropTypes.func`.');
-                err.name = 'Invariant Violation';
-                throw err;
-              }
-
-              error$1 = typeSpecs[typeSpecName](values, typeSpecName, componentName, location, null, 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED');
-            } catch (ex) {
-              error$1 = ex;
-            }
-
-            if (error$1 && !(error$1 instanceof Error)) {
-              setCurrentlyValidatingElement(element);
-              error('%s: type specification of %s' + ' `%s` is invalid; the type checker ' + 'function must return `null` or an `Error` but returned a %s. ' + 'You may have forgotten to pass an argument to the type checker ' + 'creator (arrayOf, instanceOf, objectOf, oneOf, oneOfType, and ' + 'shape all require an argument).', componentName || 'React class', location, typeSpecName, typeof error$1);
-              setCurrentlyValidatingElement(null);
-            }
-
-            if (error$1 instanceof Error && !(error$1.message in loggedTypeFailures)) {
-              // Only monitor this failure once because there tends to be a lot of the
-              // same error.
-              loggedTypeFailures[error$1.message] = true;
-              setCurrentlyValidatingElement(element);
-              error('Failed %s type: %s', location, error$1.message);
-              setCurrentlyValidatingElement(null);
-            }
-          }
-        }
-      }
-    }
-
-    function setCurrentlyValidatingElement$1(element) {
-      {
-        if (element) {
-          var owner = element._owner;
-          var stack = describeUnknownElementTypeFrameInDEV(element.type, element._source, owner ? owner.type : null);
-          setExtraStackFrame(stack);
-        } else {
-          setExtraStackFrame(null);
-        }
       }
     }
 
@@ -3985,11 +3685,11 @@ if ("development" !== "production") {
         childOwner = " It was passed a child from " + getComponentName(element._owner.type) + ".";
       }
 
+      setCurrentlyValidatingElement(element);
       {
-        setCurrentlyValidatingElement$1(element);
-        error('Each child in a list should have a unique "key" prop.' + '%s%s See https://reactjs.org/link/warning-keys for more information.', currentComponentErrorInfo, childOwner);
-        setCurrentlyValidatingElement$1(null);
+        error('Each child in a list should have a unique "key" prop.' + '%s%s See https://fb.me/react-warning-keys for more information.', currentComponentErrorInfo, childOwner);
       }
+      setCurrentlyValidatingElement(null);
     }
     /**
      * Ensure that every element either is passed in a static location, in an
@@ -4055,6 +3755,7 @@ if ("development" !== "production") {
           return;
         }
 
+        var name = getComponentName(type);
         var propTypes;
 
         if (typeof type === 'function') {
@@ -4068,15 +3769,12 @@ if ("development" !== "production") {
         }
 
         if (propTypes) {
-          // Intentionally inside to avoid triggering lazy initializers:
-          var name = getComponentName(type);
-          checkPropTypes(propTypes, element.props, 'prop', name, element);
+          setCurrentlyValidatingElement(element);
+          checkPropTypes(propTypes, element.props, 'prop', name, ReactDebugCurrentFrame.getStackAddendum);
+          setCurrentlyValidatingElement(null);
         } else if (type.PropTypes !== undefined && !propTypesMisspellWarningShown) {
-          propTypesMisspellWarningShown = true; // Intentionally inside to avoid triggering lazy initializers:
-
-          var _name = getComponentName(type);
-
-          error('Component %s declared `PropTypes` instead of `propTypes`. Did you misspell the property assignment?', _name || 'Unknown');
+          propTypesMisspellWarningShown = true;
+          error('Component %s declared `PropTypes` instead of `propTypes`. Did you misspell the property assignment?', name || 'Unknown');
         }
 
         if (typeof type.getDefaultProps === 'function' && !type.getDefaultProps.isReactClassApproved) {
@@ -4092,24 +3790,23 @@ if ("development" !== "production") {
 
     function validateFragmentProps(fragment) {
       {
+        setCurrentlyValidatingElement(fragment);
         var keys = Object.keys(fragment.props);
 
         for (var i = 0; i < keys.length; i++) {
           var key = keys[i];
 
           if (key !== 'children' && key !== 'key') {
-            setCurrentlyValidatingElement$1(fragment);
             error('Invalid prop `%s` supplied to `React.Fragment`. ' + 'React.Fragment can only have `key` and `children` props.', key);
-            setCurrentlyValidatingElement$1(null);
             break;
           }
         }
 
         if (fragment.ref !== null) {
-          setCurrentlyValidatingElement$1(fragment);
           error('Invalid attribute `ref` supplied to `React.Fragment`.');
-          setCurrentlyValidatingElement$1(null);
         }
+
+        setCurrentlyValidatingElement(null);
       }
     }
 
@@ -4168,7 +3865,7 @@ if ("development" !== "production") {
         }
       }
 
-      if (type === exports.Fragment) {
+      if (type === REACT_FRAGMENT_TYPE) {
         validateFragmentProps(element);
       } else {
         validatePropTypes(element);
@@ -4217,11 +3914,13 @@ if ("development" !== "production") {
     {
       try {
         var frozenObject = Object.freeze({});
-        /* eslint-disable no-new */
+        var testMap = new Map([[frozenObject, null]]);
+        var testSet = new Set([frozenObject]); // This is necessary for Rollup to not consider these unused.
+        // https://github.com/rollup/rollup/issues/1771
+        // TODO: we can remove these if Rollup fixes the bug.
 
-        new Map([[frozenObject, null]]);
-        new Set([frozenObject]);
-        /* eslint-enable no-new */
+        testMap.set(0, 0);
+        testSet.add(0);
       } catch (e) {}
     }
     var createElement$1 = createElementWithValidation;
@@ -4236,7 +3935,11 @@ if ("development" !== "production") {
     };
     exports.Children = Children;
     exports.Component = Component;
+    exports.Fragment = REACT_FRAGMENT_TYPE;
+    exports.Profiler = REACT_PROFILER_TYPE;
     exports.PureComponent = PureComponent;
+    exports.StrictMode = REACT_STRICT_MODE_TYPE;
+    exports.Suspense = REACT_SUSPENSE_TYPE;
     exports.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED = ReactSharedInternals;
     exports.cloneElement = cloneElement$1;
     exports.createContext = createContext;
@@ -4260,7 +3963,7 @@ if ("development" !== "production") {
     exports.version = ReactVersion;
   })();
 }
-},{"object-assign":"../node_modules/object-assign/index.js"}],"../node_modules/react/index.js":[function(require,module,exports) {
+},{"object-assign":"../node_modules/object-assign/index.js","prop-types/checkPropTypes":"../node_modules/prop-types/checkPropTypes.js"}],"../node_modules/react/index.js":[function(require,module,exports) {
 'use strict';
 
 if ("development" === 'production') {
@@ -5131,117 +4834,7 @@ if ("development" === 'production') {
 } else {
   module.exports = require('./cjs/scheduler.development.js');
 }
-},{"./cjs/scheduler.development.js":"../node_modules/scheduler/cjs/scheduler.development.js"}],"../node_modules/prop-types/lib/ReactPropTypesSecret.js":[function(require,module,exports) {
-/**
- * Copyright (c) 2013-present, Facebook, Inc.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
-
-'use strict';
-
-var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
-
-module.exports = ReactPropTypesSecret;
-
-},{}],"../node_modules/prop-types/checkPropTypes.js":[function(require,module,exports) {
-/**
- * Copyright (c) 2013-present, Facebook, Inc.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
-'use strict';
-
-var printWarning = function () {};
-
-if ("development" !== 'production') {
-  var ReactPropTypesSecret = require('./lib/ReactPropTypesSecret');
-
-  var loggedTypeFailures = {};
-  var has = Function.call.bind(Object.prototype.hasOwnProperty);
-
-  printWarning = function (text) {
-    var message = 'Warning: ' + text;
-
-    if (typeof console !== 'undefined') {
-      console.error(message);
-    }
-
-    try {
-      // --- Welcome to debugging React ---
-      // This error was thrown as a convenience so that you can use this stack
-      // to find the callsite that caused this warning to fire.
-      throw new Error(message);
-    } catch (x) {}
-  };
-}
-/**
- * Assert that the values match with the type specs.
- * Error messages are memorized and will only be shown once.
- *
- * @param {object} typeSpecs Map of name to a ReactPropType
- * @param {object} values Runtime values that need to be type-checked
- * @param {string} location e.g. "prop", "context", "child context"
- * @param {string} componentName Name of the component for error messages.
- * @param {?Function} getStack Returns the component stack.
- * @private
- */
-
-
-function checkPropTypes(typeSpecs, values, location, componentName, getStack) {
-  if ("development" !== 'production') {
-    for (var typeSpecName in typeSpecs) {
-      if (has(typeSpecs, typeSpecName)) {
-        var error; // Prop type validation may throw. In case they do, we don't want to
-        // fail the render phase where it didn't fail before. So we log it.
-        // After these have been cleaned up, we'll let them throw.
-
-        try {
-          // This is intentionally an invariant that gets caught. It's the same
-          // behavior as without this statement except with a better message.
-          if (typeof typeSpecs[typeSpecName] !== 'function') {
-            var err = Error((componentName || 'React class') + ': ' + location + ' type `' + typeSpecName + '` is invalid; ' + 'it must be a function, usually from the `prop-types` package, but received `' + typeof typeSpecs[typeSpecName] + '`.');
-            err.name = 'Invariant Violation';
-            throw err;
-          }
-
-          error = typeSpecs[typeSpecName](values, typeSpecName, componentName, location, null, ReactPropTypesSecret);
-        } catch (ex) {
-          error = ex;
-        }
-
-        if (error && !(error instanceof Error)) {
-          printWarning((componentName || 'React class') + ': type specification of ' + location + ' `' + typeSpecName + '` is invalid; the type checker ' + 'function must return `null` or an `Error` but returned a ' + typeof error + '. ' + 'You may have forgotten to pass an argument to the type checker ' + 'creator (arrayOf, instanceOf, objectOf, oneOf, oneOfType, and ' + 'shape all require an argument).');
-        }
-
-        if (error instanceof Error && !(error.message in loggedTypeFailures)) {
-          // Only monitor this failure once because there tends to be a lot of the
-          // same error.
-          loggedTypeFailures[error.message] = true;
-          var stack = getStack ? getStack() : '';
-          printWarning('Failed ' + location + ' type: ' + error.message + (stack != null ? stack : ''));
-        }
-      }
-    }
-  }
-}
-/**
- * Resets warning cache when testing.
- *
- * @private
- */
-
-
-checkPropTypes.resetWarningCache = function () {
-  if ("development" !== 'production') {
-    loggedTypeFailures = {};
-  }
-};
-
-module.exports = checkPropTypes;
-},{"./lib/ReactPropTypesSecret":"../node_modules/prop-types/lib/ReactPropTypesSecret.js"}],"../node_modules/scheduler/cjs/scheduler-tracing.development.js":[function(require,module,exports) {
+},{"./cjs/scheduler.development.js":"../node_modules/scheduler/cjs/scheduler.development.js"}],"../node_modules/scheduler/cjs/scheduler-tracing.development.js":[function(require,module,exports) {
 /** @license React v0.19.1
  * scheduler-tracing.development.js
  *
@@ -8977,7 +8570,7 @@ if ("development" !== "production") {
       }
 
       var eventName = 'on' + eventNameSuffix;
-      var isSupported = eventName in document;
+      var isSupported = (eventName in document);
 
       if (!isSupported) {
         var element = document.createElement('div');
@@ -30469,7 +30062,7 @@ function _inheritsLoose(subClass, superClass) {
   subClass.__proto__ = superClass;
 }
 },{}],"../node_modules/react-is/cjs/react-is.development.js":[function(require,module,exports) {
-/** @license React v16.12.0
+/** @license React v16.13.1
  * react-is.development.js
  *
  * Copyright (c) Facebook, Inc. and its affiliates.
@@ -30481,11 +30074,7 @@ function _inheritsLoose(subClass, superClass) {
 
 if ("development" !== "production") {
   (function () {
-    'use strict';
-
-    Object.defineProperty(exports, '__esModule', {
-      value: true
-    }); // The Symbol used to tag the ReactElement-like types. If there is no native Symbol
+    'use strict'; // The Symbol used to tag the ReactElement-like types. If there is no native Symbol
     // nor polyfill, then a plain number is used for performance.
 
     var hasSymbol = typeof Symbol === 'function' && Symbol.for;
@@ -30505,69 +30094,15 @@ if ("development" !== "production") {
     var REACT_SUSPENSE_LIST_TYPE = hasSymbol ? Symbol.for('react.suspense_list') : 0xead8;
     var REACT_MEMO_TYPE = hasSymbol ? Symbol.for('react.memo') : 0xead3;
     var REACT_LAZY_TYPE = hasSymbol ? Symbol.for('react.lazy') : 0xead4;
+    var REACT_BLOCK_TYPE = hasSymbol ? Symbol.for('react.block') : 0xead9;
     var REACT_FUNDAMENTAL_TYPE = hasSymbol ? Symbol.for('react.fundamental') : 0xead5;
     var REACT_RESPONDER_TYPE = hasSymbol ? Symbol.for('react.responder') : 0xead6;
     var REACT_SCOPE_TYPE = hasSymbol ? Symbol.for('react.scope') : 0xead7;
 
     function isValidElementType(type) {
       return typeof type === 'string' || typeof type === 'function' || // Note: its typeof might be other than 'symbol' or 'number' if it's a polyfill.
-      type === REACT_FRAGMENT_TYPE || type === REACT_CONCURRENT_MODE_TYPE || type === REACT_PROFILER_TYPE || type === REACT_STRICT_MODE_TYPE || type === REACT_SUSPENSE_TYPE || type === REACT_SUSPENSE_LIST_TYPE || typeof type === 'object' && type !== null && (type.$$typeof === REACT_LAZY_TYPE || type.$$typeof === REACT_MEMO_TYPE || type.$$typeof === REACT_PROVIDER_TYPE || type.$$typeof === REACT_CONTEXT_TYPE || type.$$typeof === REACT_FORWARD_REF_TYPE || type.$$typeof === REACT_FUNDAMENTAL_TYPE || type.$$typeof === REACT_RESPONDER_TYPE || type.$$typeof === REACT_SCOPE_TYPE);
+      type === REACT_FRAGMENT_TYPE || type === REACT_CONCURRENT_MODE_TYPE || type === REACT_PROFILER_TYPE || type === REACT_STRICT_MODE_TYPE || type === REACT_SUSPENSE_TYPE || type === REACT_SUSPENSE_LIST_TYPE || typeof type === 'object' && type !== null && (type.$$typeof === REACT_LAZY_TYPE || type.$$typeof === REACT_MEMO_TYPE || type.$$typeof === REACT_PROVIDER_TYPE || type.$$typeof === REACT_CONTEXT_TYPE || type.$$typeof === REACT_FORWARD_REF_TYPE || type.$$typeof === REACT_FUNDAMENTAL_TYPE || type.$$typeof === REACT_RESPONDER_TYPE || type.$$typeof === REACT_SCOPE_TYPE || type.$$typeof === REACT_BLOCK_TYPE);
     }
-    /**
-     * Forked from fbjs/warning:
-     * https://github.com/facebook/fbjs/blob/e66ba20ad5be433eb54423f2b097d829324d9de6/packages/fbjs/src/__forks__/warning.js
-     *
-     * Only change is we use console.warn instead of console.error,
-     * and do nothing when 'console' is not supported.
-     * This really simplifies the code.
-     * ---
-     * Similar to invariant but only logs a warning if the condition is not met.
-     * This can be used to log issues in development environments in critical
-     * paths. Removing the logging code for production environments will keep the
-     * same logic and follow the same code paths.
-     */
-
-
-    var lowPriorityWarningWithoutStack = function () {};
-
-    {
-      var printWarning = function (format) {
-        for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-          args[_key - 1] = arguments[_key];
-        }
-
-        var argIndex = 0;
-        var message = 'Warning: ' + format.replace(/%s/g, function () {
-          return args[argIndex++];
-        });
-
-        if (typeof console !== 'undefined') {
-          console.warn(message);
-        }
-
-        try {
-          // --- Welcome to debugging React ---
-          // This error was thrown as a convenience so that you can use this stack
-          // to find the callsite that caused this warning to fire.
-          throw new Error(message);
-        } catch (x) {}
-      };
-
-      lowPriorityWarningWithoutStack = function (condition, format) {
-        if (format === undefined) {
-          throw new Error('`lowPriorityWarningWithoutStack(condition, format, ...args)` requires a warning ' + 'message argument');
-        }
-
-        if (!condition) {
-          for (var _len2 = arguments.length, args = new Array(_len2 > 2 ? _len2 - 2 : 0), _key2 = 2; _key2 < _len2; _key2++) {
-            args[_key2 - 2] = arguments[_key2];
-          }
-
-          printWarning.apply(void 0, [format].concat(args));
-        }
-      };
-    }
-    var lowPriorityWarningWithoutStack$1 = lowPriorityWarningWithoutStack;
 
     function typeOf(object) {
       if (typeof object === 'object' && object !== null) {
@@ -30630,8 +30165,9 @@ if ("development" !== "production") {
     function isAsyncMode(object) {
       {
         if (!hasWarnedAboutDeprecatedIsAsyncMode) {
-          hasWarnedAboutDeprecatedIsAsyncMode = true;
-          lowPriorityWarningWithoutStack$1(false, 'The ReactIs.isAsyncMode() alias has been deprecated, ' + 'and will be removed in React 17+. Update your code to use ' + 'ReactIs.isConcurrentMode() instead. It has the exact same API.');
+          hasWarnedAboutDeprecatedIsAsyncMode = true; // Using console['warn'] to evade Babel and ESLint
+
+          console['warn']('The ReactIs.isAsyncMode() alias has been deprecated, ' + 'and will be removed in React 17+. Update your code to use ' + 'ReactIs.isConcurrentMode() instead. It has the exact same API.');
         }
       }
       return isConcurrentMode(object) || typeOf(object) === REACT_ASYNC_MODE_TYPE;
@@ -30685,7 +30221,6 @@ if ("development" !== "production") {
       return typeOf(object) === REACT_SUSPENSE_TYPE;
     }
 
-    exports.typeOf = typeOf;
     exports.AsyncMode = AsyncMode;
     exports.ConcurrentMode = ConcurrentMode;
     exports.ContextConsumer = ContextConsumer;
@@ -30699,7 +30234,6 @@ if ("development" !== "production") {
     exports.Profiler = Profiler;
     exports.StrictMode = StrictMode;
     exports.Suspense = Suspense;
-    exports.isValidElementType = isValidElementType;
     exports.isAsyncMode = isAsyncMode;
     exports.isConcurrentMode = isConcurrentMode;
     exports.isContextConsumer = isContextConsumer;
@@ -30713,6 +30247,8 @@ if ("development" !== "production") {
     exports.isProfiler = isProfiler;
     exports.isStrictMode = isStrictMode;
     exports.isSuspense = isSuspense;
+    exports.isValidElementType = isValidElementType;
+    exports.typeOf = typeOf;
   })();
 }
 },{}],"../node_modules/react-is/index.js":[function(require,module,exports) {
@@ -32593,9 +32129,7 @@ function createReactContext(defaultValue, calculateChangedBits) {
 
   var contextProp = '__create-react-context-' + getUniqueId() + '__';
 
-  var Provider =
-  /*#__PURE__*/
-  function (_Component) {
+  var Provider = /*#__PURE__*/function (_Component) {
     (0, _inheritsLoose2.default)(Provider, _Component);
 
     function Provider() {
@@ -32647,9 +32181,7 @@ function createReactContext(defaultValue, calculateChangedBits) {
 
   Provider.childContextTypes = (_Provider$childContex = {}, _Provider$childContex[contextProp] = _propTypes.default.object.isRequired, _Provider$childContex);
 
-  var Consumer =
-  /*#__PURE__*/
-  function (_Component2) {
+  var Consumer = /*#__PURE__*/function (_Component2) {
     (0, _inheritsLoose2.default)(Consumer, _Component2);
 
     function Consumer() {
@@ -32720,7 +32252,7 @@ function createReactContext(defaultValue, calculateChangedBits) {
 var index = _react.default.createContext || createReactContext;
 var _default = index;
 exports.default = _default;
-},{"react":"../node_modules/react/index.js","@babel/runtime/helpers/esm/inheritsLoose":"../node_modules/@babel/runtime/helpers/esm/inheritsLoose.js","prop-types":"../node_modules/prop-types/index.js","tiny-warning":"../node_modules/tiny-warning/dist/tiny-warning.esm.js"}],"../node_modules/path-to-regexp/node_modules/isarray/index.js":[function(require,module,exports) {
+},{"react":"../node_modules/react/index.js","@babel/runtime/helpers/esm/inheritsLoose":"../node_modules/@babel/runtime/helpers/esm/inheritsLoose.js","prop-types":"../node_modules/prop-types/index.js","tiny-warning":"../node_modules/tiny-warning/dist/tiny-warning.esm.js"}],"../node_modules/isarray/index.js":[function(require,module,exports) {
 module.exports = Array.isArray || function (arr) {
   return Object.prototype.toString.call(arr) == '[object Array]';
 };
@@ -33153,7 +32685,7 @@ function pathToRegexp (path, keys, options) {
   return stringToRegexp(/** @type {string} */ (path), /** @type {!Array} */ (keys), options)
 }
 
-},{"isarray":"../node_modules/path-to-regexp/node_modules/isarray/index.js"}],"../node_modules/@babel/runtime/helpers/esm/objectWithoutPropertiesLoose.js":[function(require,module,exports) {
+},{"isarray":"../node_modules/isarray/index.js"}],"../node_modules/@babel/runtime/helpers/esm/objectWithoutPropertiesLoose.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33331,9 +32863,7 @@ var createNamedContext = function createNamedContext(name) {
   return context;
 };
 
-var historyContext =
-/*#__PURE__*/
-createNamedContext("Router-History"); // TODO: Replace with React.createContext once we can assume React 16+
+var historyContext = /*#__PURE__*/createNamedContext("Router-History"); // TODO: Replace with React.createContext once we can assume React 16+
 
 exports.__HistoryContext = historyContext;
 
@@ -33343,18 +32873,14 @@ var createNamedContext$1 = function createNamedContext(name) {
   return context;
 };
 
-var context =
-/*#__PURE__*/
-createNamedContext$1("Router");
+var context = /*#__PURE__*/createNamedContext$1("Router");
 /**
  * The public API for putting history on context.
  */
 
 exports.__RouterContext = context;
 
-var Router =
-/*#__PURE__*/
-function (_React$Component) {
+var Router = /*#__PURE__*/function (_React$Component) {
   (0, _inheritsLoose2.default)(Router, _React$Component);
 
   Router.computeRootMatch = function computeRootMatch(pathname) {
@@ -33447,9 +32973,7 @@ if ("development" !== "production") {
  */
 
 
-var MemoryRouter =
-/*#__PURE__*/
-function (_React$Component) {
+var MemoryRouter = /*#__PURE__*/function (_React$Component) {
   (0, _inheritsLoose2.default)(MemoryRouter, _React$Component);
 
   function MemoryRouter() {
@@ -33492,9 +33016,7 @@ if ("development" !== "production") {
   };
 }
 
-var Lifecycle =
-/*#__PURE__*/
-function (_React$Component) {
+var Lifecycle = /*#__PURE__*/function (_React$Component) {
   (0, _inheritsLoose2.default)(Lifecycle, _React$Component);
 
   function Lifecycle() {
@@ -33740,9 +33262,7 @@ function evalChildrenDev(children, props, path) {
  */
 
 
-var Route =
-/*#__PURE__*/
-function (_React$Component) {
+var Route = /*#__PURE__*/function (_React$Component) {
   (0, _inheritsLoose2.default)(Route, _React$Component);
 
   function Route() {
@@ -33851,9 +33371,7 @@ function noop() {}
  */
 
 
-var StaticRouter =
-/*#__PURE__*/
-function (_React$Component) {
+var StaticRouter = /*#__PURE__*/function (_React$Component) {
   (0, _inheritsLoose2.default)(StaticRouter, _React$Component);
 
   function StaticRouter() {
@@ -33947,9 +33465,7 @@ if ("development" !== "production") {
  */
 
 
-var Switch =
-/*#__PURE__*/
-function (_React$Component) {
+var Switch = /*#__PURE__*/function (_React$Component) {
   (0, _inheritsLoose2.default)(Switch, _React$Component);
 
   function Switch() {
@@ -34206,9 +33722,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 /**
  * The public API for a <Router> that uses HTML5 history.
  */
-var BrowserRouter =
-/*#__PURE__*/
-function (_React$Component) {
+var BrowserRouter = /*#__PURE__*/function (_React$Component) {
   (0, _inheritsLoose2.default)(BrowserRouter, _React$Component);
 
   function BrowserRouter() {
@@ -34255,9 +33769,7 @@ if ("development" !== "production") {
  */
 
 
-var HashRouter =
-/*#__PURE__*/
-function (_React$Component) {
+var HashRouter = /*#__PURE__*/function (_React$Component) {
   (0, _inheritsLoose2.default)(HashRouter, _React$Component);
 
   function HashRouter() {
@@ -41522,14 +41034,6 @@ function memoizeOne(resultFn, isEqual) {
 
 var _default = memoizeOne;
 exports.default = _default;
-},{}],"../node_modules/@babel/runtime/helpers/inheritsLoose.js":[function(require,module,exports) {
-function _inheritsLoose(subClass, superClass) {
-  subClass.prototype = Object.create(superClass.prototype);
-  subClass.prototype.constructor = subClass;
-  subClass.__proto__ = superClass;
-}
-
-module.exports = _inheritsLoose;
 },{}],"../node_modules/@emotion/sheet/dist/sheet.browser.esm.js":[function(require,module,exports) {
 "use strict";
 
@@ -41590,9 +41094,7 @@ function createStyleElement(options) {
   return tag;
 }
 
-var StyleSheet =
-/*#__PURE__*/
-function () {
+var StyleSheet = /*#__PURE__*/function () {
   function StyleSheet(options) {
     this.isSpeedy = options.speedy === undefined ? "development" === 'production' : options.speedy;
     this.tags = [];
@@ -42544,7 +42046,15 @@ var createCache = function createCache(options) {
 
 var _default = createCache;
 exports.default = _default;
-},{"@emotion/sheet":"../node_modules/@emotion/sheet/dist/sheet.browser.esm.js","@emotion/stylis":"../node_modules/@emotion/stylis/dist/stylis.browser.esm.js","@emotion/weak-memoize":"../node_modules/@emotion/weak-memoize/dist/weak-memoize.browser.esm.js"}],"../node_modules/@emotion/utils/dist/utils.browser.esm.js":[function(require,module,exports) {
+},{"@emotion/sheet":"../node_modules/@emotion/sheet/dist/sheet.browser.esm.js","@emotion/stylis":"../node_modules/@emotion/stylis/dist/stylis.browser.esm.js","@emotion/weak-memoize":"../node_modules/@emotion/weak-memoize/dist/weak-memoize.browser.esm.js"}],"../node_modules/@babel/runtime/helpers/inheritsLoose.js":[function(require,module,exports) {
+function _inheritsLoose(subClass, superClass) {
+  subClass.prototype = Object.create(superClass.prototype);
+  subClass.prototype.constructor = subClass;
+  subClass.__proto__ = superClass;
+}
+
+module.exports = _inheritsLoose;
+},{}],"../node_modules/@emotion/utils/dist/utils.browser.esm.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43067,41 +42577,15 @@ var serializeStyles = function serializeStyles(args, registered, mergedProps) {
 };
 
 exports.serializeStyles = serializeStyles;
-},{"@emotion/hash":"../node_modules/@emotion/hash/dist/hash.browser.esm.js","@emotion/unitless":"../node_modules/@emotion/unitless/dist/unitless.browser.esm.js","@emotion/memoize":"../node_modules/@emotion/memoize/dist/memoize.browser.esm.js"}],"../node_modules/@emotion/css/dist/css.browser.esm.js":[function(require,module,exports) {
+},{"@emotion/hash":"../node_modules/@emotion/hash/dist/hash.browser.esm.js","@emotion/unitless":"../node_modules/@emotion/unitless/dist/unitless.browser.esm.js","@emotion/memoize":"../node_modules/@emotion/memoize/dist/memoize.browser.esm.js"}],"../node_modules/@emotion/core/dist/emotion-element-57a3a7a3.browser.esm.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = void 0;
+exports.w = exports.h = exports.c = exports.T = exports.E = exports.C = void 0;
 
-var _serialize = require("@emotion/serialize");
-
-function css() {
-  for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-    args[_key] = arguments[_key];
-  }
-
-  return (0, _serialize.serializeStyles)(args);
-}
-
-var _default = css;
-exports.default = _default;
-},{"@emotion/serialize":"../node_modules/@emotion/serialize/dist/serialize.browser.esm.js"}],"../node_modules/@emotion/core/dist/core.browser.esm.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-Object.defineProperty(exports, "css", {
-  enumerable: true,
-  get: function () {
-    return _css.default;
-  }
-});
-exports.withEmotionCache = exports.keyframes = exports.jsx = exports.ThemeContext = exports.Global = exports.ClassNames = exports.CacheProvider = void 0;
-
-var _inheritsLoose2 = _interopRequireDefault(require("@babel/runtime/helpers/inheritsLoose"));
+require("@babel/runtime/helpers/inheritsLoose");
 
 var _react = require("react");
 
@@ -43111,37 +42595,35 @@ var _utils = require("@emotion/utils");
 
 var _serialize = require("@emotion/serialize");
 
-var _sheet = require("@emotion/sheet");
-
-var _css = _interopRequireDefault(require("@emotion/css"));
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var EmotionCacheContext = (0, _react.createContext)( // we're doing this to avoid preconstruct's dead code elimination in this one case
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+exports.h = hasOwnProperty;
+var EmotionCacheContext = /*#__PURE__*/(0, _react.createContext)( // we're doing this to avoid preconstruct's dead code elimination in this one case
 // because this module is primarily intended for the browser and node
 // but it's also required in react native and similar environments sometimes
 // and we could have a special build just for that
 // but this is much easier and the native packages
 // might use a different theme context in the future anyway
 typeof HTMLElement !== 'undefined' ? (0, _cache.default)() : null);
-var ThemeContext = (0, _react.createContext)({});
-exports.ThemeContext = ThemeContext;
+var ThemeContext = /*#__PURE__*/(0, _react.createContext)({});
+exports.T = ThemeContext;
 var CacheProvider = EmotionCacheContext.Provider;
-exports.CacheProvider = CacheProvider;
+exports.C = CacheProvider;
 
 var withEmotionCache = function withEmotionCache(func) {
   var render = function render(props, ref) {
-    return (0, _react.createElement)(EmotionCacheContext.Consumer, null, function (cache) {
+    return /*#__PURE__*/(0, _react.createElement)(EmotionCacheContext.Consumer, null, function (cache) {
       return func(props, cache, ref);
     });
   }; // $FlowFixMe
 
 
-  return (0, _react.forwardRef)(render);
+  return /*#__PURE__*/(0, _react.forwardRef)(render);
 }; // thus we only need to replace what is a valid character for JS, but not for CSS
 
 
-exports.withEmotionCache = withEmotionCache;
+exports.w = withEmotionCache;
 
 var sanitizeIdentifier = function sanitizeIdentifier(identifier) {
   return identifier.replace(/\$/g, '-');
@@ -43149,7 +42631,45 @@ var sanitizeIdentifier = function sanitizeIdentifier(identifier) {
 
 var typePropName = '__EMOTION_TYPE_PLEASE_DO_NOT_USE__';
 var labelPropName = '__EMOTION_LABEL_PLEASE_DO_NOT_USE__';
-var hasOwnProperty = Object.prototype.hasOwnProperty;
+
+var createEmotionProps = function createEmotionProps(type, props) {
+  if ("development" !== 'production' && typeof props.css === 'string' && // check if there is a css declaration
+  props.css.indexOf(':') !== -1) {
+    throw new Error("Strings are not allowed as css prop values, please wrap it in a css template literal from '@emotion/css' like this: css`" + props.css + "`");
+  }
+
+  var newProps = {};
+
+  for (var key in props) {
+    if (hasOwnProperty.call(props, key)) {
+      newProps[key] = props[key];
+    }
+  }
+
+  newProps[typePropName] = type; // TODO: check if this still works with all of those different JSX functions
+
+  if ("development" !== 'production') {
+    var error = new Error();
+
+    if (error.stack) {
+      // chrome
+      var match = error.stack.match(/at (?:Object\.|Module\.|)(?:jsx|createEmotionProps).*\n\s+at (?:Object\.|)([A-Z][A-Za-z$]+) /);
+
+      if (!match) {
+        // safari and firefox
+        match = error.stack.match(/.*\n([A-Z][A-Za-z$]+)@/);
+      }
+
+      if (match) {
+        newProps[labelPropName] = sanitizeIdentifier(match[1]);
+      }
+    }
+  }
+
+  return newProps;
+};
+
+exports.c = createEmotionProps;
 
 var render = function render(cache, props, theme, ref) {
   var cssProp = theme === null ? props.css : props.css(theme); // so that using `css` from `emotion` and passing the result to the css prop works
@@ -43192,73 +42712,107 @@ var render = function render(cache, props, theme, ref) {
 
   newProps.ref = ref;
   newProps.className = className;
-  var ele = (0, _react.createElement)(type, newProps);
+  var ele = /*#__PURE__*/(0, _react.createElement)(type, newProps);
   return ele;
-};
+}; // eslint-disable-next-line no-undef
 
-var Emotion =
-/* #__PURE__ */
-withEmotionCache(function (props, cache, ref) {
-  // use Context.read for the theme when it's stable
+
+var Emotion = /* #__PURE__ */withEmotionCache(function (props, cache, ref) {
   if (typeof props.css === 'function') {
-    return (0, _react.createElement)(ThemeContext.Consumer, null, function (theme) {
+    return /*#__PURE__*/(0, _react.createElement)(ThemeContext.Consumer, null, function (theme) {
       return render(cache, props, theme, ref);
     });
   }
 
   return render(cache, props, null, ref);
 });
+exports.E = Emotion;
 
 if ("development" !== 'production') {
   Emotion.displayName = 'EmotionCssPropInternal';
-} // $FlowFixMe
+}
+},{"@babel/runtime/helpers/inheritsLoose":"../node_modules/@babel/runtime/helpers/inheritsLoose.js","react":"../node_modules/react/index.js","@emotion/cache":"../node_modules/@emotion/cache/dist/cache.browser.esm.js","@emotion/utils":"../node_modules/@emotion/utils/dist/utils.browser.esm.js","@emotion/serialize":"../node_modules/@emotion/serialize/dist/serialize.browser.esm.js"}],"../node_modules/@emotion/css/dist/css.browser.esm.js":[function(require,module,exports) {
+"use strict";
 
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _serialize = require("@emotion/serialize");
+
+function css() {
+  for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+    args[_key] = arguments[_key];
+  }
+
+  return (0, _serialize.serializeStyles)(args);
+}
+
+var _default = css;
+exports.default = _default;
+},{"@emotion/serialize":"../node_modules/@emotion/serialize/dist/serialize.browser.esm.js"}],"../node_modules/@emotion/core/dist/core.browser.esm.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+Object.defineProperty(exports, "CacheProvider", {
+  enumerable: true,
+  get: function () {
+    return _emotionElement57a3a7a3BrowserEsm.C;
+  }
+});
+Object.defineProperty(exports, "ThemeContext", {
+  enumerable: true,
+  get: function () {
+    return _emotionElement57a3a7a3BrowserEsm.T;
+  }
+});
+Object.defineProperty(exports, "withEmotionCache", {
+  enumerable: true,
+  get: function () {
+    return _emotionElement57a3a7a3BrowserEsm.w;
+  }
+});
+Object.defineProperty(exports, "css", {
+  enumerable: true,
+  get: function () {
+    return _css.default;
+  }
+});
+exports.keyframes = exports.jsx = exports.createElement = exports.Global = exports.ClassNames = void 0;
+
+var _inheritsLoose2 = _interopRequireDefault(require("@babel/runtime/helpers/esm/inheritsLoose"));
+
+var _react = require("react");
+
+require("@emotion/cache");
+
+var _emotionElement57a3a7a3BrowserEsm = require("./emotion-element-57a3a7a3.browser.esm.js");
+
+var _utils = require("@emotion/utils");
+
+var _serialize = require("@emotion/serialize");
+
+var _sheet = require("@emotion/sheet");
+
+var _css = _interopRequireDefault(require("@emotion/css"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var jsx = function jsx(type, props) {
   var args = arguments;
 
-  if (props == null || !hasOwnProperty.call(props, 'css')) {
+  if (props == null || !_emotionElement57a3a7a3BrowserEsm.h.call(props, 'css')) {
     // $FlowFixMe
     return _react.createElement.apply(undefined, args);
   }
 
-  if ("development" !== 'production' && typeof props.css === 'string' && // check if there is a css declaration
-  props.css.indexOf(':') !== -1) {
-    throw new Error("Strings are not allowed as css prop values, please wrap it in a css template literal from '@emotion/css' like this: css`" + props.css + "`");
-  }
-
   var argsLength = args.length;
   var createElementArgArray = new Array(argsLength);
-  createElementArgArray[0] = Emotion;
-  var newProps = {};
-
-  for (var key in props) {
-    if (hasOwnProperty.call(props, key)) {
-      newProps[key] = props[key];
-    }
-  }
-
-  newProps[typePropName] = type;
-
-  if ("development" !== 'production') {
-    var error = new Error();
-
-    if (error.stack) {
-      // chrome
-      var match = error.stack.match(/at (?:Object\.|Module\.|)jsx.*\n\s+at (?:Object\.|)([A-Z][A-Za-z$]+) /);
-
-      if (!match) {
-        // safari and firefox
-        match = error.stack.match(/.*\n([A-Z][A-Za-z$]+)@/);
-      }
-
-      if (match) {
-        newProps[labelPropName] = sanitizeIdentifier(match[1]);
-      }
-    }
-  }
-
-  createElementArgArray[1] = newProps;
+  createElementArgArray[0] = _emotionElement57a3a7a3BrowserEsm.E;
+  createElementArgArray[1] = (0, _emotionElement57a3a7a3BrowserEsm.c)(type, props);
 
   for (var i = 2; i < argsLength; i++) {
     createElementArgArray[i] = args[i];
@@ -43268,11 +42822,9 @@ var jsx = function jsx(type, props) {
   return _react.createElement.apply(null, createElementArgArray);
 };
 
-exports.jsx = jsx;
+exports.jsx = exports.createElement = jsx;
 var warnedAboutCssPropForGlobal = false;
-var Global =
-/* #__PURE__ */
-withEmotionCache(function (props, cache) {
+var Global = /* #__PURE__ */(0, _emotionElement57a3a7a3BrowserEsm.w)(function (props, cache) {
   if ("development" !== 'production' && !warnedAboutCssPropForGlobal && ( // check for className as well since the user is
   // probably using the custom createElement which
   // means it will be turned into a className prop
@@ -43285,9 +42837,9 @@ withEmotionCache(function (props, cache) {
   var styles = props.styles;
 
   if (typeof styles === 'function') {
-    return (0, _react.createElement)(ThemeContext.Consumer, null, function (theme) {
+    return /*#__PURE__*/(0, _react.createElement)(_emotionElement57a3a7a3BrowserEsm.T.Consumer, null, function (theme) {
       var serialized = (0, _serialize.serializeStyles)([styles(theme)]);
-      return (0, _react.createElement)(InnerGlobal, {
+      return /*#__PURE__*/(0, _react.createElement)(InnerGlobal, {
         serialized: serialized,
         cache: cache
       });
@@ -43295,7 +42847,7 @@ withEmotionCache(function (props, cache) {
   }
 
   var serialized = (0, _serialize.serializeStyles)([styles]);
-  return (0, _react.createElement)(InnerGlobal, {
+  return /*#__PURE__*/(0, _react.createElement)(InnerGlobal, {
     serialized: serialized,
     cache: cache
   });
@@ -43305,9 +42857,7 @@ withEmotionCache(function (props, cache) {
 
 exports.Global = Global;
 
-var InnerGlobal =
-/*#__PURE__*/
-function (_React$Component) {
+var InnerGlobal = /*#__PURE__*/function (_React$Component) {
   (0, _inheritsLoose2.default)(InnerGlobal, _React$Component);
 
   function InnerGlobal(props, context, updater) {
@@ -43444,8 +42994,8 @@ function merge(registered, css, className) {
   return rawClassName + css(registeredStyles);
 }
 
-var ClassNames = withEmotionCache(function (props, context) {
-  return (0, _react.createElement)(ThemeContext.Consumer, null, function (theme) {
+var ClassNames = (0, _emotionElement57a3a7a3BrowserEsm.w)(function (props, context) {
+  return /*#__PURE__*/(0, _react.createElement)(_emotionElement57a3a7a3BrowserEsm.T.Consumer, null, function (theme) {
     var hasRendered = false;
 
     var css = function css() {
@@ -43487,7 +43037,7 @@ var ClassNames = withEmotionCache(function (props, context) {
   });
 });
 exports.ClassNames = ClassNames;
-},{"@babel/runtime/helpers/inheritsLoose":"../node_modules/@babel/runtime/helpers/inheritsLoose.js","react":"../node_modules/react/index.js","@emotion/cache":"../node_modules/@emotion/cache/dist/cache.browser.esm.js","@emotion/utils":"../node_modules/@emotion/utils/dist/utils.browser.esm.js","@emotion/serialize":"../node_modules/@emotion/serialize/dist/serialize.browser.esm.js","@emotion/sheet":"../node_modules/@emotion/sheet/dist/sheet.browser.esm.js","@emotion/css":"../node_modules/@emotion/css/dist/css.browser.esm.js"}],"../node_modules/react-select/dist/utils-06b0d5a4.browser.esm.js":[function(require,module,exports) {
+},{"@babel/runtime/helpers/esm/inheritsLoose":"../node_modules/@babel/runtime/helpers/esm/inheritsLoose.js","react":"../node_modules/react/index.js","@emotion/cache":"../node_modules/@emotion/cache/dist/cache.browser.esm.js","./emotion-element-57a3a7a3.browser.esm.js":"../node_modules/@emotion/core/dist/emotion-element-57a3a7a3.browser.esm.js","@emotion/utils":"../node_modules/@emotion/utils/dist/utils.browser.esm.js","@emotion/serialize":"../node_modules/@emotion/serialize/dist/serialize.browser.esm.js","@emotion/sheet":"../node_modules/@emotion/sheet/dist/sheet.browser.esm.js","@emotion/css":"../node_modules/@emotion/css/dist/css.browser.esm.js"}],"../node_modules/react-select/dist/utils-06b0d5a4.browser.esm.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44232,9 +43782,7 @@ var menuCSS = function menuCSS(_ref2) {
 
 exports.m = menuCSS;
 
-var MenuPlacer =
-/*#__PURE__*/
-function (_Component) {
+var MenuPlacer = /*#__PURE__*/function (_Component) {
   _inheritsLoose(MenuPlacer, _Component);
 
   function MenuPlacer() {
@@ -44433,9 +43981,7 @@ var menuPortalCSS = function menuPortalCSS(_ref6) {
 
 exports.n = menuPortalCSS;
 
-var MenuPortal =
-/*#__PURE__*/
-function (_Component2) {
+var MenuPortal = /*#__PURE__*/function (_Component2) {
   _inheritsLoose(MenuPortal, _Component2);
 
   function MenuPortal() {
@@ -44926,9 +44472,7 @@ var LoadingDot = function LoadingDot(_ref6) {
   var delay = _ref6.delay,
       offset = _ref6.offset;
   return (0, _core.jsx)("span", {
-    css:
-    /*#__PURE__*/
-    (0, _css2.default)({
+    css: /*#__PURE__*/(0, _css2.default)({
       animation: loadingDotAnimations + " 1s ease-in-out " + delay + "ms infinite;",
       backgroundColor: 'currentColor',
       borderRadius: '1em',
@@ -46029,9 +45573,7 @@ function DummyInput(_ref) {
   return (0, _core.jsx)("input", _extends$2({
     ref: innerRef
   }, props, {
-    css:
-    /*#__PURE__*/
-    (0, _css2.default)({
+    css: /*#__PURE__*/(0, _css2.default)({
       label: 'dummyInput',
       // get rid of any default styles
       background: 0,
@@ -46058,9 +45600,7 @@ function _inheritsLoose(subClass, superClass) {
   subClass.__proto__ = superClass;
 }
 
-var NodeResolver =
-/*#__PURE__*/
-function (_Component) {
+var NodeResolver = /*#__PURE__*/function (_Component) {
   _inheritsLoose(NodeResolver, _Component);
 
   function NodeResolver() {
@@ -46128,9 +45668,7 @@ function _inheritsLoose$1(subClass, superClass) {
 var canUseDOM = !!(window.document && window.document.createElement);
 var activeScrollLocks = 0;
 
-var ScrollLock =
-/*#__PURE__*/
-function (_Component) {
+var ScrollLock = /*#__PURE__*/function (_Component) {
   _inheritsLoose$1(ScrollLock, _Component);
 
   function ScrollLock() {
@@ -46265,9 +45803,7 @@ var _ref$1 = "development" === "production" ? {
 // - forwardRef() https://reactjs.org/docs/react-api.html#reactforwardref
 
 
-var ScrollBlock =
-/*#__PURE__*/
-function (_PureComponent) {
+var ScrollBlock = /*#__PURE__*/function (_PureComponent) {
   _inheritsLoose$2(ScrollBlock, _PureComponent);
 
   function ScrollBlock() {
@@ -46355,9 +45891,7 @@ function _inheritsLoose$3(subClass, superClass) {
   subClass.__proto__ = superClass;
 }
 
-var ScrollCaptor =
-/*#__PURE__*/
-function (_Component) {
+var ScrollCaptor = /*#__PURE__*/function (_Component) {
   _inheritsLoose$3(ScrollCaptor, _Component);
 
   function ScrollCaptor() {
@@ -46782,9 +46316,7 @@ var defaultProps = {
 exports.d = defaultProps;
 var instanceId = 1;
 
-var Select =
-/*#__PURE__*/
-function (_Component) {
+var Select = /*#__PURE__*/function (_Component) {
   _inheritsLoose$4(Select, _Component); // Misc. Instance Properties
   // ------------------------------
   // TODO
@@ -48581,9 +48113,7 @@ var defaultProps = {
 var manageState = function manageState(SelectComponent) {
   var _class, _temp;
 
-  return _temp = _class =
-  /*#__PURE__*/
-  function (_Component) {
+  return _temp = _class = /*#__PURE__*/function (_Component) {
     _inheritsLoose(StateManager, _Component);
 
     function StateManager() {
@@ -48793,9 +48323,7 @@ exports.defaultProps = defaultProps;
 var makeCreatableSelect = function makeCreatableSelect(SelectComponent) {
   var _class, _temp;
 
-  return _temp = _class =
-  /*#__PURE__*/
-  function (_Component) {
+  return _temp = _class = /*#__PURE__*/function (_Component) {
     _inheritsLoose(Creatable, _Component);
 
     function Creatable(props) {
@@ -48906,13 +48434,244 @@ var SelectCreatable = makeCreatableSelect(_Select9fdb8cd0BrowserEsm.S);
 var Creatable = (0, _stateManager04f734a2BrowserEsm.m)(SelectCreatable);
 var _default = Creatable;
 exports.default = _default;
-},{"react":"../node_modules/react/index.js","memoize-one":"../node_modules/memoize-one/dist/memoize-one.esm.js","@emotion/core":"../node_modules/@emotion/core/dist/core.browser.esm.js","react-dom":"../node_modules/react-dom/index.js","prop-types":"../node_modules/prop-types/index.js","../../dist/utils-06b0d5a4.browser.esm.js":"../node_modules/react-select/dist/utils-06b0d5a4.browser.esm.js","../../dist/index-4322c0ed.browser.esm.js":"../node_modules/react-select/dist/index-4322c0ed.browser.esm.js","../../dist/Select-9fdb8cd0.browser.esm.js":"../node_modules/react-select/dist/Select-9fdb8cd0.browser.esm.js","@emotion/css":"../node_modules/@emotion/css/dist/css.browser.esm.js","react-input-autosize":"../node_modules/react-input-autosize/lib/AutosizeInput.js","../../dist/stateManager-04f734a2.browser.esm.js":"../node_modules/react-select/dist/stateManager-04f734a2.browser.esm.js"}],"utils.jsx":[function(require,module,exports) {
+},{"react":"../node_modules/react/index.js","memoize-one":"../node_modules/memoize-one/dist/memoize-one.esm.js","@emotion/core":"../node_modules/@emotion/core/dist/core.browser.esm.js","react-dom":"../node_modules/react-dom/index.js","prop-types":"../node_modules/prop-types/index.js","../../dist/utils-06b0d5a4.browser.esm.js":"../node_modules/react-select/dist/utils-06b0d5a4.browser.esm.js","../../dist/index-4322c0ed.browser.esm.js":"../node_modules/react-select/dist/index-4322c0ed.browser.esm.js","../../dist/Select-9fdb8cd0.browser.esm.js":"../node_modules/react-select/dist/Select-9fdb8cd0.browser.esm.js","@emotion/css":"../node_modules/@emotion/css/dist/css.browser.esm.js","react-input-autosize":"../node_modules/react-input-autosize/lib/AutosizeInput.js","../../dist/stateManager-04f734a2.browser.esm.js":"../node_modules/react-select/dist/stateManager-04f734a2.browser.esm.js"}],"tags.jsx":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.useAssets = exports.Thumb = exports.Spinner = exports.ConfigContext = exports.Button = exports.Breadcrumbs = void 0;
+exports.TagSelect = exports.TagGroups = exports.TagsContext = void 0;
+
+var _axios = _interopRequireDefault(require("axios"));
+
+var _hsluv = require("hsluv");
+
+var _react = _interopRequireDefault(require("react"));
+
+var _reactRouterDom = require("react-router-dom");
+
+var _creatable = _interopRequireDefault(require("react-select/creatable"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+// Context for tags data.
+var TagsContext = /*#__PURE__*/_react.default.createContext('tags'); // Sort an array of objects first by "order" and then by "name" attribute.
+
+
+exports.TagsContext = TagsContext;
+
+var cmp = function cmp(s, t) {
+  return s.order < t.order ? -1 : s.order > t.order ? 1 : s.name < t.name ? -1 : s.name > t.name ? 1 : 0;
+}; // Flatten the tags from an array of assets into a single Set.
+
+
+var countTags = function countTags(assets) {
+  var counts = {};
+  (assets || []).forEach(function (_ref) {
+    var tags = _ref.tags;
+    return tags.forEach(function (t) {
+      counts[t] = (counts[t] || 0) + 1;
+    });
+  });
+  return counts;
+};
+
+var Group = function Group(_ref2) {
+  var icon = _ref2.icon,
+      tags = _ref2.tags,
+      clickHandler = _ref2.clickHandler,
+      className = _ref2.className;
+  var path = (0, _reactRouterDom.useLocation)().pathname;
+  return /*#__PURE__*/_react.default.createElement("div", {
+    key: icon,
+    className: "tags ".concat(className || '')
+  }, /*#__PURE__*/_react.default.createElement("span", {
+    className: "icon"
+  }, icon), /*#__PURE__*/_react.default.createElement("ul", null, tags.sort(cmp).map(function (t) {
+    var active = path.indexOf("/".concat(t.name, "/")) >= 0;
+    return /*#__PURE__*/_react.default.createElement("li", {
+      key: t.name,
+      className: "".concat(t.group, " ").concat(active ? 'active' : ''),
+      style: {
+        background: (0, _hsluv.hsluvToHex)([t.hue, 100, 80]),
+        color: '#111',
+        cursor: clickHandler ? 'pointer' : 'default'
+      },
+      onClick: clickHandler ? clickHandler(t) : null
+    }, /*#__PURE__*/_react.default.createElement("span", {
+      className: "name"
+    }, t.name), /*#__PURE__*/_react.default.createElement("span", {
+      className: "count"
+    }, t.count));
+  })));
+};
+
+var TagGroups = function TagGroups(_ref3) {
+  var assets = _ref3.assets,
+      className = _ref3.className,
+      hideEditable = _ref3.hideEditable,
+      clickHandler = _ref3.clickHandler;
+  return /*#__PURE__*/_react.default.createElement(TagsContext.Consumer, null, function (tags) {
+    var groups = {},
+        icons = {},
+        counts = countTags(assets);
+    tags.forEach(function (t) {
+      if (t.count === 0) return;
+      if (hideEditable && t.editable) return;
+      if (assets && !counts[t.name]) return;
+
+      if (!groups[t.group]) {
+        icons[t.group] = t.icon;
+        groups[t.group] = {
+          name: t.group,
+          order: t.order,
+          tags: {}
+        };
+      }
+
+      groups[t.group].tags[t.name] = t;
+      if (assets) t.count = counts[t.name];
+    });
+    return Object.values(groups).sort(cmp).map(function (g) {
+      return /*#__PURE__*/_react.default.createElement(Group, {
+        key: g.name,
+        icon: icons[g.name],
+        tags: Object.values(g.tags),
+        className: "".concat(className || '', " ").concat(g.name),
+        clickHandler: clickHandler
+      });
+    });
+  });
+};
+
+exports.TagGroups = TagGroups;
+
+var TagSelect = function TagSelect(_ref4) {
+  var assets = _ref4.assets,
+      className = _ref4.className,
+      refresh = _ref4.refresh;
+
+  var update = function update(asset) {
+    return function (res) {
+      asset.tags = res.data.tags;
+      return res;
+    };
+  },
+      url = function url(asset, tag) {
+    return "/asset/".concat(asset.slug, "/tags/").concat(tag, "/");
+  },
+      tagToOption = function tagToOption(t) {
+    return {
+      label: t.name,
+      value: t.name,
+      color: (0, _hsluv.hsluvToHex)([t.hue, 100, 80])
+    };
+  };
+
+  var changeTags = function changeTags(options, about) {
+    if (about.action === 'create-option') {
+      var tag = options.slice(-1)[0].value,
+          calls = assets.map(function (a) {
+        return _axios.default.post(url(a, tag)).then(update(a));
+      });
+      Promise.all(calls).then(refresh);
+    } else if (about.action === 'select-option') {
+      var _tag = options.slice(-1)[0].value;
+      assets.map(function (a) {
+        return _axios.default.post(url(a, _tag)).then(update(a));
+      });
+    } else if (about.action === 'pop-value' || about.action === 'remove-value') {
+      var _tag2 = about.removedValue.value;
+      assets.map(function (a) {
+        return _axios.default.delete(url(a, _tag2)).then(update(a));
+      });
+    }
+  };
+
+  return /*#__PURE__*/_react.default.createElement(TagsContext.Consumer, null, function (tags) {
+    var active = countTags(assets);
+    return /*#__PURE__*/_react.default.createElement(_creatable.default, {
+      className: "".concat(className || '', " tag-select"),
+      key: assets.map(function (a) {
+        return a.id;
+      }).join('-') + Object.keys(active).join('-'),
+      placeholder: "Add tag...",
+      isMulti: true,
+      isClearable: false,
+      backspaceRemovesValue: false,
+      onChange: changeTags,
+      defaultValue: tags.filter(function (t) {
+        return t.editable && active[t.name];
+      }).map(tagToOption),
+      options: tags.filter(function (t) {
+        return t.editable;
+      }).map(tagToOption),
+      styles: {
+        option: function option(base, _ref5) {
+          var data = _ref5.data,
+              isFocused = _ref5.isFocused;
+          return _objectSpread(_objectSpread({}, base), {}, {
+            background: isFocused ? '#eee' : data.color,
+            display: 'inline-block',
+            float: 'left',
+            width: 'auto',
+            margin: '0.2em',
+            padding: '0.2em 0.4em',
+            borderRadius: '3px',
+            cursor: 'pointer'
+          });
+        },
+        control: function control(base) {
+          return _objectSpread(_objectSpread({}, base), {}, {
+            background: '#666',
+            borderColor: '#666'
+          });
+        },
+        menu: function menu(base) {
+          return _objectSpread(_objectSpread({}, base), {}, {
+            background: '#666'
+          });
+        },
+        multiValue: function multiValue(base, _ref6) {
+          var data = _ref6.data;
+          return _objectSpread(_objectSpread({}, base), {}, {
+            background: data.color
+          });
+        },
+        multiValueLabel: function multiValueLabel(base) {
+          return _objectSpread(_objectSpread({}, base), {}, {
+            fontSize: '100%'
+          });
+        },
+        multiValueRemove: function multiValueRemove(base) {
+          return _objectSpread(_objectSpread({}, base), {}, {
+            fontSize: '100%'
+          });
+        },
+        placeholder: function placeholder(base) {
+          return _objectSpread(_objectSpread({}, base), {}, {
+            color: '#111'
+          });
+        }
+      }
+    });
+  });
+};
+
+exports.TagSelect = TagSelect;
+},{"axios":"../node_modules/axios/index.js","hsluv":"../node_modules/hsluv/hsluv.js","react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","react-select/creatable":"../node_modules/react-select/creatable/dist/react-select.browser.esm.js"}],"utils.jsx":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.useAssets = exports.Thumb = exports.Spinner = exports.Related = exports.Button = exports.Breadcrumbs = void 0;
 
 var _axios = _interopRequireDefault(require("axios"));
 
@@ -48944,29 +48703,16 @@ function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { va
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
-var ConfigContext =
-/*#__PURE__*/
-_react.default.createContext('config');
-
-exports.ConfigContext = ConfigContext;
-
 var Breadcrumbs = function Breadcrumbs(_ref) {
   var className = _ref.className,
       children = _ref.children;
-  return (
-    /*#__PURE__*/
-    _react.default.createElement("h1", {
-      className: "breadcrumbs ".concat(className || '')
-    },
-    /*#__PURE__*/
-    _react.default.createElement(_reactRouterDom.Link, {
-      to: "/"
-    }, "\uD83C\uDFE0"),
-    /*#__PURE__*/
-    _react.default.createElement("span", {
-      className: "divider"
-    }, "\xBB"), children)
-  );
+  return /*#__PURE__*/_react.default.createElement("h1", {
+    className: "breadcrumbs ".concat(className || '')
+  }, /*#__PURE__*/_react.default.createElement(_reactRouterDom.Link, {
+    to: "/"
+  }, "\uD83C\uDFE0"), /*#__PURE__*/_react.default.createElement("span", {
+    className: "divider"
+  }, "\xBB"), children);
 };
 
 exports.Breadcrumbs = Breadcrumbs;
@@ -48976,21 +48722,47 @@ var Button = function Button(_ref2) {
       icon = _ref2.icon,
       disabled = _ref2.disabled,
       onClick = _ref2.onClick;
-  return (
-    /*#__PURE__*/
-    _react.default.createElement("span", {
-      className: "button ".concat(disabled ? 'disabled' : ''),
-      title: name,
-      onClick: disabled ? null : onClick
-    },
-    /*#__PURE__*/
-    _react.default.createElement("span", {
-      className: "icon"
-    }, icon))
-  );
+  return /*#__PURE__*/_react.default.createElement("span", {
+    className: "button ".concat(disabled ? 'disabled' : ''),
+    title: name,
+    onClick: disabled ? null : onClick
+  }, /*#__PURE__*/_react.default.createElement("span", {
+    className: "icon"
+  }, icon));
 };
 
 exports.Button = Button;
+
+var Related = function Related(_ref3) {
+  var asset = _ref3.asset,
+      how = _ref3.how,
+      title = _ref3.title,
+      className = _ref3.className;
+
+  var hist = (0, _reactRouterDom.useHistory)(),
+      path = (0, _reactRouterDom.useLocation)().pathname,
+      args = {
+    content: 'alg=dhash-8',
+    tag: 'min=0.3'
+  },
+      _useAssets = useAssets("/asset/".concat(asset.slug, "/similar/").concat(how, "/?").concat(args[how])),
+      assets = _useAssets.assets,
+      loading = _useAssets.loading;
+
+  return /*#__PURE__*/_react.default.createElement("div", {
+    className: "related ".concat(how, " thumbs ").concat(className || '')
+  }, title && (loading || assets.length > 0) ? /*#__PURE__*/_react.default.createElement("h2", null, title) : null, loading ? /*#__PURE__*/_react.default.createElement(Spinner, null) : assets.map(function (asset) {
+    return /*#__PURE__*/_react.default.createElement(Thumb, {
+      key: asset.id,
+      asset: asset,
+      handleClick: function handleClick() {
+        return hist.push("/".concat(path.split(/\//)[1], "/").concat(asset.slug, "/"));
+      }
+    });
+  }));
+};
+
+exports.Related = Related;
 
 var Spinner = function Spinner() {
   var style = {
@@ -49004,150 +48776,107 @@ var Spinner = function Spinner() {
     transformOrigin: 'center -0.2222em',
     animation: 'spinner 1s infinite linear'
   };
-  return (
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      style: {
-        fontSize: '34px',
-        position: 'relative',
-        display: 'inline-block',
-        width: '1em',
-        height: '1em'
-      }
-    },
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      style: _objectSpread(_objectSpread({}, style), {}, {
-        animationDelay: '0.00000s',
-        transform: 'rotate(  0deg)'
-      })
-    }),
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      style: _objectSpread(_objectSpread({}, style), {}, {
-        animationDelay: '0.08333s',
-        transform: 'rotate( 30deg)'
-      })
-    }),
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      style: _objectSpread(_objectSpread({}, style), {}, {
-        animationDelay: '0.16666s',
-        transform: 'rotate( 60deg)'
-      })
-    }),
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      style: _objectSpread(_objectSpread({}, style), {}, {
-        animationDelay: '0.25000s',
-        transform: 'rotate( 90deg)'
-      })
-    }),
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      style: _objectSpread(_objectSpread({}, style), {}, {
-        animationDelay: '0.33333s',
-        transform: 'rotate(120deg)'
-      })
-    }),
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      style: _objectSpread(_objectSpread({}, style), {}, {
-        animationDelay: '0.41666s',
-        transform: 'rotate(150deg)'
-      })
-    }),
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      style: _objectSpread(_objectSpread({}, style), {}, {
-        animationDelay: '0.50000s',
-        transform: 'rotate(180deg)'
-      })
-    }),
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      style: _objectSpread(_objectSpread({}, style), {}, {
-        animationDelay: '0.58333s',
-        transform: 'rotate(210deg)'
-      })
-    }),
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      style: _objectSpread(_objectSpread({}, style), {}, {
-        animationDelay: '0.66666s',
-        transform: 'rotate(240deg)'
-      })
-    }),
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      style: _objectSpread(_objectSpread({}, style), {}, {
-        animationDelay: '0.75000s',
-        transform: 'rotate(270deg)'
-      })
-    }),
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      style: _objectSpread(_objectSpread({}, style), {}, {
-        animationDelay: '0.83333s',
-        transform: 'rotate(300deg)'
-      })
-    }),
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      style: _objectSpread(_objectSpread({}, style), {}, {
-        animationDelay: '0.91666s',
-        transform: 'rotate(330deg)'
-      })
-    }))
-  );
+  return /*#__PURE__*/_react.default.createElement("div", {
+    style: {
+      fontSize: '34px',
+      position: 'relative',
+      display: 'inline-block',
+      width: '1em',
+      height: '1em'
+    }
+  }, /*#__PURE__*/_react.default.createElement("div", {
+    style: _objectSpread(_objectSpread({}, style), {}, {
+      animationDelay: '0.00000s',
+      transform: 'rotate(  0deg)'
+    })
+  }), /*#__PURE__*/_react.default.createElement("div", {
+    style: _objectSpread(_objectSpread({}, style), {}, {
+      animationDelay: '0.08333s',
+      transform: 'rotate( 30deg)'
+    })
+  }), /*#__PURE__*/_react.default.createElement("div", {
+    style: _objectSpread(_objectSpread({}, style), {}, {
+      animationDelay: '0.16666s',
+      transform: 'rotate( 60deg)'
+    })
+  }), /*#__PURE__*/_react.default.createElement("div", {
+    style: _objectSpread(_objectSpread({}, style), {}, {
+      animationDelay: '0.25000s',
+      transform: 'rotate( 90deg)'
+    })
+  }), /*#__PURE__*/_react.default.createElement("div", {
+    style: _objectSpread(_objectSpread({}, style), {}, {
+      animationDelay: '0.33333s',
+      transform: 'rotate(120deg)'
+    })
+  }), /*#__PURE__*/_react.default.createElement("div", {
+    style: _objectSpread(_objectSpread({}, style), {}, {
+      animationDelay: '0.41666s',
+      transform: 'rotate(150deg)'
+    })
+  }), /*#__PURE__*/_react.default.createElement("div", {
+    style: _objectSpread(_objectSpread({}, style), {}, {
+      animationDelay: '0.50000s',
+      transform: 'rotate(180deg)'
+    })
+  }), /*#__PURE__*/_react.default.createElement("div", {
+    style: _objectSpread(_objectSpread({}, style), {}, {
+      animationDelay: '0.58333s',
+      transform: 'rotate(210deg)'
+    })
+  }), /*#__PURE__*/_react.default.createElement("div", {
+    style: _objectSpread(_objectSpread({}, style), {}, {
+      animationDelay: '0.66666s',
+      transform: 'rotate(240deg)'
+    })
+  }), /*#__PURE__*/_react.default.createElement("div", {
+    style: _objectSpread(_objectSpread({}, style), {}, {
+      animationDelay: '0.75000s',
+      transform: 'rotate(270deg)'
+    })
+  }), /*#__PURE__*/_react.default.createElement("div", {
+    style: _objectSpread(_objectSpread({}, style), {}, {
+      animationDelay: '0.83333s',
+      transform: 'rotate(300deg)'
+    })
+  }), /*#__PURE__*/_react.default.createElement("div", {
+    style: _objectSpread(_objectSpread({}, style), {}, {
+      animationDelay: '0.91666s',
+      transform: 'rotate(330deg)'
+    })
+  }));
 };
 
 exports.Spinner = Spinner;
 
-var Thumb = function Thumb(_ref3) {
-  var asset = _ref3.asset,
-      handleClick = _ref3.handleClick,
-      cursored = _ref3.cursored,
-      selected = _ref3.selected;
+var Thumb = function Thumb(_ref4) {
+  var asset = _ref4.asset,
+      handleClick = _ref4.handleClick,
+      cursored = _ref4.cursored,
+      selected = _ref4.selected;
 
-  var isVideo = asset.medium === 'video',
-      source = function source(ext) {
-    return "/asset/thumb/".concat(asset.slug.slice(0, 1), "/").concat(asset.slug, ".").concat(ext);
+  var classes = ['thumb', asset.medium, cursored ? 'cursored' : '', selected ? 'selected' : ''],
+      src = function src(m) {
+    return "/asset/".concat(asset.slug, "/read/thumb/?m=").concat(m ? '1' : '0');
   };
 
-  return (
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      className: "thumb ".concat(asset.medium, " ").concat(cursored ? 'cursored' : '', " ").concat(selected ? 'selected' : '')
+  return !asset.id ? /*#__PURE__*/_react.default.createElement(Spinner, null) : /*#__PURE__*/_react.default.createElement("div", {
+    className: classes.join(' ')
+  }, /*#__PURE__*/_react.default.createElement("img", {
+    src: src(),
+    title: asset.tags.join(' '),
+    onClick: handleClick,
+    onMouseEnter: function onMouseEnter(_ref5) {
+      var target = _ref5.target;
+      target.src = src(true);
     },
-    /*#__PURE__*/
-    _react.default.createElement(ConfigContext.Consumer, null, function (config) {
-      var ext = config.formats[asset.medium]['thumb'].ext;
-      return !asset.id ?
-      /*#__PURE__*/
-      _react.default.createElement(Spinner, null) :
-      /*#__PURE__*/
-      _react.default.createElement(_react.default.Fragment, null,
-      /*#__PURE__*/
-      _react.default.createElement("img", {
-        src: source(isVideo ? 'png' : ext),
-        title: asset.tags.join(' '),
-        onClick: handleClick,
-        onMouseEnter: function onMouseEnter(_ref4) {
-          var target = _ref4.target;
-          if (isVideo) target.src = source(ext);
-        },
-        onMouseLeave: function onMouseLeave(_ref5) {
-          var target = _ref5.target;
-          if (isVideo) target.src = source('png');
-        }
-      }), isVideo ?
-      /*#__PURE__*/
-      _react.default.createElement("span", {
-        className: "video-icon"
-      }, "\u25B6") : null);
-    }))
-  );
+    onMouseLeave: function onMouseLeave(_ref6) {
+      var target = _ref6.target;
+      target.src = src();
+    }
+  }), asset.medium === 'video' ? /*#__PURE__*/_react.default.createElement("span", {
+    className: "video-icon"
+  }, "\u25B6") : null);
 };
 
 exports.Thumb = Thumb;
@@ -49177,423 +48906,7 @@ var useAssets = function useAssets(url) {
 };
 
 exports.useAssets = useAssets;
-},{"axios":"../node_modules/axios/index.js","react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js"}],"tags.jsx":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.TagSelect = exports.Tags = exports.patternForTag = exports.countAssetTags = void 0;
-
-var _axios = _interopRequireDefault(require("axios"));
-
-var _hsluv = require("hsluv");
-
-var _react = _interopRequireDefault(require("react"));
-
-var _reactRouterDom = require("react-router-dom");
-
-var _creatable = _interopRequireDefault(require("react-select/creatable"));
-
-var _utils = require("./utils");
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
-
-function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-
-function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
-
-function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter); }
-
-function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
-
-function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
-
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-var ICONS = ['🗓', '⌚', '📷', '🌍', '🙋'];
-var CLASSES = {
-  '🗓': 'date',
-  '⌚': 'time',
-  '📷': 'kit',
-  '🌍': 'geo',
-  '🙋': 'user'
-};
-var PATTERNS = [// Year.
-{
-  re: /^(19|20)\d\d$/,
-  hue: 36,
-  icon: 0
-}, // Month.
-{
-  re: /^january$/,
-  hue: 72,
-  icon: 0
-}, {
-  re: /^february$/,
-  hue: 72,
-  icon: 0
-}, {
-  re: /^march$/,
-  hue: 72,
-  icon: 0
-}, {
-  re: /^april$/,
-  hue: 72,
-  icon: 0
-}, {
-  re: /^may$/,
-  hue: 72,
-  icon: 0
-}, {
-  re: /^june$/,
-  hue: 72,
-  icon: 0
-}, {
-  re: /^july$/,
-  hue: 72,
-  icon: 0
-}, {
-  re: /^august$/,
-  hue: 72,
-  icon: 0
-}, {
-  re: /^september$/,
-  hue: 72,
-  icon: 0
-}, {
-  re: /^october$/,
-  hue: 72,
-  icon: 0
-}, {
-  re: /^november$/,
-  hue: 72,
-  icon: 0
-}, {
-  re: /^december$/,
-  hue: 72,
-  icon: 0
-}, // Day of month.
-{
-  re: /^\d(st|nd|rd|th)$/,
-  hue: 108,
-  icon: 0
-}, {
-  re: /^\d\d(st|nd|rd|th)$/,
-  hue: 108,
-  icon: 0
-}, // Day of week.
-{
-  re: /^sunday$/,
-  hue: 144,
-  icon: 0
-}, {
-  re: /^monday$/,
-  hue: 144,
-  icon: 0
-}, {
-  re: /^tuesday$/,
-  hue: 144,
-  icon: 0
-}, {
-  re: /^wednesday$/,
-  hue: 144,
-  icon: 0
-}, {
-  re: /^thursday$/,
-  hue: 144,
-  icon: 0
-}, {
-  re: /^friday$/,
-  hue: 144,
-  icon: 0
-}, {
-  re: /^saturday$/,
-  hue: 144,
-  icon: 0
-}, // Time of day.
-{
-  re: /^12am$/,
-  hue: 180,
-  icon: 1
-}, {
-  re: /^\dam$/,
-  hue: 180,
-  icon: 1
-}, {
-  re: /^\d\dam$/,
-  hue: 180,
-  icon: 1
-}, {
-  re: /^12pm$/,
-  hue: 180,
-  icon: 1
-}, {
-  re: /^\dpm$/,
-  hue: 180,
-  icon: 1
-}, {
-  re: /^\d\dpm$/,
-  hue: 180,
-  icon: 1
-}, // Camera.
-{
-  re: /^kit-\S+$/,
-  hue: 216,
-  icon: 2
-}, // Aperture.
-{
-  re: /^ƒ-\d$/,
-  hue: 252,
-  icon: 2
-}, {
-  re: /^ƒ-\d\d$/,
-  hue: 252,
-  icon: 2
-}, {
-  re: /^ƒ-\d\d\d$/,
-  hue: 252,
-  icon: 2
-}, // Focal length.
-{
-  re: /^\dmm$/,
-  hue: 288,
-  icon: 2
-}, {
-  re: /^\d\dmm$/,
-  hue: 288,
-  icon: 2
-}, {
-  re: /^\d\d\dmm$/,
-  hue: 288,
-  icon: 2
-}, {
-  re: /^\d\d\d\dmm$/,
-  hue: 288,
-  icon: 2
-}, // Geolocation.
-{
-  re: /^lat-\S+$/,
-  hue: 324,
-  icon: 3
-}, {
-  re: /^lng-\S+$/,
-  hue: 324,
-  icon: 3
-}, {
-  re: /^in-\S+$/,
-  hue: 324,
-  icon: 3
-}, // User-defined.
-{
-  re: /^.*$/,
-  hue: 0,
-  icon: 4
-}];
-
-var patternForTag = function patternForTag(name) {
-  var found = {
-    label: name,
-    value: name
-  };
-  PATTERNS.some(function (patt, p) {
-    if (patt.re.test(name)) {
-      found.colors = {
-        backgroundColor: (0, _hsluv.hsluvToHex)([patt.hue, 100, 80]),
-        color: (0, _hsluv.hsluvToHex)([patt.hue, 100, 20])
-      };
-      found.icon = patt.icon;
-      found.order = p;
-      return true;
-    }
-
-    return false;
-  });
-  return found;
-};
-
-exports.patternForTag = patternForTag;
-
-var countAssetTags = function countAssetTags(assets) {
-  var tags = {},
-      groups = ICONS.map(function () {
-    return [];
-  });
-  assets.forEach(function (asset) {
-    asset.tags.forEach(function (name) {
-      if (!tags[name]) {
-        var tag = _objectSpread({
-          name: name,
-          label: name,
-          value: name,
-          count: 0
-        }, patternForTag(name));
-
-        groups[tag.icon].push(tag);
-        tags[name] = tag;
-      }
-
-      tags[name].count++;
-    });
-  }); // Sort tags within each group by the index of their pattern, then by name.
-
-  var cmp = function cmp(s, t) {
-    return s.order < t.order ? -1 : s.order > t.order ? 1 : s.name < t.name ? -1 : s.name > t.name ? 1 : 0;
-  };
-
-  return groups.map(function (group, i) {
-    return {
-      icon: ICONS[i],
-      tags: group.sort(cmp),
-      index: i
-    };
-  });
-};
-
-exports.countAssetTags = countAssetTags;
-
-var Tags = function Tags(_ref) {
-  var icon = _ref.icon,
-      tags = _ref.tags,
-      clickHandler = _ref.clickHandler,
-      className = _ref.className;
-  return (
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      key: icon,
-      className: "tags ".concat(className || '', " ").concat(CLASSES[icon])
-    },
-    /*#__PURE__*/
-    _react.default.createElement("span", {
-      className: "icon"
-    }, icon),
-    /*#__PURE__*/
-    _react.default.createElement("ul", null, tags.map(function (tag) {
-      return (
-        /*#__PURE__*/
-        _react.default.createElement("li", {
-          key: tag.name,
-          className: "tag ".concat((0, _reactRouterDom.useLocation)().pathname.indexOf('/' + tag.name + '/') >= 0 ? 'active' : ''),
-          style: _objectSpread(_objectSpread({}, tag.colors), {}, {
-            cursor: clickHandler ? 'pointer' : 'default'
-          })
-        },
-        /*#__PURE__*/
-        _react.default.createElement("span", {
-          onClick: clickHandler ? clickHandler(tag) : null
-        }, tag.name))
-      );
-    })))
-  );
-};
-
-exports.Tags = Tags;
-
-var TagSelect = function TagSelect(_ref2) {
-  var assets = _ref2.assets,
-      activeAssets = _ref2.activeAssets,
-      className = _ref2.className;
-
-  var changeTags = function changeTags(active) {
-    return function (options, about) {
-      if (about.action === 'create-option' || about.action === 'select-option') {
-        active.forEach(function (_ref3) {
-          var slug = _ref3.slug;
-          return _axios.default.post("/rest/asset/".concat(slug, "/").concat(options[options.length - 1].value, "/"));
-        });
-      } else if (about.action === 'pop-value' || about.action === 'remove-value') {
-        active.forEach(function (_ref4) {
-          var slug = _ref4.slug;
-          return _axios.default.delete("/rest/asset/".concat(slug, "/").concat(about.removedValue.value, "/"));
-        });
-      }
-    };
-  };
-
-  return (
-    /*#__PURE__*/
-    _react.default.createElement(_utils.ConfigContext.Consumer, null, function (_ref5) {
-      var tags = _ref5.tags;
-      return (
-        /*#__PURE__*/
-        _react.default.createElement(_creatable.default, {
-          className: "".concat(className || '', " tag-select"),
-          key: assets.length,
-          isClearable: false,
-          isMulti: true,
-          defaultValue: assets.length === 0 ? [] : _toConsumableArray(new Set(assets.reduce(function (acc, a) {
-            return [].concat(_toConsumableArray(acc), _toConsumableArray(a.tags));
-          }, []))).map(patternForTag).filter(function (_ref6) {
-            var icon = _ref6.icon;
-            return icon > 2;
-          }),
-          options: tags.map(function (_ref7) {
-            var name = _ref7.name;
-            return patternForTag(name);
-          }).filter(function (_ref8) {
-            var icon = _ref8.icon;
-            return icon > 2;
-          }),
-          onChange: changeTags(activeAssets && activeAssets.length ? activeAssets : assets),
-          placeholder: "Add tag...",
-          styles: {
-            control: function control(base) {
-              return _objectSpread(_objectSpread({}, base), {}, {
-                background: '#666',
-                borderColor: '#666'
-              });
-            },
-            placeholder: function placeholder(base) {
-              return _objectSpread(_objectSpread({}, base), {}, {
-                color: '#111'
-              });
-            },
-            option: function option(base, _ref9) {
-              var data = _ref9.data;
-              return _objectSpread(_objectSpread(_objectSpread({}, base), data.colors), {}, {
-                display: 'inline-block',
-                float: 'left',
-                width: 'auto',
-                margin: '0.2em',
-                padding: '0.2em 0.4em',
-                borderRadius: '3px',
-                cursor: 'pointer'
-              });
-            },
-            menu: function menu(base) {
-              return _objectSpread(_objectSpread({}, base), {}, {
-                background: '#666'
-              });
-            },
-            multiValue: function multiValue(base, _ref10) {
-              var data = _ref10.data;
-              return _objectSpread(_objectSpread({}, base), data.colors);
-            },
-            multiValueLabel: function multiValueLabel(base) {
-              return _objectSpread(_objectSpread({}, base), {}, {
-                fontSize: '100%'
-              });
-            },
-            multiValueRemove: function multiValueRemove(base) {
-              return _objectSpread(_objectSpread({}, base), {}, {
-                fontSize: '100%'
-              });
-            }
-          }
-        })
-      );
-    })
-  );
-};
-
-exports.TagSelect = TagSelect;
-},{"axios":"../node_modules/axios/index.js","hsluv":"../node_modules/hsluv/hsluv.js","react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","react-select/creatable":"../node_modules/react-select/creatable/dist/react-select.browser.esm.js","./utils":"utils.jsx"}],"../node_modules/parcel-bundler/src/builtins/bundle-url.js":[function(require,module,exports) {
+},{"axios":"../node_modules/axios/index.js","react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js"}],"../node_modules/parcel-bundler/src/builtins/bundle-url.js":[function(require,module,exports) {
 var bundleURL = null;
 
 function getBundleURLCached() {
@@ -49714,77 +49027,35 @@ function _iterableToArrayLimit(arr, i) { if (typeof Symbol === "undefined" || !(
 
 function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
-var FilterTools = function FilterTools(_ref) {
-  var filters = _ref.filters;
-  return (
-    /*#__PURE__*/
-    _react.default.createElement("ul", {
-      className: "filters"
-    }, filters.map(function (f, i) {
-      return (
-        /*#__PURE__*/
-        _react.default.createElement("li", {
-          key: i
-        },
-        /*#__PURE__*/
-        _react.default.createElement("span", null, f),
-        /*#__PURE__*/
-        _react.default.createElement("span", {
-          className: "remove"
-        }, "\uD83D\uDDD1"))
-      );
-    }))
-  );
+var Tool = function Tool(_ref) {
+  var name = _ref.name,
+      icon = _ref.icon,
+      iconWhenActive = _ref.iconWhenActive,
+      activeTool = _ref.activeTool,
+      onClick = _ref.onClick;
+  return /*#__PURE__*/_react.default.createElement(_utils.Button, {
+    name: name,
+    icon: activeTool === name ? iconWhenActive || icon : icon,
+    disabled: activeTool !== null && activeTool !== name,
+    onClick: onClick
+  });
 };
 
-var StampTools = function StampTools(_ref2) {
-  var stamp = _ref2.stamp;
-  return (
-    /*#__PURE__*/
-    _react.default.createElement("ul", {
-      className: "stamp"
-    },
-    /*#__PURE__*/
-    _react.default.createElement("li", null, "Y: ", stamp.year()),
-    /*#__PURE__*/
-    _react.default.createElement("li", null, "M: ", stamp.month()),
-    /*#__PURE__*/
-    _react.default.createElement("li", null, "D: ", stamp.day()),
-    /*#__PURE__*/
-    _react.default.createElement("li", null, "H: ", stamp.hour()))
-  );
-};
+var Edit = function Edit(_ref2) {
+  var refresh = _ref2.refresh;
 
-var Tool = function Tool(_ref3) {
-  var name = _ref3.name,
-      icon = _ref3.icon,
-      iconWhenActive = _ref3.iconWhenActive,
-      activeTool = _ref3.activeTool,
-      onClick = _ref3.onClick;
-  var isActive = activeTool === null || activeTool === name;
-  return (
-    /*#__PURE__*/
-    _react.default.createElement(_utils.Button, {
-      name: name,
-      icon: isActive ? iconWhenActive || icon : icon,
-      disabled: !isActive,
-      onClick: onClick
-    })
-  );
-};
-
-var Edit = function Edit() {
   var slug = (0, _reactRouterDom.useParams)().slug,
       hist = (0, _reactRouterDom.useHistory)(),
       stopEditing = function stopEditing() {
     return hist.replace("/view/".concat(asset.slug, "/"));
   },
-      url = "/rest/asset/".concat(slug, "/"),
-      _useState = (0, _react.useState)({
+      src = "/asset/".concat(slug, "/read/full/"),
+      defaultAsset = {
     medium: 'photo',
     tags: [],
     slug: slug
-  }),
+  },
+      _useState = (0, _react.useState)(defaultAsset),
       _useState2 = _slicedToArray(_useState, 2),
       asset = _useState2[0],
       setAsset = _useState2[1],
@@ -49792,230 +49063,179 @@ var Edit = function Edit() {
       _useState4 = _slicedToArray(_useState3, 2),
       activeTool = _useState4[0],
       setActiveTool = _useState4[1],
-      _useState5 = (0, _react.useState)({
-    unit: '%',
-    width: 80,
-    height: 80,
-    x: 10,
-    y: 10
-  }),
+      _useState5 = (0, _react.useState)(null),
       _useState6 = _slicedToArray(_useState5, 2),
       crop = _useState6[0],
       setCrop = _useState6[1];
 
   (0, _react.useEffect)(function () {
-    (0, _axios.default)(url).then(function (res) {
+    setAsset(defaultAsset);
+    (0, _axios.default)("/asset/".concat(slug, "/")).then(function (res) {
       return setAsset(res.data);
     });
   }, [slug]);
   (0, _react.useEffect)(function () {
     var handler = function handler(ev) {
       if (ev.code === 'Escape') stopEditing();
+      var input = document.querySelector('.tag-select input');
+      if (input && input.matches(':focus')) return;
+
+      if (ev.code === 'KeyT') {
+        ev.preventDefault();
+        input.focus();
+      }
     };
 
     window.addEventListener('keydown', handler);
     return function () {
       return window.removeEventListener('keydown', handler);
     };
-  }, []);
-  return (
-    /*#__PURE__*/
-    _react.default.createElement(_react.default.Fragment, null,
-    /*#__PURE__*/
-    _react.default.createElement(_utils.Breadcrumbs, {
-      className: "edit"
-    },
-    /*#__PURE__*/
-    _react.default.createElement(_reactRouterDom.Link, {
-      to: "/view/".concat(slug, "/")
-    }, slug.slice(0, 12)),
-    /*#__PURE__*/
-    _react.default.createElement("span", {
-      className: "divider"
-    }, "\xBB"), "Edit"),
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      className: "edit asset"
-    },
-    /*#__PURE__*/
-    _react.default.createElement(_utils.ConfigContext.Consumer, null, function (_ref4) {
-      var formats = _ref4.formats;
-      var ext = formats[asset.medium]['full'].ext,
-          src = "/asset/full/".concat(asset.slug.slice(0, 1), "/").concat(asset.slug, ".").concat(ext);
-      if (asset.medium === 'video') return (
-        /*#__PURE__*/
-        _react.default.createElement("video", {
-          key: asset.id,
-          autoPlay: true,
-          controls: true
-        },
-        /*#__PURE__*/
-        _react.default.createElement("source", {
-          src: src
-        }))
-      );
-      if (asset.medium === 'audio') return (
-        /*#__PURE__*/
-        _react.default.createElement("audio", {
-          key: asset.id,
-          autoPlay: true,
-          controls: true
-        },
-        /*#__PURE__*/
-        _react.default.createElement("source", {
-          src: src
-        }))
-      );
-      if (crop) return (
-        /*#__PURE__*/
-        _react.default.createElement(_reactImageCrop.default, {
-          src: src,
-          crop: crop,
-          onChange: function onChange(_, crop) {
-            return setCrop(crop);
-          }
-        })
-      );
-      return (
-        /*#__PURE__*/
-        _react.default.createElement("img", {
-          src: src
-        })
-      );
-    })), (0, _tags.countAssetTags)([asset]).map(function (group) {
-      return group.tags.length === 0 || group.index > 2 ? null :
-      /*#__PURE__*/
-      _react.default.createElement(_tags.Tags, {
-        key: group.icon,
-        icon: group.icon,
-        tags: group.tags,
-        className: "edit",
-        clickHandler: function clickHandler(tag) {
-          return function () {
-            return removeTag(tag.name);
-          };
-        }
+  }, [slug]);
+
+  var deleteAsset = function deleteAsset() {
+    if (window.confirm('Really delete?')) {
+      _axios.default.delete("/asset/".concat(slug, "/")).then(function () {
+        return hist.go(-1);
       });
-    }),
-    /*#__PURE__*/
-    _react.default.createElement(_tags.TagSelect, {
-      className: "edit",
-      assets: asset.id ? [asset] : []
-    }),
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      className: "tools"
-    },
-    /*#__PURE__*/
-    _react.default.createElement(_utils.Button, {
-      name: "exit",
-      icon: "\u2A09",
-      onClick: stopEditing
-    }),
-    /*#__PURE__*/
-    _react.default.createElement("span", {
-      className: "spacer"
-    }),
-    /*#__PURE__*/
-    _react.default.createElement(_utils.Button, {
-      name: "delete",
-      icon: "\uD83D\uDDD1"
-    }),
-    /*#__PURE__*/
-    _react.default.createElement("span", {
-      className: "spacer"
-    }),
-    /*#__PURE__*/
-    _react.default.createElement(Tool, {
-      name: "crop",
-      icon: "\u2702",
-      iconWhenActive: '⨉',
-      activeTool: activeTool
-    }),
-    /*#__PURE__*/
-    _react.default.createElement("span", {
-      className: "spacer"
-    }),
-    /*#__PURE__*/
-    _react.default.createElement(Tool, {
-      name: "vflip",
-      icon: "\u2195",
-      activeTool: activeTool
-    }),
-    /*#__PURE__*/
-    _react.default.createElement(Tool, {
-      name: "hflip",
-      icon: "\u2194",
-      activeTool: activeTool
-    }),
-    /*#__PURE__*/
-    _react.default.createElement(Tool, {
-      name: "ccw",
-      icon: "\u2937",
-      activeTool: activeTool
-    }),
-    /*#__PURE__*/
-    _react.default.createElement(Tool, {
-      name: "cw",
-      icon: "\u2936",
-      activeTool: activeTool
-    }),
-    /*#__PURE__*/
-    _react.default.createElement(Tool, {
-      name: "rotate",
-      icon: "\u27F3",
-      activeTool: activeTool
-    }),
-    /*#__PURE__*/
-    _react.default.createElement("span", {
-      className: "spacer"
-    }),
-    /*#__PURE__*/
-    _react.default.createElement(Tool, {
-      name: "contrast",
-      icon: "\u25D1",
-      activeTool: activeTool
-    }),
-    /*#__PURE__*/
-    _react.default.createElement(Tool, {
-      name: "brightness",
-      icon: "\u2600",
-      activeTool: activeTool
-    }),
-    /*#__PURE__*/
-    _react.default.createElement(Tool, {
-      name: "saturation",
-      icon: "\u25A7",
-      activeTool: activeTool
-    }),
-    /*#__PURE__*/
-    _react.default.createElement(Tool, {
-      name: "hue",
-      icon: "\uD83C\uDFA8",
-      activeTool: activeTool
-    }),
-    /*#__PURE__*/
-    _react.default.createElement("span", {
-      className: "spacer"
-    }),
-    /*#__PURE__*/
-    _react.default.createElement(Tool, {
-      name: "magic",
-      icon: "\uD83E\uDE84",
-      activeTool: activeTool
-    })),
-    /*#__PURE__*/
-    _react.default.createElement(FilterTools, {
-      filters: asset.filters || []
-    }),
-    /*#__PURE__*/
-    _react.default.createElement(StampTools, {
-      stamp: (0, _moment.default)(asset.stamp || null)
-    }))
-  );
+    }
+  };
+
+  return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_utils.Breadcrumbs, {
+    className: "edit"
+  }, /*#__PURE__*/_react.default.createElement(_reactRouterDom.Link, {
+    to: "/view/".concat(slug, "/")
+  }, slug.slice(0, 12)), /*#__PURE__*/_react.default.createElement("span", {
+    className: "divider"
+  }, "\xBB"), "Edit"), /*#__PURE__*/_react.default.createElement("div", {
+    className: "edit asset"
+  }, asset.medium === 'video' ? /*#__PURE__*/_react.default.createElement("video", {
+    key: asset.id,
+    controls: true
+  }, /*#__PURE__*/_react.default.createElement("source", {
+    src: src
+  })) : asset.medium === 'audio' ? /*#__PURE__*/_react.default.createElement("audio", {
+    key: asset.id,
+    controls: true
+  }, /*#__PURE__*/_react.default.createElement("source", {
+    src: src
+  })) : crop ? /*#__PURE__*/_react.default.createElement(_reactImageCrop.default, {
+    src: src,
+    crop: crop,
+    onChange: function onChange(_, crop) {
+      return setCrop(crop);
+    }
+  }) : /*#__PURE__*/_react.default.createElement("img", {
+    src: src
+  })), /*#__PURE__*/_react.default.createElement(_tags.TagGroups, {
+    className: "edit",
+    assets: asset.id ? [asset] : [],
+    hideEditable: true,
+    clickHandler: function clickHandler(tag) {
+      return function () {
+        return removeTag(tag.name);
+      };
+    }
+  }), /*#__PURE__*/_react.default.createElement(_tags.TagSelect, {
+    className: "edit",
+    assets: asset.id ? [asset] : []
+  }), /*#__PURE__*/_react.default.createElement("div", {
+    className: "edit tools"
+  }, /*#__PURE__*/_react.default.createElement(_utils.Button, {
+    name: "exit",
+    icon: "\u2715",
+    onClick: stopEditing
+  }), /*#__PURE__*/_react.default.createElement("span", {
+    className: "spacer"
+  }), /*#__PURE__*/_react.default.createElement(_utils.Button, {
+    name: "delete",
+    icon: "\uD83D\uDDD1",
+    onClick: deleteAsset
+  }), /*#__PURE__*/_react.default.createElement("span", {
+    className: "spacer"
+  }), /*#__PURE__*/_react.default.createElement(Tool, {
+    name: "crop",
+    icon: "\u2702",
+    iconWhenActive: '✕',
+    activeTool: activeTool,
+    onClick: function onClick() {
+      setActiveTool('crop');
+      setCrop({
+        unit: '%',
+        width: 80,
+        height: 80,
+        x: 10,
+        y: 10
+      });
+    }
+  }), /*#__PURE__*/_react.default.createElement("span", {
+    className: "spacer"
+  }), /*#__PURE__*/_react.default.createElement(Tool, {
+    name: "vflip",
+    icon: "\u2195",
+    activeTool: activeTool
+  }), /*#__PURE__*/_react.default.createElement(Tool, {
+    name: "hflip",
+    icon: "\u2194",
+    activeTool: activeTool
+  }), /*#__PURE__*/_react.default.createElement(Tool, {
+    name: "ccw",
+    icon: "\u2937",
+    activeTool: activeTool
+  }), /*#__PURE__*/_react.default.createElement(Tool, {
+    name: "cw",
+    icon: "\u2936",
+    activeTool: activeTool
+  }), /*#__PURE__*/_react.default.createElement(Tool, {
+    name: "rotate",
+    icon: "\u27F3",
+    activeTool: activeTool
+  }), /*#__PURE__*/_react.default.createElement("span", {
+    className: "spacer"
+  }), /*#__PURE__*/_react.default.createElement(Tool, {
+    name: "contrast",
+    icon: "\u25D1",
+    activeTool: activeTool
+  }), /*#__PURE__*/_react.default.createElement(Tool, {
+    name: "brightness",
+    icon: "\u2600",
+    activeTool: activeTool
+  }), /*#__PURE__*/_react.default.createElement(Tool, {
+    name: "saturation",
+    icon: "\u25A7",
+    activeTool: activeTool
+  }), /*#__PURE__*/_react.default.createElement(Tool, {
+    name: "hue",
+    icon: "\uD83C\uDFA8",
+    activeTool: activeTool
+  }), /*#__PURE__*/_react.default.createElement("span", {
+    className: "spacer"
+  }), /*#__PURE__*/_react.default.createElement(Tool, {
+    name: "magic",
+    icon: "\uD83E\uDE84",
+    activeTool: activeTool
+  })), /*#__PURE__*/_react.default.createElement("ul", {
+    className: "edit filters"
+  }, (asset.filters || []).map(function (f, i) {
+    return /*#__PURE__*/_react.default.createElement("li", {
+      key: i
+    }, /*#__PURE__*/_react.default.createElement("span", null, f), /*#__PURE__*/_react.default.createElement("span", {
+      className: "remove"
+    }, "\uD83D\uDDD1"));
+  })), /*#__PURE__*/_react.default.createElement(_utils.Related, {
+    asset: asset,
+    how: "tag",
+    title: "Related",
+    className: "edit"
+  }), /*#__PURE__*/_react.default.createElement(_utils.Related, {
+    asset: asset,
+    how: "content",
+    title: "Duplicates",
+    className: "edit"
+  }));
 };
 
-var _default = Edit; // enter   - show editor
+var _default = Edit; // ✓✕
+// enter   - show editor
 // bksp    - delete current image
 // down, j - move to next image
 // up, k   - move to previous image
@@ -50042,8 +49262,8 @@ var _default = Edit; // enter   - show editor
 /*
 
     <ul className='toolbar' id='ephemeral-tools'>
-      <li id='cancel'><span className='dingbat'>✘</span> Cancel</li>
-      <li id='commit'><span className='dingbat'>✔</span> Save</li>
+      <li id='cancel'><span className='dingbat'>✕</span> Cancel</li>
+      <li id='commit'><span className='dingbat'>✓</span> Save</li>
       <li id='range'><input type='range' min='0' max='200' defaultValue='100' step='1'/><span id='range-value'></span></li>
   </div>
 
@@ -50124,83 +49344,27 @@ function _iterableToArrayLimit(arr, i) { if (typeof Symbol === "undefined" || !(
 
 function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
-var Related = function Related(_ref) {
-  var asset = _ref.asset,
-      how = _ref.how,
-      title = _ref.title;
-
-  var hist = (0, _reactRouterDom.useHistory)(),
-      args = {
-    content: 'alg=dhash-8',
-    tag: 'min=0.5'
-  },
-      _useAssets = (0, _utils.useAssets)("/rest/asset/".concat(asset.slug, "/similar/").concat(how, "/?").concat(args[how])),
-      assets = _useAssets.assets,
-      loading = _useAssets.loading;
-
-  return (
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      className: "related ".concat(how, " thumbs view")
-    }, title && (loading || assets.length > 0) ?
-    /*#__PURE__*/
-    _react.default.createElement("h2", null, title) : null, loading ?
-    /*#__PURE__*/
-    _react.default.createElement(_utils.Spinner, null) : assets.map(function (asset) {
-      return (
-        /*#__PURE__*/
-        _react.default.createElement(_utils.Thumb, {
-          key: asset.id,
-          asset: asset,
-          handleClick: function handleClick() {
-            return hist.push("/view/".concat(asset.slug, "/"));
-          }
-        })
-      );
-    }))
-  );
-};
-
-var Full = function Full(_ref2) {
-  var asset = _ref2.asset;
-  return (
-    /*#__PURE__*/
-    _react.default.createElement(_utils.ConfigContext.Consumer, null, function (config) {
-      var ext = config.formats[asset.medium]['full'].ext,
-          src = "/asset/full/".concat(asset.slug.slice(0, 1), "/").concat(asset.slug, ".").concat(ext);
-      return (
-        /*#__PURE__*/
-        _react.default.createElement("div", {
-          className: "view asset"
-        }, asset.medium === 'video' ?
-        /*#__PURE__*/
-        _react.default.createElement("video", {
-          key: asset.id,
-          autoPlay: true,
-          controls: true
-        },
-        /*#__PURE__*/
-        _react.default.createElement("source", {
-          src: src
-        })) : asset.medium === 'audio' ?
-        /*#__PURE__*/
-        _react.default.createElement("audio", {
-          key: asset.id,
-          autoPlay: true,
-          controls: true
-        },
-        /*#__PURE__*/
-        _react.default.createElement("source", {
-          src: src
-        })) : asset.medium === 'photo' ?
-        /*#__PURE__*/
-        _react.default.createElement("img", {
-          key: asset.id,
-          src: src
-        }) : null)
-      );
-    })
-  );
+var Full = function Full(_ref) {
+  var asset = _ref.asset;
+  var src = "/asset/".concat(asset.slug, "/read/full/");
+  return /*#__PURE__*/_react.default.createElement("div", {
+    className: "view asset"
+  }, asset.medium === 'video' ? /*#__PURE__*/_react.default.createElement("video", {
+    key: asset.id,
+    autoPlay: true,
+    controls: true
+  }, /*#__PURE__*/_react.default.createElement("source", {
+    src: src
+  })) : asset.medium === 'audio' ? /*#__PURE__*/_react.default.createElement("audio", {
+    key: asset.id,
+    autoPlay: true,
+    controls: true
+  }, /*#__PURE__*/_react.default.createElement("source", {
+    src: src
+  })) : asset.medium === 'photo' ? /*#__PURE__*/_react.default.createElement("img", {
+    key: asset.id,
+    src: src
+  }) : null);
 };
 
 var View = function View() {
@@ -50221,8 +49385,9 @@ var View = function View() {
       setAsset = _useState4[1];
 
   (0, _react.useEffect)(function () {
+    window.scrollTo(0, 0);
     setAsset(defaultAsset);
-    (0, _axios.default)("/rest/asset/".concat(slug, "/")).then(function (res) {
+    (0, _axios.default)("/asset/".concat(slug, "/")).then(function (res) {
       return setAsset(res.data);
     });
 
@@ -50246,77 +49411,38 @@ var View = function View() {
       return window.removeEventListener('keydown', handler);
     };
   }, [slug]);
-  return (
-    /*#__PURE__*/
-    _react.default.createElement(_react.default.Fragment, null,
-    /*#__PURE__*/
-    _react.default.createElement(_utils.Breadcrumbs, {
-      className: "view"
-    }, slug.slice(0, 12)),
-    /*#__PURE__*/
-    _react.default.createElement(Full, {
-      asset: asset
-    }),
-    /*#__PURE__*/
-    _react.default.createElement("dl", {
-      className: "view info"
-    },
-    /*#__PURE__*/
-    _react.default.createElement("dt", null, "Path"),
-    /*#__PURE__*/
-    _react.default.createElement("dd", null, asset.path), asset.width ?
-    /*#__PURE__*/
-    _react.default.createElement(_react.default.Fragment, null,
-    /*#__PURE__*/
-    _react.default.createElement("dt", null, "Size"),
-    /*#__PURE__*/
-    _react.default.createElement("dd", null, asset.width, " x ", asset.height)) : null, asset.duration ?
-    /*#__PURE__*/
-    _react.default.createElement(_react.default.Fragment, null,
-    /*#__PURE__*/
-    _react.default.createElement("dt", null, "Length"),
-    /*#__PURE__*/
-    _react.default.createElement("dd", null, "".concat(Math.round(asset.duration), " sec"))) : null),
-    /*#__PURE__*/
-    _react.default.createElement(Related, {
-      asset: asset,
-      how: "tag",
-      title: "Related"
-    }),
-    /*#__PURE__*/
-    _react.default.createElement(Related, {
-      asset: asset,
-      how: "content",
-      title: "Duplicates"
-    }), (0, _tags.countAssetTags)([asset]).map(function (group) {
-      return group.tags.length === 0 ? null :
-      /*#__PURE__*/
-      _react.default.createElement(_tags.Tags, {
-        key: group.icon,
-        icon: group.icon,
-        tags: group.tags,
-        className: "view",
-        clickHandler: function clickHandler(tag) {
-          return function () {
-            return hist.push("/browse/".concat(tag.name, "/"));
-          };
-        }
-      });
-    }),
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      className: "view tools"
-    },
-    /*#__PURE__*/
-    _react.default.createElement("span", {
-      className: "button",
-      onClick: startEditing
-    },
-    /*#__PURE__*/
-    _react.default.createElement("span", {
-      className: "icon"
-    }, "\u270F\uFE0F"))))
-  );
+  return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_utils.Breadcrumbs, {
+    className: "view"
+  }, slug.slice(0, 12)), /*#__PURE__*/_react.default.createElement(Full, {
+    asset: asset
+  }), /*#__PURE__*/_react.default.createElement("dl", {
+    className: "view info"
+  }, /*#__PURE__*/_react.default.createElement("dt", null, "Path"), /*#__PURE__*/_react.default.createElement("dd", null, asset.path), asset.width ? /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("dt", null, "Size"), /*#__PURE__*/_react.default.createElement("dd", null, asset.width, " x ", asset.height)) : null, asset.duration ? /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("dt", null, "Length"), /*#__PURE__*/_react.default.createElement("dd", null, "".concat(Math.round(asset.duration), " sec"))) : null), /*#__PURE__*/_react.default.createElement(_utils.Related, {
+    asset: asset,
+    how: "tag",
+    title: "Related",
+    className: "view"
+  }), /*#__PURE__*/_react.default.createElement(_utils.Related, {
+    asset: asset,
+    how: "content",
+    title: "Duplicates",
+    className: "view"
+  }), /*#__PURE__*/_react.default.createElement(_tags.TagGroups, {
+    assets: [asset],
+    className: "view",
+    clickHandler: function clickHandler(tag) {
+      return function () {
+        return hist.push("/browse/".concat(tag.name, "/"));
+      };
+    }
+  }), /*#__PURE__*/_react.default.createElement("div", {
+    className: "view tools"
+  }, /*#__PURE__*/_react.default.createElement("span", {
+    className: "button",
+    onClick: startEditing
+  }, /*#__PURE__*/_react.default.createElement("span", {
+    className: "icon"
+  }, "\u270F\uFE0F"))));
 };
 
 var _default = View;
@@ -50354,20 +49480,40 @@ function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj;
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
+
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
+function _iterableToArrayLimit(arr, i) { if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return; var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
 var Browse = function Browse() {
   var hist = (0, _reactRouterDom.useHistory)(),
       path = (0, _reactRouterDom.useLocation)().pathname,
       query = (0, _reactRouterDom.useParams)().query,
-      _useAssets = (0, _utils.useAssets)("/rest/query/".concat(query)),
+      _useState = (0, _react.useState)(160),
+      _useState2 = _slicedToArray(_useState, 2),
+      thumbSize = _useState2[0],
+      setThumbSize = _useState2[1],
+      _useAssets = (0, _utils.useAssets)("/query/".concat(query)),
       assets = _useAssets.assets,
       loading = _useAssets.loading;
 
   (0, _react.useEffect)(function () {
     var handler = function handler(ev) {
-      if (ev.code === 'KeyE') {
-        ev.preventDefault();
-        hist.replace("/label/".concat(query));
-      }
+      console.log(ev.code);
+      if (ev.code === 'KeyE') hist.replace("/label/".concat(query));
+      if (ev.code === 'Equal') setThumbSize(function (s) {
+        return Math.max(80, Math.min(s + 20, 320));
+      });
+      if (ev.code === 'Minus') setThumbSize(function (s) {
+        return Math.max(80, Math.min(s - 20, 320));
+      });
     };
 
     window.addEventListener('keydown', handler);
@@ -50375,435 +49521,46 @@ var Browse = function Browse() {
       return window.removeEventListener('keydown', handler);
     };
   }, []);
-  return (
-    /*#__PURE__*/
-    _react.default.createElement(_react.default.Fragment, null,
-    /*#__PURE__*/
-    _react.default.createElement(_utils.Breadcrumbs, {
-      className: "browse"
-    }, query.replace(/\/$/, '').replace(/\//g, ' and ')),
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      className: "tools"
-    },
-    /*#__PURE__*/
-    _react.default.createElement(_utils.Button, {
-      name: "select",
-      icon: "\u270F",
-      onClick: function onClick() {
-        return hist.replace("/label/".concat(query));
+  return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_utils.Breadcrumbs, {
+    className: "browse"
+  }, query.replace(/\/$/, '').replace(/\//g, ' and ')), /*#__PURE__*/_react.default.createElement("div", {
+    className: "tools"
+  }, /*#__PURE__*/_react.default.createElement(_utils.Button, {
+    name: "select",
+    icon: "\u270F",
+    onClick: function onClick() {
+      return hist.replace("/label/".concat(query));
+    }
+  })), loading ? /*#__PURE__*/_react.default.createElement(_utils.Spinner, null) : /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_tags.TagGroups, {
+    assets: assets,
+    className: "browse",
+    clickHandler: function clickHandler(tag) {
+      var key = "/".concat(tag.name, "/"),
+          active = path.indexOf(key) >= 0;
+      return function () {
+        return hist.push(active ? path.replace(key, '/') : "".concat(tag.name, "/"));
+      };
+    }
+  }), /*#__PURE__*/_react.default.createElement("div", {
+    className: "browse thumbs",
+    style: {
+      gridTemplateColumns: "repeat(auto-fit, minmax(".concat(thumbSize, "px, 1fr))"),
+      gridAutoRows: "".concat(thumbSize, "px")
+    }
+  }, assets.map(function (asset, idx) {
+    return /*#__PURE__*/_react.default.createElement(_utils.Thumb, {
+      key: asset.id,
+      asset: asset,
+      handleClick: function handleClick() {
+        return hist.push("/view/".concat(asset.slug, "/"));
       }
-    })), loading ?
-    /*#__PURE__*/
-    _react.default.createElement(_utils.Spinner, null) :
-    /*#__PURE__*/
-    _react.default.createElement(_react.default.Fragment, null, (0, _tags.countAssetTags)(assets).map(function (group) {
-      return group.tags.length === 0 ? null :
-      /*#__PURE__*/
-      _react.default.createElement(_tags.Tags, {
-        key: group.icon,
-        className: "browse",
-        icon: group.icon,
-        tags: group.tags.filter(function (t) {
-          return path.indexOf("/".concat(t.name, "/")) < 0;
-        }),
-        clickHandler: function clickHandler(tag) {
-          var key = "/".concat(tag.name, "/"),
-              active = path.indexOf(key) >= 0;
-          return function () {
-            return hist.push(active ? path.replace(key, '/') : "".concat(tag.name, "/"));
-          };
-        }
-      });
-    }),
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      className: "browse thumbs"
-    }, assets.map(function (asset, idx) {
-      return (
-        /*#__PURE__*/
-        _react.default.createElement(_utils.Thumb, {
-          key: asset.id,
-          asset: asset,
-          handleClick: function handleClick() {
-            return hist.push("/view/".concat(asset.slug, "/"));
-          }
-        })
-      );
-    }))))
-  );
+    });
+  }))));
 };
 
 var _default = Browse;
 exports.default = _default;
-},{"axios":"../node_modules/axios/index.js","react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","react-select/creatable":"../node_modules/react-select/creatable/dist/react-select.browser.esm.js","./tags":"tags.jsx","./utils":"utils.jsx","./browse.styl":"browse.styl"}],"../node_modules/react-swipeable/es/index.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.useSwipeable = useSwipeable;
-exports.UP = exports.Swipeable = exports.RIGHT = exports.LEFT = exports.DOWN = void 0;
-
-var _react = _interopRequireDefault(require("react"));
-
-var _propTypes = _interopRequireDefault(require("prop-types"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _extends() {
-  _extends = Object.assign || function (target) {
-    for (var i = 1; i < arguments.length; i++) {
-      var source = arguments[i];
-
-      for (var key in source) {
-        if (Object.prototype.hasOwnProperty.call(source, key)) {
-          target[key] = source[key];
-        }
-      }
-    }
-
-    return target;
-  };
-
-  return _extends.apply(this, arguments);
-}
-
-function _inheritsLoose(subClass, superClass) {
-  subClass.prototype = Object.create(superClass.prototype);
-  subClass.prototype.constructor = subClass;
-  subClass.__proto__ = superClass;
-}
-
-var defaultProps = {
-  preventDefaultTouchmoveEvent: false,
-  delta: 10,
-  rotationAngle: 0,
-  trackMouse: false,
-  trackTouch: true
-};
-var initialState = {
-  xy: [0, 0],
-  swiping: false,
-  eventData: undefined,
-  start: undefined
-};
-var LEFT = 'Left';
-exports.LEFT = LEFT;
-var RIGHT = 'Right';
-exports.RIGHT = RIGHT;
-var UP = 'Up';
-exports.UP = UP;
-var DOWN = 'Down';
-exports.DOWN = DOWN;
-var touchStart = 'touchstart';
-var touchMove = 'touchmove';
-var touchEnd = 'touchend';
-var mouseMove = 'mousemove';
-var mouseUp = 'mouseup';
-
-function getDirection(absX, absY, deltaX, deltaY) {
-  if (absX > absY) {
-    if (deltaX > 0) {
-      return LEFT;
-    }
-
-    return RIGHT;
-  } else if (deltaY > 0) {
-    return UP;
-  }
-
-  return DOWN;
-}
-
-function rotateXYByAngle(pos, angle) {
-  if (angle === 0) return pos;
-  var angleInRadians = Math.PI / 180 * angle;
-  var x = pos[0] * Math.cos(angleInRadians) + pos[1] * Math.sin(angleInRadians);
-  var y = pos[1] * Math.cos(angleInRadians) - pos[0] * Math.sin(angleInRadians);
-  return [x, y];
-}
-
-function getHandlers(set, handlerProps) {
-  var onStart = function onStart(event) {
-    // if more than a single touch don't track, for now...
-    if (event.touches && event.touches.length > 1) return;
-    set(function (state, props) {
-      // setup mouse listeners on document to track swipe since swipe can leave container
-      if (props.trackMouse) {
-        document.addEventListener(mouseMove, onMove);
-        document.addEventListener(mouseUp, onUp);
-      }
-
-      var _ref = event.touches ? event.touches[0] : event,
-          clientX = _ref.clientX,
-          clientY = _ref.clientY;
-
-      var xy = rotateXYByAngle([clientX, clientY], props.rotationAngle);
-      return _extends({}, state, initialState, {
-        eventData: {
-          initial: [].concat(xy),
-          first: true
-        },
-        xy: xy,
-        start: event.timeStamp || 0
-      });
-    });
-  };
-
-  var onMove = function onMove(event) {
-    set(function (state, props) {
-      if (!state.xy[0] || !state.xy[1] || event.touches && event.touches.length > 1) {
-        return state;
-      }
-
-      var _ref2 = event.touches ? event.touches[0] : event,
-          clientX = _ref2.clientX,
-          clientY = _ref2.clientY;
-
-      var _rotateXYByAngle = rotateXYByAngle([clientX, clientY], props.rotationAngle),
-          x = _rotateXYByAngle[0],
-          y = _rotateXYByAngle[1];
-
-      var deltaX = state.xy[0] - x;
-      var deltaY = state.xy[1] - y;
-      var absX = Math.abs(deltaX);
-      var absY = Math.abs(deltaY);
-      var time = (event.timeStamp || 0) - state.start;
-      var velocity = Math.sqrt(absX * absX + absY * absY) / (time || 1); // if swipe is under delta and we have not started to track a swipe: skip update
-
-      if (absX < props.delta && absY < props.delta && !state.swiping) return state;
-      var dir = getDirection(absX, absY, deltaX, deltaY);
-
-      var eventData = _extends({}, state.eventData, {
-        event: event,
-        absX: absX,
-        absY: absY,
-        deltaX: deltaX,
-        deltaY: deltaY,
-        velocity: velocity,
-        dir: dir
-      });
-
-      props.onSwiping && props.onSwiping(eventData); // track if a swipe is cancelable(handler for swiping or swiped(dir) exists)
-      // so we can call preventDefault if needed
-
-      var cancelablePageSwipe = false;
-
-      if (props.onSwiping || props.onSwiped || props["onSwiped" + dir]) {
-        cancelablePageSwipe = true;
-      }
-
-      if (cancelablePageSwipe && props.preventDefaultTouchmoveEvent && props.trackTouch && event.cancelable) event.preventDefault(); // first is now always false
-
-      return _extends({}, state, {
-        eventData: _extends({}, eventData, {
-          first: false
-        }),
-        swiping: true
-      });
-    });
-  };
-
-  var onEnd = function onEnd(event) {
-    set(function (state, props) {
-      var eventData;
-
-      if (state.swiping) {
-        eventData = _extends({}, state.eventData, {
-          event: event
-        });
-        props.onSwiped && props.onSwiped(eventData);
-        props["onSwiped" + eventData.dir] && props["onSwiped" + eventData.dir](eventData);
-      }
-
-      return _extends({}, state, initialState, {
-        eventData: eventData
-      });
-    });
-  };
-
-  var cleanUpMouse = function cleanUpMouse() {
-    // safe to just call removeEventListener
-    document.removeEventListener(mouseMove, onMove);
-    document.removeEventListener(mouseUp, onUp);
-  };
-
-  var onUp = function onUp(e) {
-    cleanUpMouse();
-    onEnd(e);
-  };
-
-  var attachTouch = function attachTouch(el) {
-    if (el && el.addEventListener) {
-      // attach touch event listeners and handlers
-      var tls = [[touchStart, onStart], [touchMove, onMove], [touchEnd, onEnd]];
-      tls.forEach(function (_ref3) {
-        var e = _ref3[0],
-            h = _ref3[1];
-        return el.addEventListener(e, h);
-      }); // return properly scoped cleanup method for removing listeners
-
-      return function () {
-        return tls.forEach(function (_ref4) {
-          var e = _ref4[0],
-              h = _ref4[1];
-          return el.removeEventListener(e, h);
-        });
-      };
-    }
-  };
-
-  var onRef = function onRef(el) {
-    // "inline" ref functions are called twice on render, once with null then again with DOM element
-    // ignore null here
-    if (el === null) return;
-    set(function (state, props) {
-      // if the same DOM el as previous just return state
-      if (state.el === el) return state;
-      var addState = {}; // if new DOM el clean up old DOM and reset cleanUpTouch
-
-      if (state.el && state.el !== el && state.cleanUpTouch) {
-        state.cleanUpTouch();
-        addState.cleanUpTouch = null;
-      } // only attach if we want to track touch
-
-
-      if (props.trackTouch && el) {
-        addState.cleanUpTouch = attachTouch(el);
-      } // store event attached DOM el for comparison, clean up, and re-attachment
-
-
-      return _extends({}, state, {
-        el: el
-      }, addState);
-    });
-  }; // set ref callback to attach touch event listeners
-
-
-  var output = {
-    ref: onRef // if track mouse attach mouse down listener
-
-  };
-
-  if (handlerProps.trackMouse) {
-    output.onMouseDown = onStart;
-  }
-
-  return [output, attachTouch];
-}
-
-function updateTransientState(state, props, attachTouch) {
-  var addState = {}; // clean up touch handlers if no longer tracking touches
-
-  if (!props.trackTouch && state.cleanUpTouch) {
-    state.cleanUpTouch();
-    addState.cleanUpTouch = null;
-  } else if (props.trackTouch && !state.cleanUpTouch) {
-    // attach/re-attach touch handlers
-    if (state.el) {
-      addState.cleanUpTouch = attachTouch(state.el);
-    }
-  }
-
-  return _extends({}, state, addState);
-}
-
-function useSwipeable(props) {
-  var trackMouse = props.trackMouse;
-
-  var transientState = _react.default.useRef(_extends({}, initialState, {
-    type: 'hook'
-  }));
-
-  var transientProps = _react.default.useRef();
-
-  transientProps.current = _extends({}, defaultProps, props);
-
-  var _React$useMemo = _react.default.useMemo(function () {
-    return getHandlers(function (cb) {
-      return transientState.current = cb(transientState.current, transientProps.current);
-    }, {
-      trackMouse: trackMouse
-    });
-  }, [trackMouse]),
-      handlers = _React$useMemo[0],
-      attachTouch = _React$useMemo[1];
-
-  transientState.current = updateTransientState(transientState.current, transientProps.current, attachTouch);
-  return handlers;
-}
-
-var Swipeable =
-/*#__PURE__*/
-function (_React$PureComponent) {
-  _inheritsLoose(Swipeable, _React$PureComponent);
-
-  function Swipeable(props) {
-    var _this;
-
-    _this = _React$PureComponent.call(this, props) || this;
-
-    _this._set = function (cb) {
-      _this.transientState = cb(_this.transientState, _this.props);
-    };
-
-    _this.transientState = _extends({}, initialState, {
-      type: 'class'
-    });
-    return _this;
-  }
-
-  var _proto = Swipeable.prototype;
-
-  _proto.render = function render() {
-    var _this$props = this.props,
-        className = _this$props.className,
-        style = _this$props.style,
-        _this$props$nodeName = _this$props.nodeName,
-        nodeName = _this$props$nodeName === void 0 ? 'div' : _this$props$nodeName,
-        innerRef = _this$props.innerRef,
-        children = _this$props.children,
-        trackMouse = _this$props.trackMouse;
-
-    var _getHandlers = getHandlers(this._set, {
-      trackMouse: trackMouse
-    }),
-        handlers = _getHandlers[0],
-        attachTouch = _getHandlers[1];
-
-    this.transientState = updateTransientState(this.transientState, this.props, attachTouch);
-    var ref = innerRef ? function (el) {
-      return innerRef(el), handlers.ref(el);
-    } : handlers.ref;
-    return _react.default.createElement(nodeName, _extends({}, handlers, {
-      className: className,
-      style: style,
-      ref: ref
-    }), children);
-  };
-
-  return Swipeable;
-}(_react.default.PureComponent);
-
-exports.Swipeable = Swipeable;
-Swipeable.propTypes = {
-  onSwiped: _propTypes.default.func,
-  onSwiping: _propTypes.default.func,
-  onSwipedUp: _propTypes.default.func,
-  onSwipedRight: _propTypes.default.func,
-  onSwipedDown: _propTypes.default.func,
-  onSwipedLeft: _propTypes.default.func,
-  delta: _propTypes.default.number,
-  preventDefaultTouchmoveEvent: _propTypes.default.bool,
-  nodeName: _propTypes.default.string,
-  trackMouse: _propTypes.default.bool,
-  trackTouch: _propTypes.default.bool,
-  innerRef: _propTypes.default.func,
-  rotationAngle: _propTypes.default.number
-};
-Swipeable.defaultProps = defaultProps;
-},{"react":"../node_modules/react/index.js","prop-types":"../node_modules/prop-types/index.js"}],"label.styl":[function(require,module,exports) {
+},{"axios":"../node_modules/axios/index.js","react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","react-select/creatable":"../node_modules/react-select/creatable/dist/react-select.browser.esm.js","./tags":"tags.jsx","./utils":"utils.jsx","./browse.styl":"browse.styl"}],"label.styl":[function(require,module,exports) {
 var reloadCSS = require('_css_loader');
 
 module.hot.dispose(reloadCSS);
@@ -50823,8 +49580,6 @@ var _hsluv = require("hsluv");
 var _react = _interopRequireWildcard(require("react"));
 
 var _reactRouterDom = require("react-router-dom");
-
-var _reactSwipeable = require("react-swipeable");
 
 var _tags = require("./tags");
 
@@ -50856,33 +49611,71 @@ function _iterableToArrayLimit(arr, i) { if (typeof Symbol === "undefined" || !(
 
 function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
-var GRID_SIZE = 160;
+var Tools = function Tools(_ref) {
+  var active = _ref.active,
+      onBrowse = _ref.onBrowse,
+      onDelete = _ref.onDelete,
+      onClear = _ref.onClear;
+  return /*#__PURE__*/_react.default.createElement("div", {
+    className: "tools"
+  }, /*#__PURE__*/_react.default.createElement(_utils.Button, {
+    name: "exit",
+    icon: "\u2715",
+    onClick: onBrowse
+  }), /*#__PURE__*/_react.default.createElement("span", {
+    className: "spacer"
+  }), /*#__PURE__*/_react.default.createElement(_utils.Button, {
+    name: "delete",
+    icon: "\uD83D\uDDD1",
+    disabled: active.length === 0,
+    onClick: onDelete
+  }), /*#__PURE__*/_react.default.createElement("span", {
+    className: "spacer"
+  }), /*#__PURE__*/_react.default.createElement(_utils.Button, {
+    name: "clear",
+    icon: "\u26F6",
+    disabled: active.length === 0,
+    onClick: onClear
+  }));
+};
 
-var Label = function Label() {
+var Label = function Label(_ref2) {
+  var refresh = _ref2.refresh;
+
   var hist = (0, _reactRouterDom.useHistory)(),
       path = (0, _reactRouterDom.useLocation)().pathname,
       query = (0, _reactRouterDom.useParams)().query,
-      _useAssets = (0, _utils.useAssets)("/rest/query/".concat(query)),
+      _useAssets = (0, _utils.useAssets)("/query/".concat(query)),
       assets = _useAssets.assets,
       loading = _useAssets.loading,
-      _useState = (0, _react.useState)(-1),
+      _useState = (0, _react.useState)(160),
       _useState2 = _slicedToArray(_useState, 2),
-      cursor = _useState2[0],
-      setCursor = _useState2[1],
-      _useState3 = (0, _react.useState)({}),
+      thumbSize = _useState2[0],
+      setThumbSize = _useState2[1],
+      _useState3 = (0, _react.useState)(-1),
       _useState4 = _slicedToArray(_useState3, 2),
-      selected = _useState4[0],
-      setSelected = _useState4[1],
-      _useState5 = (0, _react.useState)([]),
+      cursor = _useState4[0],
+      setCursor = _useState4[1],
+      _useState5 = (0, _react.useState)({}),
       _useState6 = _slicedToArray(_useState5, 2),
-      activeAssets = _useState6[0],
-      setActiveAssets = _useState6[1];
+      selected = _useState6[0],
+      setSelected = _useState6[1],
+      _useState7 = (0, _react.useState)([]),
+      _useState8 = _slicedToArray(_useState7, 2),
+      activeAssets = _useState8[0],
+      setActiveAssets = _useState8[1],
+      _useState9 = (0, _react.useState)(function () {
+    return null;
+  }),
+      _useState10 = _slicedToArray(_useState9, 2),
+      clickHandler = _useState10[0],
+      setClickHandler = _useState10[1];
 
   var moveCursor = function moveCursor(inc) {
     return setCursor(function (cur) {
-      var colsPerRow = Math.floor(window.innerWidth / GRID_SIZE),
+      var colsPerRow = Math.floor(window.innerWidth / thumbSize),
           nxt = Math.max(0, Math.min(cur + inc, assets.length - 1));
-      if (Math.floor(cur / colsPerRow) !== Math.floor(nxt / colsPerRow)) window.scrollBy(0, (inc > 0 ? 1 : -1) * GRID_SIZE);
+      if (Math.floor(cur / colsPerRow) !== Math.floor(nxt / colsPerRow)) window.scrollBy(0, (inc > 0 ? 1 : -1) * thumbSize);
       return nxt;
     });
   };
@@ -50899,140 +49692,154 @@ var Label = function Label() {
     });
   };
 
+  var deleteAssets = function deleteAssets(active) {
+    if (window.confirm('Really delete?')) {
+      Promise.all(active.map(function (_ref3) {
+        var slug = _ref3.slug;
+        return _axios.default.delete("/asset/".concat(slug, "/"));
+      })).then(function () {
+        return hist.go(0);
+      });
+    }
+  }; // When the cursor changes, update our click handler factory to use the
+  // updated cursor value.
+
+
+  (0, _react.useEffect)(function () {
+    // To use a function as a state variable, we have to wrap it in an empty
+    // function. The actual thing we're setting is idx => {...}.
+    setClickHandler(function () {
+      return function (idx) {
+        return function (ev) {
+          if (ev.shiftKey) {
+            var add = {};
+
+            if (cursor < idx) {
+              for (var i = cursor; i <= idx; i++) {
+                add[i] = true;
+              }
+            } else {
+              for (var _i2 = cursor; _i2 >= idx; _i2--) {
+                add[_i2] = true;
+              }
+            }
+
+            setSelected(function (sel) {
+              return _objectSpread(_objectSpread({}, sel), add);
+            });
+            setCursor(idx);
+          } else {
+            toggleSelected(idx);
+            setCursor(idx);
+          }
+        };
+      };
+    });
+  }, [cursor]); // When the selected set changes, update our "active" assets accordingly.
+
   (0, _react.useEffect)(function () {
     var idxs = Object.keys(selected);
-    if (idxs.length > 0) setActiveAssets(idxs.map(function (idx) {
+    setActiveAssets(idxs.length ? idxs.map(function (idx) {
       return assets[idx];
-    }));else if (cursor >= 0) setActiveAssets([assets[cursor]]);else setActiveAssets([]);
-  }, [cursor, selected]);
+    }) : []);
+  }, [selected]); // When the state of the view changes, update our key-down handler. We use the
+  // size of the thumbnails to move the cursor up/down, and the current cursor
+  // value to toggle its selected state.
+
   (0, _react.useEffect)(function () {
-    var colsPerRow = Math.floor(window.innerWidth / GRID_SIZE);
+    var colsPerRow = Math.floor(window.innerWidth / thumbSize);
 
     var handler = function handler(ev) {
+      if (ev.code === 'Escape') {
+        setCursor(-1);
+        hist.replace("/browse/".concat(query));
+      }
+
       var input = document.querySelector('.tag-select input');
       if (input && input.matches(':focus')) return;
-      if (ev.code === 'Escape') hist.replace("/browse/".concat(query));
-      if (ev.code === 'KeyX') toggleSelected(cursor);
+      if (ev.code === 'KeyN') setSelected({});
 
       if (ev.code === 'KeyT') {
         ev.preventDefault();
         input.focus();
       }
 
+      if (ev.code === 'KeyX') toggleSelected(cursor);
       if ({
-        ArrowLeft: true,
-        KeyH: true
+        ArrowLeft: 1,
+        KeyH: 1
       }[ev.code]) moveCursor(-1);
       if ({
-        ArrowRight: true,
-        KeyL: true
+        ArrowRight: 1,
+        KeyL: 1
       }[ev.code]) moveCursor(1);
       if ({
-        ArrowUp: true,
-        KeyK: true
+        ArrowUp: 1,
+        KeyK: 1
       }[ev.code]) moveCursor(-colsPerRow);
       if ({
-        ArrowDown: true,
-        KeyJ: true
+        ArrowDown: 1,
+        KeyJ: 1
       }[ev.code]) moveCursor(colsPerRow);
+      if (ev.code === 'Equal') setThumbSize(function (s) {
+        return Math.max(80, Math.min(s + 20, 320));
+      });
+      if (ev.code === 'Minus') setThumbSize(function (s) {
+        return Math.max(80, Math.min(s - 20, 320));
+      });
     };
 
     window.addEventListener('keydown', handler);
     return function () {
       return window.removeEventListener('keydown', handler);
     };
-  }, [cursor]);
-
-  var deleteAssets = function deleteAssets(active) {
-    if (window.confirm('Really delete?')) {
-      active.forEach(function (_ref) {
-        var slug = _ref.slug;
-        return _axios.default.delete("/rest/asset/".concat(slug, "/"));
-      });
-      hist.go(0);
-    }
-  };
-
-  return (
-    /*#__PURE__*/
-    _react.default.createElement(_react.default.Fragment, null,
-    /*#__PURE__*/
-    _react.default.createElement(_utils.Breadcrumbs, {
-      className: "label"
-    }, query.replace(/\/$/, '').replace(/\//g, ' & '),
-    /*#__PURE__*/
-    _react.default.createElement("span", {
-      className: "divider"
-    }, "\xBB"), "Edit"),
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      className: "tools"
+  }, [cursor, query, thumbSize]);
+  return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_utils.Breadcrumbs, {
+    className: "label"
+  }, query.replace(/\/$/, '').replace(/\//g, ' & '), /*#__PURE__*/_react.default.createElement("span", {
+    className: "divider"
+  }, "\xBB"), "Edit"), /*#__PURE__*/_react.default.createElement(Tools, {
+    onBrowse: function onBrowse() {
+      return hist.replace("/browse/".concat(query));
     },
-    /*#__PURE__*/
-    _react.default.createElement(_utils.Button, {
-      name: "exit",
-      icon: "\u2A09",
-      onClick: function onClick() {
-        return hist.replace("/browse/".concat(query));
-      }
-    }),
-    /*#__PURE__*/
-    _react.default.createElement("span", {
-      className: "spacer"
-    }),
-    /*#__PURE__*/
-    _react.default.createElement(_utils.Button, {
-      name: "delete",
-      icon: "\uD83D\uDDD1",
-      disabled: activeAssets.length === 0,
-      onClick: function onClick() {
-        return deleteAssets(activeAssets);
-      }
-    })),
-    /*#__PURE__*/
-    _react.default.createElement(_tags.TagSelect, {
-      className: "label",
-      assets: assets,
-      activeAssets: activeAssets
-    }), loading ?
-    /*#__PURE__*/
-    _react.default.createElement(_utils.Spinner, null) :
-    /*#__PURE__*/
-    _react.default.createElement(_react.default.Fragment, null, (0, _tags.countAssetTags)(assets).map(function (group) {
-      return group.tags.length === 0 || group.index > 2 ? null :
-      /*#__PURE__*/
-      _react.default.createElement(_tags.Tags, {
-        key: group.icon,
-        className: "label",
-        icon: group.icon,
-        tags: group.tags.filter(function (t) {
-          return path.indexOf("/".concat(t.name, "/")) < 0;
-        })
-      });
-    }),
-    /*#__PURE__*/
-    _react.default.createElement("div", {
-      className: "label thumbs ".concat(activeAssets.length ? 'selective' : '')
-    }, assets.map(function (asset, idx) {
-      return (
-        /*#__PURE__*/
-        _react.default.createElement(_utils.Thumb, {
-          key: asset.id,
-          asset: asset,
-          cursored: cursor === idx,
-          selected: selected[idx],
-          handleClick: function handleClick() {
-            return toggleSelected(idx);
-          }
-        })
-      );
-    }))))
-  );
+    onDelete: function onDelete() {
+      return deleteAssets(activeAssets);
+    },
+    onClear: function onClear() {
+      return setSelected({});
+    },
+    active: activeAssets
+  }), /*#__PURE__*/_react.default.createElement(_tags.TagSelect, {
+    className: "label",
+    key: assets.map(function (a) {
+      return a.slug;
+    }).join('-'),
+    assets: activeAssets.length ? activeAssets : assets,
+    refresh: refresh
+  }), loading ? /*#__PURE__*/_react.default.createElement(_utils.Spinner, null) : /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(_tags.TagGroups, {
+    className: "label",
+    assets: activeAssets.length ? activeAssets : assets,
+    hideEditable: true
+  }), /*#__PURE__*/_react.default.createElement("div", {
+    className: "label thumbs ".concat(activeAssets.length ? 'selective' : ''),
+    style: {
+      gridTemplateColumns: "repeat(auto-fit, minmax(".concat(thumbSize, "px, 1fr))"),
+      gridAutoRows: "".concat(thumbSize, "px")
+    }
+  }, assets.map(function (asset, idx) {
+    return /*#__PURE__*/_react.default.createElement(_utils.Thumb, {
+      key: asset.id,
+      asset: asset,
+      cursored: cursor === idx,
+      selected: selected[idx],
+      handleClick: clickHandler(idx)
+    });
+  }))));
 };
 
 var _default = Label;
 exports.default = _default;
-},{"axios":"../node_modules/axios/index.js","hsluv":"../node_modules/hsluv/hsluv.js","react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","react-swipeable":"../node_modules/react-swipeable/es/index.js","./tags":"tags.jsx","./utils":"utils.jsx","./label.styl":"label.styl"}],"base.styl":[function(require,module,exports) {
+},{"axios":"../node_modules/axios/index.js","hsluv":"../node_modules/hsluv/hsluv.js","react":"../node_modules/react/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","./tags":"tags.jsx","./utils":"utils.jsx","./label.styl":"label.styl"}],"base.styl":[function(require,module,exports) {
 var reloadCSS = require('_css_loader');
 
 module.hot.dispose(reloadCSS);
@@ -51088,93 +49895,61 @@ function _iterableToArrayLimit(arr, i) { if (typeof Symbol === "undefined" || !(
 function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
 var Index = function Index() {
-  var hist = (0, _reactRouterDom.useHistory)();
-  return (
-    /*#__PURE__*/
-    _react.default.createElement(_react.default.Fragment, null,
-    /*#__PURE__*/
-    _react.default.createElement(_utils.ConfigContext.Consumer, null, function (config) {
-      return (0, _tags.countAssetTags)(config.tags.map(function (t) {
-        return {
-          tags: [t.name]
-        };
-      })).map(function (group) {
-        return (
-          /*#__PURE__*/
-          _react.default.createElement(_tags.Tags, {
-            key: group.icon,
-            icon: group.icon,
-            tags: group.tags,
-            className: "index",
-            clickHandler: function clickHandler(tag) {
-              return function () {
-                return hist.push("/browse/".concat(tag.name, "/"));
-              };
-            }
-          })
-        );
-      });
-    }))
-  );
+  var hist = (0, _reactRouterDom.useHistory)(),
+      clickHandler = function clickHandler(t) {
+    return function () {
+      return hist.push("/browse/".concat(t.name, "/"));
+    };
+  };
+
+  return /*#__PURE__*/_react.default.createElement(_tags.TagGroups, {
+    className: "index",
+    clickHandler: clickHandler
+  });
 };
 
 var App = function App() {
-  var _useState = (0, _react.useState)({}),
+  var _useState = (0, _react.useState)(0),
       _useState2 = _slicedToArray(_useState, 2),
-      config = _useState2[0],
-      setConfig = _useState2[1];
+      version = _useState2[0],
+      setVersion = _useState2[1],
+      _useState3 = (0, _react.useState)(null),
+      _useState4 = _slicedToArray(_useState3, 2),
+      tags = _useState4[0],
+      setTags = _useState4[1];
 
   (0, _react.useEffect)(function () {
-    (0, _axios.default)('/rest/config/').then(function (res) {
-      return setConfig(res.data);
+    (0, _axios.default)('/tags/').then(function (res) {
+      return setTags(res.data.tags);
     });
-  }, []);
-  return !config.formats ?
-  /*#__PURE__*/
-  _react.default.createElement(_utils.Spinner, null) :
-  /*#__PURE__*/
-  _react.default.createElement(_utils.ConfigContext.Provider, {
-    value: config
-  },
-  /*#__PURE__*/
-  _react.default.createElement(_reactRouterDom.BrowserRouter, null,
-  /*#__PURE__*/
-  _react.default.createElement(_reactRouterDom.Switch, null,
-  /*#__PURE__*/
-  _react.default.createElement(_reactRouterDom.Route, {
+  }, [version]);
+
+  var refresh = function refresh() {
+    return setVersion(function (n) {
+      return n + 1;
+    });
+  };
+
+  return !tags ? /*#__PURE__*/_react.default.createElement(_utils.Spinner, null) : /*#__PURE__*/_react.default.createElement(_reactRouterDom.BrowserRouter, null, /*#__PURE__*/_react.default.createElement(_tags.TagsContext.Provider, {
+    value: tags || []
+  }, /*#__PURE__*/_react.default.createElement(_reactRouterDom.Switch, null, /*#__PURE__*/_react.default.createElement(_reactRouterDom.Route, {
     path: "/label/:query([^?#]+)"
-  },
-  /*#__PURE__*/
-  _react.default.createElement(_label.default, null)),
-  /*#__PURE__*/
-  _react.default.createElement(_reactRouterDom.Route, {
+  }, /*#__PURE__*/_react.default.createElement(_label.default, {
+    refresh: refresh
+  })), /*#__PURE__*/_react.default.createElement(_reactRouterDom.Route, {
     path: "/browse/:query([^?#]+)"
-  },
-  /*#__PURE__*/
-  _react.default.createElement(_browse.default, null)),
-  /*#__PURE__*/
-  _react.default.createElement(_reactRouterDom.Route, {
-    path: "/view/:slug"
-  },
-  /*#__PURE__*/
-  _react.default.createElement(_view.default, null)),
-  /*#__PURE__*/
-  _react.default.createElement(_reactRouterDom.Route, {
+  }, /*#__PURE__*/_react.default.createElement(_browse.default, null)), /*#__PURE__*/_react.default.createElement(_reactRouterDom.Route, {
     path: "/edit/:slug"
-  },
-  /*#__PURE__*/
-  _react.default.createElement(_edit.default, null)),
-  /*#__PURE__*/
-  _react.default.createElement(_reactRouterDom.Route, {
+  }, /*#__PURE__*/_react.default.createElement(_edit.default, {
+    refresh: refresh
+  })), /*#__PURE__*/_react.default.createElement(_reactRouterDom.Route, {
+    path: "/view/:slug"
+  }, /*#__PURE__*/_react.default.createElement(_view.default, null)), /*#__PURE__*/_react.default.createElement(_reactRouterDom.Route, {
     path: "/"
-  },
-  /*#__PURE__*/
-  _react.default.createElement(Index, null)))));
+  }, /*#__PURE__*/_react.default.createElement(Index, null)))));
 };
 
-_reactDom.default.render(
-/*#__PURE__*/
-_react.default.createElement(App, null), document.getElementById('root'));
+_reactDom.default.render( /*#__PURE__*/_react.default.createElement(App, null), document.getElementById('root'));
 },{"axios":"../node_modules/axios/index.js","react":"../node_modules/react/index.js","react-dom":"../node_modules/react-dom/index.js","react-router-dom":"../node_modules/react-router-dom/esm/react-router-dom.js","./edit":"edit.jsx","./view":"view.jsx","./browse":"browse.jsx","./label":"label.jsx","./tags":"tags.jsx","./utils":"utils.jsx","./base.styl":"base.styl","./index.styl":"index.styl"}],"../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
@@ -51203,7 +49978,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "42307" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "41415" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

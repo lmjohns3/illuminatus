@@ -1,9 +1,6 @@
 import axios from 'axios'
 import React, {useEffect, useState} from 'react'
-import {Link} from 'react-router-dom'
-
-
-const ConfigContext = React.createContext('config')
+import {Link, useHistory, useLocation} from 'react-router-dom'
 
 
 const Breadcrumbs = ({className, children}) => (
@@ -20,6 +17,23 @@ const Button = ({name, icon, disabled, onClick}) => (
         onClick={disabled ? null : onClick}>
     <span className='icon'>{icon}</span>
   </span>)
+
+
+const Related = ({asset, how, title, className}) => {
+  const hist = useHistory()
+      , path = useLocation().pathname
+      , args = {content: 'alg=dhash-8', tag: 'min=0.3'}
+      , {assets, loading} = useAssets(
+        `/asset/${asset.slug}/similar/${how}/?${args[how]}`);
+
+  return <div className={`related ${how} thumbs ${className || ''}`}>
+    {(title && (loading || assets.length > 0)) ? <h2>{title}</h2> : null}
+    {loading ? <Spinner /> : assets.map(
+      asset => <Thumb key={asset.id}
+                      asset={asset}
+                      handleClick={() => hist.push(`/${path.split(/\//)[1]}/${asset.slug}/`)} />)}
+  </div>;
+}
 
 
 const Spinner = () => {
@@ -53,21 +67,20 @@ const Spinner = () => {
 
 
 const Thumb = ({asset, handleClick, cursored, selected}) => {
-  const isVideo = asset.medium === 'video'
-      , source = ext => `/asset/thumb/${asset.slug.slice(0, 1)}/${asset.slug}.${ext}`;
-  return <div className={`thumb ${asset.medium} ${cursored ? 'cursored' : ''} ${selected ? 'selected' : ''}`}><ConfigContext.Consumer>{
-    config => {
-      const ext = config.formats[asset.medium]['thumb'].ext;
-      return !asset.id ? <Spinner /> : <>
-      <img src={source(isVideo ? 'png' : ext)}
-           title={asset.tags.join(' ')}
-           onClick={handleClick}
-           onMouseEnter={({target}) => { if (isVideo) target.src = source(ext); }}
-           onMouseLeave={({target}) => { if (isVideo) target.src = source('png'); }}/>
-        {isVideo ? <span className='video-icon'>▶</span> : null}
-      </>;
-    }
-  }</ConfigContext.Consumer></div>;
+  const classes = [
+    'thumb',
+    asset.medium,
+    cursored ? 'cursored' : '',
+    selected ? 'selected' : '',
+  ], src = m => `/asset/${asset.slug}/read/thumb/?m=${m ? '1' : '0'}`;
+  return !asset.id ? <Spinner /> : <div className={classes.join(' ')}>
+    <img src={src()}
+         title={asset.tags.join(' ')}
+         onClick={handleClick}
+         onMouseEnter={({target}) => { target.src = src(true); }}
+         onMouseLeave={({target}) => { target.src = src(); }}/>
+    {asset.medium === 'video' ? <span className='video-icon'>▶</span> : null}
+  </div>;
 }
 
 
@@ -83,4 +96,4 @@ const useAssets = url => {
 }
 
 
-export {Breadcrumbs, Button, ConfigContext, Spinner, Thumb, useAssets}
+export {Breadcrumbs, Button, Related, Spinner, Thumb, useAssets}

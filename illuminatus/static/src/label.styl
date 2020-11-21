@@ -15,11 +15,15 @@
         &.selected
           opacity: 1
 
-    .thumb.selected
-      border-color: #6cf
-
-    .thumb.cursored
-      border-color: #ff0
+    .thumb
+      &.selected
+        border-color: #6cf
+      &.cursored
+        border-color: #ff0
+      &.selected.cursored
+        border-image-slice: 1
+        border-image-source: repeating-linear-gradient(
+            45deg, #6cf 0px, #6cf 10px, #ff0 10px, #ff0 20px)
 
   &.tag-select
     grid-column: 1 / -1
