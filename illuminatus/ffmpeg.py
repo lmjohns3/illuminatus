@@ -222,11 +222,15 @@ def run(asset, output, **kwargs):
     if 'fps' in kwargs:
         filters.append(f'fps={kwargs["fps"]}')
 
+    threads = str(max(1, os.cpu_count() // 4))
+
     def run(*args):
         cmd = ['ffmpeg', '-y',
-               '-filter_threads', '4',
-               '-filter_complex_threads', '4',
-               '-i', asset.path]
+               '-threads', threads,
+               '-filter_threads', threads,
+               '-filter_complex_threads', threads,
+               '-i', asset.path,
+               '-threads', threads]
         for attr in 'ar ac crf quality speed'.split():
             if attr in kwargs:
                 cmd.extend((f'-{attr}', f'{kwargs[attr]}'))
