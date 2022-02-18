@@ -1,5 +1,5 @@
+import collections
 import flask
-# import flask_socketio
 import flask_sqlalchemy
 import glob
 import json
@@ -28,12 +28,6 @@ def _get_asset(slug):
 
 def _json(items):
     return flask.jsonify([item.to_dict() for item in items])
-
-
-# socketio = flask_socketio.SocketIO(app)
-# @socketio.on('foo event')
-# def handle_foo_event(json):
-#     return 'a'
 
 
 @app.route('/query/<path:query>')
