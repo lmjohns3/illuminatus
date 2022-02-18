@@ -1,5 +1,4 @@
 import arrow
-import itertools
 import parsimonious.grammar
 import sqlalchemy
 
@@ -35,10 +34,10 @@ class QueryParser(parsimonious.NodeVisitor):
     path     = ~r'path:\S+'
     slug     = ~r'slug:[-\w]+'
     hash     = ~r'hash:[-=\w]+'
-    medium   = ~'(photo|video|audio)'
+    medium   = ~r'(photo|video|audio)'
     tag      = ~r'[-\w]+'
-    not      = 'not'
-    or       = 'or'
+    not      = ~r'\bnot\b'
+    or       = ~r'\bor\b'
     _        = ~r'\s*'
     __       = ~r'\s+'
     ''')
@@ -47,22 +46,31 @@ class QueryParser(parsimonious.NodeVisitor):
         super().__init__()
         self.sess = sess
 
+    def generic_visit(self, node, children):
+        return children or node.text
+
     def visit_query(self, node, children):
         select, rest = children
         others = []
         for _, neg, other in rest:
             if neg:
-                select = sqlalchemy.sql.except_(select, other)
+                others.append(sqlalchemy.sql.except_(select, other))
             else:
                 others.append(other)
-        return sqlalchemy.sql.intersect(select, *others) if others else select
+        if others:
+            select = sqlalchemy.sql.intersect(
+                select, *(o.subquery().select() for o in others))
+        return select
 
     def visit_union(self, node, children):
         select, rest = children
         others = []
         for _, _, _, other in rest:
             others.append(other)
-        return sqlalchemy.sql.union(select, *others) if others else select
+        if others:
+            select = sqlalchemy.sql.union(
+                select, *(o.subquery().select() for o in others))
+        return select
 
     def visit_set(self, node, children):
         _, _, [child] = children
@@ -104,18 +112,15 @@ class QueryParser(parsimonious.NodeVisitor):
             condition = Hash.nibbles.startswith(nibbles) & (Hash.method == method)
         return self.sess.query(Hash.asset_id).filter(condition)
 
-    def generic_visit(self, node, children):
-        return children or node.text
 
-
-def assets(sess, *query, order=None, limit=None, offset=None):
+def assets(sess, query, order=None, limit=None, offset=None):
     '''Find media assets matching a text query.
 
     Parameters
     ----------
     sess : SQLAlchemy
         Database session.
-    query : str
+    query : list of str
         Get assets from the database matching these query clauses.
     order : str
         Order assets by this field.
@@ -128,7 +133,7 @@ def assets(sess, *query, order=None, limit=None, offset=None):
     -------
       A result set of :class:`Asset`s matching the query.
     '''
-    query = ' '.join(itertools.chain.from_iterable(query)).strip()
+    query = ' '.join(query).strip()
     q = sess.query(Asset)
     if query:
         q = q.filter(Asset.id.in_(QueryParser(sess).parse(query)))
