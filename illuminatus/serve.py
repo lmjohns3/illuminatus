@@ -8,6 +8,7 @@ import re
 import shutil
 import sqlalchemy
 import tempfile
+import urllib
 import yaml
 
 from . import assets
@@ -100,10 +101,10 @@ def delete_asset(slug):
 
 @app.route('/asset/<string:slug>/read/<string:fmt>/')
 def read(slug, fmt):
-    motion = flask.request.args.get('m', '0')
+    still = flask.request.args.get('s', '0')
     asset = _get_asset(slug)
     ext = app.config['formats'][asset.medium][fmt].get('ext')
-    if asset.medium == 'video' and motion == '0':
+    if asset.medium == 'video' and fmt == 'thumb' and still == '1':
         ext = 'png'
     try:
         return flask.send_file(
@@ -223,7 +224,7 @@ def _annotate_tags(counts, groups):
                 if name == patt or re.fullmatch(patt, name):
                     tag['group'] = group['group']
                     tag['icon'] = group['icon']
-                    tag['order'] = f'{g + 1:03d}{p + 1:06d}'
+                    tag['order'] = f'{g + 1:03d}{p + 1:03d}'
                     tag['hue'] = group.get('hue', 0)
                     if group.get('editable'):
                         tag['editable'] = True
@@ -233,19 +234,33 @@ def _annotate_tags(counts, groups):
         yield tag
 
 
-@app.route('/tags/')
+def _load_emoji(url='https://unicode.org/Public/emoji/13.1/emoji-test.txt'):
+    '''Load emojis list, and parse name/emoji pairs.'''
+    with urllib.request.urlopen(url) as handle:
+        data = handle.read().decode('utf-8')
+    emoji_re = re.compile(r'(?P<icon>.+) E(?P<version>\d+\.\d+) (?P<description>.*)')
+    for line in data.splitlines():
+        parts = line.split('#')
+        if len(parts) == 2:
+            m = emoji_re.match(parts[1].strip())
+            if m:
+                yield m.groupdict()
+
+
+@app.route('/config/')
 def config():
     with open(app.config['config']) as handle:
         parsed = yaml.load(handle, Loader=yaml.CLoader)
 
-    default_group = dict(group='other', icon='🏷️', patterns=['.*'], editable=True)
-    groups = parsed.get('tags', []) + [default_group]
+    groups = parsed.get('tags', {}).get('groups', []) + [
+        dict(group='other', icon='🏷️', patterns=['.*'], editable=True)]
 
     # Get tag counts by grouping the asset-tag secondary table.
     aid, tid = assets.asset_tags.c.asset_id, assets.asset_tags.c.tag_id
     counts = dict(sql.session.query(tid, sqlalchemy.func.count(aid)).group_by(tid))
 
-    return flask.jsonify(dict(tags=list(_annotate_tags(counts, groups))))
+    return flask.jsonify(dict(tags=list(_annotate_tags(counts, groups)),
+                              emoji=list(_load_emoji())))
 
 
 @app.route('/')
