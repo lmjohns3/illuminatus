@@ -2,9 +2,7 @@ import arrow
 import collections
 import itertools
 import json
-import librosa
 import logging
-import numpy as np
 import os
 import PIL.Image
 import re
@@ -12,6 +10,7 @@ import sqlalchemy
 import sqlalchemy.ext.associationproxy
 import tempfile
 
+from . import celery
 from . import db
 from . import ffmpeg
 from . import metadata
@@ -340,8 +339,8 @@ class Asset(db.Model):
     def compute_content_hashes(self):
         '''Compute hashes of asset content.'''
         if self.is_photo:
-            rgb = self._open_and_auto_orient()
-            self.hashes.add(Hash.compute_resnet_hash(rgb))
+            rgb = self.open_and_auto_orient()
+            #self.hashes.add(Hash.compute_resnet_hash(rgb))
             for size in (4, 8, 16):
                 self.hashes.add(Hash.compute_photo_histogram(rgb, 'rgb', size))
             gray = rgb.convert('L')
@@ -349,6 +348,8 @@ class Asset(db.Model):
                 self.hashes.add(Hash.compute_photo_dhash(gray, size))
 
         if self.is_audio and self.duration:
+            import librosa
+            import numpy as np
             sr = 16000
             with tempfile.NamedTemporaryFile(suffix='.wav') as ntf:
                 # compute fft with windows separated by 1000 samples
@@ -373,7 +374,7 @@ class Asset(db.Model):
         basename = os.path.basename(self.path)
         os.rename(self.path, os.path.join(trash, f'{self.slug}-{basename}'))
 
-    def _open_and_auto_orient(self):
+    def open_and_auto_orient(self):
         '''Open an image and apply transpositions to auto-orient the content.'''
         img = PIL.Image.open(self.path)
         # http://stackoverflow.com/q/4228530

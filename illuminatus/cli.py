@@ -2,7 +2,7 @@ import click
 import contextlib
 import itertools
 import os
-import PIL.Image
+import PIL.ImageOps
 import re
 import shutil
 import sys
