@@ -48,6 +48,8 @@ def update_from_content(self, slug):
             raise ValueError(slug)
         asset.update_from_metadata()
         asset.compute_content_hashes()
+        for h in asset.hashes:
+            sess.add(h)
         try:
             sess.commit()
             return
