@@ -3,7 +3,7 @@ celery==5.0.1
 click==7.1.2
 Flask-SQLAlchemy==2.4.4
 librosa==0.8.0
-numpy==1.19.2
+numpy==1.21.0
 parsimonious==0.8.1
 Pillow==8.0.0
 PyYAML==5.3.1
