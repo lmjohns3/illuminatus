@@ -1,13 +1,9 @@
-import axios from 'axios'
 import {hsluvToHex} from 'hsluv'
 import React from 'react'
 import {useLocation} from 'react-router-dom'
 import CreatableSelect from 'react-select/creatable'
 
-
-// Context for tags data.
-const TagsContext = React.createContext('tags')
-
+import {ConfigContext} from './config'
 
 // Sort an array of objects first by "order" and then by "name" attribute.
 const cmp = (s, t) => s.order < t.order ? -1 : s.order > t.order ? 1 :
@@ -47,9 +43,10 @@ const Group = ({icon, tags, clickHandler, className}) => {
 
 
 const TagGroups = ({assets, className, hideEditable, clickHandler}) => {
-  return <TagsContext.Consumer>{tags => {
+  const assetIds = (assets || []).map(asset => asset.id).join('-');
+  return <ConfigContext.Consumer>{config => {
     const groups = {}, icons = {}, counts = countTags(assets);
-    tags.forEach(t => {
+    config.tags.forEach(t => {
       if (t.count === 0) return;
       if (hideEditable && t.editable) return;
       if (assets && !counts[t.name]) return;
@@ -61,41 +58,40 @@ const TagGroups = ({assets, className, hideEditable, clickHandler}) => {
       if (assets) t.count = counts[t.name];
     });
     return Object.values(groups).sort(cmp).map(
-      g => <Group key={g.name}
+      g => <Group key={`${g.name}-${assetIds}`}
                   icon={icons[g.name]}
                   tags={Object.values(g.tags)}
                   className={`${className || ''} ${g.name}`}
                   clickHandler={clickHandler} />
     );
-  }}</TagsContext.Consumer>;
+  }}</ConfigContext.Consumer>;
 }
 
 
 const TagSelect = ({assets, className, refresh}) => {
-  const update = asset => res => { asset.tags = res.data.tags; return res; }
-      , url = (asset, tag) => `/asset/${asset.slug}/tags/${tag}/`
-      , tagToOption = t => ({label: t.name,
-                             value: t.name,
-                             color: hsluvToHex([t.hue, 100, 80])});
+  const update = asset => res => { asset.tags = res.tags; return res }
+  const urlFor = (asset, tag) => `/asset/${asset.slug}/tags/${tag}/`
+  const add = (a, tag) => fetch(urlFor(a, tag), { method: 'POST' }).then(res => res.json()).then(update(a))
+  const tagToOption = t => ({label: t.name, value: t.name, color: hsluvToHex([t.hue, 100, 80])})
 
   const changeTags = (options, about) => {
     if (about.action === 'create-option') {
       const tag = options.slice(-1)[0].value
-          , calls = assets.map(a => axios.post(url(a, tag)).then(update(a)));
-      Promise.all(calls).then(refresh);
+      const calls = assets.map(a => add(a, tag))
+      Promise.all(calls).then(refresh)
 
     } else if (about.action === 'select-option') {
-      const tag = options.slice(-1)[0].value;
-      assets.map(a => axios.post(url(a, tag)).then(update(a)));
+      const tag = options.slice(-1)[0].value
+      assets.map(a => add(a, tag))
 
     } else if (about.action === 'pop-value' || about.action === 'remove-value') {
       const tag = about.removedValue.value;
-      assets.map(a => axios.delete(url(a, tag)).then(update(a)));
+      assets.map(a => fetch(urlFor(a, tag), {method: 'delete'}).then(res => res.json()).then(update(a)))
     }
   };
 
-  return <TagsContext.Consumer>{
-    tags => {
+  return <ConfigContext.Consumer>{
+    config => {
       const active = countTags(assets);
       return <CreatableSelect
                className={`${className || ''} tag-select`}
@@ -105,8 +101,8 @@ const TagSelect = ({assets, className, refresh}) => {
                isClearable={false}
                backspaceRemovesValue={false}
                onChange={changeTags}
-               defaultValue={tags.filter(t => t.editable && active[t.name]).map(tagToOption)}
-               options={tags.filter(t => t.editable).map(tagToOption)}
+               defaultValue={config.tags.filter(t => t.editable && active[t.name]).map(tagToOption)}
+               options={config.tags.filter(t => t.editable).map(tagToOption)}
                styles={{
                  option: (base, {data, isFocused}) => ({
                    ...base,
@@ -127,7 +123,7 @@ const TagSelect = ({assets, className, refresh}) => {
                  placeholder: base => ({...base, color: '#111'}),
                }} />;
     }
-  }</TagsContext.Consumer>;
+  }</ConfigContext.Consumer>;
 }
 
-export {TagsContext, TagGroups, TagSelect}
+export {TagGroups, TagSelect}

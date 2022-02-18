@@ -1,4 +1,3 @@
-import axios from 'axios'
 import React, {useEffect, useState} from 'react'
 import ReactDOM from 'react-dom'
 import {BrowserRouter, Route, Switch, useHistory} from 'react-router-dom'
@@ -8,7 +7,8 @@ import View from './view'
 import Browse from './browse'
 import Label from './label'
 
-import {TagsContext, TagGroups} from './tags'
+import {ConfigContext} from './config'
+import {TagGroups} from './tags'
 import {Spinner} from './utils'
 
 import './base.styl'
@@ -23,17 +23,17 @@ const Index = () => {
 
 const App = () => {
   const [version, setVersion] = useState(0)
-      , [tags, setTags] = useState(null);
+      , [config, setConfig] = useState({});
 
   useEffect(() => {
-    axios('/tags/').then(res => setTags(res.data.tags));
+    fetch('/config/').then(res => res.json()).then(setConfig);
   }, [version]);
 
   const refresh = () => setVersion(n => n + 1);
 
-  return !tags ? <Spinner /> :
-  <BrowserRouter>
-    <TagsContext.Provider value={tags || []}>
+  return (config && config.tags) ?
+  <ConfigContext.Provider value={config}>
+    <BrowserRouter>
       <Switch>
         <Route path='/label/:query([^?#]+)'><Label refresh={refresh} /></Route>
         <Route path='/browse/:query([^?#]+)'><Browse /></Route>
@@ -41,8 +41,9 @@ const App = () => {
         <Route path='/view/:slug'><View /></Route>
         <Route path='/'><Index /></Route>
       </Switch>
-    </TagsContext.Provider>
-  </BrowserRouter>
+    </BrowserRouter>
+  </ConfigContext.Provider>
+  : <Spinner />;
 }
 
 ReactDOM.render(<App />, document.getElementById('root'))

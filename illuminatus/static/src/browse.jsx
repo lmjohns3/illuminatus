@@ -1,4 +1,3 @@
-import axios from 'axios'
 import React, {useEffect, useState} from 'react'
 import {useHistory, useLocation, useParams} from 'react-router-dom'
 import CreatableSelect from 'react-select/creatable'

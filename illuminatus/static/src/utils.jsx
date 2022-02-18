@@ -1,4 +1,3 @@
-import axios from 'axios'
 import React, {useEffect, useState} from 'react'
 import {Link, useHistory, useLocation} from 'react-router-dom'
 
@@ -24,7 +23,7 @@ const Related = ({asset, how, title, className}) => {
       , path = useLocation().pathname
       , args = {content: 'alg=dhash-8', tag: 'min=0.3'}
       , {assets, loading} = useAssets(
-        `/asset/${asset.slug}/similar/${how}/?${args[how]}`);
+        `/asset/${asset.slug}/similar/${how}/`, 0, args[how]);
 
   return <div className={`related ${how} thumbs ${className || ''}`}>
     {(title && (loading || assets.length > 0)) ? <h2>{title}</h2> : null}
@@ -72,24 +71,35 @@ const Thumb = ({asset, handleClick, cursored, selected}) => {
     asset.medium,
     cursored ? 'cursored' : '',
     selected ? 'selected' : '',
-  ], src = m => `/asset/${asset.slug}/read/thumb/?m=${m ? '1' : '0'}`;
+  ], src = still => `/asset/${asset.slug}/read/thumb/?s=${still ? '1' : '0'}`;
   return !asset.id ? <Spinner /> : <div className={classes.join(' ')}>
-    <img src={src()}
+    <img src={src(true)}
          title={asset.tags.join(' ')}
          onClick={handleClick}
-         onMouseEnter={({target}) => { target.src = src(true); }}
-         onMouseLeave={({target}) => { target.src = src(); }}/>
+         onMouseEnter={({target}) => { target.src = src(false); }}
+         onMouseLeave={({target}) => { target.src = src(true); }}/>
     {asset.medium === 'video' ? <span className='video-icon'>▶</span> : null}
   </div>;
 }
 
 
-const useAssets = url => {
+const useAssets = (url, batch = 32, args = {}) => {
   const [state, setState] = useState({assets: [], loading: false});
+
+  const enc = encodeURIComponent
+      , loadNext = off => {
+        const kw = Object.entries({...args, off, lim: batch || 32})
+                         .map(([k, v]) => `${enc(k)}=${enc(v)}`);
+        fetch(`${url}?${kw.join('&')}`).then(res => res.json()).then(res => {
+          setState(s => ({assets: [...s.assets, ...res], loading: false}));
+          if (batch && res.length === batch)
+            loadNext(off + batch);
+        });
+      };
 
   useEffect(() => {
     setState({assets: [], loading: true});
-    axios(url).then(res => setState({assets: res.data, loading: false}));
+    loadNext(0);
   }, [url]);
 
   return state;

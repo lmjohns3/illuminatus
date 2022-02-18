@@ -1,4 +1,3 @@
-import axios from 'axios'
 import moment from 'moment'
 import React, {useEffect, useState} from 'react'
 import {Link, useHistory, useParams} from 'react-router-dom'
@@ -31,7 +30,7 @@ const Edit = ({refresh}) => {
 
   useEffect(() => {
     setAsset(defaultAsset);
-    axios(`/asset/${slug}/`).then(res => setAsset(res.data));
+    fetch(`/asset/${slug}/`).then(res => res.json()).then(setAsset);
   }, [slug]);
 
   useEffect(() => {
@@ -47,7 +46,7 @@ const Edit = ({refresh}) => {
 
   const deleteAsset = () => {
     if (window.confirm('Really delete?')) {
-      axios.delete(`/asset/${slug}/`).then(() => hist.go(-1));
+      fetch(`/asset/${slug}/`, {method: 'delete'}).then(() => hist.go(-1));
     }
   };
 

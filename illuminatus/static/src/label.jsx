@@ -1,4 +1,3 @@
-import axios from 'axios'
 import {hsluvToHex} from 'hsluv'
 import React, {useEffect, useState} from 'react'
 import {useHistory, useLocation, useParams} from 'react-router-dom'
@@ -47,7 +46,7 @@ const Label = ({refresh}) => {
   const deleteAssets = active => {
     if (window.confirm('Really delete?')) {
       Promise.all(
-        active.map(({slug}) => axios.delete(`/asset/${slug}/`))
+        active.map(({slug}) => fetch(`/asset/${slug}/`, {method: 'delete'}))
       ).then(() => hist.go(0));
     }
   };

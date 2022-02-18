@@ -1,4 +1,3 @@
-import axios from 'axios'
 import React, {useEffect, useState} from 'react'
 import {useHistory, useParams} from 'react-router-dom'
 
@@ -33,7 +32,7 @@ const View = () => {
     window.scrollTo(0, 0);
 
     setAsset(defaultAsset);
-    axios(`/asset/${slug}/`).then(res => setAsset(res.data));
+    fetch(`/asset/${slug}/`).then(res => res.json()).then(setAsset);
 
     const edit = () => hist.replace(`/edit/${slug}/`);
     setStartEditing(() => edit);
@@ -52,7 +51,9 @@ const View = () => {
     <Breadcrumbs className='view'>{slug.slice(0, 12)}</Breadcrumbs>
     <Full asset={asset} />
     <dl className='view info'>
-      <dt>Path</dt><dd>{asset.path}</dd>
+      <dt>Path</dt><dd id='path' onClick={
+        () => window.getSelection().selectAllChildren(document.getElementById('path'))
+      }>{asset.path}</dd>
       {asset.width ? <><dt>Size</dt><dd>{asset.width} x {asset.height}</dd></> : null}
       {asset.duration ? <><dt>Length</dt><dd>{`${Math.round(asset.duration)} sec`}</dd></> : null}
     </dl>
