@@ -1,14 +1,15 @@
 import click
 import contextlib
+import itertools
 import os
+import PIL.Image
 import re
+import shutil
 import sys
 import time
-import torch
 import yaml
 
 from . import celery
-from . import classifier
 from . import db
 from . import importexport
 from . import query
@@ -38,10 +39,10 @@ def normalize_path(p):
 query_assets = query.assets
 
 
-def matching_assets(q, **kwargs):
+def matching_assets(query, **kwargs):
     '''Get assets matching a query, using a local session (i.e., read-only).'''
     with transaction() as sess:
-        yield from query_assets(sess, q, **kwargs)
+        yield from query_assets(sess, query, **kwargs)
 
 
 def progressbar(items, label):
@@ -72,7 +73,7 @@ def progressbar(items, label):
 def cli(ctx, config, log_sql, log_tools):
     '''Command-line interface for media database.'''
     # Don't require a database for getting help.
-    if ctx.invoked_subcommand == 'help' or '--help' in sys.argv:
+    if '--help' in sys.argv:
         return
 
     if ctx.invoked_subcommand != 'init':
@@ -91,7 +92,7 @@ def cli(ctx, config, log_sql, log_tools):
 
     # Configure sqlalchemy sessions to connect to our database.
     db.Session.configure(bind=db.engine(path=parsed['db'], echo=log_sql))
-    celery.app.conf.update(illuminatus_db=parsed['db'])
+    celery.app.conf['illuminatus_db'] = parsed['db']
 
     if log_tools:
         from . import ffmpeg
@@ -100,7 +101,7 @@ def cli(ctx, config, log_sql, log_tools):
 
 @cli.command()
 @click.pass_context
-def help(ctx):
+def queries(ctx):
     '''Help on QUERYs.
 
     \b
@@ -275,6 +276,54 @@ def rm(ctx, query):
             sess.delete(asset)
 
 
+def paired_image_pixels(asset, cols, rows):
+    pixels = PIL.ImageOps.autocontrast(
+        asset.open_and_auto_orient().convert('RGB').resize((cols, rows)),
+        cutoff=5, preserve_tone=False).getdata()
+    for r in range(0, rows, 2):
+        for c in range(cols):
+            yield pixels[r * cols + c] + pixels[(r + 1) * cols + c]
+
+
+@cli.command()
+@click.argument('query', nargs=-1)
+@click.pass_context
+def view(ctx, query):
+    '''View assets matching a QUERY.'''
+    with transaction() as sess:
+        assets = list(query_assets(sess, query))
+    idx = 0
+
+    write = sys.stdout.write
+
+    columns, lines = shutil.get_terminal_size()
+    lines = 2 * lines - 2
+    aspect = columns / lines
+
+    write('\x1b[?25l')
+    while True:
+        asset = assets[idx]
+        ar = asset.width / asset.height
+        cols = columns if ar > aspect else int(lines * ar)
+        rows = lines if ar <= aspect else int(columns / ar)
+        rows -= rows % 2
+        if asset.is_photo:
+            click.clear()
+            for i, bgfg in enumerate(paired_image_pixels(asset, cols, rows)):
+                write('\x1b[48;2;{};{};{}m\x1b[38;2;{};{};{}m▄'.format(*bgfg))
+                if i % cols == cols - 1 and i < rows * cols / 2 - 2:
+                    write('\n')
+            write('\x1b[0m')
+            c = click.getchar(echo=False)
+            if c == 'q' or c == '\x1b':
+                break
+            if c == '\x1b[D' or c == '\x1b[A':
+                idx -= 2
+        idx = (idx + 1) % len(assets)
+    write('\x1b[?25h')
+    write('\x1b[0m')
+
+
 @cli.command()
 @click.option('--output', metavar='FILE', help='Save export zip to FILE.')
 @click.option('--hide-tags', multiple=True, metavar='REGEXP [REGEXP...]',
@@ -378,6 +427,24 @@ def thumbnail(ctx, query, overwrite):
 
 
 @cli.command()
+@click.option('--concurrency', default=1, metavar='N', help='Run N concurrent workers.')
+@click.option('--uid', type=int, metavar='N', help='Run as UID N.')
+@click.pass_context
+def workers(ctx, concurrency, uid):
+    '''Run a pool of celery workers for running tasks.'''
+    celery.app.worker_main(argv=(
+        'worker',
+        '-l', 'info',
+        '-O', 'fair',
+        '-Q', 'celery,audio,photo,video',
+        '-c', str(concurrency),
+        '--uid', str(uid or os.getuid()),
+        '--without-gossip',
+        '--without-mingle',
+    ))
+
+
+@cli.command()
 @click.option('--feature-tags', type=str, metavar='TAG[,TAG,...]')
 @click.option('--label-tags', type=str, metavar='TAG[,TAG,...]')
 @click.option('--epochs', default=10, metavar='N', help='Train for N epochs.')
@@ -418,8 +485,10 @@ def train(ctx, query, feature_tags, label_tags, epochs, validation_split, save):
             train.append(asset.to_dict())
     print(f'Got {len(train)} training and {len(valid)} validation assets.')
 
+    from . import classifier
     model = classifier.train(epochs, train, valid, feature_tags, label_tags)
     if save:
+        import torch
         torch.save(dict(model_state=model.state_dict(),
                         feature_tags=feature_tags,
                         label_tags=label_tags), save)
@@ -443,12 +512,13 @@ def serve(ctx, host, port, debug, slug_size):
     app.config.update(ctx.obj)
     app.config['SQLALCHEMY_ECHO'] = ctx.obj['log_sql']
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + ctx.obj['db']
+    app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{ctx.obj['db']}"
     app.config['slug-size'] = slug_size
+    app.config['debug'] = debug
 
     sql.init_app(app)
 
-    workers = multiprocessing.cpu_count()
+    workers = 1 + (0 if debug else multiprocessing.cpu_count())
     try:
         _maybe_run_unicorn(app, host, port, debug, workers)
     except ImportError:
@@ -456,25 +526,25 @@ def serve(ctx, host, port, debug, slug_size):
                 processes=workers)
 
 
-def _maybe_run_unicorn(app, host, port, debug, parallel):
+def _maybe_run_unicorn(app, host, port, debug, workers):
     import glob
     import gunicorn.app.base
+
+    here = os.path.dirname(__file__)
+    expand = lambda s: glob.glob(os.path.join(here, s, '*'))
+    flat = lambda it: list(itertools.chain.from_iterable(it))
+    static = ('static', 'templates')
 
     class Unicorn(gunicorn.app.base.BaseApplication):
 
         def load_config(self):
             self.cfg.set('bind', f'{host}:{port}')
-            workers = parallel
+            self.cfg.set('workers', 1 if debug else workers)
             if debug:
                 self.cfg.set('accesslog', '-')
                 self.cfg.set('reload', True)
-                here = os.path.dirname(__file__)
-                extras = []
-                for name in ('static', 'templates'):
-                    extras.extend(glob.glob(os.path.join(here, name, '*')))
-                self.cfg.set('reload_extra_files', extras)
-                workers = 1
-            self.cfg.set('workers', workers)
+                self.cfg.set('reload_extra_files',
+                             flat(expand(s) for s in static))
 
         def load(self):
             return app
