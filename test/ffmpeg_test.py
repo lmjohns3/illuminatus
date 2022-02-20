@@ -1,6 +1,7 @@
 from util import *
 
 
+@MEDIA
 @pytest.mark.parametrize('filters', [
     [],
     [dict(filter='rotate', degrees=10)],
@@ -19,11 +20,13 @@ def test_video_filters(sess, tmpdir, filters):
         video.add_filter(filter)
 
     root = tmpdir.mkdir('export')
+    target = str(root.join(f'{video.slug}.mp4'))
     assert root.listdir() == []
-    video.export(str(root), ext='mp4')
-    assert sorted(root.listdir()) == [str(root.join(f'{video.slug}.mp4'))]
+    video.export(target)
+    assert sorted(root.listdir()) == [target]
 
 
+@MEDIA
 @pytest.mark.parametrize('filters', [
     [],
     [dict(filter='rotate', degrees=10)],
@@ -43,6 +46,7 @@ def test_photo_filters(sess, tmpdir, filters):
         photo.add_filter(filter)
 
     root = tmpdir.mkdir('export')
+    target = str(root.join(f'{photo.slug}.jpg'))
     assert root.listdir() == []
-    photo.export(str(root), ext='jpg')
-    assert sorted(root.listdir()) == [str(root.join(f'{photo.slug}.jpg'))]
+    photo.export(target)
+    assert sorted(root.listdir()) == [target]

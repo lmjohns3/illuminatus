@@ -40,7 +40,7 @@ def test_photo_content_hashes(sess):
     asset = sess.query(Asset).get(1)
     asset.compute_content_hashes()
     assert set(h.nibbles for h in asset.hashes) == {
-        'photo', '665', '12e1', '387c52', '1fc03b70330e', '8603054c6cb8f30f',
+        'photo', '665', '12e1', '387c52', '1fc03b70338e', '8603054c6cb8f30f',
         '3078e01d803300640007007111f13ec11ce116c9a6c9671d6e03354b1a7f80fc'}
 
 

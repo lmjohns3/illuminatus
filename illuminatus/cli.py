@@ -25,7 +25,7 @@ def transaction():
     try:
         yield sess
         sess.commit()
-    except:
+    except db.sqlalchemy.SQLAlchemyError:
         sess.rollback()
         raise
     finally:
@@ -150,7 +150,7 @@ def queries(ctx):
     print(ctx.get_help())
 
 
-DEFAULT_CONFIG = '''\
+DEFAULT_CONFIG = r'''\
 db: {db}
 thumbnails: {thumbs}
 {trash}
@@ -192,6 +192,7 @@ tags:
   icon: 🏷️
   patterns: [/^.*$/]
 '''
+
 
 @cli.command()
 @click.option('--thumbnails', default='', metavar='DIR',
@@ -531,8 +532,13 @@ def _maybe_run_unicorn(app, host, port, debug, workers):
     import gunicorn.app.base
 
     here = os.path.dirname(__file__)
-    expand = lambda s: glob.glob(os.path.join(here, s, '*'))
-    flat = lambda it: list(itertools.chain.from_iterable(it))
+
+    def expand(s):
+        return glob.glob(os.path.join(here, s, '*'))
+
+    def flat(it):
+        return list(itertools.chain.from_iterable(it))
+
     static = ('static', 'templates')
 
     class Unicorn(gunicorn.app.base.BaseApplication):

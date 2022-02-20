@@ -9,7 +9,6 @@ from illuminatus import query
     ('x', ''),
 
     ('a', 'photo audio'),
-    ('"a"', 'photo audio'),
     ('b', 'photo video'),
     ('c', 'audio video'),
     ('(c)', 'audio video'),
@@ -17,7 +16,6 @@ from illuminatus import query
 
     ('a or a', 'photo audio'),
     ('a a', 'photo audio'),
-    ('not a', 'video'),
     ('(a or a)', 'photo audio'),
 
     ('a or b', 'photo audio video'),
@@ -43,6 +41,7 @@ from illuminatus import query
     ('(a not b) or c', 'audio video'),
 
     ('hash:aud', 'audio'),
+    ('hash:photo', 'photo'),
 
     ('before:2019', 'photo audio video'),
     ('before:2015', 'video'),

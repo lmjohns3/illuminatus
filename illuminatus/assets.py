@@ -314,10 +314,11 @@ class Asset(db.Model):
             Additional keyword arguments to pass to ffmpeg: frame rate,
             bounding box, etc.
         '''
-        if overwrite or not os.path.exists(output):
-            if not os.path.exists(os.path.dirname(output)):
-                os.makedirs(os.path.dirname(output))
-            ffmpeg.run(self, output, **kwargs)
+        if os.path.exists(output) and not overwrite:
+            return
+        if not os.path.exists(os.path.dirname(output)):
+            os.makedirs(os.path.dirname(output))
+        ffmpeg.run(self, output, **kwargs)
 
     def update_from_metadata(self):
         '''Update this asset based on metadata in the file.'''
@@ -354,9 +355,9 @@ class Asset(db.Model):
             with tempfile.NamedTemporaryFile(suffix='.wav') as ntf:
                 # compute fft with windows separated by 1000 samples
                 ffmpeg.convert_to_wav(self.path, sr, ntf.name)
-                arr, _ = librosa.core.load(ntf.name, sr)
+                arr, _ = librosa.core.load(ntf.name, sr=sr)
             spec = np.log(librosa.feature.melspectrogram(
-                arr, sr, n_fft=2048, hop_length=1000, n_mels=64)).T
+                y=arr, sr=sr, n_fft=2048, hop_length=1000, n_mels=64)).T
             for t in range(0, len(spec), 10 * sr // 1000):
                 self.hashes.add(Hash.compute_audio_dhash(spec, t, 8))
 

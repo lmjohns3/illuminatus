@@ -51,25 +51,17 @@ class QueryParser(parsimonious.NodeVisitor):
 
     def visit_query(self, node, children):
         select, rest = children
-        others = []
         for _, neg, other in rest:
             if neg:
-                others.append(sqlalchemy.sql.except_(select, other))
+                select = sqlalchemy.sql.except_(select, other).subquery().select()
             else:
-                others.append(other)
-        if others:
-            select = sqlalchemy.sql.intersect(
-                select, *(o.subquery().select() for o in others))
+                select = select.intersect(other).subquery().select()
         return select
 
     def visit_union(self, node, children):
         select, rest = children
-        others = []
         for _, _, _, other in rest:
-            others.append(other)
-        if others:
-            select = sqlalchemy.sql.union(
-                select, *(o.subquery().select() for o in others))
+            select = select.union(other).subquery().select()
         return select
 
     def visit_set(self, node, children):

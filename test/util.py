@@ -60,9 +60,11 @@ def tables(engine):
             kw['slug'] = slug
             kw['stamp'] = arrow.get(rec['stamp']).datetime
             asset = Asset(**kw)
-            asset.hashes.add(Hash(nibbles=slug, method='dhash-0'))
+            h = Hash(nibbles=slug, method='dhash-0')
+            asset.hashes.add(h)
             sess = illuminatus.db.Session()
             sess.add(asset)
+            sess.add(h)
             sess.commit()
     yield
     illuminatus.db.Model.metadata.drop_all(engine)
