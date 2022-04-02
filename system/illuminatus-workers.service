@@ -1,0 +1,12 @@
+[Unit]
+Description=workers for managing photos/movies/etc
+
+[Service]
+Type=simple
+ExecStart=/home/bot/illuminatus/venv/bin/illuminatus --config /home/bot/illuminatus/config.yaml workers --concurrency 10 --uid $(id -u bot) --gid $(id -g bot)
+Restart=always
+RestartSec=5
+SyslogIdentifier=illuminatus
+
+[Install]
+WantedBy=multi-user.target

@@ -67,19 +67,17 @@ def progressbar(items, label):
               help='Load YAML configuration from FILE.')
 @click.option('--log-sql/--no-log-sql', default=False,
               help='Log database queries.')
-@click.option('--log-tools/--no-log-tools', default=False,
-              help='Log tool commands.')
+@click.option('--log-ffmpeg/--no-log-ffmpeg', default=False,
+              help='Log ffmpeg commands.')
 @click.pass_context
-def cli(ctx, config, log_sql, log_tools):
+def cli(ctx, config, log_sql, log_ffmpeg):
     '''Command-line interface for media database.'''
-    # Don't require a database for getting help.
-    if '--help' in sys.argv:
+    if '--help' in sys.argv or ctx.invoked_subcommand in ('init', 'queries'):
         return
 
-    if ctx.invoked_subcommand != 'init':
-        if not os.path.isfile(config):
-            raise RuntimeError('Illuminatus config not found: {}'.format(
-                click.style(config, fg='cyan')))
+    if not os.path.isfile(config):
+        raise RuntimeError('Illuminatus config not found: {}'.format(
+            click.style(config, fg='cyan')))
 
     with open(config) as handle:
         parsed = yaml.load(handle, Loader=yaml.CLoader)
@@ -94,7 +92,7 @@ def cli(ctx, config, log_sql, log_tools):
     db.Session.configure(bind=db.engine(path=parsed['db'], echo=log_sql))
     celery.app.conf['illuminatus_db'] = parsed['db']
 
-    if log_tools:
+    if log_ffmpeg:
         from . import ffmpeg
         ffmpeg._DEBUG = 1
 
@@ -150,21 +148,21 @@ def queries(ctx):
     print(ctx.get_help())
 
 
-DEFAULT_CONFIG = r'''\
+DEFAULT_CONFIG = r'''# Illuminatus configuration file.
 db: {db}
-thumbnails: {thumbs}
+thumbnails: {thumbnails}
 {trash}
 
 formats:
   photo:
-    thumb: {ext: png, bbox: [320, 320]}
-    full: {ext: jpg, bbox: [1080, 1080]}
+    thumb: {{ext: png, bbox: [320, 320]}}
+    full: {{ext: jpg, bbox: [1080, 1080]}}
   video:
-    thumb: {ext: webp, bbox: [320, 320], fps: 6}
-    full: {ext: webm, bbox: [1080, 1080], fps: 24}
+    thumb: {{ext: webp, bbox: [320, 320], fps: 6}}
+    full: {{ext: webm, bbox: [1080, 1080], fps: 24}}
   audio:
-    thumb: {ext: png, bbox: [320, 320]}
-    full: {ext: mp3, abr: 100}
+    thumb: {{ext: png, bbox: [320, 320]}}
+    full: {{ext: mp3, abr: 100}}
 
 tags:
 - group: date
@@ -195,19 +193,24 @@ tags:
 
 
 @cli.command()
+@click.option('--database', default='illuminatus.db', metavar='FILE',
+              help='Path for the illuminatus database.')
 @click.option('--thumbnails', default='', metavar='DIR',
               help=('Store thumbnails under DIR. Defaults to "thumbs" in '
                     'the same location as the database.'))
 @click.option('--trash', default='', metavar='DIR',
               help='Storage for deleted assets.')
-@click.argument('db_path', default='illuminatus.db', metavar='FILE')
 @click.pass_context
-def init(ctx, db_path, thumbnails, trash):
+def init(ctx, database, thumbnails, trash):
     '''Initialize a new illuminatus database and configuration.'''
-    db.Model.metadata.create_all(db.engine(db_path))
+    database = normalize_path(database)
+    dirname = os.path.dirname(database)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+    db.Model.metadata.create_all(db.engine(database))
     if not thumbnails:
-        thumbnails = os.path.join(os.path.dirname(db_path), 'thumbs')
-    print(DEFAULT_CONFIG.format(db=db_path,
+        thumbnails = os.path.join(dirname, 'thumbs')
+    print(DEFAULT_CONFIG.format(db=database,
                                 thumbnails=thumbnails,
                                 trash=f'trash: {trash}' if trash else ''))
 
@@ -291,38 +294,38 @@ def paired_image_pixels(asset, cols, rows):
 @click.pass_context
 def view(ctx, query):
     '''View assets matching a QUERY.'''
-    with transaction() as sess:
-        assets = list(query_assets(sess, query))
-    idx = 0
-
     write = sys.stdout.write
-
+    write('\x1b[?25l')  # hide cursor
     columns, lines = shutil.get_terminal_size()
     lines = 2 * lines - 2
     aspect = columns / lines
-
-    write('\x1b[?25l')
-    while True:
-        asset = assets[idx]
-        ar = asset.width / asset.height
-        cols = columns if ar > aspect else int(lines * ar)
-        rows = lines if ar <= aspect else int(columns / ar)
-        rows -= rows % 2
-        if asset.is_photo:
-            click.clear()
-            for i, bgfg in enumerate(paired_image_pixels(asset, cols, rows)):
-                write('\x1b[48;2;{};{};{}m\x1b[38;2;{};{};{}m▄'.format(*bgfg))
-                if i % cols == cols - 1 and i < rows * cols / 2 - 2:
-                    write('\n')
-            write('\x1b[0m')
-            c = click.getchar(echo=False)
-            if c == 'q' or c == '\x1b':
-                break
-            if c == '\x1b[D' or c == '\x1b[A':
-                idx -= 2
-        idx = (idx + 1) % len(assets)
-    write('\x1b[?25h')
-    write('\x1b[0m')
+    try:
+        with transaction() as sess:
+            assets = list(query_assets(sess, query))
+            idx = 0
+            while True:
+                asset = assets[idx]
+                ar = asset.width / asset.height
+                cols = columns if ar > aspect else int(lines * ar)
+                rows = lines if ar <= aspect else int(columns / ar)
+                rows -= rows % 2
+                if asset.is_photo:
+                    click.clear()
+                    for i, bgfg in enumerate(paired_image_pixels(asset, cols, rows)):
+                        write('\x1b[48;2;{};{};{}m\x1b[38;2;{};{};{}m▄'.format(*bgfg))
+                        if i % cols == cols - 1 and i < rows * cols / 2 - 2:
+                            write('\n')
+                    write('\x1b[0m')
+                    c = click.getchar(echo=False)
+                    if c == 'q' or c == '\x1b':  # q or escape
+                        break
+                    if c == '\x1b[D' or c == '\x1b[A':  # up or left arrow
+                        idx -= 2
+                idx = (idx + 1) % len(assets)
+    finally:
+        # restore cursor, reset color
+        write('\x1b[?25h')
+        write('\x1b[0m')
 
 
 @cli.command()
@@ -354,9 +357,13 @@ def export(ctx, query, output, hide_tags, hide_omnipresent_tags):
               help='Add TAG to all imported items.')
 @click.option('--path-tags', default=0, metavar='N',
               help='Add N parent directories as tags.')
+@click.option('--wait/--no-wait', default=True,
+              help='Wait for all metadata to load before returning.')
+@click.option('--quiet', default=0, count=True,
+              help='Disable more output (twice to disable all output).')
 @click.argument('source', nargs=-1)
 @click.pass_context
-def import_(ctx, source, tag, path_tags):
+def import_(ctx, source, tag, path_tags, wait, quiet):
     '''Import assets into the database.
 
     If any source is a directory, all assets under that directory will be
@@ -365,10 +372,13 @@ def import_(ctx, source, tag, path_tags):
     def items():
         for path in importexport.walk(source):
             res = importexport.maybe_import_asset(
-                db.Session(), path, tag, path_tags)
+                db.Session(), path, tag, path_tags, quiet)
             if res is not None:
                 yield res
-    progressbar(items(), 'Metadata')
+    if wait:
+        progressbar(items(), 'Metadata')
+    else:
+        list(items())
 
 
 @cli.command()
@@ -411,9 +421,11 @@ def modify(ctx, query, stamp, add_tag, remove_tag, add_path_tags):
 @cli.command()
 @click.option('--overwrite/--no-overwrite', default=False,
               help='When set, overwrite existing thumbnails.')
+@click.option('--wait/--no-wait', default=True,
+              help='Wait for all thumbnailing to finish.')
 @click.argument('query', nargs=-1)
 @click.pass_context
-def thumbnail(ctx, query, overwrite):
+def thumbnail(ctx, query, overwrite, wait):
     '''Create thumbnails for assets matching a QUERY.
 
     See "illuminatus help" for help on QUERY syntax.
@@ -424,25 +436,33 @@ def thumbnail(ctx, query, overwrite):
                 ctx.obj['thumbnails'],
                 ctx.obj['formats'],
                 overwrite)
-    progressbar(items(), 'Thumbnails')
+    if wait:
+        progressbar(items(), 'Thumbnails')
+    else:
+        list(items())
 
 
 @cli.command()
 @click.option('--concurrency', default=1, metavar='N', help='Run N concurrent workers.')
 @click.option('--uid', type=int, metavar='N', help='Run as UID N.')
+@click.option('--gid', type=int, metavar='N', help='Run as GID N.')
 @click.pass_context
-def workers(ctx, concurrency, uid):
+def workers(ctx, concurrency, uid, gid):
     '''Run a pool of celery workers for running tasks.'''
-    celery.app.worker_main(argv=(
+    argv = [
         'worker',
         '-l', 'info',
         '-O', 'fair',
         '-Q', 'celery,audio,photo,video',
         '-c', str(concurrency),
-        '--uid', str(uid or os.getuid()),
         '--without-gossip',
         '--without-mingle',
-    ))
+    ]
+    if uid is not None:
+        argv.extend(('--uid', uid))
+    if gid is not None:
+        argv.extend(('--gid', gid))
+    celery.app.worker_main(argv=argv)
 
 
 @cli.command()

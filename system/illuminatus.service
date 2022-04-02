@@ -1,0 +1,15 @@
+[Unit]
+Description=web interface for managing photos/movies/etc
+Wants=nginx.service
+
+[Service]
+Type=simple
+User=bot
+Group=bot
+ExecStart=/home/bot/illuminatus/venv/bin/illuminatus --config /home/bot/illuminatus/config.yaml serve --host 127.0.0.1 --port 7703
+Restart=always
+RestartSec=5
+SyslogIdentifier=illuminatus
+
+[Install]
+WantedBy=multi-user.target

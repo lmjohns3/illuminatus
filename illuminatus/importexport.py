@@ -43,7 +43,7 @@ def walk(roots):
                 yield match
 
 
-def maybe_import_asset(sess, path, tags=(), path_tags=0):
+def maybe_import_asset(sess, path, tags=(), path_tags=0, quiet=0):
     '''Import a single asset into the database.
 
     Parameters
@@ -56,6 +56,9 @@ def maybe_import_asset(sess, path, tags=(), path_tags=0):
         Tags to add to this asset.
     path_tags : int
         Number of path (directory) name components to add as tags.
+    quiet : int
+        How quiet we should be. 0 is normal, 1 logs imports and errors, 2 logs
+        only errors, 3 disables all output.
     '''
     bold = click.style(path, bold=True)
 
@@ -74,11 +77,13 @@ def maybe_import_asset(sess, path, tags=(), path_tags=0):
             medium = med
             break
     if medium is None:
-        click.echo(f'{color("?", "yellow")} {slug} {bold}')
+        if quiet <= 0:
+            click.echo(f'{color("?", "yellow")} {slug} {bold}')
         return
 
     if sess.query(Asset).filter(Asset.slug == slug).count():
-        click.echo(f'{color("=", "blue")} {slug} {bold}')
+        if quiet <= 0:
+            click.echo(f'{color("=", "blue")} {slug} {bold}')
         sess.close()
         return
 
@@ -89,12 +94,14 @@ def maybe_import_asset(sess, path, tags=(), path_tags=0):
     try:
         sess.add(asset)
         sess.commit()
-        click.echo(f'{color("+", "cyan")} {slug} {bold}')
+        if quiet <= 1:
+            click.echo(f'{color("+", "cyan")} {slug} {bold}')
         return celery.update_from_content.delay(slug)
     except:
         sess.rollback()
-        logging.error(f'{color("!", "red")} {slug} {bold}')
-        logging.exception('')
+        if quiet <= 2:
+            click.echo(f'{color("!", "red")} {slug} {bold}')
+            logging.exception(f'error importing "{path}"')
     finally:
         sess.close()
 
